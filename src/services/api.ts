@@ -7,16 +7,16 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StorageCleanup } from '../utils/storageCleanup';
 
-// API Configuration
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
-const AUTH_TOKEN_KEY = '@numina_auth_token';
+// API Configuration - Updated for Aether Server
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://aether-server-j5kh.onrender.com';
+const AUTH_TOKEN_KEY = '@aether_auth_token';
 
-// User-specific storage keys to prevent cross-account contamination
+// User-specific storage keys for Aether App
 const getStorageKeys = (userId?: string) => ({
-  USER_DATA: userId ? `@numina_user_data_${userId}` : '@numina_user_data_temp',
-  CONVERSATIONS: userId ? `@numina_conversations_${userId}` : '@numina_conversations_temp',
-  SETTINGS: userId ? `@numina_settings_${userId}` : '@numina_settings_temp',
-  CACHE: userId ? `@numina_cache_${userId}` : '@numina_cache_temp'
+  USER_DATA: userId ? `@aether_user_data_${userId}` : '@aether_user_data_temp',
+  CONVERSATIONS: userId ? `@aether_conversations_${userId}` : '@aether_conversations_temp',
+  SETTINGS: userId ? `@aether_settings_${userId}` : '@aether_settings_temp',
+  CACHE: userId ? `@aether_cache_${userId}` : '@aether_cache_temp'
 });
 
 // Create axios instance
@@ -282,7 +282,7 @@ function getErrorMessage(error: any): string {
 // Authentication API
 export const AuthAPI = {
   async signup(email: string, password: string, name?: string): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/signup', {
+    const response = await api.post<AuthResponse>('/auth/signup', {
       email,
       password,
       ...(name && { name }),
@@ -301,7 +301,7 @@ export const AuthAPI = {
   },
 
   async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/login', {
+    const response = await api.post<AuthResponse>('/auth/login', {
       email,
       password,
     });
@@ -435,6 +435,12 @@ export const ChatAPI = {
   async *streamMessageWords(prompt: string, endpoint: string = '/ai/adaptive-chat', attachments?: any[]): AsyncGenerator<string | { text: string; metadata?: any }, void, unknown> {
     const { StreamEngine } = await import('./StreamEngine');
     yield* StreamEngine.streamChat(prompt, endpoint, attachments);
+  },
+
+  // Simple social chat for Aether Server
+  async socialChat(message: string): Promise<{ success: boolean; response: string; thinking?: string; model?: string; usage?: any }> {
+    const response = await api.post('/social-chat', { message });
+    return response.data;
   },
 
 };

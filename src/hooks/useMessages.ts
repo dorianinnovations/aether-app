@@ -88,7 +88,7 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
       let wordCount = 0;
       let messageMetadata: any = undefined;
       
-      for await (const chunk of ChatAPI.streamMessageWords(apiPrompt, '/ai/adaptive-chat', attachments)) {
+      for await (const chunk of ChatAPI.streamMessageWords(apiPrompt, '/social-chat', attachments)) {
         // Check if chunk is metadata object
         if (typeof chunk === 'object' && chunk !== null && 'metadata' in chunk) {
           messageMetadata = (chunk as any).metadata;
