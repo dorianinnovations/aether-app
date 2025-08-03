@@ -6,7 +6,7 @@
 
 import { TokenManager } from './api';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://server-a7od.onrender.com';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://aether-server-j5kh.onrender.com';
 
 export class StreamingService {
   /**
@@ -14,7 +14,7 @@ export class StreamingService {
    */
   static async *streamChat(
     prompt: string,
-    endpoint: string = '/ai/adaptive-chat',
+    endpoint: string = '/social-chat',
     attachments?: any[]
   ): AsyncGenerator<string, void, unknown> {
     
@@ -88,7 +88,7 @@ export class StreamingService {
     };
     
     xhr.timeout = 30000;
-    xhr.send(JSON.stringify({ prompt, stream: true }));
+    xhr.send(JSON.stringify({ message: prompt, stream: true }));
     
     // Yield chunks as they arrive with small delay for better UX
     while (!completed || processedChunks < chunks.length) {

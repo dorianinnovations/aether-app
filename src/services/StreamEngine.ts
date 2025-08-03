@@ -7,7 +7,7 @@
 
 import { TokenManager } from './api';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://aether-server-j5kh.onrender.com';
 
 export interface StreamChunk {
   text: string;
@@ -78,8 +78,6 @@ export class StreamEngine {
     let completed = false;
     let buffer = '';
     let processedChunks = 0;
-    let accumulatedText = '';
-    let lastWordBoundary = 0;
     let currentMetadata: any = null;
     
     const xhr = new XMLHttpRequest();
@@ -142,41 +140,24 @@ export class StreamEngine {
     xhr.timeout = 30000;
     xhr.send(JSON.stringify({ prompt, stream: true }));
     
-    // Process chunks and yield complete words
+    // Process chunks and yield individual words as they come from server
     while (!completed || processedChunks < chunks.length) {
       if (processedChunks < chunks.length) {
         const chunk = chunks[processedChunks++];
-        accumulatedText += chunk;
         
-        // Find word boundaries and yield complete words
-        const words = accumulatedText.slice(lastWordBoundary).split(/(\s+)/);
-        
-        // Yield all complete words except the last one (might be incomplete)
-        for (let i = 0; i < words.length - 1; i++) {
-          const word = words[i];
-          if (word.trim()) { // Only yield non-whitespace words
-            yield word;
-            await new Promise(resolve => setTimeout(resolve, 5)); // Lightning-fast streaming
-          }
-        }
-        
-        // Update the last word boundary
-        if (words.length > 1) {
-          const processedLength = words.slice(0, -1).join('').length;
-          lastWordBoundary += processedLength;
+        // Server already sends individual words, just yield them directly
+        if (chunk && chunk.trim()) {
+          yield chunk;
+          await new Promise(resolve => setTimeout(resolve, 25)); // Much faster: 25ms to match server
         }
         
       } else {
         // Wait for more chunks
-        await new Promise(resolve => setTimeout(resolve, 10)); // Ultra-fast polling
+        await new Promise(resolve => setTimeout(resolve, 50));
       }
     }
     
-    // Yield any remaining text
-    const remainingText = accumulatedText.slice(lastWordBoundary).trim();
-    if (remainingText) {
-      yield remainingText;
-    }
+    // No need to yield remaining text since server handles word completion
     
     // Yield metadata as final chunk if available
     if (currentMetadata) {

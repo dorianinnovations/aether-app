@@ -49,10 +49,10 @@ describe('SignInScreen - User Authentication Journey', () => {
     it('should display proper branding and messaging', () => {
       render(<SignInScreen navigation={mockNavigation} route={mockRoute} />);
       
-      expect(screen.getByText('Numina')).toBeTruthy();
+      expect(screen.getByText('Aether')).toBeTruthy();
       expect(screen.getByText('Sign in')).toBeTruthy();
       expect(screen.getByText(/Welcome back to/)).toBeTruthy();
-      expect(screen.getByText('Numina')).toBeTruthy();
+      expect(screen.getByText('Aether')).toBeTruthy();
     });
   });
 
@@ -373,11 +373,11 @@ describe('SignInScreen - User Authentication Journey', () => {
         'signin_journey_complete'
       ];
       
-      const actualSteps = metrics.map(m => m.step);
+      const actualSteps = metrics.map((m: any) => m.step);
       expect(actualSteps).toEqual(criticalSteps);
       
       // Each metric should have a timestamp
-      metrics.forEach(metric => {
+      metrics.forEach((metric: any) => {
         expect(metric.timestamp).toBeGreaterThan(0);
       });
     });

@@ -77,7 +77,7 @@ export const THEME_MODES = {
 
 export const MESSAGE_TYPES = {
   USER: 'user',
-  ASSISTANT: 'numina',
+  ASSISTANT: 'aether',
   SYSTEM: 'system',
 } as const;
 

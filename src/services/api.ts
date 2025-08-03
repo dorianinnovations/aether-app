@@ -1,5 +1,5 @@
 /**
- * Numina API Service
+ * Aether API Service
  * Centralized API management with authentication and error handling
  */
 
@@ -8,7 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StorageCleanup } from '../utils/storageCleanup';
 
 // API Configuration - Updated for Aether Server
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://aether-server-j5kh.onrender.com';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://server-a7od.onrender.com';
 const AUTH_TOKEN_KEY = '@aether_auth_token';
 
 // User-specific storage keys for Aether App
@@ -141,7 +141,7 @@ export const TokenManager = {
     try {
       // Try to find user-specific storage first
       const allKeys = await AsyncStorage.getAllKeys();
-      const userDataKey = allKeys.find(key => key.includes('@numina_user_data_') && !key.includes('_temp'));
+      const userDataKey = allKeys.find(key => key.includes('@aether_user_data_') && !key.includes('_temp'));
       
       if (userDataKey) {
         const userData = await AsyncStorage.getItem(userDataKey);
@@ -448,72 +448,139 @@ export const ChatAPI = {
 // User API
 export const UserAPI = {
   async getProfile(): Promise<any> {
-    const response = await api.get('/profile');
-    return response.data;
+    try {
+      // First try the full profile endpoint
+      const response = await api.get('/api/user/profile');
+      return response.data;
+    } catch (error: any) {
+      if (error.status === 404) {
+        // Fallback: try to get basic user info from auth endpoint or token data
+        const userData = await TokenManager.getUserData();
+        if (userData) {
+          return {
+            status: 'success',
+            data: {
+              user: userData,
+              profilePicture: null,
+              bannerImage: null,
+            }
+          };
+        }
+        throw new Error('Profile endpoint not available and no cached user data found');
+      }
+      throw error;
+    }
   },
 
   async updateProfile(profileData: any): Promise<any> {
-    const response = await api.post('/user/profile', profileData);
-    return response.data;
+    try {
+      const response = await api.put('/api/user/profile', profileData);
+      return response.data;
+    } catch (error: any) {
+      if (error.status === 404) {
+        // Profile update endpoint not available yet
+        // For now, just update local storage and return success
+        const currentUserData = await TokenManager.getUserData();
+        if (currentUserData) {
+          const updatedUserData = { ...currentUserData, ...profileData };
+          await TokenManager.setUserData(updatedUserData);
+          return {
+            status: 'success',
+            message: 'Profile updated locally (server endpoint not available yet)',
+            data: { user: updatedUserData }
+          };
+        }
+        throw new Error('Profile update endpoint not available and no cached user data found');
+      }
+      throw error;
+    }
   },
 
   async uploadProfilePicture(imageUri: string): Promise<any> {
-    const formData = new FormData();
-    
-    // Create file object for React Native
-    const imageFile = {
-      uri: imageUri,
-      type: 'image/jpeg',
-      name: 'profile-picture.jpg',
-    } as any;
-    
-    formData.append('profilePicture', imageFile);
+    try {
+      const formData = new FormData();
+      
+      // Create file object for React Native
+      const imageFile = {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: 'profile-picture.jpg',
+      } as any;
+      
+      formData.append('profilePicture', imageFile);
 
-    const response = await api.post('/profile/picture', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+      const response = await api.post('/api/user/profile/picture', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.status === 404) {
+        throw new Error('Profile picture upload endpoint not available yet on server');
+      }
+      throw error;
+    }
   },
 
   async deleteProfilePicture(): Promise<any> {
-    const response = await api.delete('/profile/picture');
-    return response.data;
+    try {
+      const response = await api.delete('/api/user/profile/picture');
+      return response.data;
+    } catch (error: any) {
+      if (error.status === 404) {
+        throw new Error('Profile picture delete endpoint not available yet on server');
+      }
+      throw error;
+    }
   },
 
   async uploadBannerImage(imageUri: string): Promise<any> {
-    const formData = new FormData();
-    
-    // Create file object for React Native
-    const imageFile = {
-      uri: imageUri,
-      type: 'image/jpeg',
-      name: 'banner-image.jpg',
-    } as any;
-    
-    formData.append('bannerImage', imageFile);
+    try {
+      const formData = new FormData();
+      
+      // Create file object for React Native
+      const imageFile = {
+        uri: imageUri,
+        type: 'image/jpeg',
+        name: 'banner-image.jpg',
+      } as any;
+      
+      formData.append('bannerImage', imageFile);
 
-    const response = await api.post('/profile/banner', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+      const response = await api.post('/api/user/profile/banner', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.status === 404) {
+        throw new Error('Banner image upload endpoint not available yet on server');
+      }
+      throw error;
+    }
   },
 
   async deleteBannerImage(): Promise<any> {
-    const response = await api.delete('/profile/banner');
-    return response.data;
+    try {
+      const response = await api.delete('/api/user/profile/banner');
+      return response.data;
+    } catch (error: any) {
+      if (error.status === 404) {
+        throw new Error('Banner image delete endpoint not available yet on server');
+      }
+      throw error;
+    }
   },
 
   async getSettings(): Promise<any> {
-    const response = await api.get('/user/settings');
+    const response = await api.get('/api/user/settings');
     return response.data;
   },
 
   async updateSettings(settings: any): Promise<any> {
-    const response = await api.post('/user/settings', settings);
+    const response = await api.put('/api/user/settings', settings);
     return response.data;
   },
 };

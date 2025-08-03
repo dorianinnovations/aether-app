@@ -48,7 +48,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             styles.headerTitle, 
             { color: isLoading ? getLoadingTextColor(theme, 'primary') : colors.text }
           ]}>
-            Numina
+            Aether
           </Text>
         </View>
         

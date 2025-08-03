@@ -23,7 +23,7 @@ export interface MessageAttachment {
 
 export interface Message {
   id: string;
-  sender: 'user' | 'numina' | 'system';
+  sender: 'user' | 'aether' | 'system';
   message: string;
   timestamp: string;
   variant?: 'default' | 'streaming' | 'error' | 'tool';

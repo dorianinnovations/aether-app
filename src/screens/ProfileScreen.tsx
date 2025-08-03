@@ -34,6 +34,9 @@ interface UserProfile {
   name?: string;
   email: string;
   id: string;
+  bio?: string;
+  location?: string;
+  website?: string;
 }
 
 export const ProfileScreen: React.FC = () => {
@@ -86,6 +89,9 @@ export const ProfileScreen: React.FC = () => {
           id: userData.id,
           email: userData.email,
           name: userData.name,
+          bio: userData.bio,
+          location: userData.location,
+          website: userData.website,
           profilePicture: response.data.profilePicture,
           bannerImage: response.data.bannerImage,
         });
@@ -103,13 +109,29 @@ export const ProfileScreen: React.FC = () => {
     
     try {
       setLoading(true);
-      // For now, we'll just update the name through the auth system
-      // A full profile update endpoint could be added later
-      Alert.alert('Success', 'Profile changes saved locally!');
-      setEditMode(false);
-    } catch (error) {
+      
+      // Prepare profile data for server
+      const profileData = {
+        name: profile.name,
+        bio: profile.bio,
+        location: profile.location,
+        website: profile.website,
+      };
+      
+      const response = await UserAPI.updateProfile(profileData);
+      
+      if (response.status === 'success' || response.success) {
+        Alert.alert('Success', 'Profile updated successfully!');
+        setEditMode(false);
+        // Optionally refresh profile data
+        await loadProfile();
+      } else {
+        Alert.alert('Error', response.message || 'Failed to save profile changes.');
+      }
+    } catch (error: any) {
       console.error('Error saving profile:', error);
-      Alert.alert('Error', 'Failed to save profile. Please try again.');
+      const errorMessage = error.message || 'Failed to save profile. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -442,6 +464,79 @@ export const ProfileScreen: React.FC = () => {
               )}
             </View>
 
+            <View style={styles.fieldContainer}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Email</Text>
+              <Text style={[styles.fieldValue, { color: colors.text }]}>
+                {profile.email}
+              </Text>
+            </View>
+
+            <View style={styles.fieldContainer}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Bio</Text>
+              {editMode ? (
+                <TextInput
+                  style={[styles.input, styles.textArea, { 
+                    backgroundColor: colors.surface,
+                    color: colors.text,
+                    borderColor: colors.borders.default
+                  }]}
+                  value={profile.bio || ''}
+                  onChangeText={(text) => handleFieldChange('bio', text)}
+                  placeholder="Tell us about yourself..."
+                  placeholderTextColor={colors.textSecondary}
+                  multiline
+                  numberOfLines={4}
+                />
+              ) : (
+                <Text style={[styles.fieldValue, { color: colors.text }]}>
+                  {profile.bio || 'No bio set'}
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.fieldContainer}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Location</Text>
+              {editMode ? (
+                <TextInput
+                  style={[styles.input, { 
+                    backgroundColor: colors.surface,
+                    color: colors.text,
+                    borderColor: colors.borders.default
+                  }]}
+                  value={profile.location || ''}
+                  onChangeText={(text) => handleFieldChange('location', text)}
+                  placeholder="Enter your location"
+                  placeholderTextColor={colors.textSecondary}
+                />
+              ) : (
+                <Text style={[styles.fieldValue, { color: colors.text }]}>
+                  {profile.location || 'No location set'}
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.fieldContainer}>
+              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Website</Text>
+              {editMode ? (
+                <TextInput
+                  style={[styles.input, { 
+                    backgroundColor: colors.surface,
+                    color: colors.text,
+                    borderColor: colors.borders.default
+                  }]}
+                  value={profile.website || ''}
+                  onChangeText={(text) => handleFieldChange('website', text)}
+                  placeholder="Enter your website URL"
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="url"
+                  autoCapitalize="none"
+                />
+              ) : (
+                <Text style={[styles.fieldValue, { color: colors.text }]}>
+                  {profile.website || 'No website set'}
+                </Text>
+              )}
+            </View>
 
           </View>
 

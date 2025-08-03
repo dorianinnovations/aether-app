@@ -40,7 +40,7 @@ export const LottieLoader: React.FC<LottieLoaderProps> = ({
   return (
     <View style={[styles.container, style]}>
       <LottieView
-        source={require('../../../../assets/NuminaSpinner.json')}
+        source={require('../../../../assets/AetherSpinner.json')}
         autoPlay
         loop
         style={{

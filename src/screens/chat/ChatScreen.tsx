@@ -1,6 +1,6 @@
 /**
- * Numina - Adaptive Chat Screen
- * The heart of Numina - AI that learns and adapts to your patterns
+ * Aether - Adaptive Chat Screen
+ * The heart of Aether - AI that learns and adapts to your patterns
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -104,7 +104,10 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     gentleScrollDown, 
     handleScrollBegin, 
     handleScrollEnd,
-    showScrollButton
+    handleScroll,
+    showScrollButton,
+    buttonOpacity,
+    isAtBottom
   } = useSimpleScroll();
 
   // Dynamic prompts hook for intelligent contextual options
@@ -117,7 +120,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     messages: messages.map(msg => ({
       id: msg.id,
       text: msg.message,
-      sender: msg.sender === 'numina' ? 'ai' : msg.sender === 'system' ? 'ai' : msg.sender,
+      sender: msg.sender === 'aether' ? 'ai' : msg.sender === 'system' ? 'ai' : msg.sender,
       timestamp: new Date(msg.timestamp).getTime()
     })),
     onPromptExecute: (promptText: string) => {
@@ -309,14 +312,8 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
               styles.userBubble,
               {
                 backgroundColor: theme === 'dark' ? '#2A2A2A' : '#F0F0F0',
-                borderTopWidth: 1,
-                borderLeftWidth: 1,
-                borderRightWidth: 1,
-                borderBottomWidth: 1,
-                borderTopColor: theme === 'dark' ? '#454545' : '#FFFFFF',
-                borderLeftColor: theme === 'dark' ? '#454545' : '#FFFFFF',
-                borderRightColor: theme === 'dark' ? '#151515' : '#C8C8C8',
-                borderBottomColor: theme === 'dark' ? '#151515' : '#C8C8C8',
+                borderWidth: 1,
+                borderColor: theme === 'dark' ? '#404040' : '#D1D1D6',
                 shadowColor: theme === 'dark' ? '#000000' : '#000000',
                 shadowOffset: { width: 2, height: 2 },
                 shadowOpacity: theme === 'dark' ? 0.4 : 0.15,
@@ -336,7 +333,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
           <View style={styles.botContainer}>
             {item.variant === 'streaming' && !item.message?.trim() ? (
               <LottieView
-                source={require('../../../assets/NuminaCloudBubble.json')}
+                source={require('../../../assets/AetherCloudBubble.json')}
                 autoPlay
                 loop
                 style={styles.lottieAnimation}
@@ -408,6 +405,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
               listener: (event: any) => {
                 const offsetY = event.nativeEvent.contentOffset.y;
                 headerAnim.setValue(offsetY > 50 ? 0.8 : 1);
+                handleScroll(event);
               }
             }
           )}
@@ -421,10 +419,15 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.inputContainer}
       >
-        {showScrollButton && (
+        <Animated.View 
+          style={[
+            styles.scrollToBottomButton,
+            { opacity: buttonOpacity }
+          ]}
+          pointerEvents={showScrollButton ? 'auto' : 'none'}
+        >
           <TouchableOpacity 
             onPress={scrollToBottom}
-            style={styles.scrollToBottomButton}
             activeOpacity={0.7}
           >
             <View style={[
@@ -439,7 +442,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
               </Text>
             </View>
           </TouchableOpacity>
-        )}
+        </Animated.View>
         
         <View style={styles.chatInputWrapper}>
           <EnhancedChatInput
@@ -492,7 +495,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
       
       {/* Enhanced Header */}
       <Header
-        title="Numina"
+        title="Aether"
         showMenuButton={true}
         showConversationsButton={true}
         onMenuPress={toggleHeaderMenu}
@@ -679,7 +682,7 @@ const styles = StyleSheet.create({
   
   messagesList: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
   },
   
   messagesContainer: {
@@ -730,7 +733,8 @@ const styles = StyleSheet.create({
   botContainer: {
     alignItems: 'flex-start',
     width: '100%',
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
+    paddingRight: 6,
   },
   
   botText: {
@@ -738,7 +742,8 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     fontFamily: 'Nunito-Regular',
     fontWeight: '400',
-    maxWidth: '95%',
+    maxWidth: '98%',
+    flexShrink: 1,
   },
 
   lottieAnimation: {
@@ -750,7 +755,7 @@ const styles = StyleSheet.create({
   // Scroll to Bottom Button
   scrollToBottomButton: {
     position: 'absolute',
-    bottom: 80,
+    bottom: 90,
     alignSelf: 'center',
     zIndex: 1000,
   },

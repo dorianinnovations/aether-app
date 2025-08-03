@@ -83,16 +83,10 @@ const StreamingText: React.FC<{
   // For streaming, we'll handle partial tokens gracefully
   if (text) {
     return (
-      <View>
+      <View style={{ width: '100%' }}>
         <BasicMarkdown theme={theme} style={baseTextStyle}>
-          {text}
+          {text + (isStreaming ? ' |' : '')}
         </BasicMarkdown>
-        {/* Show cursor during streaming */}
-        {isStreaming && (
-          <Text style={[baseTextStyle, { position: 'absolute', right: -10, top: 0 }]}>
-            |
-          </Text>
-        )}
       </View>
     );
   }
@@ -123,7 +117,7 @@ const StreamContent: React.FC<{
   if (isTypingMessage || (isStreaming && !safeText.trim())) {
     return (
       <LottieView
-        source={require('../../../../assets/NuminaCloudBubble.json')}
+        source={require('../../../../assets/AetherCloudBubble.json')}
         autoPlay
         loop
         style={styles.lottieAnimation}
@@ -302,9 +296,10 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
             {(message.text?.trim() || message.message?.trim()) && (
               <Animated.View style={[
                 styles.userProfileBubble,
-                getStandardBorder(theme as 'light' | 'dark'),
                 {
                   backgroundColor: theme === 'light' ? '#FF0000' : '#202020',
+                  borderWidth: 1,
+                  borderColor: theme === 'light' ? '#E5E5E7' : '#38383A',
                 }
               ]}>
                 <Text 
@@ -320,8 +315,6 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
                       textAlign: 'left',
                     }
                   ]}
-                  numberOfLines={0}
-                  ellipsizeMode="tail"
                 >
                   {message.text || message.message}
                 </Text>
@@ -394,14 +387,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#D1D1D6',
   },
   userMessageText: {
     fontSize: 16,
     lineHeight: 20,
   },
   botTextWrapper: {
-    maxWidth: width * 0.95,
+    maxWidth: width * 0.98,
     alignSelf: 'flex-start',
+    paddingRight: 16,
   },
   botTextContainer: {
     flexDirection: 'column',

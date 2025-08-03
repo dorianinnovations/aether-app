@@ -46,13 +46,13 @@ describe('SignUpScreen - User Registration Journey', () => {
       expect(journey.passed).toBe(true);
     });
 
-    it('should display Numina branding consistently', () => {
+    it('should display Aether branding consistently', () => {
       render(<SignUpScreen navigation={mockNavigation} route={mockRoute} />);
       
-      expect(screen.getByText('Numina')).toBeTruthy();
+      expect(screen.getByText('Aether')).toBeTruthy();
       expect(screen.getByText('Sign up')).toBeTruthy();
       expect(screen.getByText(/Create your/)).toBeTruthy();
-      expect(screen.getByText('Numina')).toBeTruthy(); // In subtitle
+      expect(screen.getByText('Aether')).toBeTruthy(); // In subtitle
     });
   });
 
@@ -212,7 +212,7 @@ describe('SignUpScreen - User Registration Journey', () => {
       
       // Should show success screen
       await waitFor(() => {
-        expect(screen.getByText('Welcome to Numina!')).toBeTruthy();
+        expect(screen.getByText('Welcome to Aether!')).toBeTruthy();
       }, { timeout: 3000 });
       
       metricsUtils.trackUserJourneyStep('registration_success_screen');
@@ -288,8 +288,8 @@ describe('SignUpScreen - User Registration Journey', () => {
       await userJourneyHelpers.completeSignUpFlow(screen);
       
       await waitFor(() => {
-        expect(screen.getByText('Welcome to Numina!')).toBeTruthy();
-        expect(screen.getByText('Your Numina is ready to understand and grow with you')).toBeTruthy();
+        expect(screen.getByText('Welcome to Aether!')).toBeTruthy();
+        expect(screen.getByText('Your Aether is ready to understand and grow with you')).toBeTruthy();
         expect(screen.getByText('Starting behavioral analysis...')).toBeTruthy();
       }, { timeout: 3000 });
       
@@ -431,7 +431,7 @@ describe('SignUpScreen - User Registration Journey', () => {
       await userJourneyHelpers.completeSignUpFlow(screen);
       
       await waitFor(() => {
-        expect(screen.getByText('Welcome to Numina!')).toBeTruthy();
+        expect(screen.getByText('Welcome to Aether!')).toBeTruthy();
       }, { timeout: 3000 });
       
       metricsUtils.trackUserJourneyStep('registration_complete');
@@ -450,11 +450,11 @@ describe('SignUpScreen - User Registration Journey', () => {
         'registration_complete'
       ];
       
-      const actualSteps = metrics.map(m => m.step);
+      const actualSteps = metrics.map((m: any) => m.step);
       expect(actualSteps).toEqual(criticalSteps);
       
       // Each metric should have timestamp and proper structure
-      metrics.forEach(metric => {
+      metrics.forEach((metric: any) => {
         expect(metric).toHaveProperty('step');
         expect(metric).toHaveProperty('timestamp');
         expect(typeof metric.timestamp).toBe('number');
@@ -473,7 +473,7 @@ describe('SignUpScreen - User Registration Journey', () => {
       await userJourneyHelpers.completeSignUpFlow(screen);
       
       await waitFor(() => {
-        expect(screen.getByText('Welcome to Numina!')).toBeTruthy();
+        expect(screen.getByText('Welcome to Aether!')).toBeTruthy();
       }, { timeout: 3000 });
       
       const endTime = Date.now();
@@ -488,7 +488,7 @@ describe('SignUpScreen - User Registration Journey', () => {
       expect(completionTime).toBeLessThan(5000);
       
       const metrics = metricsUtils.getTrackedMetrics();
-      const timingMetrics = metrics.filter(m => m.data);
+      const timingMetrics = metrics.filter((m: any) => m.data);
       expect(timingMetrics.length).toBeGreaterThan(0);
     });
   });
@@ -520,7 +520,7 @@ describe('SignUpScreen - User Registration Journey', () => {
       fireEvent.press(submitButton);
       
       await waitFor(() => {
-        expect(screen.getByText('Welcome to Numina!')).toBeTruthy();
+        expect(screen.getByText('Welcome to Aether!')).toBeTruthy();
       }, { timeout: 3000 });
       
       metricsUtils.trackUserJourneyStep('retry_succeeded');

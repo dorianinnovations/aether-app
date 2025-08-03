@@ -25,9 +25,9 @@ export class StorageCleanup {
         tempKeys.CONVERSATIONS,
         tempKeys.CACHE,
         // Legacy keys that might cause contamination
-        '@numina_user_data',
+        '@aether_user_data',
         '@aether/user_data',
-        '@numina_settings',
+        '@aether_settings',
         '@aether/settings',
       ];
       
@@ -77,9 +77,9 @@ export class StorageCleanup {
       
       // Also include legacy contaminated keys
       const legacyKeys = [
-        '@numina_user_data',
+        '@aether_user_data',
         '@aether/user_data', 
-        '@numina_settings',
+        '@aether_settings',
         '@aether/settings',
       ];
       
@@ -105,7 +105,7 @@ export class StorageCleanup {
       const contaminatedKeys = allKeys.filter(key => 
         (key.includes('user_data') && !key.includes('_user_data_')) ||
         (key.includes('settings') && !key.includes('_settings_')) ||
-        key === '@numina_user_data' ||
+        key === '@aether_user_data' ||
         key === '@aether/user_data'
       );
       

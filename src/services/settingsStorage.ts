@@ -7,32 +7,32 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Storage Keys mapping from camelCase to storage key
 const SETTINGS_KEYS = {
-  TEXTSIZE: '@numina_text_size',
-  THEMEVARIANT: '@numina_theme_variant',
-  DARKMODE: '@numina_dark_mode',
-  NOTIFICATIONSENABLED: '@numina_notifications',
-  ANIMATIONSENABLED: '@numina_animations',
-  ANALYTICSENABLED: '@numina_analytics',
-  AUTOSAVEENABLED: '@numina_auto_save',
-  SOUNDENABLED: '@numina_sound',
-  HAPTICSENABLED: '@numina_haptics',
-  COLORFULBUBBLESENABLED: '@numina_colorful_bubbles',
-  LANGUAGE: '@numina_language',
-  FONTFAMILY: '@numina_font_family',
+  TEXTSIZE: '@aether_text_size',
+  THEMEVARIANT: '@aether_theme_variant',
+  DARKMODE: '@aether_dark_mode',
+  NOTIFICATIONSENABLED: '@aether_notifications',
+  ANIMATIONSENABLED: '@aether_animations',
+  ANALYTICSENABLED: '@aether_analytics',
+  AUTOSAVEENABLED: '@aether_auto_save',
+  SOUNDENABLED: '@aether_sound',
+  HAPTICSENABLED: '@aether_haptics',
+  COLORFULBUBBLESENABLED: '@aether_colorful_bubbles',
+  LANGUAGE: '@aether_language',
+  FONTFAMILY: '@aether_font_family',
   // Accessibility
-  REDUCEMOTION: '@numina_reduce_motion',
-  HIGHCONTRAST: '@numina_high_contrast',
-  LARGETEXT: '@numina_large_text',
+  REDUCEMOTION: '@aether_reduce_motion',
+  HIGHCONTRAST: '@aether_high_contrast',
+  LARGETEXT: '@aether_large_text',
   // Display
-  KEEPSCREENON: '@numina_keep_screen_on',
-  SHOWTIMESTAMPS: '@numina_show_timestamps',
+  KEEPSCREENON: '@aether_keep_screen_on',
+  SHOWTIMESTAMPS: '@aether_show_timestamps',
   // System
-  AUTOLOCK: '@numina_auto_lock',
-  AUTOLOCKTIMEOUT: '@numina_auto_lock_timeout',
+  AUTOLOCK: '@aether_auto_lock',
+  AUTOLOCKTIMEOUT: '@aether_auto_lock_timeout',
   // Background
-  BACKGROUNDTYPE: '@numina_background_type',
+  BACKGROUNDTYPE: '@aether_background_type',
   // Dynamic Options
-  DYNAMICOPTIONS: '@numina_dynamic_options',
+  DYNAMICOPTIONS: '@aether_dynamic_options',
 } as const;
 
 // Default Settings

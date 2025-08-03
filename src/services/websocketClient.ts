@@ -30,7 +30,7 @@ class WebSocketClient {
 
   async connect(): Promise<void> {
     try {
-      const token = await AsyncStorage.getItem('@numina_auth_token');
+      const token = await AsyncStorage.getItem('@aether_auth_token');
       if (!token) {
         console.warn('No authentication token found, skipping WebSocket connection');
         this.isAuthenticatedUser = false;
@@ -317,7 +317,7 @@ class WebSocketClient {
   // Safe connect method that only attempts connection for authenticated users
   async safeConnect(): Promise<void> {
     try {
-      const token = await AsyncStorage.getItem('@numina_auth_token');
+      const token = await AsyncStorage.getItem('@aether_auth_token');
       if (token) {
         await this.connect();
       } else {

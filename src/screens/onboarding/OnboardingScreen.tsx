@@ -1,5 +1,5 @@
 /**
- * Numina - Onboarding Screen
+ * Aether - Onboarding Screen
  * Minimal swipe-based onboarding with opacity transitions and staggered animations
  * Introduces users to AI personalization and behavioral middleware concepts
  */

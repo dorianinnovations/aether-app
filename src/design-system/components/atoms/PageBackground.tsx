@@ -1,6 +1,6 @@
 /**
- * Numina Design System - Page Background Component
- * The dreamy baby blue gradient standard from numina-mobile ✨
+ * Aether Design System - Page Background Component
+ * The dreamy baby blue gradient standard from aether-mobile ✨
  */
 
 import React from 'react';
@@ -44,7 +44,7 @@ export const PageBackground: React.FC<PageBackgroundProps> = ({
     switch (variant) {
       case 'hero':
         return theme === 'light' 
-          ? ['#C6D2FF', '#A4F4CF', '#FEE685'] // Soft Blue-Green-Yellow from numina
+          ? ['#C6D2FF', '#A4F4CF', '#FEE685'] // Soft Blue-Green-Yellow from aether
           : [darkGrey, '#1A1A1A', darkGrey];
       
       case 'auth':
@@ -99,7 +99,7 @@ export const PageBackground: React.FC<PageBackgroundProps> = ({
     );
   }
 
-  // For dark mode, use solid charcoal (matching numina-mobile exactly)
+  // For dark mode, use solid charcoal (matching aether-mobile exactly)
   if (theme === 'dark') {
     return (
       <View 

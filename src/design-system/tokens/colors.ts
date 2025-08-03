@@ -160,7 +160,7 @@ export const stateColors = {
     philosophicalAlly: '#E1BEE7',
   },
   
-  numina: {
+  aether: {
     thinking: '#CCCCCC',
     responding: '#B3E5FC',
     complete: '#C8E6C9',

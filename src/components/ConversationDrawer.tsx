@@ -1,6 +1,6 @@
 /**
  * ConversationDrawer - Premium slide-out conversation history
- * Combines the best of numina-mobile's design with Numina's modern architecture
+ * Combines the best of aether-mobile's design with Aether's modern architecture
  * Features: BlurView backgrounds, haptic feedback, smooth animations, gesture handling
  * Optimized with react-native-reanimated for 120fps performance
  */
@@ -51,7 +51,7 @@ import LottieView from 'lottie-react-native';
 import { ConversationAPI } from '../services/api';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-const DRAWER_WIDTH = screenWidth * 0.80; // Slightly smaller like numina-mobile
+const DRAWER_WIDTH = screenWidth * 0.80; // Slightly smaller like aether-mobile
 const DRAWER_HEIGHT = screenHeight; // Full height for better UX
 const MAX_SLIDE_DISTANCE = screenWidth * 0.15; // Limit how far the drawer can be pulled out
 const DRAWER_TOP_MARGIN = 0; // No top margin for full height
@@ -198,10 +198,10 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
         const demoConversations = [
           {
             _id: 'demo-1',
-            title: 'Getting started with Numina',
+            title: 'Getting started with Aether',
             lastActivity: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
             messageCount: 8,
-            summary: 'Introduction to Numina\'s capabilities and features'
+            summary: 'Introduction to Aether\'s capabilities and features'
           },
           {
             _id: 'demo-2', 
@@ -964,7 +964,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
       return (
         <View style={styles.loadingContainer}>
           <LottieView
-            source={require('../../assets/NuminaSpinner.json')}
+            source={require('../../assets/AetherSpinner.json')}
             autoPlay
             loop
             style={styles.lottieAnimation}

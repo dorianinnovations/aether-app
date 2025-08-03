@@ -50,7 +50,7 @@ describe('ChatScreen - Core User Interactions', () => {
       render(<ChatScreen />);
       
       // Essential chat elements should be present
-      expect(screen.getByText('Numina')).toBeTruthy(); // Header title
+      expect(screen.getByText('Aether')).toBeTruthy(); // Header title
       
       // Wait for animations to complete
       await testUtils.waitForAnimations(1000);
@@ -90,7 +90,7 @@ describe('ChatScreen - Core User Interactions', () => {
       mockChatAPI.sendMessage.mockResolvedValue({
         id: 'response-1',
         message: 'Hello! How can I help you today?',
-        sender: 'numina',
+        sender: 'aether',
         timestamp: new Date().toISOString(),
       });
       
@@ -126,7 +126,7 @@ describe('ChatScreen - Core User Interactions', () => {
           setTimeout(() => resolve({
             id: 'response-1',
             message: 'Response after delay',
-            sender: 'numina',
+            sender: 'aether',
             timestamp: new Date().toISOString(),
           }), 1000)
         )
@@ -248,7 +248,7 @@ describe('ChatScreen - Core User Interactions', () => {
         return Promise.resolve({
           id: 'stream-1',
           message: 'Hello there! How can I help?',
-          sender: 'numina',
+          sender: 'aether',
           timestamp: new Date().toISOString(),
         });
       });
@@ -340,7 +340,7 @@ describe('ChatScreen - Core User Interactions', () => {
       mockChatAPI.sendMessage.mockResolvedValue({
         id: 'response-1',
         message: 'Quick response',
-        sender: 'numina',
+        sender: 'aether',
         timestamp: new Date().toISOString(),
       });
       
@@ -442,7 +442,7 @@ describe('ChatScreen - Core User Interactions', () => {
         .mockResolvedValueOnce({
           id: 'retry-success',
           message: 'Message sent after retry',
-          sender: 'numina',
+          sender: 'aether',
           timestamp: new Date().toISOString(),
         });
       

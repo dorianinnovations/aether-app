@@ -14,6 +14,7 @@ export { default as RainbowShimmerText } from './RainbowShimmerText';
 export { default as ShineEffect } from './ShineEffect';
 export { default as ConversationSkeleton } from './ConversationSkeleton';
 export { BlurModal } from './BlurModal';
+export { default as WebSearchIndicator } from './WebSearchIndicator';
 
 // Re-export types
 export type { IconName, IconSize } from './Icon';

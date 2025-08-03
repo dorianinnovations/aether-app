@@ -72,7 +72,7 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
       // Create streaming message
       const streamingMessage: Message = {
         id: (Date.now() + 1).toString(),
-        sender: 'numina',
+        sender: 'aether',
         message: '',
         timestamp: new Date().toISOString(),
         variant: 'streaming',
@@ -95,7 +95,7 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
           continue;
         }
         
-        // For word animation, each chunk is a complete word - add with space
+        // Server sends individual words, add space between them
         const word = typeof chunk === 'string' ? chunk : (chunk as any).text;
         accumulatedText += (accumulatedText ? ' ' : '') + word;
         wordCount++;
@@ -177,12 +177,12 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
     }
   };
 
-  // Keep long press for metadata viewing (Numina messages only) with improved haptic timing
+  // Keep long press for metadata viewing (Aether messages only) with improved haptic timing
   const handleMessageLongPress = (message: Message) => {
     // Immediate haptic feedback on long press start
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    if (message.sender === 'numina' && message.metadata) {
+    if (message.sender === 'aether' && message.metadata) {
       // Show message details
       Alert.alert(
         'Message Details',
@@ -202,7 +202,7 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
         const demoMessages: Message[] = [
           {
             id: 'demo-welcome',
-            sender: 'numina',
+            sender: 'aether',
             message: `This is a demo of the "${conversation.title}" conversation. Sign in to access your real conversation history and continue chatting!`,
             timestamp: new Date().toISOString(),
             variant: 'default',
@@ -224,7 +224,7 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
       // Convert server messages to app format
       const convertedMessages: Message[] = fullConversation.messages.map((msg: any, index: number) => ({
         id: msg._id || `${conversation._id}-${index}`,
-        sender: msg.role === 'user' ? 'user' : 'numina',
+        sender: msg.role === 'user' ? 'user' : 'aether',
         message: msg.content,
         timestamp: msg.timestamp,
         variant: 'default',

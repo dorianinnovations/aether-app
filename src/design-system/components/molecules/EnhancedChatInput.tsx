@@ -1,6 +1,6 @@
 /**
  * Aether Design System - Enhanced Chat Input Component
- * Sophisticated chat input with advanced features from numina-mobile
+ * Sophisticated chat input with advanced features from aether-mobile
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
@@ -67,7 +67,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
   onVoiceEnd,
   isLoading = false,
   maxLength = 500,
-  placeholder = "Ask Numina anything...",
+  placeholder = "Ask Aether anything...",
   voiceEnabled = true,
   theme = 'light',
   nextMessageIndex = 0,

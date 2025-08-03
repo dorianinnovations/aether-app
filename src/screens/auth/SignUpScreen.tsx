@@ -1,6 +1,6 @@
 /**
- * Numina - Sign Up Screen
- * Numina-style elegant account creation with glassmorphic design and sophisticated animations
+ * Aether - Sign Up Screen
+ * Aether-style elegant account creation with glassmorphic design and sophisticated animations
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -379,10 +379,10 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
           <Animated.View style={[styles.successContainer, { opacity: successAnim }]}>
             <Text style={styles.successEmoji}>*</Text>
             <Text style={[styles.successTitle, { color: themeColors.text }]}>
-              Welcome to Numina!
+              Welcome to Aether!
             </Text>
             <Text style={[styles.successSubtitle, { color: themeColors.textSecondary }]}>
-              Your Numina is ready to understand and grow with you
+              Your Aether is ready to understand and grow with you
             </Text>
             <View style={styles.successFeature}>
               <Text style={styles.successFeatureIcon}>*</Text>
@@ -430,7 +430,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
       {/* Header */}
       <Animated.View style={[styles.headerContainer, { opacity: headerOpacityAnim }]}>
         <Header 
-          title="Numina"
+          title="Aether"
           showBackButton={true}
           showMenuButton={true}
           onBackPress={() => {
@@ -520,7 +520,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                     ]}>
                       Create your{' '}
                       <Text style={styles.subtitleBold}>
-                        Numina
+                        Aether
                       </Text>{' '}
                       account
                     </Text>

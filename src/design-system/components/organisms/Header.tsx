@@ -1,6 +1,6 @@
 /**
- * Numina Header Component
- * Sophisticated header with animations adapted from numina-mobile
+ * Aether Header Component
+ * Sophisticated header with animations adapted from aether-mobile
  */
 
 import React, { useRef, useEffect, useState } from 'react';
@@ -51,7 +51,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  title = 'Numina',
+  title = 'Aether',
   subtitle,
   showBackButton = false,
   showMenuButton = true,

@@ -1,5 +1,5 @@
 /**
- * Numina Mobile App - Main Entry Point
+ * Aether Mobile App - Main Entry Point
  * Beautiful neumorphic design with sophisticated AI features
  */
 
@@ -114,7 +114,7 @@ const LoadingScreen = () => {
   return (
     <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
       <Text style={[styles.logoText, { color: '#5A5A5A' }]}>
-        Numina
+        Aether
       </Text>
       <LottieLoader 
         size="large"

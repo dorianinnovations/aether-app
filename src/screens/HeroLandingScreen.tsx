@@ -1,6 +1,6 @@
 /**
  * Aether - Hero Landing Screen
- * Sophisticated numina-style landing with elegant animations and premium typography
+ * Sophisticated aether-style landing with elegant animations and premium typography
  */
 
 import React, { useState, useRef, useEffect } from "react";
@@ -236,7 +236,7 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                 },
               ]}
             >
-              Numina
+              Aether
             </Animated.Text>
           </Animated.View>
 

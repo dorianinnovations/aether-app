@@ -1,5 +1,5 @@
 /**
- * Numina - Settings Modal
+ * Aether - Settings Modal
  * Beautiful glassmorphic settings panel with brick-style buttons
  */
 
@@ -523,7 +523,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       
       await Share.share({
         message: settingsData,
-        title: 'Numina Settings Export',
+        title: 'Aether Settings Export',
       });
     } catch (error) {
       console.error('Export error:', error);
@@ -884,7 +884,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   <Feather name="info" size={16} color={getSettingsIconColor(11)} />
                 </View>
                 <View style={styles.aboutQuickAction}>
-                  <Text style={[styles.quickActionText, { color: colors.text }]}>About Numina</Text>
+                  <Text style={[styles.quickActionText, { color: colors.text }]}>About Aether</Text>
                   <Text style={[styles.versionText, { color: colors.textMuted }]}>
                     v{Constants.expoConfig?.version || '1.0.0'}
                   </Text>
@@ -951,7 +951,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             {/* Content */}
             <View style={styles.aboutContent}>
               <Text style={[styles.aboutTitle, { color: colors.text }]}>
-                About Numina
+                About Aether
               </Text>
               <Text style={[styles.aboutVersion, { color: colors.textMuted }]}>
                 Version {Constants.expoConfig?.version || '1.0.0'}

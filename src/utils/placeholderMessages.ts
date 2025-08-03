@@ -4,7 +4,7 @@
  */
 
 export const chatPlaceholders = [
-  "Ask Numina anything...",
+  "Ask Aether anything...",
   "What's on your mind?",
   "Share your thoughts...",
   "Need help with something?",

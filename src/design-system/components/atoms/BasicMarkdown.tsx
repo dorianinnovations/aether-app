@@ -219,11 +219,12 @@ const styles = StyleSheet.create({
   },
   listTextContainer: {
     flex: 1,
-    paddingRight: 16,
+    paddingRight: 12,
   },
   paragraphContainer: {
     marginVertical: 3,
-    paddingHorizontal: 0,
+    paddingHorizontal: 2,
+    paddingRight: 8,
   },
   text: {
     fontSize: 17,
@@ -262,6 +263,7 @@ const styles = StyleSheet.create({
   questionContainer: {
     marginVertical: 4,
     paddingLeft: 8,
+    paddingRight: 8,
     borderLeftWidth: 3,
     borderLeftColor: 'rgba(100, 181, 246, 0.4)',
     paddingVertical: 2,
@@ -277,6 +279,7 @@ const styles = StyleSheet.create({
   longParagraphContainer: {
     marginVertical: 6,
     paddingHorizontal: 2,
+    paddingRight: 8,
   },
   paragraphText: {
     fontSize: 17,

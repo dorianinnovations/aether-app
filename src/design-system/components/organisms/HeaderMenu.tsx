@@ -1,6 +1,6 @@
 /**
  * Aether Header Menu Component
- * Sophisticated menu with intricate animations from numina-mobile
+ * Sophisticated menu with intricate animations from aether-mobile
  */
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';

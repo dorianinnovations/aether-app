@@ -1,6 +1,6 @@
 /**
- * Numina - Sign In Screen
- * Numina-style elegant authentication with glassmorphic design and sophisticated animations
+ * Aether - Sign In Screen
+ * Aether-style elegant authentication with glassmorphic design and sophisticated animations
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -323,7 +323,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
       {/* Header */}
       <Animated.View style={[styles.headerContainer, { opacity: headerOpacityAnim }]}>
         <Header 
-          title="Numina"
+          title="Aether"
           showBackButton={true}
           showMenuButton={true}
           onBackPress={() => {
@@ -413,7 +413,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                     ]}>
                       Welcome back to{' '}
                       <Text style={styles.subtitleBold}>
-                        Numina
+                        Aether
                       </Text>
                     </Text>
                   </Animated.View>
