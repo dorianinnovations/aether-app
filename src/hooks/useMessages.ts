@@ -91,6 +91,7 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
       for await (const chunk of ChatAPI.streamMessageWords(apiPrompt, '/social-chat', attachments)) {
         // Check if chunk is metadata object
         if (typeof chunk === 'object' && chunk !== null && 'metadata' in chunk) {
+          console.log('📍 useMessages: Received metadata chunk:', JSON.stringify(chunk, null, 2));
           messageMetadata = (chunk as any).metadata;
           continue;
         }
@@ -133,6 +134,10 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
             }
           : msg
       ));
+      
+      if (messageMetadata) {
+        console.log('📍 useMessages: Final message metadata:', JSON.stringify(messageMetadata, null, 2));
+      }
       
       // Refined haptic timing - trigger earlier for better UX
       const refinedHapticDelay = Math.min(300, Math.max(100, wordCount * 8)); // More responsive timing

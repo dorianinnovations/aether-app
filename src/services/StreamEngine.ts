@@ -7,7 +7,7 @@
 
 import { TokenManager } from './api';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://aether-server-j5kh.onrender.com';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://server-a7od.onrender.com';
 
 export interface StreamChunk {
   text: string;
@@ -114,6 +114,7 @@ export class StreamEngine {
                 }
                 // Capture metadata if present
                 if (parsed.metadata) {
+                  console.log('📍 StreamEngine: Received metadata:', JSON.stringify(parsed.metadata, null, 2));
                   currentMetadata = parsed.metadata;
                 }
               } catch (e) {
@@ -138,7 +139,7 @@ export class StreamEngine {
     };
     
     xhr.timeout = 30000;
-    xhr.send(JSON.stringify({ prompt, stream: true }));
+    xhr.send(JSON.stringify({ message: prompt, stream: true }));
     
     // Process chunks and yield individual words as they come from server
     while (!completed || processedChunks < chunks.length) {
@@ -161,6 +162,7 @@ export class StreamEngine {
     
     // Yield metadata as final chunk if available
     if (currentMetadata) {
+      console.log('📍 StreamEngine: Yielding metadata:', JSON.stringify(currentMetadata, null, 2));
       yield { text: '', metadata: currentMetadata };
     }
   }

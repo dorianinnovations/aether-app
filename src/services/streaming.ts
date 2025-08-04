@@ -6,7 +6,7 @@
 
 import { TokenManager } from './api';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://aether-server-j5kh.onrender.com';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://server-a7od.onrender.com';
 
 export class StreamingService {
   /**
@@ -29,7 +29,7 @@ export class StreamingService {
     const token = await TokenManager.getToken();
     const url = `${API_BASE_URL}${endpoint}`;
     
-    const chunks: string[] = [];
+    const chunks: (string | { metadata: any })[] = [];
     let completed = false;
     let buffer = '';
     let processedChunks = 0;
