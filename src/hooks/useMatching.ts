@@ -72,6 +72,15 @@ export const useMatching = () => {
   };
 
   const fetchMatches = useCallback(async (limit: number = 10) => {
+    // Check if user is authenticated
+    const { TokenManager } = await import('../services/api');
+    const token = await TokenManager.getToken();
+    if (!token) {
+      setError('Not authenticated');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     
@@ -90,12 +99,26 @@ export const useMatching = () => {
       }
     } catch (error: any) {
       console.error('Error fetching matches:', error);
+      // Don't show error for auth failures, just clear loading
+      if (error.status === 401) {
+        setLoading(false);
+        return;
+      }
       setError(error.message || 'Failed to fetch matches');
       setLoading(false);
     }
   }, []);
 
   const fetchUserProfile = useCallback(async () => {
+    // Check if user is authenticated
+    const { TokenManager } = await import('../services/api');
+    const token = await TokenManager.getToken();
+    if (!token) {
+      setError('Not authenticated');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     
@@ -115,6 +138,11 @@ export const useMatching = () => {
       }
     } catch (error: any) {
       console.error('Error fetching user profile:', error);
+      // Don't show error for auth failures, just clear loading
+      if (error.status === 401) {
+        setLoading(false);
+        return;
+      }
       setError(error.message || 'Failed to fetch profile');
       setLoading(false);
     }

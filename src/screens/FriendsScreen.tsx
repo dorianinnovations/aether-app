@@ -124,7 +124,16 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
 
   // Fetch friends list on component mount
   useEffect(() => {
-    fetchFriends();
+    const initializeFriends = async () => {
+      // Check if authenticated before making API calls
+      const { TokenManager } = await import('../services/api');
+      const token = await TokenManager.getToken();
+      if (token) {
+        fetchFriends();
+      }
+    };
+    
+    initializeFriends();
     
     return () => {
       if (statusTimeoutRef.current) {
@@ -134,6 +143,18 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
   }, []);
 
   const fetchFriends = async (isRefresh = false) => {
+    // Check authentication first
+    const { TokenManager } = await import('../services/api');
+    const token = await TokenManager.getToken();
+    if (!token) {
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
+      return;
+    }
+
     try {
       if (isRefresh) {
         setRefreshing(true);
@@ -146,8 +167,12 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
       if (response.success && response.friends) {
         setFriends(response.friends);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching friends:', error);
+      // Don't show error for auth failures
+      if (error.status !== 401) {
+        // Handle other errors if needed
+      }
     } finally {
       if (isRefresh) {
         setRefreshing(false);

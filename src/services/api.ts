@@ -204,25 +204,31 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    console.error('API Error:', error.response?.status, error.response?.data);
+    // Only log 401 errors if they're not from auth endpoints (to avoid spam)
+    if (error.response?.status === 401 && !originalRequest.url?.includes('/auth/')) {
+      console.warn('API 401 - Authentication required:', originalRequest.url);
+    } else if (error.response?.status !== 401) {
+      console.error('API Error:', error.response?.status, error.response?.data);
+    }
     
     // Handle unauthorized - attempt token refresh first
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/')) {
       originalRequest._retry = true;
       
       try {
-        // Try to refresh token
-        const refreshedAuth = await AuthAPI.refreshToken();
-        if (refreshedAuth.token) {
-          originalRequest.headers.Authorization = `Bearer ${refreshedAuth.token}`;
-          return api(originalRequest);
+        // Try to refresh token - but only if we have a token to refresh
+        const currentToken = await TokenManager.getToken();
+        if (currentToken) {
+          const refreshedAuth = await AuthAPI.refreshToken();
+          if (refreshedAuth.token) {
+            originalRequest.headers.Authorization = `Bearer ${refreshedAuth.token}`;
+            return api(originalRequest);
+          }
         }
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError);
-        // Only remove token if this is a critical endpoint, not for optional requests
-        if (!originalRequest.url?.includes('/conversations') && !originalRequest.url?.includes('/socket.io')) {
-          await TokenManager.removeToken();
-        }
+        // Clear token on refresh failure
+        await TokenManager.removeToken();
         // Navigation to login should be handled by the app
       }
     }

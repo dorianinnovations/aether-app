@@ -60,9 +60,17 @@ const ConnectionsScreen: React.FC<ConnectionsScreenProps> = ({ navigation }) => 
   const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
-    // Initialize data
-    fetchUserProfile();
-    fetchMatches();
+    const initializeConnections = async () => {
+      // Check if authenticated before making API calls
+      const { TokenManager } = await import('../../services/api');
+      const token = await TokenManager.getToken();
+      if (token) {
+        fetchUserProfile();
+        fetchMatches();
+      }
+    };
+    
+    initializeConnections();
   }, [fetchUserProfile, fetchMatches]);
 
   const handleRefresh = async () => {

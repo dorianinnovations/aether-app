@@ -30,7 +30,9 @@ class SSEService {
 
       const token = await TokenManager.getToken();
       if (!token) {
-        console.error('SSE: No auth token available');
+        console.warn('SSE: No auth token available, skipping connection');
+        this.isConnecting = false;
+        this.readyState = 2; // CLOSED
         return;
       }
 

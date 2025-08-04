@@ -28,7 +28,7 @@ import { getGlassmorphicStyle } from '../design-system/tokens/glassmorphism';
 import { NotificationDot } from '../design-system/components/atoms/NotificationDot';
 import { useConversationEvents } from '../hooks/useConversationEvents';
 import { log } from '../utils/logger';
-import api, { ApiUtils } from '../services/api';
+import { ConversationAPI } from '../services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -138,10 +138,10 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     
     try {
       setIsLoading(true);
-      const response = await ApiUtils.getRecentConversations(20, 1);
-      if (response.success && response.data) {
-        setConversations(response.data);
-        log.debug('Loaded conversations:', response.data.length);
+      const response = await ConversationAPI.getRecentConversations(20);
+      if (response.conversations) {
+        setConversations(response.conversations);
+        log.debug('Loaded conversations:', response.conversations.length);
       }
     } catch (error) {
       log.error('Failed to load conversations:', error);
@@ -160,7 +160,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   // Delete conversation function
   const handleDeleteConversation = useCallback(async (conversationId: string) => {
     try {
-      await ApiUtils.deleteConversation(conversationId);
+      await ConversationAPI.deleteConversation(conversationId);
       setConversations(prev => prev.filter(conv => conv._id !== conversationId));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       log.debug('Deleted conversation:', conversationId);

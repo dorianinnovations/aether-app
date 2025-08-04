@@ -61,8 +61,16 @@ export const ProfileScreen: React.FC = () => {
   });
 
   useEffect(() => {
-    loadProfile();
-    fetchUserProfile(); // Load analysis profile data
+    const initializeProfile = async () => {
+      // Check if authenticated before making API calls
+      const token = await TokenManager.getToken();
+      if (token) {
+        loadProfile();
+        fetchUserProfile(); // Load analysis profile data
+      }
+    };
+    
+    initializeProfile();
   }, [fetchUserProfile]);
 
   const handleNavigateBack = () => {
@@ -85,6 +93,13 @@ export const ProfileScreen: React.FC = () => {
   };
 
   const loadProfile = async () => {
+    // Check authentication first
+    const token = await TokenManager.getToken();
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await UserAPI.getProfile();
@@ -102,9 +117,12 @@ export const ProfileScreen: React.FC = () => {
           bannerImage: response.data.bannerImage,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading profile:', error);
-      Alert.alert('Error', 'Failed to load profile. Please try again.');
+      // Don't show error for auth failures
+      if (error.status !== 401) {
+        Alert.alert('Error', 'Failed to load profile. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
