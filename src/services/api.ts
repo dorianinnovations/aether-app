@@ -8,7 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StorageCleanup } from '../utils/storageCleanup';
 
 // API Configuration - Updated for Aether Server
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://server-a7od.onrender.com';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://aether-server-j5kh.onrender.com';
 const AUTH_TOKEN_KEY = '@aether_auth_token';
 
 // User-specific storage keys for Aether App
@@ -449,8 +449,8 @@ export const ChatAPI = {
 export const UserAPI = {
   async getProfile(): Promise<any> {
     try {
-      // First try the full profile endpoint
-      const response = await api.get('/api/user/profile');
+      // Use the correct profile endpoint
+      const response = await api.get('/user/profile');
       return response.data;
     } catch (error: any) {
       if (error.status === 404) {
@@ -474,7 +474,7 @@ export const UserAPI = {
 
   async updateProfile(profileData: any): Promise<any> {
     try {
-      const response = await api.put('/api/user/profile', profileData);
+      const response = await api.put('/user/profile', profileData);
       return response.data;
     } catch (error: any) {
       if (error.status === 404) {
@@ -509,7 +509,7 @@ export const UserAPI = {
       
       formData.append('profilePicture', imageFile);
 
-      const response = await api.post('/api/user/profile/picture', formData, {
+      const response = await api.post('/user/profile/picture', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -525,7 +525,7 @@ export const UserAPI = {
 
   async deleteProfilePicture(): Promise<any> {
     try {
-      const response = await api.delete('/api/user/profile/picture');
+      const response = await api.delete('/user/profile/picture');
       return response.data;
     } catch (error: any) {
       if (error.status === 404) {
@@ -548,7 +548,7 @@ export const UserAPI = {
       
       formData.append('bannerImage', imageFile);
 
-      const response = await api.post('/api/user/profile/banner', formData, {
+      const response = await api.post('/user/profile/banner', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -564,7 +564,7 @@ export const UserAPI = {
 
   async deleteBannerImage(): Promise<any> {
     try {
-      const response = await api.delete('/api/user/profile/banner');
+      const response = await api.delete('/user/profile/banner');
       return response.data;
     } catch (error: any) {
       if (error.status === 404) {
@@ -575,22 +575,22 @@ export const UserAPI = {
   },
 
   async getSettings(): Promise<any> {
-    const response = await api.get('/api/user/settings');
+    const response = await api.get('/user/settings');
     return response.data;
   },
 
   async updateSettings(settings: any): Promise<any> {
-    const response = await api.put('/api/user/settings', settings);
+    const response = await api.put('/user/settings', settings);
     return response.data;
   },
 };
 
 
 
-// Conversation API
+// Conversation API - Server endpoints available at /conversation/*
 export const ConversationAPI = {
   async getRecentConversations(limit: number = 20): Promise<any> {
-    const response = await api.get(`/conversations/recent?limit=${limit}`);
+    const response = await api.get(`/conversation/conversations/recent?limit=${limit}`);
     return {
       conversations: response.data.data || [],
       total: response.data.total || 0
@@ -601,41 +601,39 @@ export const ConversationAPI = {
     // Use messageLimit parameter as expected by server (max 500)
     const limit = Math.min(messageLimit || 500, 500); // Respect server max of 500
     const params = `?messageLimit=${limit}`;
-    const response = await api.get(`/conversations/${conversationId}${params}`);
+    const response = await api.get(`/conversation/conversations/${conversationId}${params}`);
     return response.data.data;
   },
 
   async createConversation(title?: string): Promise<any> {
-    const response = await api.post('/conversations', { title });
+    const response = await api.post('/conversation/conversations', { title });
     return response.data;
   },
 
   async syncConversations(lastSyncTimestamp?: string): Promise<any> {
-    const response = await api.post('/conversations/sync', { lastSyncTimestamp });
+    const response = await api.post('/conversation/conversations/sync', { lastSyncTimestamp });
     return response.data;
   },
 
   async addMessageToConversation(conversationId: string, message: any): Promise<any> {
-    const response = await api.post(`/conversations/${conversationId}/messages`, message);
+    const response = await api.post(`/conversation/conversations/${conversationId}/messages`, message);
     return response.data;
   },
 
   async searchConversations(query: string, limit: number = 10): Promise<any> {
-    const response = await api.get(`/conversations?search=${encodeURIComponent(query)}&limit=${limit}`);
+    const response = await api.get(`/conversation/conversations?search=${encodeURIComponent(query)}&limit=${limit}`);
     return response.data;
   },
 
   async deleteConversation(conversationId: string): Promise<any> {
-    const response = await api.delete(`/conversations/${conversationId}`);
+    const response = await api.delete(`/conversation/conversations/${conversationId}`);
     return response.data;
   },
 
   async deleteAllConversations(): Promise<any> {
-    const response = await api.delete('/conversations/all');
+    const response = await api.delete('/conversation/conversations/all');
     return response.data;
   },
-
-
 };
 
 // Health check
