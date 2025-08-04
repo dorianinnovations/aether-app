@@ -9,22 +9,24 @@ export interface SSEEvent {
 export type SSEEventHandler = (event: SSEEvent) => void;
 
 class SSEService {
-  private eventSource: EventSource | null = null;
+  private abortController: AbortController | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000; // Start with 1 second
   private eventHandlers: Map<string, SSEEventHandler[]> = new Map();
   private isConnecting = false;
   private isManuallyDisconnected = false;
+  private readyState = 0; // 0: CONNECTING, 1: OPEN, 2: CLOSED
 
   async connect(): Promise<void> {
-    if (this.eventSource || this.isConnecting) {
+    if (this.abortController || this.isConnecting) {
       return;
     }
 
     try {
       this.isConnecting = true;
       this.isManuallyDisconnected = false;
+      this.readyState = 0; // CONNECTING
 
       const token = await TokenManager.getToken();
       if (!token) {
@@ -35,39 +37,73 @@ class SSEService {
       const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://aether-server-j5kh.onrender.com';
       const url = `${baseUrl}/events/stream`;
 
-      // Note: EventSource doesn't support custom headers in React Native
-      // We'll need to pass the token as a query parameter for SSE
+      // Create URL with auth token as query parameter
       const urlWithAuth = `${url}?token=${encodeURIComponent(token)}`;
 
-      this.eventSource = new EventSource(urlWithAuth);
+      // Use fetch with streaming instead of EventSource
+      this.abortController = new AbortController();
+      
+      const response = await fetch(urlWithAuth, {
+        method: 'GET',
+        headers: {
+          'Accept': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+        },
+        signal: this.abortController.signal,
+      });
 
-      this.eventSource.onopen = () => {
-        this.reconnectAttempts = 0;
-        this.reconnectDelay = 1000;
-        this.isConnecting = false;
-      };
+      if (!response.ok) {
+        throw new Error(`SSE request failed: ${response.status}`);
+      }
 
-      this.eventSource.onmessage = (event) => {
-        try {
-          const data: SSEEvent = JSON.parse(event.data);
-          this.handleEvent(data);
-        } catch (error) {
-          console.error('SSE: Failed to parse event data:', error);
+      if (!response.body) {
+        throw new Error('Response body is null');
+      }
+
+      this.readyState = 1; // OPEN
+      this.reconnectAttempts = 0;
+      this.reconnectDelay = 1000;
+      this.isConnecting = false;
+
+      // Read the stream
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      try {
+        while (!this.isManuallyDisconnected) {
+          const { done, value } = await reader.read();
+          
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const dataStr = line.slice(6); // Remove 'data: '
+                if (dataStr.trim() === '') continue;
+                
+                const data: SSEEvent = JSON.parse(dataStr);
+                this.handleEvent(data);
+              } catch (error) {
+                console.error('SSE: Failed to parse event data:', error);
+              }
+            }
+          }
         }
-      };
-
-      this.eventSource.onerror = (error) => {
-        console.error('SSE: Connection error:', error);
-        this.isConnecting = false;
-        
-        if (!this.isManuallyDisconnected) {
-          this.handleReconnect();
-        }
-      };
+      } finally {
+        reader.releaseLock();
+      }
 
     } catch (error) {
       console.error('SSE: Failed to connect:', error);
       this.isConnecting = false;
+      this.readyState = 2; // CLOSED
+      
+      if (!this.isManuallyDisconnected) {
+        this.handleReconnect();
+      }
     }
   }
 
@@ -111,11 +147,12 @@ class SSEService {
   disconnect(): void {
     this.isManuallyDisconnected = true;
     
-    if (this.eventSource) {
-      this.eventSource.close();
-      this.eventSource = null;
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
     }
     
+    this.readyState = 2; // CLOSED
     this.isConnecting = false;
   }
 
@@ -154,19 +191,38 @@ class SSEService {
     this.on('comment:created', (event) => handler(event.data));
   }
 
+  // Convenience methods for conversation events
+  onConversationCreated(handler: (data: any) => void): void {
+    this.on('conversation:created', (event) => handler(event.data));
+  }
+
+  onConversationUpdated(handler: (data: any) => void): void {
+    this.on('conversation:updated', (event) => handler(event.data));
+  }
+
+  onConversationDeleted(handler: (data: any) => void): void {
+    this.on('conversation:deleted', (event) => handler(event.data));
+  }
+
+  onAllConversationsDeleted(handler: (data: any) => void): void {
+    this.on('conversation:all_deleted', (event) => handler(event.data));
+  }
+
+  onMessageAdded(handler: (data: any) => void): void {
+    this.on('conversation:message_added', (event) => handler(event.data));
+  }
+
   isConnected(): boolean {
-    return this.eventSource?.readyState === EventSource.OPEN;
+    return this.readyState === 1; // OPEN = 1
   }
 
   getConnectionState(): string {
-    if (!this.eventSource) return 'disconnected';
-    
-    switch (this.eventSource.readyState) {
-      case EventSource.CONNECTING:
+    switch (this.readyState) {
+      case 0: // CONNECTING
         return 'connecting';
-      case EventSource.OPEN:
+      case 1: // OPEN
         return 'connected';
-      case EventSource.CLOSED:
+      case 2: // CLOSED
         return 'disconnected';
       default:
         return 'unknown';

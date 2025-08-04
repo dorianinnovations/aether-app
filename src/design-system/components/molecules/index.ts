@@ -6,7 +6,6 @@
 // Original components
 export { default as CompatibilityScore } from './CompatibilityScore';
 export { default as ConnectionCard } from './ConnectionCard';
-export { default as InsightChart } from './InsightChart';
 export { default as MetricCard } from './MetricCard';
 export { default as TrendChart } from './TrendChart';
 export { default as WebSearchResult } from './WebSearchResult';

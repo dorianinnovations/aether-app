@@ -26,6 +26,8 @@ import { typography } from '../design-system/tokens/typography';
 import { getHeaderMenuShadow } from '../design-system/tokens/shadows';
 import { getGlassmorphicStyle } from '../design-system/tokens/glassmorphism';
 import { NotificationDot } from '../design-system/components/atoms/NotificationDot';
+import { useConversationEvents } from '../hooks/useConversationEvents';
+import { log } from '../utils/logger';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -83,6 +85,49 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const colorBeamColor = useRef(new Animated.Value(0)).current;
   
   const themeColors = getThemeColors(theme);
+
+  // Real-time conversation events
+  const { isConnected: isSSEConnected, eventCount } = useConversationEvents({
+    onConversationCreated: (conversation) => {
+      log.debug('Real-time: Conversation created', conversation);
+      setConversations(prev => [conversation, ...prev]);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    },
+    
+    onConversationUpdated: (conversation) => {
+      log.debug('Real-time: Conversation updated', conversation);
+      setConversations(prev => prev.map(conv => 
+        conv._id === conversation._id ? { ...conv, ...conversation } : conv
+      ));
+    },
+    
+    onConversationDeleted: ({ conversationId }) => {
+      log.debug('Real-time: Conversation deleted', conversationId);
+      setConversations(prev => prev.filter(conv => conv._id !== conversationId));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    },
+    
+    onAllConversationsDeleted: ({ deletedCount }) => {
+      log.debug('Real-time: All conversations deleted', deletedCount);
+      setConversations([]);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    },
+    
+    onMessageAdded: ({ conversationId, conversation }) => {
+      log.debug('Real-time: Message added to conversation', conversationId);
+      if (conversation) {
+        setConversations(prev => {
+          const existingIndex = prev.findIndex(conv => conv._id === conversationId);
+          if (existingIndex >= 0) {
+            const updated = [...prev];
+            updated[existingIndex] = { ...updated[existingIndex], ...conversation };
+            return updated;
+          }
+          return prev;
+        });
+      }
+    }
+  });
 
   // Enhanced swipe gesture with proper state management and visual feedback
   const swipeOffset = useRef(new Animated.Value(0)).current;
@@ -675,6 +720,24 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                   backgroundColor: 'transparent'
                 }
               ]}>
+                
+                {/* Connection Status Indicator */}
+                <View style={styles.connectionStatus}>
+                  <View style={[
+                    styles.connectionDot,
+                    { 
+                      backgroundColor: isSSEConnected 
+                        ? (theme === 'dark' ? designTokens.semanticDark.success : designTokens.semantic.success)
+                        : (theme === 'dark' ? designTokens.semanticDark.warning : designTokens.semantic.warning)
+                    }
+                  ]} />
+                  <Text style={[
+                    styles.connectionText,
+                    { color: themeColors.textSecondary }
+                  ]}>
+                    {isSSEConnected ? 'Live' : 'Offline'} • {eventCount} events
+                  </Text>
+                </View>
                 {/* Animated Color Beam */}
                 <Animated.View style={[
                   styles.colorBeam,
@@ -1123,6 +1186,25 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  connectionStatus: {
+    position: 'absolute',
+    top: 8,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    zIndex: 10,
+  },
+  connectionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  connectionText: {
+    fontSize: 10,
+    fontWeight: '500',
+    letterSpacing: -0.1,
   },
 });
 
