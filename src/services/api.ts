@@ -36,6 +36,7 @@ export interface AuthResponse {
     user: {
       id: string;
       email: string;
+      username?: string;
       name?: string;
     };
   };
@@ -281,11 +282,12 @@ function getErrorMessage(error: any): string {
 
 // Authentication API
 export const AuthAPI = {
-  async signup(email: string, password: string, name?: string): Promise<AuthResponse> {
+  async signup(email: string, password: string, name?: string, username?: string): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/auth/signup', {
       email,
       password,
       ...(name && { name }),
+      ...(username && { username }),
     });
     
     // Store token and user data with cleanup
@@ -300,9 +302,12 @@ export const AuthAPI = {
     return response.data;
   },
 
-  async login(email: string, password: string): Promise<AuthResponse> {
+  async login(emailOrUsername: string, password: string): Promise<AuthResponse> {
+    // Determine if it's an email or username based on presence of @ symbol
+    const isEmail = emailOrUsername.includes('@');
+    
     const response = await api.post<AuthResponse>('/auth/login', {
-      email,
+      ...(isEmail ? { email: emailOrUsername } : { username: emailOrUsername }),
       password,
     });
     
@@ -637,6 +642,28 @@ export const ConversationAPI = {
 };
 
 // Health check
+export const FriendsAPI = {
+  async addFriend(username: string): Promise<any> {
+    const response = await api.post('/friends/add', { username });
+    return response.data;
+  },
+
+  async getFriendsList(): Promise<any> {
+    const response = await api.get('/friends/list');
+    return response.data;
+  },
+
+  async lookupUser(username: string): Promise<any> {
+    const response = await api.get(`/friends/lookup/${username}`);
+    return response.data;
+  },
+
+  async removeFriend(username: string): Promise<any> {
+    const response = await api.delete('/friends/remove', { data: { username } });
+    return response.data;
+  },
+};
+
 export const HealthAPI = {
   async checkHealth(): Promise<any> {
     const response = await api.get('/');

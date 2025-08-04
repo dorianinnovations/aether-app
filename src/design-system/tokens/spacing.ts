@@ -59,7 +59,7 @@ export const semanticSpacing = {
   },
   
   // Connection/Social Spacing
-  social: {
+  friends: {
     profilePadding: spacing[5],   // 20px - Profile card padding
     connectionGap: spacing[4],    // 16px - Between connections
     compatibilityGap: spacing[3], // 12px - Compatibility elements

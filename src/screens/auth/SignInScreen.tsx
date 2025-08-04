@@ -46,7 +46,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
   const { theme, colors, toggleTheme } = useTheme();
   
   // Form state
-  const [email, setEmail] = useState('');
+  const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [localLoading, setLocalLoading] = useState(false);
@@ -184,7 +184,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
     // Dismiss keyboard when form is submitted
     Keyboard.dismiss();
     
-    if (!email.trim() || !password.trim()) {
+    if (!emailOrUsername.trim() || !password.trim()) {
       setError('Please fill in all fields');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
@@ -232,7 +232,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
     ]).start();
 
     try {
-      const response = await AuthAPI.login(email.trim(), password);
+      const response = await AuthAPI.login(emailOrUsername.trim(), password);
 
       if (response) { // Assuming successful response
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -411,7 +411,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                         marginBottom: 8
                       }
                     ]}>
-                      Welcome back
+                      Welcome back friend
                     </Text>
                   </Animated.View>
 
@@ -434,17 +434,17 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                               elevation: theme === 'dark' ? 6 : 3,
                             }
                           ]}
-                          placeholder="Email"
+                          placeholder="Email or Username"
                           placeholderTextColor={theme === 'dark' ? '#666666' : '#999999'}
-                          value={email}
+                          value={emailOrUsername}
                           onChangeText={(text) => {
-                            setEmail(text);
+                            setEmailOrUsername(text);
                             clearErrorOnChange();
                           }}
                           autoCapitalize="none"
                           autoCorrect={false}
                           spellCheck={false}
-                          keyboardType="email-address"
+                          keyboardType="default"
                           keyboardAppearance={theme === 'dark' ? 'dark' : 'light'}
                           returnKeyType="next"
                           editable={!loading}
@@ -624,15 +624,12 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                                   Signing In
                                 </Text>
                               ) : isSignInSuccess ? (
-                                <ShimmerText
-                                  customShimmerColor={rainbowPastels[currentColorIndex]}
-                                  style={StyleSheet.flatten([styles.primaryButtonText, { color: theme === 'dark' ? '#ffffff' : '#1a1a1a' }])}
-                                  intensity="vibrant"
-                                  duration={300}
-                                  waveWidth="wide"
-                                >
+                                <Text style={[
+                                  styles.primaryButtonText, 
+                                  { color: theme === 'dark' ? '#ffffff' : '#1a1a1a' }
+                                ]}>
                                   Success!
-                                </ShimmerText>
+                                </Text>
                               ) : (
                                 <Text style={[
                                   styles.primaryButtonText, 

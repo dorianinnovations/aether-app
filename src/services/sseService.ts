@@ -32,7 +32,7 @@ class SSEService {
         return;
       }
 
-      const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://server-a7od.onrender.com';
+      const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://aether-server-j5kh.onrender.com';
       const url = `${baseUrl}/events/stream`;
 
       // Note: EventSource doesn't support custom headers in React Native

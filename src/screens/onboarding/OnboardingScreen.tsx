@@ -42,7 +42,7 @@ interface OnboardingStep {
   subtitle: string;
   description: string;
   accent: string;
-  category: 'FOUNDATION' | 'CONNECTION' | 'EXPERIENCE' | 'SOCIAL';
+  category: 'FOUNDATION' | 'CONNECTION' | 'EXPERIENCE' | 'FRIENDS';
 }
 
 const onboardingSteps: OnboardingStep[] = [
@@ -69,10 +69,10 @@ const onboardingSteps: OnboardingStep[] = [
   },
   {
     title: "Connect & Share",
-    subtitle: "Social features for the AI era",
+    subtitle: "Friends features for the AI era",
     description: "Share interesting conversations, connect with other users, and explore a social platform built around meaningful AI interactions.",
-    accent: "SOCIAL",
-    category: "SOCIAL"
+    accent: "FRIENDS",
+    category: "FRIENDS"
   }
 ];
 

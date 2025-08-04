@@ -358,6 +358,42 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
                 {item.message}
               </BasicMarkdown>
             )}
+            
+            {/* Search Results Display */}
+            {item.metadata?.toolResults && item.metadata.toolResults.some((tool: any) => tool.tool === 'webSearchTool') && (
+              <View style={{
+                marginTop: 12,
+                backgroundColor: theme === 'dark' ? '#2a2a2a' : '#f8f8f8',
+                borderRadius: 8,
+                padding: 12,
+              }}>
+                <Text style={{
+                  color: theme === 'dark' ? '#ffffff' : '#1a1a1a',
+                  fontSize: 14,
+                  fontWeight: '600',
+                  marginBottom: 8,
+                }}>
+                   Search Results
+                </Text>
+                {item.metadata.toolResults
+                  .filter((tool: any) => tool.tool === 'webSearchTool' && tool.data?.structure?.results)
+                  .flatMap((toolResult: any, toolIndex: number) => 
+                    toolResult.data.structure.results.map((result: any, resultIndex: number) => (
+                      <WebSearchResult
+                        key={`search-${toolIndex}-${resultIndex}`}
+                        result={{
+                          title: result.title,
+                          snippet: result.snippet,
+                          url: result.link || result.url,
+                          source: result.source,
+                          position: resultIndex + 1
+                        }}
+                      />
+                    ))
+                  )
+                }
+              </View>
+            )}
           </View>
         )}
       </View>
@@ -922,6 +958,21 @@ const styles = StyleSheet.create({
   closeButtonText: {
     ...typography.textStyles.labelMedium,
     fontWeight: '500',
+  },
+  
+  // Search Results Styles
+  searchContainer: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 8,
+  },
+  
+  searchTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+    fontFamily: 'Nunito-SemiBold',
   },
 });
 

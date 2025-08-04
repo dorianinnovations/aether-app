@@ -45,7 +45,7 @@ This codebase follows **atomic design principles** with a sophisticated design s
 - **Base API**: `src/services/api.ts` contains centralized axios instance with authentication
 - **Streaming Chat**: Real-time Server-Sent Events (SSE) for AI conversations
 - **Error Handling**: Comprehensive error boundaries and retry logic
-- **Backend URL**: https://server-a7od.onrender.com (Render.com deployment)
+- **Backend URL**: https://aether-server-j5kh.onrender.com (Render.com deployment)
 
 ### Key Architectural Decisions
 

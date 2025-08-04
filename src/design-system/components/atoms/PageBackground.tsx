@@ -16,7 +16,7 @@ import { useSettings } from '../../../hooks/useSettings';
 interface PageBackgroundProps {
   theme?: 'light' | 'dark';
   children: React.ReactNode;
-  variant?: 'default' | 'auth' | 'hero' | 'profile' | 'chat' | 'social' | 'dashboard' | 'onboarding';
+  variant?: 'default' | 'auth' | 'hero' | 'profile' | 'chat' | 'friends' | 'dashboard' | 'onboarding';
   style?: ViewStyle;
 }
 
@@ -62,7 +62,7 @@ export const PageBackground: React.FC<PageBackgroundProps> = ({
           ? dreamyGradientColors
           : [darkGrey, '#1A1A1A', darkGrey];
       
-      case 'social':
+      case 'friends':
         return theme === 'light'
           ? ['#e0f2fe', '#f0f9ff', '#e0f2fe'] // Ocean light
           : [darkGrey, '#1A1A1A', darkGrey]; // Consistent dark

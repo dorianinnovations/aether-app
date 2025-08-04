@@ -54,9 +54,9 @@ const getAllMenuActions = (theme: 'light' | 'dark'): MenuAction[] => [
     requiresAuth: false 
   },
   { 
-    icon: <Feather name="users" size={16} color={getIconColor('social', theme)} />, 
-    label: 'Social', 
-    key: 'social', 
+    icon: <Feather name="users" size={16} color={getIconColor('friends', theme)} />, 
+    label: 'Friends', 
+    key: 'friends', 
     requiresAuth: false 
   },
   { 

@@ -37,17 +37,17 @@ export const useKeyboardAnimation = (): UseKeyboardAnimationReturn => {
 
     const keyboardWillHide = Keyboard.addListener('keyboardWillHide', () => {
       setKeyboardHeight(0);
-      // Ultra-smooth spring animation back down with gentle settling
+      // Faster, more responsive animation to prevent input suspension
       Animated.parallel([
         Animated.spring(greetingAnimY, {
           toValue: 0,
-          tension: 280,
-          friction: 30,
+          tension: 320,
+          friction: 28,
           useNativeDriver: true,
         }),
         Animated.timing(greetingOpacity, {
           toValue: 1,
-          duration: 250,
+          duration: 180, // Reduced from 250ms to prevent conflicts
           easing: Easing.bezier(0.165, 0.84, 0.44, 1), // Ultra-smooth easeOutQuart
           useNativeDriver: true,
         })

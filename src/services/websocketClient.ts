@@ -40,7 +40,7 @@ class WebSocketClient {
       this.isAuthenticatedUser = true;
 
       // First, let's try to establish connection via polling to get the session ID
-      const pollUrl = `https://server-a7od.onrender.com/socket.io/?EIO=4&transport=polling`;
+      const pollUrl = `https://aether-server-j5kh.onrender.com/socket.io/?EIO=4&transport=polling`;
       
       try {
         // Try to get session ID from polling endpoint
@@ -65,7 +65,7 @@ class WebSocketClient {
         }
         
         // Now connect via WebSocket with the session ID
-        const serverUrl = `wss://server-a7od.onrender.com/socket.io/?EIO=4&transport=websocket&sid=${sessionId}`;
+        const serverUrl = `wss://aether-server-j5kh.onrender.com/socket.io/?EIO=4&transport=websocket&sid=${sessionId}`;
         this.ws = new WebSocket(serverUrl);
         this.setupEventHandlers();
       } catch (pollError) {

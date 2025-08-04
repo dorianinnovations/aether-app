@@ -49,6 +49,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
   // Form state
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -84,6 +85,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
   const buttonGlowAnim = useRef(new Animated.Value(0)).current;
   const firstNameInputScaleAnim = useRef(new Animated.Value(1)).current;
   const lastNameInputScaleAnim = useRef(new Animated.Value(1)).current;
+  const usernameInputScaleAnim = useRef(new Animated.Value(1)).current;
   const emailInputScaleAnim = useRef(new Animated.Value(1)).current;
   const passwordInputScaleAnim = useRef(new Animated.Value(1)).current;
   const confirmPasswordInputScaleAnim = useRef(new Animated.Value(1)).current;
@@ -96,6 +98,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
   // Input refs
   const firstNameInputRef = useRef<TextInput>(null);
   const lastNameInputRef = useRef<TextInput>(null);
+  const usernameInputRef = useRef<TextInput>(null);
   const emailInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
   const confirmPasswordInputRef = useRef<TextInput>(null);
@@ -237,7 +240,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
     // Dismiss keyboard when form is submitted
     Keyboard.dismiss();
     
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+    if (!firstName.trim() || !lastName.trim() || !username.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
       setError('Please fill in all fields');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
@@ -245,6 +248,18 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
 
     if (!/\S+@\S+\.\S+/.test(email)) {
       setError('Please enter a valid email address');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    if (username.length < 3 || username.length > 20) {
+      setError('Username must be between 3 and 20 characters');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+      setError('Username can only contain letters, numbers, hyphens, and underscores');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
@@ -309,7 +324,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
     ]).start();
 
     try {
-      const response = await AuthAPI.signup(email.trim(), password, `${firstName.trim()} ${lastName.trim()}`);
+      const response = await AuthAPI.signup(email.trim(), password, `${firstName.trim()} ${lastName.trim()}`, username.trim());
 
       if (response) { // Assuming successful response
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -327,10 +342,8 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
           useNativeDriver: true,
         }).start();
 
-        // Navigate to main app after brief delay
-        setTimeout(() => {
-          navigation.replace('MainStack');
-        }, 2000);
+        // Auth state will automatically switch to MainStack after token is saved
+        // No manual navigation needed
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         
@@ -509,7 +522,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                         marginBottom: 8
                       }
                     ]}>
-                      Create your account
+                      Create a free account
                     </Text>
                   </Animated.View>
 
@@ -604,7 +617,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                             keyboardAppearance={theme === 'dark' ? 'dark' : 'light'}
                             returnKeyType="next"
                             editable={!loading}
-                            onSubmitEditing={() => emailInputRef.current?.focus()}
+                            onSubmitEditing={() => usernameInputRef.current?.focus()}
                             onFocus={() => {
                               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                               Animated.parallel([
@@ -629,6 +642,61 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                           />
                         </Animated.View>
                       </View>
+                      
+                      {/* Username Input */}
+                      <Animated.View style={{ transform: [{ scale: usernameInputScaleAnim }] }}>
+                        <TextInput
+                          ref={usernameInputRef}
+                          style={[
+                            styles.input,
+                            { 
+                              color: theme === 'dark' ? '#ffffff' : '#000000',
+                              backgroundColor: theme === 'dark' ? '#2a2a2a' : '#ffffff',
+                              shadowColor: theme === 'dark' ? '#000000' : '#000000',
+                              shadowOffset: { width: 0, height: theme === 'dark' ? 4 : 1 },
+                              shadowOpacity: theme === 'dark' ? 0.5 : 0.12,
+                              shadowRadius: theme === 'dark' ? 12 : 3,
+                              elevation: theme === 'dark' ? 6 : 3,
+                            }
+                          ]}
+                          placeholder="Username"
+                          placeholderTextColor={theme === 'dark' ? '#666666' : '#999999'}
+                          value={username}
+                          onChangeText={(text) => {
+                            setUsername(text.toLowerCase().replace(/[^a-z0-9_-]/g, ''));
+                            clearErrorOnChange();
+                          }}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          spellCheck={false}
+                          keyboardType="default"
+                          keyboardAppearance={theme === 'dark' ? 'dark' : 'light'}
+                          returnKeyType="next"
+                          editable={!loading}
+                          onSubmitEditing={() => emailInputRef.current?.focus()}
+                          onFocus={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            Animated.parallel([
+                              Animated.timing(usernameInputScaleAnim, {
+                                toValue: 1.02,
+                                duration: 200,
+                                easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+                                useNativeDriver: true,
+                              }),
+                            ]).start();
+                          }}
+                          onBlur={() => {
+                            Animated.parallel([
+                              Animated.timing(usernameInputScaleAnim, {
+                                toValue: 1,
+                                duration: 350,
+                                easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+                                useNativeDriver: true,
+                              }),
+                            ]).start();
+                          }}
+                        />
+                      </Animated.View>
                       
                       {/* Email Input */}
                       <Animated.View style={{ transform: [{ scale: emailInputScaleAnim }] }}>

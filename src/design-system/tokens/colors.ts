@@ -249,7 +249,7 @@ export const iconColors = {
   profile: '#FF6B6B',
   chat: '#FFB347',
   dashboard: '#FFE066',
-  social: '#6AE86F',
+  friends: '#6AE86F',
   settings: '#5CC7E8',
   theme_toggle: '#C95FD6',
   signout: '#FF8FA3',

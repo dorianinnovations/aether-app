@@ -229,13 +229,13 @@ const SearchResultsModal: React.FC<SearchResultsModalProps> = ({
                       />
                       <Text style={[
                         styles.urlText,
-                        { color: theme === 'dark' ? '#9ca3af' : '#70757a' }
+                        { color: theme === 'dark' ? '#454545' : '#343434' }
                       ]}>
                         {domain}
                       </Text>
                       <View style={[
                         styles.urlChevron,
-                        { backgroundColor: theme === 'dark' ? '#9ca3af' : '#70757a' }
+                        { backgroundColor: theme === 'dark' ? '#343434' : '#2e2e2e' }
                       ]} />
                     </View>
                     
@@ -251,7 +251,7 @@ const SearchResultsModal: React.FC<SearchResultsModalProps> = ({
                     {result.snippet && (
                       <Text style={[
                         styles.resultSnippet,
-                        { color: theme === 'dark' ? '#bdc1c6' : '#4d5156' }
+                        { color: theme === 'dark' ? '#313131' : '#323232' }
                       ]}>
                         {result.snippet}
                       </Text>
@@ -260,7 +260,7 @@ const SearchResultsModal: React.FC<SearchResultsModalProps> = ({
                     {/* Full URL at bottom */}
                     <Text style={[
                       styles.fullUrl,
-                      { color: theme === 'dark' ? '#9ca3af' : '#70757a' }
+                      { color: theme === 'dark' ? '#313131' : '#323232' }
                     ]} numberOfLines={1}>
                       {result.url}
                     </Text>
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: Math.min(width - 40, 500),
     maxHeight: height * 0.8,
-    borderRadius: 20,
+    borderRadius: 2,
     borderWidth: 1,
     overflow: 'hidden',
   },

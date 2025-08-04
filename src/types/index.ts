@@ -26,7 +26,7 @@ export interface Message {
   sender: 'user' | 'aether' | 'system';
   message: string;
   timestamp: string;
-  variant?: 'default' | 'streaming' | 'error' | 'tool';
+  variant?: 'default' | 'streaming' | 'error' | 'tool' | 'search-results';
   metadata?: MessageMetadata;
   attachments?: MessageAttachment[];
 }

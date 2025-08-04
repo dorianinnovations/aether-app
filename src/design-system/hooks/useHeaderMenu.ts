@@ -36,10 +36,10 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
           (navigation as any).navigate('Chat');
         }
         break;
-      case 'social':
+      case 'friends':
       case 'connections':
-        if (screenName !== 'social') {
-          (navigation as any).navigate('Social');
+        if (screenName !== 'friends') {
+          (navigation as any).navigate('Friends');
         }
         break;
       case 'settings':

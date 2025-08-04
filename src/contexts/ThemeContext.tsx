@@ -3,7 +3,7 @@
  * Manages global theme state with safe initialization and no circular dependencies
  */
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
 import { getThemeColors } from '../design-system/tokens/colors';
 import { SettingsStorage } from '../services/settingsStorage';
 
@@ -40,7 +40,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     loadTheme();
   }, []);
 
-  const toggleTheme = async () => {
+  const toggleTheme = useCallback(async () => {
     try {
       const newTheme = theme === 'light' ? 'dark' : 'light';
       setTheme(newTheme);
@@ -48,16 +48,16 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     } catch (error) {
       console.warn('Failed to save theme preference:', error);
     }
-  };
+  }, [theme]);
 
-  // Get computed colors based on current theme
-  const colors = getThemeColors(theme);
+  // Get computed colors based on current theme - memoized to prevent infinite loops
+  const colors = useMemo(() => getThemeColors(theme), [theme]);
 
-  const value: ThemeContextType = {
+  const value: ThemeContextType = useMemo(() => ({
     theme,
     colors,
     toggleTheme,
-  };
+  }), [theme, colors, toggleTheme]);
 
   if (isLoading) {
     return null;

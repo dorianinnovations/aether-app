@@ -137,7 +137,7 @@ const StreamContent: React.FC<{
       {metadata?.searchResults && metadata.sources && (
         <View style={styles.searchResultsContainer}>
           <Text style={[styles.searchResultsTitle, { color: theme === 'dark' ? '#a8d8ff' : '#8fc7ffff' }]}>
-            🔍 Search Results for "{metadata.query}"
+             Search Results for "{metadata.query}"
           </Text>
           {metadata.sources.map((source: any, index: number) => (
             <View key={index} style={styles.sourceCard}>
@@ -155,34 +155,49 @@ const StreamContent: React.FC<{
       {metadata?.toolCalls && metadata.toolCalls.length > 0 && (
         <View style={styles.toolCallsContainer}>
           {metadata.toolCalls.map((toolCall: ToolCall, index: number) => (
-            <View key={toolCall.id || index} style={styles.toolCallCard}>
+            <View key={toolCall.id || index} style={[
+              styles.toolCallCard,
+              {
+                backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 102, 204, 0.1)',
+                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 102, 204, 0.2)',
+              }
+            ]}>
               <Text style={[styles.toolCallName, { color: theme === 'dark' ? '#a8d8ff' : '#add6ffff' }]}>
                 🔍 {toolCall.name === 'webSearchTool' ? 'Web Search Results' : toolCall.name.replace(/_/g, ' ')}
               </Text>
               {toolCall.status === 'completed' && toolCall.result && (
                 <View>
                   {/* Handle web search results specifically */}
-                  {toolCall.name === 'webSearchTool' && toolCall.result.structure?.results ? (
+                  {toolCall.name === 'webSearchTool' && toolCall.result.data?.structure?.results ? (
                     <View>
-                      <Text style={[styles.searchQuery, { color: theme === 'dark' ? '#ffffff' : '#333333' }]}>
-                        Query: "{toolCall.result.structure.query}"
+                      <Text style={[styles.searchQuery, { color: theme === 'dark' ? '#aaaaaa' : '#333333' }]}>
+                        Query: "{toolCall.result.data.structure.query}"
                       </Text>
-                      {toolCall.result.structure.results.map((result: any, resultIndex: number) => (
-                        <View key={resultIndex} style={styles.searchResultItem}>
+                      {toolCall.result.data.structure.results.map((result: any, resultIndex: number) => (
+                        <View key={resultIndex} style={[
+                          styles.searchResultItem,
+                          {
+                            backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 102, 204, 0.08)',
+                            borderBottomColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 102, 204, 0.2)',
+                            borderRadius: 8,
+                            marginVertical: 4,
+                            padding: 12,
+                          }
+                        ]}>
                           <Text style={[styles.searchResultTitle, { color: theme === 'dark' ? '#ffffff' : '#333333' }]}>
                             {result.title}
                           </Text>
-                          <Text style={[styles.searchResultSnippet, { color: theme === 'dark' ? '#cccccc' : '#666666' }]}>
+                          <Text style={[styles.searchResultSnippet, { color: theme === 'dark' ? '#cccccc' : '#323232' }]}>
                             {result.snippet}
                           </Text>
                           <Text style={[styles.searchResultLink, { color: theme === 'dark' ? '#a8d8ff' : '#0066cc' }]}>
-                            {result.link}
+                            {result.link || result.url}
                           </Text>
                         </View>
                       ))}
                     </View>
                   ) : (
-                    <Text style={[styles.toolCallResult, { color: theme === 'dark' ? '#cccccc' : '#666666' }]}>
+                    <Text style={[styles.toolCallResult, { color: theme === 'dark' ? '#cccccc' : '#323232' }]}>
                       {typeof toolCall.result === 'string' ? toolCall.result : JSON.stringify(toolCall.result, null, 2)}
                     </Text>
                   )}
@@ -438,9 +453,9 @@ const styles = StyleSheet.create({
     marginTop: spacing[2],
     padding: spacing[2],
     borderRadius: borderRadius.sm,
-    backgroundColor: 'rgba(0, 102, 204, 0.05)',
+    backgroundColor: 'rgba(0, 102, 204, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(0, 102, 204, 0.1)',
+    borderColor: 'rgba(0, 102, 204, 0.3)',
   },
   searchResultsTitle: {
     fontSize: 14,
@@ -472,9 +487,9 @@ const styles = StyleSheet.create({
   toolCallCard: {
     padding: spacing[2],
     borderRadius: borderRadius.sm,
-    backgroundColor: 'rgba(0, 102, 204, 0.05)',
+    backgroundColor: 'rgba(0, 102, 204, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(0, 102, 204, 0.1)',
+    borderColor: 'rgba(0, 102, 204, 0.3)',
   },
   toolCallName: {
     fontSize: 14,

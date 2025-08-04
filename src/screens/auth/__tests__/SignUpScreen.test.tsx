@@ -217,11 +217,13 @@ describe('SignUpScreen - User Registration Journey', () => {
       
       metricsUtils.trackUserJourneyStep('registration_success_screen');
       
-      // Should navigate to main app after delay
+      // Auth state will automatically switch to MainStack after token is saved
+      // No manual navigation should occur
       jest.advanceTimersByTime(2000);
       
       await waitFor(() => {
-        expect(mockNavigation.replace).toHaveBeenCalledWith('MainStack');
+        expect(mockNavigation.replace).not.toHaveBeenCalled();
+        expect(mockNavigation.navigate).not.toHaveBeenCalled();
       });
       
       metricsUtils.trackUserJourneyStep('navigated_to_main_app');

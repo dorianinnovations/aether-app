@@ -212,7 +212,7 @@ export const typography = {
       letterSpacing: 0.1,
     },
     
-    // Connection/Social Text Styles
+    // Connection/Friends Text Styles
     connectionTitle: {
       fontSize: 14,
       fontFamily: getFontFamily('CrimsonPro-SemiBold', 'serif'),

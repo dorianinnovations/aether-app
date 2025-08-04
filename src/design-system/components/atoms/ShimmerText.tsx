@@ -38,7 +38,7 @@ export const ShimmerText: React.FC<ShimmerTextProps> = ({
   // Get base and shimmer colors for white band effect
   const getColors = () => {
     // Dimmer base color
-    const baseColor = theme === 'dark' ? '#2a2a2a' : '#8a8a8a';
+    const baseColor = theme === 'dark' ? '#4d4d4dff' : '#8a8a8a';
     
     // White band color
     const shimmerColor = '#ffffff';
@@ -66,30 +66,30 @@ export const ShimmerText: React.FC<ShimmerTextProps> = ({
 
     const animate = () => {
       if (animationMode === 'greeting-sequence') {
-        // Custom greeting sequence: 2.6s forward → 0.5s pause → 0.5s reverse → 7s pause
+        // Custom greeting sequence: 2.49s forward (-15% speed, stops at 1.0) → 0.1s pause → 0.45s reverse (1.1x faster) → 5.96s pause (total 9s)
         const runGreetingSequence = () => {
           animatedValue.setValue(0);
           
-          // Forward animation (2.6s) - go to 1.2 so shimmer fully exits text
+          // Forward animation (2.49s) - stops at 1.0 when shimmer finishes crossing text
           Animated.timing(animatedValue, {
-            toValue: 1.2,
-            duration: 2600,
+            toValue: 1.0,
+            duration: 2490,
             useNativeDriver: false,
           }).start(() => {
-            // 0.5s pause, then reverse
+            // 0.1s pause, then reverse
             setTimeout(() => {
-              // Reverse animation (0.5s)
+              // Reverse animation (0.45s) - 1.1x faster than original 0.5s
               Animated.timing(animatedValue, {
                 toValue: 0,
-                duration: 500,
+                duration: 454,
                 useNativeDriver: false,
               }).start(() => {
-                // 7s pause before repeating
+                // 5.96s pause before repeating (total cycle = 9s)
                 setTimeout(() => {
                   runGreetingSequence();
-                }, 7000);
+                }, 5956);
               });
-            }, 500);
+            }, 100);
           });
         };
         
