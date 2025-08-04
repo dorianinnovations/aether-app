@@ -65,6 +65,9 @@ export class StreamingService {
                 const parsed = JSON.parse(data);
                 if (parsed.content) {
                   chunks.push(parsed.content);
+                } else if (parsed.metadata) {
+                  // Handle tool results/metadata - store for later access
+                  chunks.push({ metadata: parsed.metadata });
                 }
               } catch (e) {
                 console.warn('Streaming parse error:', e);
@@ -94,7 +97,8 @@ export class StreamingService {
     while (!completed || processedChunks < chunks.length) {
       if (processedChunks < chunks.length) {
         const chunk = chunks[processedChunks++];
-        yield chunk;
+        // Yield both text chunks and metadata objects
+        yield typeof chunk === 'string' ? chunk : JSON.stringify(chunk);
         
         // Small delay between chunks for visible streaming effect
         await new Promise(resolve => setTimeout(resolve, 15));

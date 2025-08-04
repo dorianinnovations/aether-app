@@ -20,12 +20,41 @@ export const useGreeting = (): UseGreetingReturn => {
   const getTimeBasedGreeting = () => {
     const hour = new Date().getHours();
     
+    const morningGreetings = [
+      'Good Morning',
+      'Rise and shine',
+      'Top of the morning',
+      'Morning, sunshine',
+      'Wishing you a bright morning',
+      'Hope your morning is as lovely as you'
+    ];
+    const afternoonGreetings = [
+      'Good Afternoon',
+      'Hope your afternoon is going well',
+      'Wishing you a productive afternoon',
+      'Hello, afternoon star',
+      'Enjoy your afternoon',
+      'A pleasant afternoon to you'
+    ];
+    const eveningGreetings = [
+      'Good Evening',
+      'Hope you had a great day',
+      'Winding down, are we?',
+      'Evening, friend',
+      'Wishing you a relaxing evening',
+      'The night is young'
+    ];
+
+    function getRandomGreeting(greetings: string[]) {
+      return greetings[Math.floor(Math.random() * greetings.length)];
+    }
+
     if (hour >= 5 && hour < 12) {
-      return 'Good Morning';
+      return getRandomGreeting(morningGreetings);
     } else if (hour >= 12 && hour < 17) {
-      return 'Good Afternoon';
+      return getRandomGreeting(afternoonGreetings);
     } else {
-      return 'Good Evening';
+      return getRandomGreeting(eveningGreetings);
     }
   };
 

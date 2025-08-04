@@ -36,6 +36,8 @@ import ConversationDrawer from '../../components/ConversationDrawer';
 import ScrollToBottomButton from '../../design-system/components/atoms/ScrollToBottomButton';
 import Tooltip from '../../design-system/components/atoms/Tooltip';
 import { ShimmerText } from '../../design-system/components/atoms/ShimmerText';
+import { WebSearchIndicator } from '../../design-system/components/atoms';
+import { WebSearchResult } from '../../design-system/components/molecules';
 
 // Design System
 import { designTokens, getThemeColors, getLoadingTextColor } from '../../design-system/tokens/colors';
@@ -56,6 +58,7 @@ import { useKeyboardAnimation } from '../../hooks/useKeyboardAnimation';
 import { useMessages } from '../../hooks/useMessages';
 import { useDynamicPrompts } from '../../hooks/useDynamicPrompts';
 import { useSimpleScroll } from '../../hooks/useSimpleScroll';
+import { useWebSearch } from '../../hooks/useWebSearch';
 
 // Services
 import { AuthAPI } from '../../services/api';
@@ -109,6 +112,15 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     buttonOpacity,
     isAtBottom
   } = useSimpleScroll();
+
+  // Web search hook  
+  const {
+    searchResults,
+    isSearching,
+    searchQuery,
+    shouldShowSearchIndicator,
+    clearSearch
+  } = useWebSearch();
 
   // Dynamic prompts hook for intelligent contextual options
   const {
@@ -388,6 +400,15 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
         )}
       
       <View style={styles.chatArea}>
+        {/* Web Search Indicator */}
+        {shouldShowSearchIndicator && (
+          <WebSearchIndicator
+            isSearching={isSearching}
+            searchQuery={searchQuery}
+            resultCount={searchResults.length}
+          />
+        )}
+        
         <FlatList
           ref={flatListRef}
           data={messages}
