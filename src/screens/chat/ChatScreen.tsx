@@ -189,9 +189,19 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   const handleSend = async () => {
     if ((!inputText.trim() && attachments.length === 0) || isLoading) return;
     
-    await handleMessageSend(inputText, attachments);
-    setInputText('');
-    setAttachments([]);
+    // Store current values before clearing to prevent race conditions
+    const currentText = inputText;
+    const currentAttachments = [...attachments];
+    
+    // Clear input immediately to maintain responsive UX, but use requestAnimationFrame 
+    // to prevent keyboard state conflicts
+    requestAnimationFrame(() => {
+      setInputText('');
+      setAttachments([]);
+    });
+    
+    // Send with stored values to ensure message content integrity
+    await handleMessageSend(currentText, currentAttachments);
     
     // Auto-scroll will be handled by the FlatList onContentSizeChange
   };
@@ -386,7 +396,9 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
                           snippet: result.snippet,
                           url: result.link || result.url,
                           source: result.source,
-                          position: resultIndex + 1
+                          position: resultIndex + 1,
+                          thumbnail: result.thumbnail || result.image || result.favicon,
+                          image: result.image || result.thumbnail
                         }}
                       />
                     ))
@@ -572,6 +584,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
         }}
         onAction={handleMenuAction}
         showAuthOptions={true}
+        potentialMatches={5}
       />
       
       {/* Sign Out Modal */}

@@ -37,9 +37,13 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
         }
         break;
       case 'friends':
-      case 'connections':
         if (screenName !== 'friends') {
           (navigation as any).navigate('Friends');
+        }
+        break;
+      case 'connections':
+        if (screenName !== 'connections') {
+          (navigation as any).navigate('Connections');
         }
         break;
       case 'settings':

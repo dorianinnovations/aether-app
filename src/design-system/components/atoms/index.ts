@@ -15,6 +15,13 @@ export { default as ShineEffect } from './ShineEffect';
 export { default as ConversationSkeleton } from './ConversationSkeleton';
 export { BlurModal } from './BlurModal';
 export { default as WebSearchIndicator } from './WebSearchIndicator';
+export { PageBackground } from './PageBackground';
+export { default as ScrollToBottomButton } from './ScrollToBottomButton';
+export { default as Tooltip } from './Tooltip';
+export { default as TechyToggleSwitch } from './TechyToggleSwitch';
+export { default as AnimatedAuthStatus } from './AnimatedAuthStatus';
+export { default as AnimatedHamburger } from './AnimatedHamburger';
+export { NotificationDot } from './NotificationDot';
 
 // Re-export types
 export type { IconName, IconSize } from './Icon';

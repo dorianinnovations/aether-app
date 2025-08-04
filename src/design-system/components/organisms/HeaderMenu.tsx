@@ -23,6 +23,7 @@ import { spacing } from '../../tokens/spacing';
 import { getGlassmorphicStyle } from '../../tokens/glassmorphism';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { ThemeSelector } from '../molecules/ThemeSelector';
+import { NotificationDot } from '../atoms/NotificationDot';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -57,6 +58,12 @@ const getAllMenuActions = (theme: 'light' | 'dark'): MenuAction[] => [
     icon: <Feather name="users" size={16} color={getIconColor('friends', theme)} />, 
     label: 'Friends', 
     key: 'friends', 
+    requiresAuth: false 
+  },
+  { 
+    icon: <Feather name="heart" size={16} color={getIconColor('connections', theme)} />, 
+    label: 'Connections', 
+    key: 'connections', 
     requiresAuth: false 
   },
   { 
@@ -100,6 +107,7 @@ interface HeaderMenuProps {
   menuButtonPosition?: { x: number; y: number; width: number; height: number };
   showAuthOptions?: boolean;
   showBackButton?: boolean;
+  potentialMatches?: number; // Number of potential matches for notification badge
 }
 
 export const HeaderMenu: React.FC<HeaderMenuProps> = ({ 
@@ -109,6 +117,7 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
   menuButtonPosition,
   showAuthOptions = true,
   showBackButton = false,
+  potentialMatches = 0,
 }) => {
   const { theme, colors, toggleTheme } = useTheme();
   const menuActions = getMenuActions(theme, showAuthOptions, showBackButton);
@@ -445,6 +454,13 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
               >
                 <View style={styles.iconContainer}>
                   {action.icon}
+                  {/* Notification dot for connections */}
+                  <NotificationDot 
+                    visible={action.key === 'connections' && potentialMatches > 0}
+                    color={designTokens.pastels.coral}
+                    size={10}
+                    glowIntensity="high"
+                  />
                 </View>
                 <Text style={[
                   styles.menuButtonText,
@@ -537,6 +553,8 @@ const styles = StyleSheet.create({
     width: 24,
     alignItems: 'center',
     marginRight: spacing[3],
+    position: 'relative',
+    justifyContent: 'center',
   },
   menuButtonText: {
     fontSize: 12,

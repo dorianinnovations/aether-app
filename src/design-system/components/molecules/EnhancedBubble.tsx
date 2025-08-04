@@ -144,7 +144,7 @@ const StreamContent: React.FC<{
               <Text style={[styles.sourceTitle, { color: theme === 'dark' ? '#ffffff' : '#333333' }]}>
                 {source.title}
               </Text>
-              <Text style={[styles.sourceDomain, { color: theme === 'dark' ? '#cccccc' : '#666666' }]}>
+              <Text style={[styles.sourceDomain, { color: theme === 'dark' ? '#3b3b3bff' : '#202020ff' }]}>
                 {source.domain}
               </Text>
             </View>
@@ -170,7 +170,7 @@ const StreamContent: React.FC<{
                   {/* Handle web search results specifically */}
                   {toolCall.name === 'webSearchTool' && toolCall.result.data?.structure?.results ? (
                     <View>
-                      <Text style={[styles.searchQuery, { color: theme === 'dark' ? '#aaaaaa' : '#333333' }]}>
+                      <Text style={[styles.searchQuery, { color: theme === 'dark' ? '#515151ff' : '#333333' }]}>
                         Query: "{toolCall.result.data.structure.query}"
                       </Text>
                       {toolCall.result.data.structure.results.map((result: any, resultIndex: number) => (
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
     marginTop: spacing[2],
     padding: spacing[2],
     borderRadius: borderRadius.sm,
-    backgroundColor: 'rgba(0, 102, 204, 0.15)',
+    backgroundColor: 'rgba(20, 20, 20, 0.15)',
     borderWidth: 1,
     borderColor: 'rgba(0, 102, 204, 0.3)',
   },
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing[1],
     paddingVertical: spacing[1],
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 102, 204, 0.1)',
+    borderBottomColor: 'rgba(70, 70, 70, 0.1)',
   },
   sourceTitle: {
     fontSize: 13,

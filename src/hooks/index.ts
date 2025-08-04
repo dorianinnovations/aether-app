@@ -15,3 +15,4 @@ export { useSettings } from './useSettings';
 export { useKeyboard } from './useKeyboard';
 export { useChatScrollManager } from './useChatScrollManager';
 export { useWebSearch } from './useWebSearch';
+export { useMatching } from './useMatching';

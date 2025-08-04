@@ -62,6 +62,15 @@ export const useSimpleScroll = () => {
     }).start();
   }, [shouldShowScrollButton, buttonOpacity]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return {
     flatListRef,
     scrollToBottom,

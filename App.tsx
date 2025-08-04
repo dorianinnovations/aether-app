@@ -24,6 +24,7 @@ import SignUpScreen from './src/screens/auth/SignUpScreen';
 import ChatScreen from './src/screens/chat/ChatScreen';
 import FriendsScreen from './src/screens/FriendsScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import ConnectionsScreen from './src/screens/connections/ConnectionsScreen';
 
 // Services
 import { TokenManager } from './src/services/api';
@@ -60,6 +61,7 @@ export type MainStackParamList = {
   Chat: undefined;
   Friends: undefined;
   Profile: undefined;
+  Connections: undefined;
 };
 
 // Create navigators
@@ -102,6 +104,7 @@ const MainStackNavigator = () => {
       <MainStack.Screen name="Chat" component={ChatScreen} />
       <MainStack.Screen name="Friends" component={FriendsScreen} />
       <MainStack.Screen name="Profile" component={ProfileScreen} />
+      <MainStack.Screen name="Connections" component={ConnectionsScreen} />
     </MainStack.Navigator>
   );
 };

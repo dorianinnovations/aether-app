@@ -183,17 +183,21 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
       }).start();
     });
 
+    // Call onSend immediately to avoid keyboard state mismatch
     onSend();
     
-    // Close attachment buttons after sending
+    // Close attachment buttons after sending with a slight delay to prevent keyboard conflicts
     if (attachmentButtonsVisible) {
-      setAttachmentButtonsVisible(false);
-      Animated.spring(attachmentButtonsAnim, {
-        toValue: 0,
-        useNativeDriver: false,
-        tension: 220,
-        friction: 10,
-      }).start();
+      // Use requestAnimationFrame to ensure smooth transition
+      requestAnimationFrame(() => {
+        setAttachmentButtonsVisible(false);
+        Animated.spring(attachmentButtonsAnim, {
+          toValue: 0,
+          useNativeDriver: false,
+          tension: 220,
+          friction: 10,
+        }).start();
+      });
     }
   }, [canSend, sendButtonScale, onSend, attachmentButtonsVisible, attachmentButtonsAnim]);
 

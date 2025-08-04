@@ -641,7 +641,35 @@ export const ConversationAPI = {
   },
 };
 
-// Health check
+// Matching API
+export const MatchingAPI = {
+  async findMatches(limit: number = 10): Promise<any> {
+    const response = await api.get(`/matching/find?limit=${limit}`);
+    return response.data;
+  },
+
+  async getUserProfile(): Promise<any> {
+    const response = await api.get('/matching/profile');
+    return response.data;
+  },
+
+  async getQueueStatus(): Promise<any> {
+    const response = await api.get('/matching/queue-status');
+    return response.data;
+  },
+
+  async forceAnalysis(): Promise<any> {
+    const response = await api.post('/matching/force-analysis');
+    return response.data;
+  },
+
+  async testAnalysis(message?: string): Promise<any> {
+    const response = await api.post('/matching/test-analysis', { message });
+    return response.data;
+  },
+};
+
+// Friends API
 export const FriendsAPI = {
   async addFriend(username: string): Promise<any> {
     const response = await api.post('/friends/add', { username });
