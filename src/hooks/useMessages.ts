@@ -88,7 +88,7 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
       let wordCount = 0;
       let messageMetadata: any = undefined;
       
-      for await (const chunk of ChatAPI.streamMessageWords(apiPrompt, '/social-chat', attachments)) {
+      for await (const chunk of ChatAPI.streamSocialChat(apiPrompt)) {
         // Check if chunk is metadata object
         if (typeof chunk === 'object' && chunk !== null && 'metadata' in chunk) {
           console.log('📍 useMessages: Received metadata chunk:', JSON.stringify(chunk, null, 2));
@@ -96,9 +96,9 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
           continue;
         }
         
-        // Server sends individual words, add space between them
+        // Server sends streaming text content
         const word = typeof chunk === 'string' ? chunk : (chunk as any).text;
-        accumulatedText += (accumulatedText ? ' ' : '') + word;
+        accumulatedText += word;
         wordCount++;
         
         // Update the streaming message while keeping streaming variant

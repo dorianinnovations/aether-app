@@ -28,6 +28,7 @@ import { getGlassmorphicStyle } from '../design-system/tokens/glassmorphism';
 import { NotificationDot } from '../design-system/components/atoms/NotificationDot';
 import { useConversationEvents } from '../hooks/useConversationEvents';
 import { log } from '../utils/logger';
+import api, { ApiUtils } from '../services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -60,6 +61,8 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [pressedIndex, setPressedIndex] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [longPressedId, setLongPressedId] = useState<string | null>(null);
   
   // Enhanced animations
   const slideAnim = useRef(new Animated.Value(-screenWidth * 0.85)).current;
@@ -128,6 +131,44 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
       }
     }
   });
+
+  // Load conversations from API
+  const loadConversations = useCallback(async () => {
+    if (currentTab !== 0) return; // Only load for Aether tab
+    
+    try {
+      setIsLoading(true);
+      const response = await ApiUtils.getRecentConversations(20, 1);
+      if (response.success && response.data) {
+        setConversations(response.data);
+        log.debug('Loaded conversations:', response.data.length);
+      }
+    } catch (error) {
+      log.error('Failed to load conversations:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentTab]);
+
+  // Load conversations when drawer opens or tab changes
+  useEffect(() => {
+    if (isVisible && currentTab === 0) {
+      loadConversations();
+    }
+  }, [isVisible, currentTab, loadConversations]);
+
+  // Delete conversation function
+  const handleDeleteConversation = useCallback(async (conversationId: string) => {
+    try {
+      await ApiUtils.deleteConversation(conversationId);
+      setConversations(prev => prev.filter(conv => conv._id !== conversationId));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      log.debug('Deleted conversation:', conversationId);
+    } catch (error) {
+      log.error('Failed to delete conversation:', error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+  }, []);
 
   // Enhanced swipe gesture with proper state management and visual feedback
   const swipeOffset = useRef(new Animated.Value(0)).current;
@@ -523,13 +564,30 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
         ]}
       >
         <TouchableOpacity 
-          style={styles.conversationTouchable}
+          style={[
+            styles.conversationTouchable,
+            longPressedId === item._id && { backgroundColor: `${styling.accentColor}20` }
+          ]}
           onPress={() => {
             if (isAnimating) return;
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             onConversationSelect(item);
             onClose();
           }}
+          onLongPress={() => {
+            if (isAnimating || currentTab !== 0) return; // Only allow delete for Aether tab
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            setLongPressedId(item._id);
+            
+            // Show delete confirmation after brief highlight
+            setTimeout(() => {
+              setLongPressedId(null);
+              // Simple confirm dialog simulation with haptic feedback
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              handleDeleteConversation(item._id);
+            }, 200);
+          }}
+          delayLongPress={500}
           activeOpacity={0.8}
           disabled={isAnimating}
         >
@@ -585,31 +643,13 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   };
   
   const getTabContent = () => {
-    const mockConversations = [
-      { _id: '1', title: 'AI Ethics Discussion', lastActivity: '2 hours ago', messageCount: 45, summary: 'Deep dive into AI consciousness' },
-      { _id: '2', title: 'Creative Writing Session', lastActivity: '1 day ago', messageCount: 23, summary: 'Story brainstorming' },
-      { _id: '3', title: 'Code Review Helper', lastActivity: '3 days ago', messageCount: 67, summary: 'React optimization tips' },
-    ];
-    
-    const mockFriends = [
-      { _id: 'f1', title: 'Sarah Chen', lastActivity: 'Online now', messageCount: 12, summary: 'UX Designer at Meta' },
-      { _id: 'f2', title: 'Alex Rivera', lastActivity: '30 min ago', messageCount: 8, summary: 'Full-stack Developer' },
-      { _id: 'f3', title: 'Jordan Kim', lastActivity: '2 hours ago', messageCount: 15, summary: 'Product Manager' },
-    ];
-    
-    const mockLinks = [
-      { _id: 'l1', title: 'React Native Best Practices', lastActivity: 'Shared today', messageCount: 1, summary: 'Performance optimization guide' },
-      { _id: 'l2', title: 'AI/ML Research Papers', lastActivity: 'Yesterday', messageCount: 3, summary: 'Latest transformer architectures' },
-      { _id: 'l3', title: 'Design System Resources', lastActivity: '2 days ago', messageCount: 5, summary: 'Figma component libraries' },
-    ];
-    
     switch (currentTab) {
-      case 0: // Aether
-        return [...conversations, ...mockConversations];
-      case 1: // Friends
-        return mockFriends;
-      case 2: // Links
-        return mockLinks;
+      case 0: // Aether - Real conversations
+        return conversations;
+      case 1: // Friends - Coming soon
+        return [];
+      case 2: // Links - Coming soon  
+        return [];
       default:
         return conversations;
     }
@@ -618,9 +658,9 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const renderEmptyState = () => {
     const tabConfig = tabs[currentTab];
     const emptyMessages = [
-      'Start your AI conversation journey',
-      'Connect with brilliant minds',
-      'Share knowledge and resources'
+      isLoading ? 'Loading conversations...' : 'Start your AI conversation journey',
+      'Friends feature coming soon',
+      'Link sharing coming soon'
     ];
     
     return (

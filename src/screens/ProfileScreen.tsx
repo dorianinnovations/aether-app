@@ -26,7 +26,8 @@ import { spacing } from '../design-system/tokens/spacing';
 import { getButtonColors } from '../design-system/tokens/colors';
 
 // Services
-import { UserAPI, TokenManager, AuthAPI } from '../services/api';
+import { UserAPI, TokenManager, AuthAPI, MatchingAPI } from '../services/api';
+import { useMatching } from '../hooks/useMatching';
 
 interface UserProfile {
   profilePicture?: string;
@@ -48,6 +49,10 @@ export const ProfileScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [showAnalysisData, setShowAnalysisData] = useState(false);
+
+  // Matching hook for profile analysis data
+  const { userProfile: analysisProfile, hasProfile, fetchUserProfile } = useMatching();
 
   // Header menu hook
   const { showHeaderMenu, setShowHeaderMenu, handleMenuAction, toggleHeaderMenu } = useHeaderMenu({
@@ -57,7 +62,8 @@ export const ProfileScreen: React.FC = () => {
 
   useEffect(() => {
     loadProfile();
-  }, []);
+    fetchUserProfile(); // Load analysis profile data
+  }, [fetchUserProfile]);
 
   const handleNavigateBack = () => {
     navigation.goBack();
@@ -538,6 +544,131 @@ export const ProfileScreen: React.FC = () => {
               )}
             </View>
 
+            {/* AI Analysis Section - only show if profile exists */}
+            {hasProfile && analysisProfile && (
+              <View style={styles.analysisSection}>
+                <TouchableOpacity
+                  style={styles.analysisSectionHeader}
+                  onPress={() => setShowAnalysisData(!showAnalysisData)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.analysisSectionTitle, { color: colors.text }]}>
+                    AI Profile Analysis
+                  </Text>
+                  <Feather
+                    name={showAnalysisData ? 'chevron-up' : 'chevron-down'}
+                    size={20}
+                    color={colors.text}
+                  />
+                </TouchableOpacity>
+
+                {showAnalysisData && (
+                  <View style={styles.analysisContent}>
+                    {/* Interests */}
+                    {analysisProfile.interests && analysisProfile.interests.length > 0 && (
+                      <View style={styles.analysisSubsection}>
+                        <Text style={[styles.analysisSubtitle, { color: colors.textSecondary }]}>
+                          Detected Interests
+                        </Text>
+                        <View style={styles.interestsContainer}>
+                          {analysisProfile.interests.slice(0, 6).map((interest, index) => (
+                            <View
+                              key={index}
+                              style={[styles.interestTag, { 
+                                backgroundColor: colors.surface,
+                                borderColor: colors.borders.default
+                              }]}
+                            >
+                              <Text style={[styles.interestText, { color: colors.text }]}>
+                                {interest.topic}
+                              </Text>
+                              <Text style={[styles.confidenceText, { color: colors.textSecondary }]}>
+                                {Math.round(interest.confidence * 100)}%
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Communication Style */}
+                    {analysisProfile.communicationStyle && (
+                      <View style={styles.analysisSubsection}>
+                        <Text style={[styles.analysisSubtitle, { color: colors.textSecondary }]}>
+                          Communication Style
+                        </Text>
+                        <View style={styles.communicationGrid}>
+                          {Object.entries(analysisProfile.communicationStyle).map(([key, value]) => (
+                            <View key={key} style={styles.styleItem}>
+                              <Text style={[styles.styleLabel, { color: colors.text }]}>
+                                {key.charAt(0).toUpperCase() + key.slice(1)}
+                              </Text>
+                              <View style={[styles.progressBar, { backgroundColor: colors.surface }]}>
+                                <View
+                                  style={[
+                                    styles.progressFill,
+                                    {
+                                      width: `${value * 100}%`,
+                                      backgroundColor: '#4CAF50'
+                                    }
+                                  ]}
+                                />
+                              </View>
+                              <Text style={[styles.styleValue, { color: colors.textSecondary }]}>
+                                {Math.round(value * 100)}%
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Profile Statistics */}
+                    <View style={styles.analysisSubsection}>
+                      <Text style={[styles.analysisSubtitle, { color: colors.textSecondary }]}>
+                        Profile Statistics
+                      </Text>
+                      <View style={styles.statsGrid}>
+                        <View style={styles.statItem}>
+                          <Text style={[styles.statValue, { color: colors.text }]}>
+                            {analysisProfile.totalMessages || 0}
+                          </Text>
+                          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                            Messages Analyzed
+                          </Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={[styles.statValue, { color: colors.text }]}>
+                            {analysisProfile.interests?.length || 0}
+                          </Text>
+                          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                            Interests Found
+                          </Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={[styles.statValue, { color: colors.text }]}>
+                            {analysisProfile.compatibilityTags?.length || 0}
+                          </Text>
+                          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                            Compatibility Tags
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {/* Last Analyzed */}
+                    {analysisProfile.lastAnalyzed && (
+                      <View style={styles.lastAnalyzedContainer}>
+                        <Text style={[styles.lastAnalyzedText, { color: colors.textSecondary }]}>
+                          Last analyzed: {new Date(analysisProfile.lastAnalyzed).toLocaleDateString()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+              </View>
+            )}
+
           </View>
 
         </ScrollView>
@@ -771,6 +902,122 @@ const styles = StyleSheet.create({
   fieldHint: {
     fontSize: 12,
     marginTop: spacing[1],
+    fontStyle: 'italic',
+  },
+
+  // AI Analysis Section Styles
+  analysisSection: {
+    marginTop: spacing[6],
+    paddingTop: spacing[4],
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  analysisSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing[3],
+    marginBottom: spacing[4],
+  },
+  analysisSectionTitle: {
+    ...typography.textStyles.headlineSmall,
+    fontWeight: '600',
+  },
+  analysisContent: {
+    gap: spacing[5],
+  },
+  analysisSubsection: {
+    gap: spacing[3],
+  },
+  analysisSubtitle: {
+    ...typography.textStyles.bodyMedium,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  
+  // Interests
+  interestsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[2],
+  },
+  interestTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: spacing[2],
+  },
+  interestText: {
+    ...typography.textStyles.bodySmall,
+    fontWeight: '500',
+  },
+  confidenceText: {
+    ...typography.textStyles.caption,
+    fontSize: 11,
+  },
+  
+  // Communication Style
+  communicationGrid: {
+    gap: spacing[3],
+  },
+  styleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+  },
+  styleLabel: {
+    ...typography.textStyles.bodySmall,
+    fontWeight: '500',
+    width: 80,
+  },
+  progressBar: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  styleValue: {
+    ...typography.textStyles.caption,
+    width: 40,
+    textAlign: 'right',
+  },
+  
+  // Statistics
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: spacing[3],
+  },
+  statItem: {
+    alignItems: 'center',
+    gap: spacing[1],
+  },
+  statValue: {
+    ...typography.textStyles.headlineMedium,
+    fontWeight: '700',
+  },
+  statLabel: {
+    ...typography.textStyles.caption,
+    textAlign: 'center',
+  },
+  
+  // Last Analyzed
+  lastAnalyzedContainer: {
+    alignItems: 'center',
+    paddingTop: spacing[3],
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  lastAnalyzedText: {
+    ...typography.textStyles.caption,
     fontStyle: 'italic',
   },
 });

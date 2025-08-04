@@ -27,6 +27,7 @@ import { ShimmerText } from '../../design-system/components/atoms/ShimmerText';
 import { RainbowShimmerText } from '../../design-system/components/atoms/RainbowShimmerText';
 import { Header, HeaderMenu } from '../../design-system/components/organisms';
 import { designTokens, getThemeColors, stateColors } from '../../design-system/tokens/colors';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { typography } from '../../design-system/tokens/typography';
 import { spacing } from '../../design-system/tokens/spacing';
@@ -54,6 +55,9 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
   const [localLoading, setLocalLoading] = useState(false);
   const [isSignUpSuccess, setIsSignUpSuccess] = useState(false);
   const [authStatus, setAuthStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -197,6 +201,37 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
     }
   };
 
+  // Username availability check with debouncing
+  useEffect(() => {
+    const checkUsername = async () => {
+      if (username.length >= 3 && /^[a-zA-Z0-9_-]+$/.test(username)) {
+        setCheckingUsername(true);
+        setUsernameError('');
+        setUsernameAvailable(null);
+        
+        try {
+          const result = await AuthAPI.checkUsernameAvailability(username);
+          setUsernameAvailable(result.available);
+          if (!result.available) {
+            setUsernameError(result.message || 'Username not available');
+          }
+        } catch (error) {
+          setUsernameError('Error checking username');
+          setUsernameAvailable(null);
+        } finally {
+          setCheckingUsername(false);
+        }
+      } else {
+        setUsernameAvailable(null);
+        setUsernameError('');
+        setCheckingUsername(false);
+      }
+    };
+
+    const timeoutId = setTimeout(checkUsername, 500); // Debounce for 500ms
+    return () => clearTimeout(timeoutId);
+  }, [username]);
+
   // Password strength calculation
   const getPasswordStrength = (pass: string): {
     score: number;
@@ -260,6 +295,12 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
 
     if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
       setError('Username can only contain letters, numbers, hyphens, and underscores');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    if (usernameAvailable === false) {
+      setError('Username is not available');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
@@ -663,8 +704,10 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                           placeholderTextColor={theme === 'dark' ? '#666666' : '#999999'}
                           value={username}
                           onChangeText={(text) => {
-                            setUsername(text.toLowerCase().replace(/[^a-z0-9_-]/g, ''));
+                            const cleanText = text.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+                            setUsername(cleanText);
                             clearErrorOnChange();
+                            setUsernameError('');
                           }}
                           autoCapitalize="none"
                           autoCorrect={false}
@@ -697,6 +740,33 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                           }}
                         />
                       </Animated.View>
+                      
+                      {/* Username Status Indicator */}
+                      {username.length >= 3 && (
+                        <View style={styles.usernameStatus}>
+                          {checkingUsername ? (
+                            <View style={styles.usernameStatusRow}>
+                              <Text style={[styles.usernameStatusText, { color: theme === 'dark' ? '#888' : '#666' }]}>
+                                Checking...
+                              </Text>
+                            </View>
+                          ) : usernameAvailable === true ? (
+                            <View style={styles.usernameStatusRow}>
+                              <Feather name="check-circle" size={14} color="#22c55e" />
+                              <Text style={[styles.usernameStatusText, { color: '#22c55e' }]}>
+                                Available
+                              </Text>
+                            </View>
+                          ) : usernameAvailable === false ? (
+                            <View style={styles.usernameStatusRow}>
+                              <Feather name="x-circle" size={14} color="#ef4444" />
+                              <Text style={[styles.usernameStatusText, { color: '#ef4444' }]}>
+                                {usernameError}
+                              </Text>
+                            </View>
+                          ) : null}
+                        </View>
+                      )}
                       
                       {/* Email Input */}
                       <Animated.View style={{ transform: [{ scale: emailInputScaleAnim }] }}>
@@ -1350,6 +1420,21 @@ const styles = StyleSheet.create({
   successFeatureText: {
     ...typography.textStyles.bodyMedium,
     fontSize: 16,
+  },
+  
+  // Username status styles
+  usernameStatus: {
+    marginTop: 8,
+    alignItems: 'flex-start',
+  },
+  usernameStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  usernameStatusText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
 

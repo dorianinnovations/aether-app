@@ -328,9 +328,21 @@ export const AuthAPI = {
   },
 
   async refreshToken(): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/refresh');
+    const response = await api.post<AuthResponse>('/auth/refresh');
     await TokenManager.setToken(response.data.token);
     return response.data;
+  },
+
+  async checkUsernameAvailability(username: string): Promise<{ available: boolean; message?: string }> {
+    try {
+      const response = await api.get(`/auth/check-username/${username}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.status === 409) {
+        return { available: false, message: 'Username already taken' };
+      }
+      throw error;
+    }
   },
 };
 
@@ -446,6 +458,73 @@ export const ChatAPI = {
   async socialChat(message: string): Promise<{ success: boolean; response: string; thinking?: string; model?: string; usage?: any }> {
     const response = await api.post('/social-chat', { message });
     return response.data;
+  },
+
+  // Streaming social chat for real-time responses
+  async *streamSocialChat(message: string): AsyncGenerator<string, void, unknown> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/social-chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await TokenManager.getToken()}`,
+        },
+        body: JSON.stringify({ message, stream: true }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          
+          // Keep the last incomplete line in the buffer
+          buffer = lines.pop() || '';
+          
+          for (const line of lines) {
+            if (line.trim() === '') continue;
+            
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              
+              if (data === '[DONE]') {
+                return;
+              }
+              
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.content) {
+                  yield parsed.content;
+                }
+              } catch (e) {
+                // Skip invalid JSON
+                continue;
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    } catch (error) {
+      console.error('Streaming social chat error:', error);
+      throw error;
+    }
   },
 
 };
@@ -721,6 +800,51 @@ export const ApiUtils = {
     if (error.response?.data?.message) return error.response.data.message;
     if (error.request) return 'Network error - please check your connection';
     return 'An unexpected error occurred';
+  },
+
+  // Conversation API functions
+  async getRecentConversations(limit: number = 20, page: number = 1): Promise<any> {
+    try {
+      const response = await api.get('/conversation/conversations/recent', {
+        params: { limit, page }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch recent conversations:', error);
+      throw error;
+    }
+  },
+
+  async deleteConversation(conversationId: string): Promise<any> {
+    try {
+      const response = await api.delete(`/conversation/conversations/${conversationId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+      throw error;
+    }
+  },
+
+  async deleteAllConversations(): Promise<any> {
+    try {
+      const response = await api.delete('/conversation/conversations/all');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to delete all conversations:', error);
+      throw error;
+    }
+  },
+
+  async getConversation(conversationId: string, messageLimit: number = 500): Promise<any> {
+    try {
+      const response = await api.get(`/conversation/conversations/${conversationId}`, {
+        params: { messageLimit }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch conversation:', error);
+      throw error;
+    }
   },
 };
 
