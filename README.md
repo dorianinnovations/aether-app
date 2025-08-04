@@ -1,11 +1,11 @@
-# AetherMobile
+# AetheR
 
 A React Native mobile application for AI-powered personal assistance and emotional analytics.
 
 ## Project Structure
 
 ```
-AetherMobile/
+AetheR/
 ├── src/
 │   ├── components/
 │   │   └── ConversationDrawer.tsx
@@ -77,7 +77,7 @@ AetherMobile/
 
 ## Overview
 
-AetherMobile is a sophisticated React Native application that provides users with an AI-powered personal assistant experience. The platform combines conversational AI, emotional analytics, and social connections to create an adaptive and personalized user experience.
+AetheR is a sophisticated React Native application that provides users with an AI-powered personal assistant experience. The platform combines conversational AI, emotional analytics, and social connections to create an adaptive and personalized user experience.
 
 ## Core Features
 
@@ -140,7 +140,7 @@ Built on atomic design principles with a comprehensive component library:
 ### Installation
 ```bash
 git clone <repository-url>
-cd AetherMobile
+cd AetheR
 npm install
 ```
 
@@ -170,7 +170,7 @@ npm run lint
 
 ## Backend Integration
 
-AetherMobile communicates with a Node.js backend server that provides:
+AetheR communicates with a Node.js backend server that provides:
 - User authentication and profile management
 - AI conversation processing and streaming
 - Emotional analytics data collection

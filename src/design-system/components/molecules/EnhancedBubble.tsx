@@ -157,12 +157,36 @@ const StreamContent: React.FC<{
           {metadata.toolCalls.map((toolCall: ToolCall, index: number) => (
             <View key={toolCall.id || index} style={styles.toolCallCard}>
               <Text style={[styles.toolCallName, { color: theme === 'dark' ? '#a8d8ff' : '#add6ffff' }]}>
-                🔧 {toolCall.name.replace(/_/g, ' ')}
+                🔍 {toolCall.name === 'webSearchTool' ? 'Web Search Results' : toolCall.name.replace(/_/g, ' ')}
               </Text>
               {toolCall.status === 'completed' && toolCall.result && (
-                <Text style={[styles.toolCallResult, { color: theme === 'dark' ? '#cccccc' : '#666666' }]}>
-                  {typeof toolCall.result === 'string' ? toolCall.result : JSON.stringify(toolCall.result, null, 2)}
-                </Text>
+                <View>
+                  {/* Handle web search results specifically */}
+                  {toolCall.name === 'webSearchTool' && toolCall.result.structure?.results ? (
+                    <View>
+                      <Text style={[styles.searchQuery, { color: theme === 'dark' ? '#ffffff' : '#333333' }]}>
+                        Query: "{toolCall.result.structure.query}"
+                      </Text>
+                      {toolCall.result.structure.results.map((result: any, resultIndex: number) => (
+                        <View key={resultIndex} style={styles.searchResultItem}>
+                          <Text style={[styles.searchResultTitle, { color: theme === 'dark' ? '#ffffff' : '#333333' }]}>
+                            {result.title}
+                          </Text>
+                          <Text style={[styles.searchResultSnippet, { color: theme === 'dark' ? '#cccccc' : '#666666' }]}>
+                            {result.snippet}
+                          </Text>
+                          <Text style={[styles.searchResultLink, { color: theme === 'dark' ? '#a8d8ff' : '#0066cc' }]}>
+                            {result.link}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={[styles.toolCallResult, { color: theme === 'dark' ? '#cccccc' : '#666666' }]}>
+                      {typeof toolCall.result === 'string' ? toolCall.result : JSON.stringify(toolCall.result, null, 2)}
+                    </Text>
+                  )}
+                </View>
               )}
             </View>
           ))}
@@ -306,7 +330,7 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
                   style={[
                     styles.messageText,
                     {
-                      fontSize: 16,
+                      fontSize: 12,
                       lineHeight: 22,
                       letterSpacing: -0.1,
                       fontFamily: 'Nunito-Regular',
@@ -377,8 +401,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   userProfileBubble: {
-    borderRadius: 16,
-    paddingHorizontal: 16,
+    borderRadius: 12,
+    paddingHorizontal: 12,
     paddingVertical: 12,
     maxWidth: width * 0.8,
     alignSelf: 'flex-end',
@@ -391,7 +415,7 @@ const styles = StyleSheet.create({
     borderColor: '#D1D1D6',
   },
   userMessageText: {
-    fontSize: 16,
+    fontSize: 12,
     lineHeight: 20,
   },
   botTextWrapper: {
@@ -463,6 +487,38 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Nunito-Regular',
     lineHeight: 18,
+  },
+  searchQuery: {
+    fontSize: 13,
+    fontWeight: '500',
+    fontFamily: 'Nunito-Medium',
+    marginBottom: spacing[2],
+    fontStyle: 'italic',
+  },
+  searchResultItem: {
+    marginBottom: spacing[3],
+    paddingBottom: spacing[2],
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 102, 204, 0.1)',
+  },
+  searchResultTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Nunito-SemiBold',
+    marginBottom: spacing[1],
+    lineHeight: 20,
+  },
+  searchResultSnippet: {
+    fontSize: 13,
+    fontFamily: 'Nunito-Regular',
+    lineHeight: 18,
+    marginBottom: spacing[1],
+  },
+  searchResultLink: {
+    fontSize: 12,
+    fontFamily: 'Nunito-Regular',
+    textDecorationLine: 'underline',
+    opacity: 0.8,
   },
   messageFooter: {
     flexDirection: 'row',

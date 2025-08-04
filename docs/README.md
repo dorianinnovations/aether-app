@@ -30,8 +30,8 @@ An intelligent mobile companion that leverages AI to provide personalized insigh
 
 ```bash
 # Clone the repository
-git clone https://github.com/[username]/AetherMobile.git
-cd AetherMobile
+git clone https://github.com/[username]/AetheR.git
+cd AetheR
 
 # Install dependencies  
 npm install
@@ -86,7 +86,7 @@ Built on atomic design principles with a comprehensive token system:
 
 ## 🎨 Design Philosophy
 
-Aether Mobile features a sophisticated neumorphic design language that emphasizes:
+AetheR features a sophisticated neumorphic design language that emphasizes:
 - **Premium Typography**: Carefully selected font families (Crimson Pro, Inter, Nunito)
 - **Subtle Interactions**: Haptic feedback and smooth animations
 - **Adaptive Theming**: Light/dark mode with contextual color palettes
@@ -170,4 +170,4 @@ This is a solo-developed startup project. For inquiries about collaboration or i
 
 ---
 
-**Aether Mobile** - *Decode your adaptive patterns*
+**AetheR** - *Decode your adaptive patterns*

@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { FontAwesome5, Feather } from '@expo/vector-icons';
+import LottieView from 'lottie-react-native';
 import { designTokens, getThemeColors } from '../../tokens/colors';
 import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
@@ -176,7 +177,7 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
     } else {
       hideModal();
     }
-  }, [visible, showModal, hideModal]);
+  }, [visible]); // Remove showModal and hideModal from dependencies to prevent infinite loop
 
   // Handle Android back button
   useEffect(() => {
@@ -237,8 +238,12 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
         useNativeDriver: true,
       }),
     ]).start(() => {
-      onConfirm();
-      setIsConfirming(false);
+      // Start the signout process - the Lottie animation will show during isConfirming state
+      // We'll delay the actual onConfirm call to allow users to see the animation
+      setTimeout(() => {
+        onConfirm();
+        setIsConfirming(false);
+      }, 1500); // 1.5 second delay to show the signout animation
     });
   };
 
@@ -333,8 +338,19 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
               }
             ]}
           >
-            {/* Icon */}
-            {renderIcon()}
+            {/* Icon or Lottie Animation */}
+            {isConfirming ? (
+              <View style={styles.lottieContainer}>
+                <LottieView
+                  source={require('../../../../assets/AetherSpinner.json')}
+                  autoPlay
+                  loop
+                  style={styles.lottieAnimation}
+                />
+              </View>
+            ) : (
+              renderIcon()
+            )}
 
             {/* Title */}
             <Text style={[
@@ -342,7 +358,7 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
               typography.textStyles.headlineSmall,
               { color: themeColors.text }
             ]}>
-              {title}
+              {isConfirming ? 'Signing Out...' : title}
             </Text>
 
             {/* Message */}
@@ -351,11 +367,12 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
               typography.textStyles.bodyMedium,
               { color: themeColors.textSecondary }
             ]}>
-              {message}
+              {isConfirming ? 'Please wait while we sign you out of your account.' : message}
             </Text>
 
             {/* Buttons */}
-            <View style={styles.buttonContainer}>
+            {!isConfirming && (
+              <View style={styles.buttonContainer}>
               {/* Cancel Button */}
               <Animated.View style={[
                 styles.button,
@@ -424,6 +441,7 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
                 </TouchableOpacity>
               </Animated.View>
             </View>
+            )}
           </Animated.View>
         </View>
       </View>
@@ -463,6 +481,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing[3],
     borderWidth: 1,
+  },
+  lottieContainer: {
+    width: 64,
+    height: 64,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing[3],
+  },
+  lottieAnimation: {
+    width: 64,
+    height: 64,
   },
   title: {
     fontWeight: '700',

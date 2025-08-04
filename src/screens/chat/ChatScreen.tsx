@@ -708,17 +708,19 @@ const styles = StyleSheet.create({
   
   messagesContainer: {
     paddingTop: Platform.OS === 'ios' ? 90 : 70,
-    paddingBottom: 16,
+    paddingBottom: 12,
     gap: 0,
   },
   
   inputContainer: {
     backgroundColor: 'transparent',
+    paddingBottom: 80, // Lower the chat input further
   },
   
   chatInputWrapper: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    marginBottom: -19, // Move chat input down by pushing it lower
   },
 
   // Message Styles
@@ -733,9 +735,9 @@ const styles = StyleSheet.create({
   },
   
   userBubble: {
-    borderRadius: 12,
+    borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 6,
     maxWidth: '75%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -776,7 +778,7 @@ const styles = StyleSheet.create({
   // Scroll to Bottom Button
   scrollToBottomButton: {
     position: 'absolute',
-    bottom: 90,
+    bottom: 110,
     alignSelf: 'center',
     zIndex: 1000,
   },
@@ -813,10 +815,10 @@ const styles = StyleSheet.create({
     transform: [{ translateY: -12 }],
   },
   greetingText: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '500',
     fontFamily: 'Nunito_500Medium',
-    letterSpacing: -0.3,
+    letterSpacing: -0.9,
     textAlign: 'center',
   },
 

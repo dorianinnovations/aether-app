@@ -673,7 +673,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: spacing[2],
+    paddingHorizontal: spacing[1],
     paddingTop: 0,
     paddingVertical: 0,
     paddingBottom: 0,
@@ -689,7 +689,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   floatingContainer: {
-    borderRadius: 16,
+    borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: spacing[1],
     paddingVertical: spacing[2],
@@ -706,7 +706,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flex: 1,
-    borderRadius: 20,
+    borderRadius: 8,
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[1],
     minHeight: 19,
@@ -794,7 +794,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
-    borderRadius: 12,
+    borderRadius: 8,
     marginHorizontal: 0,
     borderWidth: 1,
   },

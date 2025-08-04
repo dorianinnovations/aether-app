@@ -539,8 +539,8 @@ const styles = StyleSheet.create({
     marginRight: spacing[3],
   },
   menuButtonText: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
     letterSpacing: -0.1,
   },
 });

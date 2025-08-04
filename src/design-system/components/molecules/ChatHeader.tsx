@@ -45,10 +45,17 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
               : designTokens.semantic.success 
           }]} />
           <Text style={[
-            styles.headerTitle, 
-            { color: isLoading ? getLoadingTextColor(theme, 'primary') : colors.text }
+            styles.headerTitle,
+            { 
+              color: isLoading ? getLoadingTextColor(theme, 'primary') : colors.text,
+              fontWeight: '700',
+              letterSpacing: -0.8,
+              textShadowColor: 'rgba(0, 0, 0, 0.2)',
+              textShadowOffset: { width: 0, height: 1 },
+              textShadowRadius: 1,
+            }
           ]}>
-            Aether
+            AetheR
           </Text>
         </View>
         
@@ -115,6 +122,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: spacing[1],
+    minHeight: 24,
   },
   statusDot: {
     width: 8,
@@ -129,6 +137,24 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
+  },
+  buildingText: {
+    transform: [
+      { perspective: 500 },
+      { rotateX: '30deg' },
+      { scaleY: 1.3 },
+      { scaleX: 1.0 },
+    ],
+    fontWeight: '700',
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+    backgroundColor: 'transparent',
+    letterSpacing: -1.0,
+    textTransform: 'none',
+    fontSize: 12,
+    lineHeight: 14,
+    textAlign: 'left',
   },
   headerSubtitle: {
     ...typography.textStyles.caption,

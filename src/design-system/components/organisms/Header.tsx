@@ -13,6 +13,7 @@ import {
   StatusBar,
   Platform,
   TextInput,
+  Image,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -441,13 +442,24 @@ export const Header: React.FC<HeaderProps> = ({
               disabled={!onTitlePress || showSearch}
             >
               <View style={styles.titleRow}>
-                <Text style={[
-                  styles.title,
-                  typography.textStyles.headlineMedium,
-                  { color: themeColors.text }
-                ]}>
-                  {title}
-                </Text>
+                {title === 'Aether' ? (
+                  <Image
+                    source={theme === 'dark' 
+                      ? require('../../../../assets/images/aether-logo-dark-mode.webp')
+                      : require('../../../../assets/images/aether-logo-light-mode.webp')
+                    }
+                    style={styles.logo}
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <Text style={[
+                    styles.title,
+                    typography.textStyles.headlineMedium,
+                    { color: themeColors.text }
+                  ]}>
+                    {title}
+                  </Text>
+                )}
               </View>
               {subtitle && (
                 <Text style={[
@@ -476,8 +488,8 @@ const styles = StyleSheet.create({
     left: spacing[6],
     right: spacing[6],
     zIndex: 100,
-    borderRadius: 12,
-    paddingHorizontal: spacing[4],
+    borderRadius: 10,
+    paddingHorizontal: spacing[2],
     paddingVertical: spacing[2],
   },
   content: {
@@ -503,6 +515,8 @@ const styles = StyleSheet.create({
   titleContainer: {
     alignItems: 'center',
     overflow: 'visible',
+    minHeight: 40,
+    justifyContent: 'center',
   },
   titleRow: {
     flexDirection: 'row',
@@ -513,6 +527,28 @@ const styles = StyleSheet.create({
   title: {
     fontWeight: '700',
     letterSpacing: -0.5,
+  },
+  logo: {
+    height: 32,
+    width: 100,
+  },
+  buildingText: {
+    fontFamily: 'CrimsonPro-Bold',
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -4.0,
+    lineHeight: 20,
+    textAlign: 'center',
+    transform: [
+      { perspective: -50 },
+      { rotateX: '55deg' },
+      { scaleY: 2.0 },
+      { scaleX: 1.2 },
+    ],
+    textShadowColor: 'rgba(0, 0, 0, 0.6)',
+    textShadowOffset: { width: 0, height: 5 },
+    textShadowRadius: 8,
+    backgroundColor: 'transparent',
   },
   subtitle: {
     marginTop: 2,

@@ -1,5 +1,5 @@
 /**
- * AetherMobile - Custom React Hooks
+ * AetheR - Custom React Hooks
  * Reusable hooks for application functionality
  */
 

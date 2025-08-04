@@ -379,17 +379,8 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
           <Animated.View style={[styles.successContainer, { opacity: successAnim }]}>
             <Text style={styles.successEmoji}>*</Text>
             <Text style={[styles.successTitle, { color: themeColors.text }]}>
-              Welcome to Aether!
+              Welcome to Aether
             </Text>
-            <Text style={[styles.successSubtitle, { color: themeColors.textSecondary }]}>
-              Your Aether is ready to understand and grow with you
-            </Text>
-            <View style={styles.successFeature}>
-              <Text style={styles.successFeatureIcon}>*</Text>
-              <Text style={[styles.successFeatureText, { color: themeColors.textMuted }]}>
-                Starting behavioral analysis...
-              </Text>
-            </View>
           </Animated.View>
         </SafeAreaView>
       </PageBackground>
@@ -518,11 +509,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                         marginBottom: 8
                       }
                     ]}>
-                      Create your{' '}
-                      <Text style={styles.subtitleBold}>
-                        Aether
-                      </Text>{' '}
-                      account
+                      Create your account
                     </Text>
                   </Animated.View>
 
@@ -1120,14 +1107,14 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...typography.textStyles.bodyMedium,
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 26,
   },
   subtitleBold: {
     fontWeight: '700',
-    fontSize: 22,
+    fontSize: 16,
   },
   formContent: {
     gap: 24,

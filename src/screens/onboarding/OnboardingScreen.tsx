@@ -47,31 +47,31 @@ interface OnboardingStep {
 
 const onboardingSteps: OnboardingStep[] = [
   {
-    title: "AI That Actually Remembers You",
-    subtitle: "Context as a Service",
-    description: "Every conversation gets scored and weighted. Your AI doesn't just see your prompt—it sees YOUR prompt, filtered through your unique cognitive signature.",
-    accent: "MEMORY",
+    title: "Your AI Conversation Partner",
+    subtitle: "Intelligent chat that learns from you",
+    description: "Chat with advanced AI that understands context and maintains conversation history. Ask questions, get help with tasks, or just have a conversation.",
+    accent: "CHAT",
     category: "FOUNDATION"
   },
   {
-    title: "The Missing Layer", 
-    subtitle: "The bridge between you and AI",
-    description: "Like having someone whisper in the AI's ear about how you think and communicate. Your thinking patterns become the lens through which AI understands you.",
-    accent: "CONTEXT",
+    title: "Smart Insights & Analytics", 
+    subtitle: "Track your conversation patterns",
+    description: "Get insights into your chat patterns, emotional trends, and conversation topics. Understand how you interact with AI over time.",
+    accent: "INSIGHTS",
     category: "CONNECTION"
   },
   {
-    title: "Theme Customization for Intelligence",
-    subtitle: "Like themes for your phone, but for your brain", 
-    description: "Every AI interaction becomes tailored to your thinking patterns and problem-solving approach. Intelligence that actually gets how your mind works.",
+    title: "Personalized Experience",
+    subtitle: "Themes and settings that match your style", 
+    description: "Customize your chat interface with light and dark themes, personal settings, and preferences that make the app truly yours.",
     accent: "PERSONALIZATION",
     category: "EXPERIENCE"
   },
   {
-    title: "Authentic Social Connection",
-    subtitle: "Connect based on how minds actually work",
-    description: "Find people who complement your thinking style. Not based on looks or basic interests, but on genuine cognitive compatibility and communication patterns.",
-    accent: "COMPATIBILITY",
+    title: "Connect & Share",
+    subtitle: "Social features for the AI era",
+    description: "Share interesting conversations, connect with other users, and explore a social platform built around meaningful AI interactions.",
+    accent: "SOCIAL",
     category: "SOCIAL"
   }
 ];

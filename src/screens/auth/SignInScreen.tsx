@@ -411,10 +411,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                         marginBottom: 8
                       }
                     ]}>
-                      Welcome back to{' '}
-                      <Text style={styles.subtitleBold}>
-                        Aether
-                      </Text>
+                      Welcome back
                     </Text>
                   </Animated.View>
 
@@ -631,7 +628,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                                   customShimmerColor={rainbowPastels[currentColorIndex]}
                                   style={StyleSheet.flatten([styles.primaryButtonText, { color: theme === 'dark' ? '#ffffff' : '#1a1a1a' }])}
                                   intensity="vibrant"
-                                  duration={800}
+                                  duration={300}
                                   waveWidth="wide"
                                 >
                                   Success!
@@ -786,16 +783,17 @@ const styles = StyleSheet.create({
     ...typography.textStyles.displayMedium,
     marginBottom: 8,
     textAlign: 'center',
+    letterSpacing: -0.9,
   },
   subtitle: {
     ...typography.textStyles.bodyMedium,
     textAlign: 'center',
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '600',
   },
   subtitleBold: {
     fontWeight: '700',
-    fontSize: 22,
+    fontSize: 12,
   },
   formContent: {
     gap: 24,

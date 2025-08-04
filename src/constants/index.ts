@@ -1,7 +1,7 @@
 // Application constants and configuration
 
 export const APP_CONFIG = {
-  NAME: 'AetherMobile',
+  NAME: 'AetheR',
   VERSION: '1.0.0',
   API_TIMEOUT: 30000,
   MAX_MESSAGE_LENGTH: 500,

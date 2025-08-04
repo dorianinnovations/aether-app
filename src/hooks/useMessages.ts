@@ -119,7 +119,14 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
                 ...msg.metadata,
                 ...messageMetadata,
                 // Convert tool results format if needed
-                toolCalls: messageMetadata.searchResults && messageMetadata.sources ? 
+                toolCalls: messageMetadata.toolResults ? 
+                  messageMetadata.toolResults.map((toolResult: any, index: number) => ({
+                    id: `tool-${index}-${Date.now()}`,
+                    name: toolResult.tool,
+                    parameters: { query: toolResult.query },
+                    result: toolResult.data,
+                    status: toolResult.success ? 'completed' : 'failed'
+                  })) : (messageMetadata.searchResults && messageMetadata.sources ? 
                   [{
                     id: 'search-' + Date.now(),
                     name: 'insane_web_search',
@@ -129,7 +136,7 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
                       query: messageMetadata.query
                     },
                     status: 'completed'
-                  }] : messageMetadata.toolCalls
+                  }] : messageMetadata.toolCalls)
               } : msg.metadata
             }
           : msg

@@ -38,11 +38,11 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
   const { theme, colors } = useTheme();
   const themeColors = getThemeColors(theme);
 
-  // Staggered load-in animations - start from invisible
-  const titleOpacity = useRef(new Animated.Value(0)).current;
-  const brandOpacity = useRef(new Animated.Value(0)).current;
-  const exploreButtonOpacity = useRef(new Animated.Value(0)).current;
-  const signInButtonOpacity = useRef(new Animated.Value(0)).current;
+  // Staggered load-in animations - start from slightly visible to prevent flashing
+  const titleOpacity = useRef(new Animated.Value(0.1)).current;
+  const brandOpacity = useRef(new Animated.Value(0.1)).current;
+  const exploreButtonOpacity = useRef(new Animated.Value(0.1)).current;
+  const signInButtonOpacity = useRef(new Animated.Value(0.1)).current;
 
   // Button press animations (kept separate)
   const exploreButtonPressScale = useRef(new Animated.Value(1)).current;
@@ -222,22 +222,41 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                 duration={3000}
                 delay={1000}
               >
-                Decode your adaptive patterns
+                Find a new way to connect
               </ShimmerText>
             </View>
 
-            {/* Enhanced Brand Text Animation */}
-            <Animated.Text
-              style={[
-                styles.brandText,
-                {
-                  color: theme === "dark" ? "#C5BDB5" : "#5A5A5A",
-                  opacity: brandOpacity,
-                },
-              ]}
+            {/* Enhanced Brand Text Animation - Tapered Metal Style */}
+            <Animated.View 
+              style={{ 
+                opacity: brandOpacity,
+                marginTop: 20,
+                transform: [
+                  { perspective: -50 },
+                  { rotateX: '-15deg' },
+                  { scaleY: 0.8 },
+                  { scaleX: 1 },
+                ],
+              }}
             >
-              Aether
-            </Animated.Text>
+              <Text
+                style={{
+                  fontSize: width < 350 ? 52 : width < 400 ? 60 : 68,
+                  fontWeight: "600",
+                  letterSpacing: -5,
+                  textAlign: "center",
+                  fontFamily: "CrimsonPro-Bold",
+                  textShadowColor: theme === "dark" ? 'rgba(255, 255, 255, 0.8)' : 'rgba(145, 145, 145, 0.9)',
+                  textShadowOffset: { width: 0, height: theme === "dark" ? 0 : 2 },
+                  textShadowRadius: theme === "dark" ? 12 : 6,
+                  backgroundColor: 'transparent',
+                  elevation: 12,
+                  color: theme === "dark" ? "#ffffff" : "#4a4a4a",
+                }}
+              >
+                AetheR
+              </Text>
+            </Animated.View>
           </Animated.View>
 
           {/* Action Buttons - Side by side choices */}
@@ -464,12 +483,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: Platform.OS === "web" ? 40 : 24,
   },
   brandText: {
-    fontSize: width < 350 ? 42 : width < 400 ? 48 : 54,
-    fontWeight: "700",
-    letterSpacing: -4.5,
+    fontSize: width < 350 ? 52 : width < 400 ? 60 : 68,
+    fontWeight: "600",
+    letterSpacing: -5,
     textAlign: "center",
-    marginTop: 12,
+    marginTop: 20,
     fontFamily: "CrimsonPro-Bold",
+    transform: [
+      { perspective: -50 },
+      { rotateX: '-15deg' },
+      { scaleY: 0.8 },
+      { scaleX: 1 },
+    ],
+    textShadowColor: 'rgba(145, 145, 145, 0.9)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
+    backgroundColor: 'transparent',
+    elevation: 12,
+  },
+  brandTextBase: {
+    fontSize: width < 350 ? 52 : width < 400 ? 60 : 68,
+    fontWeight: "600",
+    letterSpacing: -5,
+    textAlign: "center",
+    marginTop: 20,
+    fontFamily: "CrimsonPro-Bold",
+    backgroundColor: 'transparent',
+    elevation: 12,
   },
 
   buttonsContainer: {
