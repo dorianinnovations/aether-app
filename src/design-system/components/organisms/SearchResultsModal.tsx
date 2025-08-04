@@ -1,5 +1,6 @@
 /**
- * Search Results Modal - Display web search results in a contextual modal
+ * Custom Results Modal - Streamlined modal for displaying search results
+ * Uses design tokens and reuses WebSearchResult components
  */
 
 import React from 'react';
@@ -8,18 +9,17 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
+  FlatList,
   StyleSheet,
   Dimensions,
-  Linking,
-  Alert,
 } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { designTokens, getThemeColors, getStandardBorder } from '../../tokens/colors';
+import { useTheme } from '../../../contexts/ThemeContext';
 import { getGlassmorphicStyle } from '../../tokens/glassmorphism';
 import { spacing } from '../../tokens/spacing';
 import { typography } from '../../tokens/typography';
+import WebSearchResult from '../molecules/WebSearchResult';
+import Icon from '../atoms/Icon';
 
 const { width, height } = Dimensions.get('window');
 
@@ -27,107 +27,52 @@ interface SearchResult {
   title: string;
   url: string;
   snippet?: string;
-  domain?: string;
+  source?: string;
+  position?: number;
 }
 
-interface SearchResultsModalProps {
+interface CustomResultsModalProps {
   visible: boolean;
   onClose: () => void;
-  searchQuery: string;
+  title: string;
   results: SearchResult[];
-  theme?: 'light' | 'dark';
 }
 
-// Helper function to get site-specific icons
-const getSiteIcon = (domain: string) => {
-  const cleanDomain = domain.toLowerCase().replace('www.', '');
-  
-  switch (cleanDomain) {
-    case 'google.com':
-    case 'google':
-      return { name: 'google', color: '#4285f4' };
-    case 'github.com':
-    case 'github':
-      return { name: 'github', color: '#333' };
-    case 'stackoverflow.com':
-    case 'stackoverflow':
-      return { name: 'stack-overflow', color: '#f48024' };
-    case 'twitter.com':
-    case 'x.com':
-    case 'twitter':
-      return { name: 'twitter', color: '#1da1f2' };
-    case 'linkedin.com':
-    case 'linkedin':
-      return { name: 'linkedin', color: '#0077b5' };
-    case 'youtube.com':
-    case 'youtube':
-      return { name: 'youtube', color: '#ff0000' };
-    case 'reddit.com':
-    case 'reddit':
-      return { name: 'reddit', color: '#ff4500' };
-    case 'medium.com':
-    case 'medium':
-      return { name: 'medium', color: '#00ab6c' };
-    case 'dev.to':
-    case 'dev':
-      return { name: 'dev', color: '#0a0a0a' };
-    case 'wikipedia.org':
-    case 'wikipedia':
-      return { name: 'wikipedia-w', color: '#000' };
-    case 'npmjs.com':
-    case 'npm':
-      return { name: 'npm', color: '#cb3837' };
-    case 'codepen.io':
-    case 'codepen':
-      return { name: 'codepen', color: '#000' };
-    case 'dribbble.com':
-    case 'dribbble':
-      return { name: 'dribbble', color: '#ea4c89' };
-    case 'behance.net':
-    case 'behance':
-      return { name: 'behance', color: '#0057ff' };
-    case 'instagram.com':
-    case 'instagram':
-      return { name: 'instagram', color: '#e4405f' };
-    case 'facebook.com':
-    case 'facebook':
-      return { name: 'facebook', color: '#1877f2' };
-    default:
-      return { name: 'globe', color: '#6b7280' };
-  }
-};
-
-// Helper function to extract domain from URL
-const extractDomain = (url: string): string => {
-  try {
-    const domain = new URL(url).hostname;
-    return domain.replace('www.', '');
-  } catch {
-    return url;
-  }
-};
-
-const SearchResultsModal: React.FC<SearchResultsModalProps> = ({
+const CustomResultsModal: React.FC<CustomResultsModalProps> = ({
   visible,
   onClose,
-  searchQuery,
+  title,
   results,
-  theme = 'light',
 }) => {
-  const themeColors = getThemeColors(theme);
+  const { colors, theme } = useTheme();
 
-  const handleLinkPress = async (url: string) => {
-    try {
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        Alert.alert('Error', 'Cannot open this URL');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to open link');
-    }
-  };
+  const renderResult = ({ item, index }: { item: SearchResult; index: number }) => (
+    <WebSearchResult
+      result={{
+        title: item.title,
+        snippet: item.snippet || '',
+        url: item.url,
+        source: item.source,
+        position: item.position || index + 1,
+      }}
+    />
+  );
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <Icon
+        name="search"
+        size={48}
+        color={colors.textMuted}
+      />
+      <Text style={[
+        styles.emptyText,
+        { color: colors.textMuted }
+      ]}>
+        No results found
+      </Text>
+    </View>
+  );
 
   return (
     <Modal
@@ -152,138 +97,66 @@ const SearchResultsModal: React.FC<SearchResultsModalProps> = ({
               styles.modalContainer,
               getGlassmorphicStyle('overlay', theme),
               {
-                backgroundColor: theme === 'dark' 
-                  ? designTokens.brand.surfaceDark 
-                  : designTokens.brand.surface,
-                borderColor: themeColors.borders.default,
+                backgroundColor: colors.surface,
+                borderColor: colors.borders.default,
               }
             ]}
           >
             {/* Header */}
-            <View style={styles.header}>
-              <View style={styles.headerLeft}>
-                <FontAwesome5
+            <View style={[
+              styles.header,
+              { borderBottomColor: colors.borders.subtle }
+            ]}>
+              <View style={styles.headerContent}>
+                <Icon
                   name="search"
-                  size={18}
-                  color={theme === 'dark' ? designTokens.semanticDark.info : designTokens.semantic.info}
+                  size={20}
+                  color={colors.primary}
                 />
                 <Text style={[
                   styles.headerTitle,
-                  { color: themeColors.text }
+                  { color: colors.text }
                 ]}>
-                  Search Results
+                  {title}
                 </Text>
               </View>
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <FontAwesome5
-                  name="times"
-                  size={18}
-                  color={themeColors.textSecondary}
+              <TouchableOpacity 
+                onPress={onClose} 
+                style={[
+                  styles.closeButton,
+                  { backgroundColor: colors.surfaces.elevated }
+                ]}
+              >
+                <Icon
+                  name="x"
+                  size={16}
+                  color={colors.textSecondary}
                 />
               </TouchableOpacity>
             </View>
 
-            {/* Search Query */}
-            <View style={[
-              styles.queryContainer,
-              { backgroundColor: themeColors.surface }
-            ]}>
-              <Text style={[
-                styles.queryText,
-                { color: themeColors.textSecondary }
-              ]}>
-                "{searchQuery}"
-              </Text>
-            </View>
+            {/* Results Count */}
+            {results.length > 0 && (
+              <View style={styles.countContainer}>
+                <Text style={[
+                  styles.countText,
+                  { color: colors.textSecondary }
+                ]}>
+                  {results.length} result{results.length !== 1 ? 's' : ''}
+                </Text>
+              </View>
+            )}
 
-            {/* Results */}
-            <ScrollView
-              style={styles.resultsContainer}
-              showsVerticalScrollIndicator={false}
+            {/* Results List */}
+            <FlatList
+              data={results}
+              renderItem={renderResult}
+              keyExtractor={(item, index) => `${item.url}-${index}`}
+              style={styles.resultsList}
               contentContainerStyle={styles.resultsContent}
-            >
-              {results.map((result, index) => {
-                const domain = result.domain || extractDomain(result.url);
-                const siteIcon = getSiteIcon(domain);
-                
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.resultItem,
-                      {
-                        backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
-                        borderBottomColor: theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-                      }
-                    ]}
-                    onPress={() => handleLinkPress(result.url)}
-                    activeOpacity={0.7}
-                  >
-                    {/* URL breadcrumb - Google style */}
-                    <View style={styles.urlBreadcrumb}>
-                      <FontAwesome5
-                        name={siteIcon.name as any}
-                        size={14}
-                        color={theme === 'dark' ? siteIcon.color : siteIcon.color}
-                        style={styles.siteIcon}
-                      />
-                      <Text style={[
-                        styles.urlText,
-                        { color: theme === 'dark' ? '#454545' : '#343434' }
-                      ]}>
-                        {domain}
-                      </Text>
-                      <View style={[
-                        styles.urlChevron,
-                        { backgroundColor: theme === 'dark' ? '#343434' : '#2e2e2e' }
-                      ]} />
-                    </View>
-                    
-                    {/* Title - Google blue link style */}
-                    <Text style={[
-                      styles.resultTitle,
-                      { color: theme === 'dark' ? '#8ab4f8' : '#1a0dab' }
-                    ]}>
-                      {result.title}
-                    </Text>
-                    
-                    {/* Snippet with proper line height */}
-                    {result.snippet && (
-                      <Text style={[
-                        styles.resultSnippet,
-                        { color: theme === 'dark' ? '#313131' : '#323232' }
-                      ]}>
-                        {result.snippet}
-                      </Text>
-                    )}
-                    
-                    {/* Full URL at bottom */}
-                    <Text style={[
-                      styles.fullUrl,
-                      { color: theme === 'dark' ? '#313131' : '#323232' }
-                    ]} numberOfLines={1}>
-                      {result.url}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-              
-              {results.length === 0 && (
-                <View style={styles.emptyState}>
-                  <FontAwesome5
-                    name="search"
-                    size={32}
-                    color={themeColors.textMuted}
-                  />
-                  <Text style={[
-                    styles.emptyText,
-                    { color: themeColors.textMuted }
-                  ]}>
-                    No search results found
-                  </Text>
-                </View>
-              )}
-            </ScrollView>
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={renderEmptyState}
+            />
           </TouchableOpacity>
         </TouchableOpacity>
       </BlurView>
@@ -305,9 +178,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
   },
   modalContainer: {
-    width: Math.min(width - 40, 500),
-    maxHeight: height * 0.8,
-    borderRadius: 2,
+    width: Math.min(width - 32, 600),
+    maxHeight: height * 0.85,
+    borderRadius: 16,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -316,109 +189,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
+    paddingVertical: spacing[4],
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
   },
-  headerLeft: {
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
   headerTitle: {
-    fontSize: 20,
+    fontFamily: typography.fonts.headingMedium,
+    fontSize: 18,
     fontWeight: '600',
-    fontFamily: 'SF Pro Display',
     marginLeft: spacing[2],
-    letterSpacing: -0.3,
   },
   closeButton: {
     padding: spacing[2],
     borderRadius: 8,
   },
-  queryContainer: {
-    marginHorizontal: spacing[4],
-    marginTop: spacing[2],
-    marginBottom: spacing[3],
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[3],
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
-  },
-  queryText: {
-    fontSize: 16,
-    fontFamily: 'SF Pro Text',
-    fontWeight: '500',
-    letterSpacing: -0.1,
-  },
-  resultsContainer: {
-    flex: 1,
+  countContainer: {
     paddingHorizontal: spacing[4],
-    minHeight: 200,
+    paddingVertical: spacing[2],
+  },
+  countText: {
+    fontFamily: typography.fonts.body,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  resultsList: {
+    flex: 1,
   },
   resultsContent: {
+    paddingHorizontal: spacing[4],
     paddingBottom: spacing[4],
-  },
-  resultItem: {
-    paddingVertical: spacing[4],
-    paddingHorizontal: spacing[1],
-    borderBottomWidth: 1,
-    minHeight: 100,
-  },
-  urlBreadcrumb: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing[1],
-  },
-  siteIcon: {
-    marginRight: spacing[2],
-  },
-  urlText: {
-    fontSize: 14,
-    fontFamily: 'SF Pro Text',
-    fontWeight: '400',
-    letterSpacing: 0.1,
-  },
-  urlChevron: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    marginLeft: spacing[2],
-    opacity: 0.6,
-  },
-  resultTitle: {
-    fontSize: 20,
-    fontWeight: '400',
-    fontFamily: 'SF Pro Display',
-    lineHeight: 26,
-    marginBottom: spacing[1],
-    letterSpacing: -0.2,
-  },
-  resultSnippet: {
-    fontSize: 14,
-    fontFamily: 'SF Pro Text',
-    fontWeight: '400',
-    lineHeight: 22,
-    marginBottom: spacing[2],
-    letterSpacing: 0.1,
-  },
-  fullUrl: {
-    fontSize: 12,
-    fontFamily: 'SF Pro Text',
-    fontWeight: '400',
-    letterSpacing: 0.2,
-    opacity: 0.8,
   },
   emptyState: {
     alignItems: 'center',
     paddingVertical: spacing[8],
   },
   emptyText: {
+    fontFamily: typography.fonts.body,
     fontSize: 16,
-    fontFamily: 'Nunito-Regular',
-    marginTop: spacing[2],
+    marginTop: spacing[4],
+    textAlign: 'center',
   },
 });
 
-export default SearchResultsModal;
+export default CustomResultsModal;

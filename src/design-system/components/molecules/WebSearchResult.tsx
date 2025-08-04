@@ -48,7 +48,7 @@ const WebSearchResult: React.FC<WebSearchResultProps> = ({
     <TouchableOpacity
       style={[
         styles.container,
-        getGlassmorphicStyle('card'),
+        getGlassmorphicStyle('card', theme),
         { borderColor: colors.borders.default }
       ]}
       onPress={handlePress}
