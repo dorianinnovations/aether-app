@@ -484,93 +484,16 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     }
   };
 
-  // Render message item
+  // Render message item using EnhancedBubble for proper attachment support
   const renderMessage = ({ item, index }: { item: any; index: number }) => {
-    const isUser = item.sender === 'user';
-    const themeColors = getThemeColors(theme);
-    
     return (
       <View style={styles.messageItem}>
-        {isUser ? (
-          <View style={styles.userContainer}>
-            <View style={[
-              styles.userBubble,
-              {
-                backgroundColor: theme === 'dark' ? '#2A2A2A' : '#F0F0F0',
-                borderWidth: 1,
-                borderColor: theme === 'dark' ? '#404040' : '#D1D1D6',
-                shadowColor: theme === 'dark' ? '#000000' : '#000000',
-                shadowOffset: { width: 2, height: 2 },
-                shadowOpacity: theme === 'dark' ? 0.4 : 0.15,
-                shadowRadius: 4,
-                elevation: 3,
-              }
-            ]}>
-              <Text style={[
-                styles.userText,
-                { color: theme === 'dark' ? '#ffffff' : '#1a1a1a' }
-              ]}>
-                {item.message}
-              </Text>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.botContainer}>
-            {item.variant === 'streaming' && !item.message?.trim() ? (
-              <LottieView
-                source={require('../../../assets/AetherCloudBubble.json')}
-                autoPlay
-                loop
-                style={styles.lottieAnimation}
-              />
-            ) : (
-              <BasicMarkdown theme={theme} style={[
-                styles.botText,
-                { color: theme === 'dark' ? '#ffffff' : '#1a1a1a' }
-              ]}>
-                {item.message}
-              </BasicMarkdown>
-            )}
-            
-            {/* Search Results Display */}
-            {item.metadata?.toolResults && item.metadata.toolResults.some((tool: any) => tool.tool === 'webSearchTool') && (
-              <View style={{
-                marginTop: 12,
-                backgroundColor: theme === 'dark' ? '#2a2a2a' : '#f8f8f8',
-                borderRadius: 8,
-                padding: 12,
-              }}>
-                <Text style={{
-                  color: theme === 'dark' ? '#ffffff' : '#1a1a1a',
-                  fontSize: 14,
-                  fontWeight: '600',
-                  marginBottom: 8,
-                }}>
-                   Search Results
-                </Text>
-                {item.metadata.toolResults
-                  .filter((tool: any) => tool.tool === 'webSearchTool' && tool.data?.structure?.results)
-                  .flatMap((toolResult: any, toolIndex: number) => 
-                    toolResult.data.structure.results.map((result: any, resultIndex: number) => (
-                      <WebSearchResult
-                        key={`search-${toolIndex}-${resultIndex}`}
-                        result={{
-                          title: result.title,
-                          snippet: result.snippet,
-                          url: result.link || result.url,
-                          source: result.source,
-                          position: resultIndex + 1,
-                          thumbnail: result.thumbnail || result.image || result.favicon,
-                          image: result.image || result.thumbnail
-                        }}
-                      />
-                    ))
-                  )
-                }
-              </View>
-            )}
-          </View>
-        )}
+        <EnhancedBubble
+          message={item}
+          index={index}
+          theme={theme}
+          messageIndex={index}
+        />
       </View>
     );
   };

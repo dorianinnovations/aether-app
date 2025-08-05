@@ -333,38 +333,41 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
         {isUser ? (
           // User messages
           <View style={styles.userMessageContainer}>
-            {/* Show message bubble for both text and image-only messages */}
-            <Animated.View style={[
-              styles.userProfileBubble,
-              {
-                backgroundColor: theme === 'light' ? '#F0F0F0' : '#202020',
-                borderWidth: 1,
-                borderColor: theme === 'light' ? '#E5E5E7' : '#38383A',
-              }
-            ]}>
-              {/* Render photo attachments within the bubble */}
-              {renderPhotoAttachments()}
-              {/* Only render text if there is actual text content */}
-              {((message.text && message.text.trim().length > 0) || (message.message && message.message.trim().length > 0)) && (
-                <Text 
-                  style={[
-                    styles.messageText,
-                    {
-                      fontSize: 12,
-                      lineHeight: 22,
-                      letterSpacing: -0.1,
-                      fontFamily: 'Nunito-Regular',
-                      fontWeight: '400',
-                      color: theme === 'dark' ? '#ffffff' : '#1a1a1a',
-                      textAlign: 'left',
-                      marginTop: message.attachments && message.attachments.length > 0 ? 8 : 0,
-                    }
-                  ]}
-                >
-                  {message.text || message.message}
-                </Text>
-              )}
-            </Animated.View>
+            {/* Show message bubble when there's text or attachments */}
+            {(((message.text && message.text.trim().length > 0) || (message.message && message.message.trim().length > 0)) || 
+              (message.attachments && message.attachments.length > 0)) && (
+              <Animated.View style={[
+                styles.userProfileBubble,
+                {
+                  backgroundColor: theme === 'light' ? '#F0F0F0' : '#202020',
+                  borderWidth: 1,
+                  borderColor: theme === 'light' ? '#E5E5E7' : '#38383A',
+                }
+              ]}>
+                {/* Render photo attachments within the bubble */}
+                {renderPhotoAttachments()}
+                {/* Only render text if there is actual text content */}
+                {((message.text && message.text.trim().length > 0) || (message.message && message.message.trim().length > 0)) && (
+                  <Text 
+                    style={[
+                      styles.messageText,
+                      {
+                        fontSize: 12,
+                        lineHeight: 22,
+                        letterSpacing: -0.1,
+                        fontFamily: 'Nunito-Regular',
+                        fontWeight: '400',
+                        color: theme === 'dark' ? '#ffffff' : '#1a1a1a',
+                        textAlign: 'left',
+                        marginTop: message.attachments && message.attachments.length > 0 ? 8 : 0,
+                      }
+                    ]}
+                  >
+                    {message.text || message.message}
+                  </Text>
+                )}
+              </Animated.View>
+            )}
           </View>
         ) : (
           // Bot messages - no bubble, just animated text
