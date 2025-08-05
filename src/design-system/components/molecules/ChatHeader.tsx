@@ -78,7 +78,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         >
           <Icon 
             name="message-square" 
-            size="md" 
+            size="lg" 
             color="muted"
             theme={theme}
           />
@@ -91,7 +91,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         >
           <Icon 
             name="settings" 
-            size="md" 
+            size="lg" 
             color="muted"
             theme={theme}
           />

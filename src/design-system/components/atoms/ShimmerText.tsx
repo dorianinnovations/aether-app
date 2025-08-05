@@ -66,7 +66,7 @@ export const ShimmerText: React.FC<ShimmerTextProps> = ({
 
     const animate = () => {
       if (animationMode === 'greeting-sequence') {
-        // Custom greeting sequence: 2.49s forward (-15% speed, stops at 1.0) → 0.1s pause → 0.45s reverse (1.1x faster) → 5.96s pause (total 9s)
+        // Custom greeting sequence: 2.49s forward (-15% speed, stops at 1.0) → 0.1s pause → 0.45s reverse (1.1x faster) → 16.96s pause (total 20s)
         const runGreetingSequence = () => {
           animatedValue.setValue(0);
           
@@ -84,10 +84,10 @@ export const ShimmerText: React.FC<ShimmerTextProps> = ({
                 duration: 454,
                 useNativeDriver: false,
               }).start(() => {
-                // 5.96s pause before repeating (total cycle = 9s)
+                // 16.96s pause before repeating (total cycle = 20s)
                 setTimeout(() => {
                   runGreetingSequence();
-                }, 5956);
+                }, 16956);
               });
             }, 100);
           });

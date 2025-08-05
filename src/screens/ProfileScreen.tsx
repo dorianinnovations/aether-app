@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
@@ -26,8 +28,7 @@ import { spacing } from '../design-system/tokens/spacing';
 import { getButtonColors } from '../design-system/tokens/colors';
 
 // Services
-import { UserAPI, TokenManager, AuthAPI, MatchingAPI } from '../services/api';
-import { useMatching } from '../hooks/useMatching';
+import { UserAPI, TokenManager, AuthAPI, FriendsAPI } from '../services/api';
 
 interface UserProfile {
   profilePicture?: string;
@@ -38,6 +39,7 @@ interface UserProfile {
   bio?: string;
   location?: string;
   website?: string;
+  username?: string;
 }
 
 export const ProfileScreen: React.FC = () => {
@@ -45,14 +47,26 @@ export const ProfileScreen: React.FC = () => {
   const { theme, colors } = useTheme();
   
   const [editMode, setEditMode] = useState(false);
+  const [viewMode, setViewMode] = useState<'basic' | 'busy'>('basic');
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [showAnalysisData, setShowAnalysisData] = useState(false);
 
+  // Animation refs for sequential fade-in
+  const interestsOpacity = useRef(new Animated.Value(0)).current;
+  const communicationOpacity = useRef(new Animated.Value(0)).current;
+  const statsOpacity = useRef(new Animated.Value(0)).current;
+  const lastAnalyzedOpacity = useRef(new Animated.Value(0)).current;
+
+  // ScrollView and Qualia section refs
+  const scrollViewRef = useRef<ScrollView>(null);
+  const qualiaViewRef = useRef<View>(null);
+
   // Matching hook for profile analysis data
-  const { userProfile: analysisProfile, hasProfile, fetchUserProfile } = useMatching();
+  // TODO: Replace with social proxy profile management
+  const analysisProfile: any = null; // Temporary fallback until social proxy is implemented
 
   // Header menu hook
   const { showHeaderMenu, setShowHeaderMenu, handleMenuAction, toggleHeaderMenu } = useHeaderMenu({
@@ -66,12 +80,13 @@ export const ProfileScreen: React.FC = () => {
       const token = await TokenManager.getToken();
       if (token) {
         loadProfile();
-        fetchUserProfile(); // Load analysis profile data
+        // TODO: Load social proxy profile data
+        // fetchSocialProxyProfile();
       }
     };
     
     initializeProfile();
-  }, [fetchUserProfile]);
+  }, []);
 
   const handleNavigateBack = () => {
     navigation.goBack();
@@ -102,10 +117,13 @@ export const ProfileScreen: React.FC = () => {
 
     try {
       setLoading(true);
-      const response = await UserAPI.getProfile();
+      const [profileResponse, usernameResponse] = await Promise.all([
+        UserAPI.getProfile(),
+        FriendsAPI.getUserUsername().catch(() => ({ username: null }))
+      ]);
       
-      if (response.status === 'success') {
-        const userData = response.data.user;
+      if (profileResponse.status === 'success') {
+        const userData = profileResponse.data.user;
         setProfile({
           id: userData.id,
           email: userData.email,
@@ -113,8 +131,9 @@ export const ProfileScreen: React.FC = () => {
           bio: userData.bio,
           location: userData.location,
           website: userData.website,
-          profilePicture: response.data.profilePicture,
-          bannerImage: response.data.bannerImage,
+          profilePicture: profileResponse.data.profilePicture,
+          bannerImage: profileResponse.data.bannerImage,
+          username: usernameResponse.username || userData.username,
         });
       }
     } catch (error: any) {
@@ -305,6 +324,77 @@ export const ProfileScreen: React.FC = () => {
     }) : null);
   };
 
+  // Sequential animation function
+  const animateAnalysisItems = () => {
+    // Reset all animations
+    interestsOpacity.setValue(0);
+    communicationOpacity.setValue(0);
+    statsOpacity.setValue(0);
+    lastAnalyzedOpacity.setValue(0);
+
+    // Sequential animations with stagger
+    const animations = [
+      Animated.timing(interestsOpacity, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(communicationOpacity, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(statsOpacity, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(lastAnalyzedOpacity, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ];
+
+    // Stagger each animation by 150ms
+    animations.forEach((animation, index) => {
+      setTimeout(() => animation.start(), index * 150);
+    });
+  };
+
+  // Scroll to Qualia section
+  const scrollToQualia = () => {
+    if (qualiaViewRef.current && scrollViewRef.current) {
+      qualiaViewRef.current.measure((x, y, width, height, pageX, pageY) => {
+        // Calculate position to center the Qualia section on screen
+        const screenHeight = Dimensions.get('window').height;
+        const scrollToY = Math.max(0, pageY - (screenHeight * 0.3)); // Position 30% from top
+        
+        scrollViewRef.current?.scrollTo({
+          y: scrollToY,
+          animated: true,
+        });
+      });
+    }
+  };
+
+  // Handle Qualia section toggle
+  const toggleAnalysisData = () => {
+    const newValue = !showAnalysisData;
+    setShowAnalysisData(newValue);
+    
+    if (newValue) {
+      // Scroll to section and start animations when expanding
+      setTimeout(() => scrollToQualia(), 50);
+      setTimeout(() => animateAnalysisItems(), 200);
+    }
+  };
+
+  // Handle view mode toggle
+  const toggleViewMode = () => {
+    setViewMode(prev => prev === 'basic' ? 'busy' : 'basic');
+  };
+
   if (loading) {
     return (
       <PageBackground theme={theme} variant="profile">
@@ -315,7 +405,7 @@ export const ProfileScreen: React.FC = () => {
             translucent={true}
           />
           <Header 
-            title="Profile"
+            title="Aether"
             showBackButton={true}
             showMenuButton={true}
             onBackPress={handleNavigateBack}
@@ -342,7 +432,7 @@ export const ProfileScreen: React.FC = () => {
             translucent={true}
           />
           <Header 
-            title="Profile"
+            title="Aether"
             showBackButton={true}
             showMenuButton={true}
             onBackPress={handleNavigateBack}
@@ -374,7 +464,7 @@ export const ProfileScreen: React.FC = () => {
           />
           
           <Header 
-            title="Profile"
+            title="Aether"
             showBackButton={true}
             showMenuButton={true}
             onBackPress={handleNavigateBack}
@@ -394,9 +484,14 @@ export const ProfileScreen: React.FC = () => {
                 />
               </TouchableOpacity>
             }
+            onRightPress={() => {}}
           />
 
-          <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          <ScrollView 
+            ref={scrollViewRef}
+            style={styles.scrollView} 
+            contentContainerStyle={styles.scrollContent}
+          >
           {/* Profile Banner */}
           <TouchableOpacity 
             style={[styles.profileBanner, { backgroundColor: colors.surface }]}
@@ -422,10 +517,12 @@ export const ProfileScreen: React.FC = () => {
                 <Feather name="x" size={16} color="#2D5A3D" />
               </TouchableOpacity>
             )}
-            {/* Online Status Indicator */}
+            {/* Online Status Indicator - more detailed in busy view */}
             <View style={[styles.onlineIndicator, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
               <View style={[styles.onlineDot, { backgroundColor: '#4CAF50' }]} />
-              <Text style={[styles.onlineText, { color: '#4CAF50' }]}>online</Text>
+              <Text style={[styles.onlineText, { color: '#4CAF50' }]}>
+                {viewMode === 'basic' ? 'online' : 'online • active now'}
+              </Text>
             </View>
             
             {/* Profile Header */}
@@ -467,27 +564,17 @@ export const ProfileScreen: React.FC = () => {
 
           {/* Profile Fields */}
           <View style={styles.fieldsContainer}>
-            <View style={styles.fieldContainer}>
-              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Username</Text>
-              {editMode ? (
-                <TextInput
-                  style={[styles.input, { 
-                    backgroundColor: colors.surface,
-                    color: colors.text,
-                    borderColor: colors.borders.default
-                  }]}
-                  value={profile.name || ''}
-                  onChangeText={(text) => handleFieldChange('name', text)}
-                  placeholder="Enter your username"
-                  placeholderTextColor={colors.textSecondary}
-                />
-              ) : (
-                <Text style={[styles.fieldValue, { color: colors.text }]}>
-                  {profile.name || 'No username set'}
+            {/* Always show username if available */}
+            {profile.username && (
+              <View style={styles.fieldContainer}>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Username</Text>
+                <Text style={[styles.fieldValue, { color: colors.text, fontFamily: 'monospace' }]}>
+                  @{profile.username}
                 </Text>
-              )}
-            </View>
+              </View>
+            )}
 
+            {/* Always show email */}
             <View style={styles.fieldContainer}>
               <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Email</Text>
               <Text style={[styles.fieldValue, { color: colors.text }]}>
@@ -495,6 +582,7 @@ export const ProfileScreen: React.FC = () => {
               </Text>
             </View>
 
+            {/* Always show bio */}
             <View style={styles.fieldContainer}>
               <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Bio</Text>
               {editMode ? (
@@ -518,60 +606,79 @@ export const ProfileScreen: React.FC = () => {
               )}
             </View>
 
-            <View style={styles.fieldContainer}>
-              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Location</Text>
-              {editMode ? (
-                <TextInput
-                  style={[styles.input, { 
-                    backgroundColor: colors.surface,
-                    color: colors.text,
-                    borderColor: colors.borders.default
-                  }]}
-                  value={profile.location || ''}
-                  onChangeText={(text) => handleFieldChange('location', text)}
-                  placeholder="Enter your location"
-                  placeholderTextColor={colors.textSecondary}
-                />
-              ) : (
-                <Text style={[styles.fieldValue, { color: colors.text }]}>
-                  {profile.location || 'No location set'}
-                </Text>
-              )}
-            </View>
+            {/* Basic view: Only show location and website if they have values, or in edit mode */}
+            {/* Busy view: Always show all fields */}
+            {(viewMode === 'busy' || profile.location || editMode) && (
+              <View style={styles.fieldContainer}>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Location</Text>
+                {editMode ? (
+                  <TextInput
+                    style={[styles.input, { 
+                      backgroundColor: colors.surface,
+                      color: colors.text,
+                      borderColor: colors.borders.default
+                    }]}
+                    value={profile.location || ''}
+                    onChangeText={(text) => handleFieldChange('location', text)}
+                    placeholder="Enter your location"
+                    placeholderTextColor={colors.textSecondary}
+                  />
+                ) : (
+                  <Text style={[styles.fieldValue, { color: colors.text }]}>
+                    {profile.location || (viewMode === 'busy' ? 'No location set' : '')}
+                  </Text>
+                )}
+              </View>
+            )}
 
-            <View style={styles.fieldContainer}>
-              <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Website</Text>
-              {editMode ? (
-                <TextInput
-                  style={[styles.input, { 
-                    backgroundColor: colors.surface,
-                    color: colors.text,
-                    borderColor: colors.borders.default
-                  }]}
-                  value={profile.website || ''}
-                  onChangeText={(text) => handleFieldChange('website', text)}
-                  placeholder="Enter your website URL"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="url"
-                  autoCapitalize="none"
-                />
-              ) : (
-                <Text style={[styles.fieldValue, { color: colors.text }]}>
-                  {profile.website || 'No website set'}
-                </Text>
-              )}
-            </View>
+            {(viewMode === 'busy' || profile.website || editMode) && (
+              <View style={styles.fieldContainer}>
+                <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Website</Text>
+                {editMode ? (
+                  <TextInput
+                    style={[styles.input, { 
+                      backgroundColor: colors.surface,
+                      color: colors.text,
+                      borderColor: colors.borders.default
+                    }]}
+                    value={profile.website || ''}
+                    onChangeText={(text) => handleFieldChange('website', text)}
+                    placeholder="Enter your website URL"
+                    placeholderTextColor={colors.textSecondary}
+                    keyboardType="url"
+                    autoCapitalize="none"
+                  />
+                ) : (
+                  <Text style={[styles.fieldValue, { color: colors.text }]}>
+                    {profile.website || (viewMode === 'busy' ? 'No website set' : '')}
+                  </Text>
+                )}
+              </View>
+            )}
 
-            {/* AI Analysis Section - only show if profile exists */}
-            {hasProfile && analysisProfile && (
-              <View style={styles.analysisSection}>
+            {/* View Mode Indicator - only in busy mode */}
+            {viewMode === 'busy' && (
+              <View style={[styles.viewModeIndicator, { 
+                backgroundColor: colors.surface,
+                borderColor: colors.borders.default
+              }]}>
+                <Feather name="info" size={16} color={colors.textSecondary} />
+                <Text style={[styles.viewModeText, { color: colors.textSecondary }]}>
+                  Showing detailed view - switch to Basic to see essential info only
+                </Text>
+              </View>
+            )}
+
+            {/* TODO: Social Proxy Analysis Section */}
+            {false && (
+              <View ref={qualiaViewRef} style={styles.analysisSection}>
                 <TouchableOpacity
                   style={styles.analysisSectionHeader}
-                  onPress={() => setShowAnalysisData(!showAnalysisData)}
+                  onPress={toggleAnalysisData}
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.analysisSectionTitle, { color: colors.text }]}>
-                    AI Profile Analysis
+                    Qualia
                   </Text>
                   <Feather
                     name={showAnalysisData ? 'chevron-up' : 'chevron-down'}
@@ -583,13 +690,13 @@ export const ProfileScreen: React.FC = () => {
                 {showAnalysisData && (
                   <View style={styles.analysisContent}>
                     {/* Interests */}
-                    {analysisProfile.interests && analysisProfile.interests.length > 0 && (
-                      <View style={styles.analysisSubsection}>
+                    {analysisProfile?.interests && analysisProfile.interests.length > 0 && (
+                      <Animated.View style={[styles.analysisSubsection, { opacity: interestsOpacity }]}>
                         <Text style={[styles.analysisSubtitle, { color: colors.textSecondary }]}>
                           Detected Interests
                         </Text>
                         <View style={styles.interestsContainer}>
-                          {analysisProfile.interests.slice(0, 6).map((interest, index) => (
+                          {analysisProfile?.interests?.slice(0, 6).map((interest: any, index: number) => (
                             <View
                               key={index}
                               style={[styles.interestTag, { 
@@ -606,22 +713,24 @@ export const ProfileScreen: React.FC = () => {
                             </View>
                           ))}
                         </View>
-                      </View>
+                      </Animated.View>
                     )}
 
                     {/* Communication Style */}
-                    {analysisProfile.communicationStyle && (
-                      <View style={styles.analysisSubsection}>
+                    {analysisProfile?.communicationStyle && (
+                      <Animated.View style={[styles.analysisSubsection, { opacity: communicationOpacity }]}>
                         <Text style={[styles.analysisSubtitle, { color: colors.textSecondary }]}>
                           Communication Style
                         </Text>
                         <View style={styles.communicationGrid}>
-                          {Object.entries(analysisProfile.communicationStyle).map(([key, value]) => (
+                          {Object.entries(analysisProfile?.communicationStyle || {}).map(([key, value]: [string, any]) => (
                             <View key={key} style={styles.styleItem}>
                               <Text style={[styles.styleLabel, { color: colors.text }]}>
                                 {key.charAt(0).toUpperCase() + key.slice(1)}
                               </Text>
-                              <View style={[styles.progressBar, { backgroundColor: colors.surface }]}>
+                              <View style={[styles.progressBar, { 
+                                backgroundColor: theme === 'light' ? '#E0E0E0' : colors.surface 
+                              }]}>
                                 <View
                                   style={[
                                     styles.progressFill,
@@ -638,18 +747,18 @@ export const ProfileScreen: React.FC = () => {
                             </View>
                           ))}
                         </View>
-                      </View>
+                      </Animated.View>
                     )}
 
                     {/* Profile Statistics */}
-                    <View style={styles.analysisSubsection}>
+                    <Animated.View style={[styles.analysisSubsection, { opacity: statsOpacity }]}>
                       <Text style={[styles.analysisSubtitle, { color: colors.textSecondary }]}>
                         Profile Statistics
                       </Text>
                       <View style={styles.statsGrid}>
                         <View style={styles.statItem}>
                           <Text style={[styles.statValue, { color: colors.text }]}>
-                            {analysisProfile.totalMessages || 0}
+                            {analysisProfile?.totalMessages || 0}
                           </Text>
                           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
                             Messages Analyzed
@@ -657,7 +766,7 @@ export const ProfileScreen: React.FC = () => {
                         </View>
                         <View style={styles.statItem}>
                           <Text style={[styles.statValue, { color: colors.text }]}>
-                            {analysisProfile.interests?.length || 0}
+                            {analysisProfile?.interests?.length || 0}
                           </Text>
                           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
                             Interests Found
@@ -665,22 +774,22 @@ export const ProfileScreen: React.FC = () => {
                         </View>
                         <View style={styles.statItem}>
                           <Text style={[styles.statValue, { color: colors.text }]}>
-                            {analysisProfile.compatibilityTags?.length || 0}
+                            {analysisProfile?.compatibilityTags?.length || 0}
                           </Text>
                           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
                             Compatibility Tags
                           </Text>
                         </View>
                       </View>
-                    </View>
+                    </Animated.View>
 
                     {/* Last Analyzed */}
-                    {analysisProfile.lastAnalyzed && (
-                      <View style={styles.lastAnalyzedContainer}>
+                    {analysisProfile?.lastAnalyzed && (
+                      <Animated.View style={[styles.lastAnalyzedContainer, { opacity: lastAnalyzedOpacity }]}>
                         <Text style={[styles.lastAnalyzedText, { color: colors.textSecondary }]}>
-                          Last analyzed: {new Date(analysisProfile.lastAnalyzed).toLocaleDateString()}
+                          Last analyzed: {analysisProfile?.lastAnalyzed ? new Date(analysisProfile.lastAnalyzed).toLocaleDateString() : 'Never'}
                         </Text>
-                      </View>
+                      </Animated.View>
                     )}
                   </View>
                 )}
@@ -699,6 +808,23 @@ export const ProfileScreen: React.FC = () => {
           onAction={handleMenuAction}
           showAuthOptions={true}
         />
+
+        {/* Floating View Mode Toggle Button */}
+        <TouchableOpacity
+          onPress={toggleViewMode}
+          activeOpacity={0.8}
+          style={[styles.fab, { 
+            backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.8)',
+            borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)',
+            shadowColor: theme === 'dark' ? '#000000' : '#000000',
+          }]}
+        >
+          <Feather 
+            name={viewMode === 'basic' ? 'layers' : 'minimize-2'} 
+            size={18} 
+            color={theme === 'dark' ? '#FFFFFF' : '#333333'}
+          />
+        </TouchableOpacity>
 
         {/* Sign Out Modal */}
         <SignOutModal
@@ -848,6 +974,44 @@ const styles = StyleSheet.create({
   // Header Icon
   headerIcon: {
     padding: spacing[2],
+  },
+  
+  // Floating Action Button
+  fab: {
+    position: 'absolute',
+    bottom: 30,
+    right: 30,
+    width: 64,
+    height: 36,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    zIndex: 1000,
+  },
+  
+  // View Mode Indicator
+  viewModeIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: spacing[4],
+  },
+  viewModeText: {
+    ...typography.textStyles.caption,
+    flex: 1,
+    fontStyle: 'italic',
   },
   
   // Loading and error states

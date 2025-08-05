@@ -1,6 +1,11 @@
+/**
+ * Logger utility
+ * Centralized logging with environment-based filtering
+ */
+
 const isDev = __DEV__;
 
-export const log = {
+export const logger = {
   debug: (message: string, ...args: any[]) => {
     if (isDev) {
       console.log(`[DEBUG] ${message}`, ...args);
@@ -30,4 +35,6 @@ export const log = {
   }
 };
 
-export default log;
+// Legacy export for backward compatibility
+export const log = logger;
+export default logger;

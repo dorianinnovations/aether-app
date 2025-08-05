@@ -114,7 +114,6 @@ export class StreamEngine {
                 }
                 // Capture metadata if present
                 if (parsed.metadata) {
-                  console.log('📍 StreamEngine: Received metadata:', JSON.stringify(parsed.metadata, null, 2));
                   currentMetadata = parsed.metadata;
                 }
               } catch (e) {
@@ -162,7 +161,6 @@ export class StreamEngine {
     
     // Yield metadata as final chunk if available
     if (currentMetadata) {
-      console.log('📍 StreamEngine: Yielding metadata:', JSON.stringify(currentMetadata, null, 2));
       yield { text: '', metadata: currentMetadata };
     }
   }

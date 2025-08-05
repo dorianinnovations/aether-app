@@ -60,7 +60,7 @@ export const DEFAULT_SETTINGS = {
   autoLock: true,
   autoLockTimeout: 300, // 5 minutes in seconds
   // Background
-  backgroundType: 'blue' as 'blue' | 'white',
+  backgroundType: 'blue' as 'blue' | 'white' | 'sage' | 'lavender' | 'cream' | 'mint' | 'pearl',
   // Dynamic Options
   dynamicOptions: false,
 };

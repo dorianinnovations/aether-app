@@ -15,6 +15,7 @@ import {
   TextInput,
   Image,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { designTokens, getThemeColors, getStandardBorder } from '../../tokens/colors';
@@ -48,7 +49,13 @@ interface HeaderProps {
   onSearchChange?: (query: string) => void;
   searchPlaceholder?: string;
   style?: any;
+  // Scroll-responsive props
+  scrollY?: Animated.Value;
+  isScrolled?: boolean;
+  leftIcon?: React.ReactNode;
+  onLeftPress?: () => void;
   rightIcon?: React.ReactNode;
+  onRightPress?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -75,13 +82,83 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   searchPlaceholder = 'Search...',
   style,
+  leftIcon,
+  onLeftPress,
   rightIcon,
+  onRightPress,
+  scrollY,
+  isScrolled = false,
 }) => {
   const themeColors = getThemeColors(theme as 'light' | 'dark');
+  const navigation = useNavigation<any>();
   const [backPressed, setBackPressed] = useState(false);
   const [menuPressed, setMenuPressed] = useState(false);
   const [conversationsPressed, setConversationsPressed] = useState(false);
   const [analyticsPressed, setAnalyticsPressed] = useState(false);
+
+  // Scroll-responsive animations
+  const headerOpacity = useRef(new Animated.Value(isScrolled ? 0.95 : 1)).current;
+  const titleScale = useRef(new Animated.Value(isScrolled ? 0.9 : 1)).current;
+  const subtitleOpacity = useRef(new Animated.Value(isScrolled ? 0 : 1)).current;
+
+  // Logo animation values
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const [logoAnimationComplete, setLogoAnimationComplete] = useState(false);
+
+  // Logo animation sequence on component mount (only for Aether title)
+  useEffect(() => {
+    if (title === 'Aether' && !logoAnimationComplete) {
+      // Reset animation values
+      logoOpacity.setValue(0);
+
+      // Start the animation sequence
+      Animated.sequence([
+        // Fade in (0-1.5s)
+        Animated.timing(logoOpacity, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        // Hold visible (1.5-3.5s) - 2 second pause
+        Animated.delay(2000),
+        // Fade out to 20% (3.5-4.5s)
+        Animated.timing(logoOpacity, {
+          toValue: 0.2,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setLogoAnimationComplete(true);
+      });
+    }
+  }, [title, logoAnimationComplete]);
+
+  // Animate header when scroll state changes
+  useEffect(() => {
+    const duration = 300;
+    const config = {
+      duration,
+      useNativeDriver: false,
+    };
+
+    Animated.parallel([
+      Animated.timing(headerOpacity, {
+        toValue: isScrolled ? 0.95 : 1,
+        ...config,
+        useNativeDriver: true,
+      }),
+      Animated.timing(titleScale, {
+        toValue: isScrolled ? 0.9 : 1,
+        ...config,
+        useNativeDriver: true,
+      }),
+      Animated.timing(subtitleOpacity, {
+        toValue: isScrolled ? 0 : 1,
+        ...config,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [isScrolled]);
   const [searchPressed, setSearchPressed] = useState(false);
   const [dynamicOptionsPressed, setDynamicOptionsPressed] = useState(false);
 
@@ -178,22 +255,27 @@ export const Header: React.FC<HeaderProps> = ({
       }),
     ]).start();
 
-    setPressed(true);
-    
-    // Clear any existing timeout for this button
-    const existingTimeout = buttonTimeoutRefs.current.get(buttonId);
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
-    }
-    
-    // Set new timeout with cleanup tracking
-    const timeoutId = setTimeout(() => {
-      setPressed(false);
-      onPress?.();
-      buttonTimeoutRefs.current.delete(buttonId);
-    }, 150);
-    
-    buttonTimeoutRefs.current.set(buttonId, timeoutId);
+    // Use requestAnimationFrame to avoid scheduling updates during render
+    requestAnimationFrame(() => {
+      setPressed(true);
+      
+      // Clear any existing timeout for this button
+      const existingTimeout = buttonTimeoutRefs.current.get(buttonId);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
+      }
+      
+      // Set new timeout with cleanup tracking
+      const timeoutId = setTimeout(() => {
+        requestAnimationFrame(() => {
+          setPressed(false);
+          onPress?.();
+        });
+        buttonTimeoutRefs.current.delete(buttonId);
+      }, 150);
+      
+      buttonTimeoutRefs.current.set(buttonId, timeoutId);
+    });
   };
 
   const handleBackPress = createButtonPressHandler(backButtonScale, setBackPressed, 'back', onBackPress);
@@ -217,24 +299,42 @@ export const Header: React.FC<HeaderProps> = ({
       }),
     ]).start();
 
-    setMenuPressed(true);
-    
-    // Clear any existing menu timeout
-    if (menuTimeoutRef.current) {
-      clearTimeout(menuTimeoutRef.current);
-    }
-    
-    // Set new timeout with cleanup tracking
-    menuTimeoutRef.current = setTimeout(() => {
-      setMenuPressed(false);
-      onMenuPress?.();
-    }, 80);
+    // Use requestAnimationFrame to avoid scheduling updates during render
+    requestAnimationFrame(() => {
+      setMenuPressed(true);
+      
+      // Clear any existing menu timeout
+      if (menuTimeoutRef.current) {
+        clearTimeout(menuTimeoutRef.current);
+      }
+      
+      // Set new timeout with cleanup tracking
+      menuTimeoutRef.current = setTimeout(() => {
+        requestAnimationFrame(() => {
+          setMenuPressed(false);
+          onMenuPress?.();
+        });
+      }, 80);
+    });
   };
   
   const handleConversationsPress = createButtonPressHandler(conversationsButtonScale, setConversationsPressed, 'conversations', onConversationsPress);
   const handleAnalyticsPress = createButtonPressHandler(analyticsButtonScale, setAnalyticsPressed, 'analytics', onQuickAnalyticsPress);
   const handleSearchPress = createButtonPressHandler(searchButtonScale, setSearchPressed, 'search', onSearchPress);
   const handleDynamicOptionsPress = createButtonPressHandler(dynamicOptionsButtonScale, setDynamicOptionsPressed, 'dynamicOptions', onDynamicOptionsPress);
+
+  // Logo press handler - navigate to main chat screen
+  const handleLogoPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      // Navigate to Chat screen (main screen for authenticated users)
+      navigation.navigate('Chat');
+    } catch (error) {
+      console.log('Navigation to Chat failed:', error);
+      // Fallback: use onTitlePress if provided
+      onTitlePress?.();
+    }
+  };
 
   const renderButton = (
     iconName: string,
@@ -255,7 +355,7 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <IconComponent
             name={iconName as any}
-            size={20}
+            size={23}
             color={color}
             style={{ opacity: isPressed ? 0.7 : 1 }}
           />
@@ -269,8 +369,8 @@ export const Header: React.FC<HeaderProps> = ({
   const totalButtons = showMenuButton ? nonMenuButtonCount + 1 : nonMenuButtonCount;
   const shouldSplit = totalButtons >= 2;
 
-  // Left buttons (when splitting or when back button is present)
-  const leftButtonsRender = (shouldSplit || showBackButton) ? (
+  // Left buttons (when splitting or when back button is present or when leftIcon is present)
+  const leftButtonsRender = (shouldSplit || showBackButton || leftIcon) ? (
     <View style={styles.leftSection}>
       {showBackButton && renderButton(
         'arrow-left',
@@ -287,6 +387,23 @@ export const Header: React.FC<HeaderProps> = ({
         conversationsButtonScale,
         handleConversationsPress,
         conversationsPressed
+      )}
+      {leftIcon && onLeftPress && (
+        <TouchableOpacity
+          style={styles.leftIconContainer}
+          onPress={onLeftPress}
+          activeOpacity={0.7}
+        >
+          {typeof leftIcon === 'string' ? (
+            <Feather
+              name={leftIcon as any}
+              size={23}
+              color={theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary}
+            />
+          ) : (
+            leftIcon
+          )}
+        </TouchableOpacity>
       )}
       {shouldSplit && showDynamicOptionsButton && renderButton(
         'layers',
@@ -348,10 +465,22 @@ export const Header: React.FC<HeaderProps> = ({
         analyticsPressed
       )}
 
-      {rightIcon && (
-        <View style={styles.rightIconContainer}>
-          {rightIcon}
-        </View>
+      {rightIcon && onRightPress && (
+        <TouchableOpacity
+          style={styles.rightIconContainer}
+          onPress={onRightPress}
+          activeOpacity={0.7}
+        >
+          {typeof rightIcon === 'string' ? (
+            <Feather
+              name={rightIcon as any}
+              size={23}
+              color={theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary}
+            />
+          ) : (
+            rightIcon
+          )}
+        </TouchableOpacity>
       )}
 
       {showMenuButton && (
@@ -364,7 +493,7 @@ export const Header: React.FC<HeaderProps> = ({
             <AnimatedHamburger
               isOpen={isMenuOpen}
               color={theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary}
-              size={20}
+              size={23}
             />
           </TouchableOpacity>
         </Animated.View>
@@ -377,9 +506,10 @@ export const Header: React.FC<HeaderProps> = ({
       style={[
         styles.header,
         {
-          backgroundColor: theme === 'light' ? designTokens.brand.surface : designTokens.brand.surfaceDark,
           ...getStandardBorder(theme),
-          opacity: visibilityAnim,
+          opacity: Animated.multiply(visibilityAnim, headerOpacity),
+          height: isScrolled ? 50 : 58,
+          backgroundColor: theme === 'dark' ? designTokens.brand.surfaceDark : designTokens.brand.surface,
           transform: [{
             translateY: visibilityAnim.interpolate({
               inputRange: [0, 1],
@@ -426,31 +556,54 @@ export const Header: React.FC<HeaderProps> = ({
             styles.titleContainer,
             {
               opacity: titleFadeAnim,
-              transform: [{
-                scale: titleFadeAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.8, 1],
-                })
-              }],
+              transform: [
+                {
+                  scale: Animated.multiply(
+                    titleFadeAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.8, 1],
+                    }),
+                    titleScale
+                  )
+                }
+              ],
               position: !showSearch ? 'relative' : 'absolute',
               zIndex: !showSearch ? 1 : 0,
             }
           ]}>
             <TouchableOpacity
-              onPress={onTitlePress}
-              activeOpacity={onTitlePress ? 0.7 : 1}
-              disabled={!onTitlePress || showSearch}
+              onPress={title === 'Aether' ? handleLogoPress : onTitlePress}
+              activeOpacity={0.7}
+              disabled={showSearch}
             >
               <View style={styles.titleRow}>
                 {title === 'Aether' ? (
-                  <Image
-                    source={theme === 'dark' 
-                      ? require('../../../../assets/images/aether-logo-dark-mode.webp')
-                      : require('../../../../assets/images/aether-logo-light-mode.webp')
+                  <Animated.View style={[
+                    styles.logoContainer,
+                    {
+                      opacity: logoOpacity
                     }
-                    style={styles.logo}
-                    resizeMode="contain"
-                  />
+                  ]}>
+                    <Animated.Image
+                      source={theme === 'dark' 
+                        ? require('../../../../assets/images/aether-logo-dark-mode.webp')
+                        : require('../../../../assets/images/aether-logo-light-mode.webp')
+                      }
+                      style={[styles.logo, { 
+                        opacity: theme === 'dark' ? 0.5 : 0.2, 
+                        transform: [{ rotate: '25deg' }, { scaleX: 2.0 }] 
+                      }]}
+                      resizeMode="contain"
+                    />
+                    <Animated.Image
+                      source={theme === 'dark' 
+                        ? require('../../../../assets/images/aether-brand-logo-dark.webp')
+                        : require('../../../../assets/images/aether-brand-logo-light.webp')
+                      }
+                      style={styles.brandLogoOverlay}
+                      resizeMode="contain"
+                    />
+                  </Animated.View>
                 ) : (
                   <Text style={[
                     styles.title,
@@ -462,13 +615,16 @@ export const Header: React.FC<HeaderProps> = ({
                 )}
               </View>
               {subtitle && (
-                <Text style={[
+                <Animated.Text style={[
                   styles.subtitle,
                   typography.textStyles.caption,
-                  { color: themeColors.textSecondary }
+                  { 
+                    color: themeColors.textSecondary,
+                    opacity: subtitleOpacity,
+                  }
                 ]}>
                   {subtitle}
-                </Text>
+                </Animated.Text>
               )}
             </TouchableOpacity>
           </Animated.View>
@@ -490,7 +646,7 @@ const styles = StyleSheet.create({
     zIndex: 100,
     borderRadius: 10,
     paddingHorizontal: spacing[2],
-    paddingVertical: spacing[2],
+    paddingVertical: spacing[3],
   },
   content: {
     flexDirection: 'row',
@@ -509,13 +665,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    gap: spacing[1],
+    gap: spacing[3],
     overflow: 'visible',
   },
   titleContainer: {
     alignItems: 'center',
     overflow: 'visible',
-    minHeight: 40,
+    minHeight: 30,
     justifyContent: 'center',
   },
   titleRow: {
@@ -528,9 +684,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.5,
   },
+  logoContainer: {
+    position: 'relative',
+    height: 50,
+    width: 150,
+    overflow: 'visible',
+  },
   logo: {
-    height: 32,
-    width: 100,
+    height: 50,
+    width: 150,
+  },
+  brandLogoOverlay: {
+    position: 'absolute',
+    height: 150,
+    width: 150,
+    top: -50,
+    left: 0,
+    zIndex: 2,
+    opacity: 0.9,
   },
   buildingText: {
     fontFamily: 'CrimsonPro-Bold',
@@ -559,13 +730,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: spacing[1],
+    gap: spacing[3],
   },
   iconButton: {
-    width: 44,
-    height: 44,
+    width: 35,
+    height: 35,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  leftIconContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 35,
+    height: 35,
   },
   rightIconContainer: {
     justifyContent: 'center',
@@ -578,7 +755,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: spacing[3],
-    height: 36,
+    height: 38,
     minWidth: 260,
     maxWidth: 300,
   },

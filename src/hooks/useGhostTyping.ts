@@ -57,6 +57,7 @@ const getRandomStartIndex = () => {
 interface UseGhostTypingProps {
   isInputFocused: boolean;
   inputText: string;
+  customMessages?: string[];
 }
 
 interface UseGhostTypingReturn {
@@ -71,9 +72,11 @@ interface UseGhostTypingReturn {
 export const useGhostTyping = ({
   isInputFocused,
   inputText,
+  customMessages,
 }: UseGhostTypingProps): UseGhostTypingReturn => {
   const [ghostText, setGhostText] = useState('');
-  const [currentExampleIndex, setCurrentExampleIndex] = useState(() => getRandomStartIndex());
+  const messages = customMessages || FAKE_USERNAMES;
+  const [currentExampleIndex, setCurrentExampleIndex] = useState(() => Math.floor(Math.random() * messages.length));
   const [isTyping, setIsTyping] = useState(false);
   const [isBackspacing, setIsBackspacing] = useState(false);
   const [isCorrectingTypo, setIsCorrectingTypo] = useState(false);
@@ -129,7 +132,7 @@ export const useGhostTyping = ({
       // End the cursor-only phase
       setShowingCursorOnly(false);
       
-      const currentExample = FAKE_USERNAMES[currentExampleIndex];
+      const currentExample = messages[currentExampleIndex];
       let charIndex = 0;
       let targetText = currentExample;
       let hasTypo = false;
@@ -235,7 +238,7 @@ export const useGhostTyping = ({
             setIsBackspacing(false);
             setGhostText('');
             setShowingCursorOnly(true); // Return to cursor-only phase
-            setCurrentExampleIndex((prev) => (prev + 1) % FAKE_USERNAMES.length);
+            setCurrentExampleIndex((prev) => (prev + 1) % messages.length);
             // Shorter pause before next ghost typing cycle (3-4 seconds for better UX)
             typingTimeoutRef.current = setTimeout(startGhostTyping, 3000 + Math.random() * 1000);
           }
@@ -263,7 +266,7 @@ export const useGhostTyping = ({
       setShowingCursorOnly(true);
       setIsDismissing(false);
     };
-  }, [isInputFocused, inputText, currentExampleIndex]);
+  }, [isInputFocused, inputText, currentExampleIndex, messages]);
 
   return {
     ghostText,

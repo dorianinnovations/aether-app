@@ -24,7 +24,7 @@ import SignUpScreen from './src/screens/auth/SignUpScreen';
 import ChatScreen from './src/screens/chat/ChatScreen';
 import FriendsScreen from './src/screens/FriendsScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
-import ConnectionsScreen from './src/screens/connections/ConnectionsScreen';
+import FeedScreen from './src/screens/feed/FeedScreen';
 
 // Services
 import { TokenManager } from './src/services/api';
@@ -38,6 +38,9 @@ import { designTokens, getThemeColors } from './src/design-system/tokens/colors'
 import { typography, fontConfig } from './src/design-system/tokens/typography';
 import { spacing, borderRadius } from './src/design-system/tokens/spacing';
 import { shadows } from './src/design-system/tokens/shadows';
+
+// Custom Transitions
+import { colorFadeTransition } from './src/design-system/transitions/colorFadeTransition';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -61,7 +64,7 @@ export type MainStackParamList = {
   Chat: undefined;
   Friends: undefined;
   Profile: undefined;
-  Connections: undefined;
+  Feed: undefined;
 };
 
 // Create navigators
@@ -99,12 +102,27 @@ const MainStackNavigator = () => {
     <MainStack.Navigator
       screenOptions={{
         headerShown: false,
+        cardStyleInterpolator: colorFadeTransition,
+        transitionSpec: {
+          open: {
+            animation: 'timing',
+            config: {
+              duration: 250,
+            },
+          },
+          close: {
+            animation: 'timing',
+            config: {
+              duration: 200,
+            },
+          },
+        },
       }}
     >
       <MainStack.Screen name="Chat" component={ChatScreen} />
       <MainStack.Screen name="Friends" component={FriendsScreen} />
       <MainStack.Screen name="Profile" component={ProfileScreen} />
-      <MainStack.Screen name="Connections" component={ConnectionsScreen} />
+      <MainStack.Screen name="Feed" component={FeedScreen} />
     </MainStack.Navigator>
   );
 };

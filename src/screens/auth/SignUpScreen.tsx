@@ -185,11 +185,11 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
     };
   }, [timeoutId]);
 
-  // Cycle through rainbow colors every 2 seconds
+  // Cycle through rainbow colors every 5 seconds (reduced from 2s to prevent overheating)
   useEffect(() => {
     const colorCycleInterval = setInterval(() => {
       setCurrentColorIndex((prev) => (prev + 1) % rainbowPastels.length);
-    }, 2000);
+    }, 5000);
     
     return () => clearInterval(colorCycleInterval);
   }, [rainbowPastels.length]);
@@ -1124,7 +1124,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                         onPress={() => {
                           // Light haptic for navigation
                           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          navigation.navigate('SignIn');
+                          navigation.replace('SignIn');
                         }}
                         activeOpacity={0.7}
                       >

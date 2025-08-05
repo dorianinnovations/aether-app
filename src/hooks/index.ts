@@ -3,16 +3,23 @@
  * Reusable hooks for application functionality
  */
 
-// Refactored chat-specific hooks
-export { useGreeting } from './useGreeting';
-export { useKeyboardAnimation } from './useKeyboardAnimation';
-export { useMessages } from './useMessages';
-export { useDynamicPrompts } from './useDynamicPrompts';
-
-// Existing hooks
-export { useTheme } from './useTheme';
-export { useSettings } from './useSettings';
-export { useKeyboard } from './useKeyboard';
+// Chat and messaging hooks
 export { useChatScrollManager } from './useChatScrollManager';
+export { useConversationEvents } from './useConversationEvents';
+export { useDynamicPrompts } from './useDynamicPrompts';
+export { useGhostTyping } from './useGhostTyping';
+export { useGreeting } from './useGreeting';
+export { useMessages } from './useMessages';
+
+// UI and interaction hooks
+export { useKeyboard } from './useKeyboard';
+export { useKeyboardAnimation } from './useKeyboardAnimation';
+export { useSimpleScroll } from './useSimpleScroll';
+
+// Application state hooks
+export { useSettings } from './useSettings';
+export { useTheme } from './useTheme';
+
+// Feature-specific hooks
+export { useMetrics } from './useMetrics';
 export { useWebSearch } from './useWebSearch';
-export { useMatching } from './useMatching';

@@ -19,8 +19,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { Header, HeaderMenu } from "../design-system/components/organisms";
 import { ShimmerText } from "../design-system/components/atoms";
-import { designTokens, getThemeColors } from "../design-system/tokens/colors";
+import { designTokens, getThemeColors, getPageBackground } from "../design-system/tokens/colors";
 import { useTheme } from "../contexts/ThemeContext";
+import { useSettings } from "../contexts/SettingsContext";
 import { typography } from "../design-system/tokens/typography";
 import { spacing } from "../design-system/tokens/spacing";
 
@@ -36,6 +37,7 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
   route,
 }) => {
   const { theme, colors } = useTheme();
+  const { settings } = useSettings();
   const themeColors = getThemeColors(theme);
 
   // Staggered load-in animations - start from slightly visible to prevent flashing
@@ -148,7 +150,7 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
     ]).start();
   };
 
-  // Get gradient colors based on theme
+  // Get gradient colors based on theme and background preference
   const getGradientColors = (): readonly [string, string, string, string] => {
     if (theme === "dark") {
       return [
@@ -158,12 +160,58 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
         "#0f0f0f", // Almost black
       ];
     } else {
-      return [
-        "#f0f6ff", // Light blue-tinted white
-        "#dbeafe", // Soft sky blue
-        "#bfdbfe", // Medium sky blue
-        "#e0f2fe", // Very light cyan-blue
-      ];
+      // Light theme - choose gradient based on background type
+      switch (settings.backgroundType) {
+        case 'white':
+          return [
+            "#ffffff", // Pure white
+            "#ffffff", // Pure white
+            "#ffffff", // Pure white
+            "#ffffff", // Pure white
+          ];
+        case 'sage':
+          return [
+            "#f8fbf8", // Very light sage
+            "#f0f6f0", // Light sage
+            "#eef4ee", // Soft sage
+            "#f5f9f5", // Sage tint
+          ];
+        case 'lavender':
+          return [
+            "#fafafe", // Very light lavender
+            "#f6f4ff", // Light lavender
+            "#f0eeff", // Soft lavender
+            "#f8f6ff", // Lavender tint
+          ];
+        case 'cream':
+          return [
+            "#fffffb", // Very light cream
+            "#fffef8", // Light cream
+            "#fffdf5", // Soft cream
+            "#fffef9", // Cream tint
+          ];
+        case 'mint':
+          return [
+            "#f7fffe", // Very light mint
+            "#f3fffc", // Light mint
+            "#effffb", // Soft mint
+            "#f5fffd", // Mint tint
+          ];
+        case 'pearl':
+          return [
+            "#fcfcfc", // Very light pearl
+            "#fafafa", // Light pearl
+            "#f8f8f8", // Soft pearl
+            "#fbfbfb", // Pearl tint
+          ];
+        default: // 'blue'
+          return [
+            "#f0f6ff", // Light blue-tinted white
+            "#dbeafe", // Soft sky blue
+            "#bfdbfe", // Medium sky blue
+            "#e0f2fe", // Very light cyan-blue
+          ];
+      }
     }
   };
 

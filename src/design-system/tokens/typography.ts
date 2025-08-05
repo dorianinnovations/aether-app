@@ -140,11 +140,18 @@ export const typography = {
       letterSpacing: -0.1,
     },
     
-    // Backward compatibility aliases
+    // Backward compatibility aliases for textStyles access
     body: {
       fontSize: 16,
       fontFamily: getFontFamily('Nunito-Regular', 'sans-serif'),
       fontWeight: '400' as const,
+      lineHeight: 24,
+      letterSpacing: -0.1,
+    },
+    bodyBold: {
+      fontSize: 16,
+      fontFamily: getFontFamily('Nunito-Bold', 'sans-serif'),
+      fontWeight: '700' as const,
       lineHeight: 24,
       letterSpacing: -0.1,
     },
@@ -250,7 +257,37 @@ export const typography = {
       lineHeight: 24,
       letterSpacing: -0.1,
     },
-  }
+  },
+  
+  // Direct access shortcuts (for backward compatibility)
+  body: {
+    fontSize: 16,
+    fontFamily: getFontFamily('Nunito-Regular', 'sans-serif'),
+    fontWeight: '400' as const,
+    lineHeight: 24,
+    letterSpacing: -0.1,
+  },
+  bodyBold: {
+    fontSize: 16,
+    fontFamily: getFontFamily('Nunito-Bold', 'sans-serif'),
+    fontWeight: '700' as const,
+    lineHeight: 24,
+    letterSpacing: -0.1,
+  },
+  caption: {
+    fontSize: 12,
+    fontFamily: getFontFamily('Inter-Regular', 'sans-serif'),
+    fontWeight: '400' as const,
+    lineHeight: 16,
+    letterSpacing: 0.1,
+  },
+  h3: {
+    fontSize: 18,
+    fontFamily: getFontFamily('CrimsonPro-SemiBold', 'serif'),
+    fontWeight: '600' as const,
+    lineHeight: 24,
+    letterSpacing: -0.1,
+  },
 };
 
 // Utility function to get text style with theme-aware colors

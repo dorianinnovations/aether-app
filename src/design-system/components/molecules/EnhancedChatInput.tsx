@@ -94,6 +94,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const inputFocusAnim = useRef(new Animated.Value(0)).current;
   const attachmentButtonsAnim = useRef(new Animated.Value(0)).current;
+  const attachmentButtonScale = useRef(new Animated.Value(1)).current;
 
   // Swipe up gesture handler
   const handleSwipeUp = (event: any) => {
@@ -304,25 +305,37 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
   const toggleAttachmentButtons = useCallback(() => {
     const newVisibility = !attachmentButtonsVisible;
     
-    // ENHANCED HAPTIC FEEDBACK FOR MORPHING
-    if (newVisibility) {
-      // Opening - Medium impact for "expansion"
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    } else {
-      // Closing - Light impact for "contraction"
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
+    // Simple haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     setAttachmentButtonsVisible(newVisibility);
     
-    // SMOOTHER SPRING ANIMATION
-    Animated.spring(attachmentButtonsAnim, {
-      toValue: newVisibility ? 1 : 0,
-      useNativeDriver: false,
-      tension: 220, // Slightly more snappy
-      friction: 10,  // Less friction for smoother motion
-    }).start();
-  }, [attachmentButtonsVisible, attachmentButtonsAnim]);
+    // Fast, responsive animations
+    Animated.parallel([
+      // Button scale animation - instant feedback
+      Animated.timing(attachmentButtonScale, {
+        toValue: newVisibility ? 0.95 : 1,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      // Container animation - much faster
+      Animated.timing(attachmentButtonsAnim, {
+        toValue: newVisibility ? 1 : 0,
+        duration: 120,
+        useNativeDriver: false,
+        easing: Easing.out(Easing.cubic),
+      }),
+    ]).start(() => {
+      // Return button to normal scale quickly
+      if (newVisibility) {
+        Animated.timing(attachmentButtonScale, {
+          toValue: 1,
+          duration: 50,
+          useNativeDriver: true,
+        }).start();
+      }
+    });
+  }, [attachmentButtonsVisible, attachmentButtonsAnim, attachmentButtonScale]);
 
   const handleInputFocus = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -397,27 +410,6 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
             outputRange: [16, 0],
           }),
           minHeight: 24,
-          // SHADOW CONTINUITY FOR DEPTH ILLUSION
-          shadowRadius: attachmentButtonsAnim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [4, 12], // Deeper shadow when "expanded"
-          }),
-          shadowOpacity: attachmentButtonsAnim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [0.1, 0.25], // More prominent shadow
-          }),
-          elevation: attachmentButtonsAnim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [2, 8], // Android shadow elevation
-          }),
-          // SUBTLE VERTICAL SHIFT - Creates "magnetic pull" effect
-          transform: [{
-            translateY: attachmentButtonsAnim.interpolate({
-              inputRange: [0, 0.4, 1],
-              outputRange: [0, -2, 0], // Slight upward pull then settle
-            })
-          }],
-          // Removed background glow - let glassmorphic style handle it
         }
       ]}>
         <View style={styles.inputRow}>
@@ -460,17 +452,19 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
           <View style={styles.buttonGroup}>
             {/* Attachment Button */}
             {enableFileUpload && (
-              <TouchableOpacity
-                style={styles.attachmentToggleButton}
-                onPress={toggleAttachmentButtons}
-                activeOpacity={0.7}
-              >
-                <FontAwesome5 
-                  name={attachmentButtonsVisible ? "times" : "paperclip"} 
-                  size={16} 
-                  color={themeColors.textSecondary} 
-                />
-              </TouchableOpacity>
+              <Animated.View style={{ transform: [{ scale: attachmentButtonScale }] }}>
+                <TouchableOpacity
+                  style={styles.attachmentToggleButton}
+                  onPress={toggleAttachmentButtons}
+                  activeOpacity={0.7}
+                >
+                  <Feather 
+                    name={attachmentButtonsVisible ? "x" : "plus"} 
+                    size={18} 
+                    color={themeColors.textSecondary} 
+                  />
+                </TouchableOpacity>
+              </Animated.View>
             )}
 
             {/* Dynamic Options Button */}
@@ -581,82 +575,45 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
               outputRange: [0, 60],
             }),
             transform: [
-              { scaleY: attachmentButtonsAnim },
-              // SUBTLE UNFOLD ROTATION
-              { 
-                rotateX: attachmentButtonsAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['15deg', '0deg'], // Unfolds from tilted
-                })
-              }
+              { scaleY: attachmentButtonsAnim }
             ],
             marginBottom: attachmentButtonsVisible ? spacing[4] : 0,
+            backgroundColor: themeColors.surface,
             borderColor: themeColors.borders.default,
             borderTopWidth: 0,
             borderTopLeftRadius: 0,
             borderTopRightRadius: 0,
+            borderBottomLeftRadius: 16,
+            borderBottomRightRadius: 16,
           }
         ]}>
           {attachmentButtonsVisible && (
             <>
               {/* Camera Button */}
               <TouchableOpacity
-                style={[
-                  styles.attachmentButton,
-                  {
-                    backgroundColor: 'rgba(255, 179, 209, 0.1)',
-                    borderColor: 'rgba(255, 179, 209, 0.2)',
-                  }
-                ]}
+                style={styles.attachmentIconButton}
                 onPress={handleCameraPress}
                 activeOpacity={0.7}
               >
-                <FontAwesome5 name="camera" size={16} color={designTokens.pastels.pink} />
-                <Text style={[
-                  styles.attachmentButtonText,
-                  typography.textStyles.caption,
-                  { color: designTokens.pastels.pink }
-                ]}>Camera</Text>
+                <FontAwesome5 name="camera" size={18} color={themeColors.textSecondary} />
               </TouchableOpacity>
 
               {/* Gallery Button */}
               <TouchableOpacity
-                style={[
-                  styles.attachmentButton,
-                  {
-                    backgroundColor: 'rgba(135, 232, 222, 0.1)',
-                    borderColor: 'rgba(135, 232, 222, 0.2)',
-                  }
-                ]}
+                style={styles.attachmentIconButton}
                 onPress={handleGalleryPress}
                 activeOpacity={0.7}
               >
-                <FontAwesome5 name="image" size={16} color={designTokens.pastels.cyan} />
-                <Text style={[
-                  styles.attachmentButtonText,
-                  typography.textStyles.caption,
-                  { color: designTokens.pastels.cyan }
-                ]}>Gallery</Text>
+                <FontAwesome5 name="image" size={18} color={themeColors.textSecondary} />
               </TouchableOpacity>
 
               {/* Document Button */}
               <TouchableOpacity
-                style={[
-                  styles.attachmentButton,
-                  {
-                    backgroundColor: 'rgba(144, 238, 144, 0.1)',
-                    borderColor: 'rgba(144, 238, 144, 0.2)',
-                  }
-                ]}
+                style={styles.attachmentIconButton}
                 onPress={handleDocumentPress}
                 activeOpacity={0.7}
               >
-                <FontAwesome5 name="file-alt" size={16} color={designTokens.pastels.green} />
-                <Text style={[
-                  styles.attachmentButtonText,
-                  typography.textStyles.caption,
-                  { color: designTokens.pastels.green }
-                ]}>Files</Text>
+                <FontAwesome5 name="file-alt" size={18} color={themeColors.textSecondary} />
               </TouchableOpacity>
             </>
           )}
@@ -693,7 +650,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   floatingContainer: {
-    borderRadius: 8,
+    borderRadius: 16,
     borderWidth: 1,
     paddingHorizontal: spacing[1],
     paddingVertical: spacing[2],
@@ -795,27 +752,19 @@ const styles = StyleSheet.create({
   },
   attachmentButtonsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
-    borderRadius: 8,
     marginHorizontal: 0,
     borderWidth: 1,
+    gap: spacing[4],
   },
-  attachmentButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[1],
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: spacing[2],
-    minWidth: 90,
+  attachmentIconButton: {
+    width: 40,
+    height: 40,
     justifyContent: 'center',
-  },
-  attachmentButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
+    alignItems: 'center',
   },
   disclaimerContainer: {
     paddingHorizontal: spacing[4],

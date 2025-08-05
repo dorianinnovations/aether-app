@@ -38,6 +38,14 @@ interface Friend {
   topInterests?: string[];
 }
 
+interface FriendRequest {
+  username: string;
+  name?: string;
+  avatar?: string;
+  sentAt?: string;
+  message?: string;
+}
+
 interface FriendCardProps {
   friend: Friend;
   theme: 'light' | 'dark';
@@ -100,18 +108,107 @@ const FriendCard: React.FC<FriendCardProps> = ({ friend, theme }) => {
   );
 };
 
+interface RequestCardProps {
+  request: FriendRequest;
+  theme: 'light' | 'dark';
+  onAccept: (username: string) => void;
+  onDecline: (username: string) => void;
+}
+
+const RequestCard: React.FC<RequestCardProps> = ({ request, theme, onAccept, onDecline }) => {
+  const themeColors = getThemeColors(theme);
+
+  return (
+    <View style={[
+      styles.requestCard,
+      {
+        backgroundColor: theme === 'dark' 
+          ? designTokens.surfaces.dark.elevated 
+          : designTokens.surfaces.light.elevated,
+        borderColor: theme === 'dark' 
+          ? designTokens.borders.dark.subtle 
+          : designTokens.borders.light.subtle,
+      }
+    ]}>
+      <View style={[
+        styles.avatar,
+        {
+          backgroundColor: theme === 'dark' 
+            ? designTokens.borders.dark.default 
+            : designTokens.borders.light.default,
+        }
+      ]} />
+      
+      <View style={styles.requestInfo}>
+        <Text style={[
+          styles.friendName,
+          { color: themeColors.text }
+        ]}>
+          {request.username}
+        </Text>
+        
+        {request.message && (
+          <Text style={[
+            styles.requestMessage,
+            { color: themeColors.textSecondary }
+          ]}>
+            {request.message}
+          </Text>
+        )}
+      </View>
+      
+      <View style={styles.requestActions}>
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            styles.declineButton,
+            {
+              backgroundColor: theme === 'dark' ? '#1a1a1a' : '#f5f5f5',
+              borderColor: theme === 'dark' ? '#333' : '#ddd',
+            }
+          ]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onDecline(request.username);
+          }}
+        >
+          <Feather name="x" size={16} color={themeColors.textSecondary} />
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            styles.acceptButton,
+            {
+              backgroundColor: designTokens.semantic.success,
+            }
+          ]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            onAccept(request.username);
+          }}
+        >
+          <Feather name="check" size={16} color="white" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
 interface FriendsScreenProps {
   navigation: any;
 }
 
 export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
   const { theme } = useTheme();
+  const [activeTab, setActiveTab] = useState<'friends' | 'requests'>('friends');
   const [showAddFriendModal, setShowAddFriendModal] = useState(false);
   const [friendUsername, setFriendUsername] = useState('');
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'success' | 'error' | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -163,9 +260,17 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
         setLoading(true);
       }
       
-      const response = await FriendsAPI.getFriendsList();
-      if (response.success && response.friends) {
-        setFriends(response.friends);
+      const [friendsResponse, requestsResponse] = await Promise.all([
+        FriendsAPI.getFriendsList(),
+        FriendsAPI.getFriendRequests().catch(() => ({ success: false, requests: [] }))
+      ]);
+      
+      if (friendsResponse.success && friendsResponse.friends) {
+        setFriends(friendsResponse.friends);
+      }
+      
+      if (requestsResponse.success && requestsResponse.requests) {
+        setRequests(requestsResponse.requests);
       }
     } catch (error: any) {
       console.error('Error fetching friends:', error);
@@ -313,6 +418,75 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
 
   const keyExtractor = (item: Friend) => item.username;
 
+  // Empty state component
+  const renderEmptyState = () => {
+    const themeColors = getThemeColors(theme);
+    
+    return (
+      <View style={styles.emptyContainer}>
+        <View style={[
+          styles.emptyIconContainer,
+          {
+            backgroundColor: theme === 'dark' 
+              ? designTokens.surfaces.dark.elevated 
+              : designTokens.surfaces.light.elevated,
+            borderColor: theme === 'dark' 
+              ? designTokens.borders.dark.subtle 
+              : designTokens.borders.light.subtle,
+          }
+        ]}>
+          <MaterialCommunityIcons
+            name="account-group-outline"
+            size={48}
+            color={theme === 'dark' ? designTokens.text.mutedDark : designTokens.text.muted}
+          />
+        </View>
+        
+        <Text style={[
+          styles.emptyTitle,
+          { color: themeColors.text }
+        ]}>
+          No friends yet
+        </Text>
+        
+        <Text style={[
+          styles.emptySubtitle,
+          { color: themeColors.textSecondary }
+        ]}>
+          Add friends to start connecting and chatting
+        </Text>
+        
+        <TouchableOpacity
+          style={[
+            styles.emptyActionButton,
+            {
+              backgroundColor: theme === 'dark' ? designTokens.brand.surfaceDark : designTokens.brand.primary,
+              borderColor: theme === 'dark' ? designTokens.borders.dark.default : 'transparent',
+              borderWidth: theme === 'dark' ? 1 : 0,
+            }
+          ]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowAddFriendModal(true);
+          }}
+        >
+          <Feather
+            name="user-plus"
+            size={16}
+            color={theme === 'dark' ? '#ffffff' : '#1a1a1a'}
+            style={{ marginRight: spacing[2] }}
+          />
+          <Text style={[
+            styles.emptyActionText,
+            { color: theme === 'dark' ? '#ffffff' : '#1a1a1a' }
+          ]}>
+            Add your first friend
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   // Custom refresh control with Lottie spinner
   const renderRefreshControl = () => (
     <RefreshControl
@@ -326,10 +500,10 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
   );
 
   return (
-    <PageBackground theme={theme}>
+    <PageBackground theme={theme} variant="friends">
       <SafeAreaView style={styles.container}>
         <Header
-          title="Friends"
+          title="Aether"
           theme={theme}
           showBackButton={true}
           showMenuButton={false}
@@ -357,7 +531,7 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
             <View style={[
               styles.refreshSpinner,
               {
-                top: 120, // Position below header
+                top: 133, // Position below header
               }
             ]}>
               <LottieLoader
@@ -371,9 +545,13 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
             renderItem={renderFriend}
             keyExtractor={keyExtractor}
             style={styles.friendsList}
-            contentContainerStyle={styles.friendsListContent}
+            contentContainerStyle={[
+              styles.friendsListContent,
+              friends.length === 0 && { flex: 1, justifyContent: 'center' }
+            ]}
             showsVerticalScrollIndicator={false}
             ItemSeparatorComponent={() => <View style={styles.separator} />}
+            ListEmptyComponent={!loading ? renderEmptyState : null}
             refreshControl={renderRefreshControl()}
           />
         </View>
@@ -397,7 +575,7 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
             styles.dropdown,
             {
               right: 24,
-              top: 140,
+              top: 110,
               backgroundColor: theme === 'light' ? '#ffffff' : designTokens.brand.surfaceDark,
               borderWidth: 1,
               borderColor: theme === 'dark' ? designTokens.borders.dark.default : designTokens.borders.light.default,
@@ -405,7 +583,7 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
             }
           ]}>
             {/* Arrow pointing to header button with border */}
-            <View style={{ position: 'absolute', top: -9, right: 19 }}>
+            <View style={{ position: 'absolute', top: -9, right: 10 }}>
               {/* Border triangle (slightly larger) */}
               <View style={[
                 styles.arrow,
@@ -517,7 +695,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: 100, // Account for header height
+    paddingTop: 113, // Account for header height
     paddingHorizontal: spacing[4],
   },
   friendsList: {
@@ -623,6 +801,105 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    marginBottom: spacing[4],
+    backgroundColor: 'transparent',
+    borderRadius: 8,
+    padding: 2,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[3],
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeTab: {
+    // Styling applied via backgroundColor in component
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  requestCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 56,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  requestInfo: {
+    flex: 1,
+    marginRight: spacing[3],
+  },
+  requestMessage: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  requestActions: {
+    flexDirection: 'row',
+    gap: spacing[2],
+  },
+  actionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  acceptButton: {
+    borderColor: 'transparent',
+  },
+  declineButton: {
+    // Styling applied via backgroundColor in component
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing[8],
+    paddingHorizontal: spacing[6],
+  },
+  emptyIconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing[6],
+    borderWidth: 1,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: spacing[2],
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    fontWeight: '400',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: spacing[8],
+    maxWidth: 280,
+  },
+  emptyActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing[6],
+    paddingVertical: spacing[3],
+    borderRadius: 12,
+    minWidth: 180,
+  },
+  emptyActionText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 

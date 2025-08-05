@@ -91,13 +91,29 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
       for await (const chunk of ChatAPI.streamSocialChat(apiPrompt)) {
         // Check if chunk is metadata object
         if (typeof chunk === 'object' && chunk !== null && 'metadata' in chunk) {
-          console.log('📍 useMessages: Received metadata chunk:', JSON.stringify(chunk, null, 2));
           messageMetadata = (chunk as any).metadata;
           continue;
         }
         
+        // Fallback: Check if chunk is stringified metadata (legacy format)
+        if (typeof chunk === 'string' && chunk.startsWith('{"metadata":')) {
+          try {
+            const parsed = JSON.parse(chunk);
+            if (parsed.metadata) {
+              messageMetadata = parsed.metadata;
+              continue;
+            }
+          } catch (e) {
+            // Not valid JSON, treat as regular text
+          }
+        }
+        
         // Server sends streaming text content
         const word = typeof chunk === 'string' ? chunk : (chunk as any).text;
+        // Add space before word if we already have content (except for punctuation)
+        if (accumulatedText && word && !word.match(/^[.,!?;:]/)) {
+          accumulatedText += ' ';
+        }
         accumulatedText += word;
         wordCount++;
         
@@ -142,9 +158,8 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
           : msg
       ));
       
-      if (messageMetadata) {
-        console.log('📍 useMessages: Final message metadata:', JSON.stringify(messageMetadata, null, 2));
-      }
+      
+      // Metadata processing complete
       
       // Refined haptic timing - trigger earlier for better UX
       const refinedHapticDelay = Math.min(300, Math.max(100, wordCount * 8)); // More responsive timing
@@ -206,11 +221,19 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
 
   // Handle conversation selection
   const handleConversationSelect = async (conversation: any) => {
+    // Check if we have a valid conversation ID first - try multiple potential fields
+    const conversationId = conversation._id || conversation.id || conversation.conversationId || conversation.objectId;
+    
     try {
       setIsLoading(true);
       
+      
+      if (!conversationId) {
+        throw new Error('Conversation ID is missing from conversation object');
+      }
+      
       // Handle demo conversations
-      if (conversation._id.startsWith('demo-')) {
+      if (conversationId.startsWith('demo-')) {
         const demoMessages: Message[] = [
           {
             id: 'demo-welcome',
@@ -226,7 +249,7 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
       }
       
       // Load the full conversation from server with max allowed messages (500)
-      const fullConversation = await ConversationAPI.getConversation(conversation._id, 500);
+      const fullConversation = await ConversationAPI.getConversation(conversationId, 500);
       
       // Ensure we have messages
       if (!fullConversation.messages || !Array.isArray(fullConversation.messages)) {
@@ -235,7 +258,7 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
       
       // Convert server messages to app format
       const convertedMessages: Message[] = fullConversation.messages.map((msg: any, index: number) => ({
-        id: msg._id || `${conversation._id}-${index}`,
+        id: msg._id || `${conversationId}-${index}`,
         sender: msg.role === 'user' ? 'user' : 'aether',
         message: msg.content,
         timestamp: msg.timestamp,

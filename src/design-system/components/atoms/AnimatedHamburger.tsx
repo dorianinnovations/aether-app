@@ -15,7 +15,7 @@ interface AnimatedHamburgerProps {
 export const AnimatedHamburger: React.FC<AnimatedHamburgerProps> = ({ 
   isOpen, 
   color, 
-  size = 16 
+  size = 20 
 }) => {
   // Core animations
   const topBarAnim = useRef(new Animated.Value(0)).current;

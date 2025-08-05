@@ -3,12 +3,22 @@
 import { NavigationProp } from '@react-navigation/native';
 
 export type RootStackParamList = {
-  Chat: undefined;
-  Profile: undefined;
-  Friends: undefined;
-  Dashboard: undefined;
+  Auth: undefined;
+  MainStack: undefined;
+};
+
+export type AuthStackParamList = {
+  Hero: undefined;
+  Onboarding: undefined;
   SignIn: undefined;
   SignUp: undefined;
+};
+
+export type MainStackParamList = {
+  Chat: undefined;
+  Friends: undefined;
+  Profile: undefined;
+  Feed: undefined;
 };
 
 export type NavigationProps = NavigationProp<RootStackParamList>;
@@ -30,8 +40,6 @@ export const resetToScreen = (
   navigation: NavigationProps,
   screenName: keyof RootStackParamList
 ): void => {
-  navigation.reset({
-    index: 0,
-    routes: [{ name: screenName }],
-  });
+  // Use navigate instead of reset to avoid navigation structure issues
+  navigation.navigate(screenName as never);
 };

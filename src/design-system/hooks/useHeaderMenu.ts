@@ -41,9 +41,9 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
           (navigation as any).navigate('Friends');
         }
         break;
-      case 'connections':
-        if (screenName !== 'connections') {
-          (navigation as any).navigate('Connections');
+      case 'feed':
+        if (screenName !== 'feed') {
+          (navigation as any).navigate('Feed');
         }
         break;
       case 'settings':

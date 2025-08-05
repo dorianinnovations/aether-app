@@ -162,12 +162,12 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
     };
   }, [timeoutId]);
 
-  // Cycle through rainbow colors faster for success state
+  // Cycle through rainbow colors for success state (reduced from 800ms to prevent overheating)
   useEffect(() => {
     if (isSignInSuccess) {
       const colorCycleInterval = setInterval(() => {
         setCurrentColorIndex((prev) => (prev + 1) % rainbowPastels.length);
-      }, 800); // Faster cycling for success state
+      }, 2000); // Reduced from 800ms to prevent overheating
       
       return () => clearInterval(colorCycleInterval);
     }
@@ -665,7 +665,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                         onPress={() => {
                           // Light haptic for navigation
                           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          navigation.navigate('SignUp');
+                          navigation.replace('SignUp');
                         }}
                         activeOpacity={0.7}
                       >

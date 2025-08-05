@@ -12,7 +12,7 @@ export const APP_CONFIG = {
 export const STORAGE_KEYS = {
   USER_TOKEN: '@aether/user_token',
   THEME: '@aether/theme',
-}
+} as const;
 
 // User-specific storage keys to prevent cross-account contamination
 export const getUserStorageKeys = (userId?: string) => ({
@@ -86,6 +86,10 @@ export const SCREEN_NAMES = {
   PROFILE: 'Profile',
   CONNECTIONS: 'Connections',
   INSIGHTS: 'Insights',
+  SOCIAL: 'Social',
+  FRIENDS: 'Friends',
+  ONBOARDING: 'Onboarding',
+  HERO_LANDING: 'HeroLanding',
   SIGN_IN: 'SignIn',
   SIGN_UP: 'SignUp',
 } as const;

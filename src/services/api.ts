@@ -204,31 +204,25 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    // Only log 401 errors if they're not from auth endpoints (to avoid spam)
-    if (error.response?.status === 401 && !originalRequest.url?.includes('/auth/')) {
-      console.warn('API 401 - Authentication required:', originalRequest.url);
-    } else if (error.response?.status !== 401) {
-      console.error('API Error:', error.response?.status, error.response?.data);
-    }
+    console.error('API Error:', error.response?.status, error.response?.data);
     
     // Handle unauthorized - attempt token refresh first
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/')) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       
       try {
-        // Try to refresh token - but only if we have a token to refresh
-        const currentToken = await TokenManager.getToken();
-        if (currentToken) {
-          const refreshedAuth = await AuthAPI.refreshToken();
-          if (refreshedAuth.token) {
-            originalRequest.headers.Authorization = `Bearer ${refreshedAuth.token}`;
-            return api(originalRequest);
-          }
+        // Try to refresh token
+        const refreshedAuth = await AuthAPI.refreshToken();
+        if (refreshedAuth.token) {
+          originalRequest.headers.Authorization = `Bearer ${refreshedAuth.token}`;
+          return api(originalRequest);
         }
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError);
-        // Clear token on refresh failure
-        await TokenManager.removeToken();
+        // Only remove token if this is a critical endpoint, not for optional requests
+        if (!originalRequest.url?.includes('/conversations') && !originalRequest.url?.includes('/socket.io')) {
+          await TokenManager.removeToken();
+        }
         // Navigation to login should be handled by the app
       }
     }
@@ -466,71 +460,90 @@ export const ChatAPI = {
     return response.data;
   },
 
-  // Streaming social chat for real-time responses
-  async *streamSocialChat(message: string): AsyncGenerator<string, void, unknown> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/social-chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await TokenManager.getToken()}`,
-        },
-        body: JSON.stringify({ message, stream: true }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response body reader available');
-      }
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-
+  // Streaming social chat for real-time responses - React Native compatible with XMLHttpRequest  
+  streamSocialChat(message: string): AsyncGenerator<string, void, unknown> {
+    const self = this;
+    
+    return (async function* () {
       try {
-        while (true) {
-          const { done, value } = await reader.read();
-          
-          if (done) break;
-          
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          
-          // Keep the last incomplete line in the buffer
-          buffer = lines.pop() || '';
-          
-          for (const line of lines) {
-            if (line.trim() === '') continue;
-            
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              
-              if (data === '[DONE]') {
-                return;
-              }
-              
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.content) {
-                  yield parsed.content;
+        const token = await TokenManager.getToken();
+        if (!token) {
+          throw new Error('No authentication token available');
+        }
+
+        // Use Promise to handle XMLHttpRequest with async generator
+        const chunks = await new Promise<string[]>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          let lastProcessedLength = 0;
+          let buffer = '';
+          const allChunks: string[] = [];
+
+          xhr.open('POST', `${API_BASE_URL}/social-chat`, true);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+          xhr.onreadystatechange = function() {
+            if (xhr.readyState === 3 || xhr.readyState === 4) { // LOADING or DONE
+              if (xhr.status === 200) {
+                const newData = xhr.responseText.slice(lastProcessedLength);
+                lastProcessedLength = xhr.responseText.length;
+
+                if (newData) {
+                  buffer += newData;
+                  const lines = buffer.split('\n');
+                  buffer = lines.pop() || '';
+
+                  for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine) continue;
+
+                    if (trimmedLine.startsWith('data: ')) {
+                      const data = trimmedLine.slice(6).trim();
+                      
+                      if (data === '[DONE]') {
+                        resolve(allChunks);
+                        return;
+                      }
+
+                      try {
+                        const parsed = JSON.parse(data);
+                        if (parsed.content) {
+                          allChunks.push(parsed.content);
+                        }
+                      } catch (e) {
+                        // Skip invalid JSON
+                        continue;
+                      }
+                    }
+                  }
                 }
-              } catch (e) {
-                // Skip invalid JSON
-                continue;
+
+                if (xhr.readyState === 4) {
+                  resolve(allChunks);
+                }
+              } else if (xhr.readyState === 4) {
+                reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText || 'Request failed'}`));
               }
             }
-          }
+          };
+
+          xhr.onerror = () => reject(new Error('Network error occurred during streaming'));
+          xhr.ontimeout = () => reject(new Error('Request timed out'));
+          xhr.timeout = 30000;
+          xhr.send(JSON.stringify({ message, stream: true }));
+        });
+
+        // Yield chunks with a small delay for streaming effect
+        for (const chunk of chunks) {
+          yield chunk;
+          await new Promise(resolve => setTimeout(resolve, 50)); // Small delay for streaming effect
         }
-      } finally {
-        reader.releaseLock();
+
+      } catch (error) {
+        console.error('Streaming social chat error:', error);
+        throw error;
       }
-    } catch (error) {
-      console.error('Streaming social chat error:', error);
-      throw error;
-    }
+    })();
   },
 
 };
@@ -726,33 +739,7 @@ export const ConversationAPI = {
   },
 };
 
-// Matching API
-export const MatchingAPI = {
-  async findMatches(limit: number = 10): Promise<any> {
-    const response = await api.get(`/matching/find?limit=${limit}`);
-    return response.data;
-  },
-
-  async getUserProfile(): Promise<any> {
-    const response = await api.get('/matching/profile');
-    return response.data;
-  },
-
-  async getQueueStatus(): Promise<any> {
-    const response = await api.get('/matching/queue-status');
-    return response.data;
-  },
-
-  async forceAnalysis(): Promise<any> {
-    const response = await api.post('/matching/force-analysis');
-    return response.data;
-  },
-
-  async testAnalysis(message?: string): Promise<any> {
-    const response = await api.post('/matching/test-analysis', { message });
-    return response.data;
-  },
-};
+// REMOVED: MatchingAPI - No longer needed for social proxy approach
 
 // Friends API
 export const FriendsAPI = {
@@ -773,6 +760,26 @@ export const FriendsAPI = {
 
   async removeFriend(username: string): Promise<any> {
     const response = await api.delete('/friends/remove', { data: { username } });
+    return response.data;
+  },
+
+  async getUserUsername(): Promise<any> {
+    const response = await api.get('/friends/my-username');
+    return response.data;
+  },
+
+  async getFriendRequests(): Promise<any> {
+    const response = await api.get('/friends/requests');
+    return response.data;
+  },
+
+  async acceptFriendRequest(username: string): Promise<any> {
+    const response = await api.post('/friends/requests/accept', { username });
+    return response.data;
+  },
+
+  async declineFriendRequest(username: string): Promise<any> {
+    const response = await api.post('/friends/requests/decline', { username });
     return response.data;
   },
 };
@@ -852,6 +859,146 @@ export const ApiUtils = {
       throw error;
     }
   },
+};
+
+// Social Proxy API
+export const SocialProxyAPI = {
+  // Get user's social proxy profile
+  async getProfile(): Promise<any> {
+    try {
+      const response = await api.get('/social-proxy/profile');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch social proxy profile:', error);
+      throw error;
+    }
+  },
+
+  // Update social proxy status
+  async updateStatus(currentStatus?: string, currentPlans?: string, mood?: string): Promise<any> {
+    try {
+      const response = await api.post('/social-proxy/status', {
+        currentStatus,
+        currentPlans,
+        mood
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to update social proxy status:', error);
+      throw error;
+    }
+  },
+
+  // Get friend timeline
+  async getTimeline(page: number = 1, limit: number = 20): Promise<any> {
+    try {
+      const response = await api.get('/social-proxy/timeline', {
+        params: { page, limit }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch timeline:', error);
+      throw error;
+    }
+  },
+
+  // Get friend's social proxy
+  async getFriendProfile(username: string): Promise<any> {
+    try {
+      const response = await api.get(`/social-proxy/friend/${username}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch friend profile:', error);
+      throw error;
+    }
+  },
+
+  // React to activity
+  async reactToActivity(activityId: string, type: 'like' | 'love' | 'laugh' | 'curious' | 'relate'): Promise<any> {
+    try {
+      const response = await api.post(`/social-proxy/activity/${activityId}/react`, { type });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to react to activity:', error);
+      throw error;
+    }
+  },
+
+  // Comment on activity
+  async commentOnActivity(activityId: string, text: string): Promise<any> {
+    try {
+      const response = await api.post(`/social-proxy/activity/${activityId}/comment`, { text });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to comment on activity:', error);
+      throw error;
+    }
+  }
+};
+
+// Spotify API
+export const SpotifyAPI = {
+  // Get Spotify authorization URL
+  async getAuthUrl(): Promise<any> {
+    try {
+      const response = await api.get('/spotify/auth');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get Spotify auth URL:', error);
+      throw error;
+    }
+  },
+
+  // Disconnect Spotify
+  async disconnect(): Promise<any> {
+    try {
+      const response = await api.post('/spotify/disconnect');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to disconnect Spotify:', error);
+      throw error;
+    }
+  },
+
+  // Get Spotify status
+  async getStatus(): Promise<any> {
+    try {
+      const response = await api.get('/spotify/status');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get Spotify status:', error);
+      throw error;
+    }
+  },
+
+  // Refresh Spotify data
+  async refresh(): Promise<any> {
+    try {
+      const response = await api.post('/spotify/refresh');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to refresh Spotify data:', error);
+      throw error;
+    }
+  },
+
+  // Share track
+  async shareTrack(trackName: string, artist: string, album?: string, imageUrl?: string, spotifyUrl?: string, message?: string): Promise<any> {
+    try {
+      const response = await api.post('/spotify/share-track', {
+        trackName,
+        artist,
+        album,
+        imageUrl,
+        spotifyUrl,
+        message
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to share track:', error);
+      throw error;
+    }
+  }
 };
 
 export default api;

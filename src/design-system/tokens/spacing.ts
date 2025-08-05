@@ -19,6 +19,13 @@ export const spacing = {
   20: 80,   // 80px - Hero spacing
   24: 96,   // 96px - Large hero spacing
   32: 128,  // 128px - Maximum spacing
+  
+  // Semantic shorthand properties (commonly used)
+  xs: 8,    // Extra small - 8px
+  sm: 12,   // Small - 12px  
+  md: 16,   // Medium - 16px
+  lg: 24,   // Large - 24px
+  xl: 32,   // Extra large - 32px
 };
 
 // Semantic spacing values for common use cases

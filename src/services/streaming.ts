@@ -97,8 +97,10 @@ export class StreamingService {
     while (!completed || processedChunks < chunks.length) {
       if (processedChunks < chunks.length) {
         const chunk = chunks[processedChunks++];
-        // Yield both text chunks and metadata objects
-        yield typeof chunk === 'string' ? chunk : JSON.stringify(chunk);
+        // Only yield string chunks, skip metadata objects
+        if (typeof chunk === 'string') {
+          yield chunk;
+        }
         
         // Small delay between chunks for visible streaming effect
         await new Promise(resolve => setTimeout(resolve, 15));

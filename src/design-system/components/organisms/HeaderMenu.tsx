@@ -43,27 +43,27 @@ const getAllMenuActions = (theme: 'light' | 'dark'): MenuAction[] => [
     requiresAuth: false 
   },
   { 
-    icon: <Feather name="user" size={16} color={getIconColor('profile', theme)} />, 
-    label: 'Profile', 
-    key: 'profile', 
-    requiresAuth: false 
-  },
-  { 
     icon: <MaterialCommunityIcons name="chat-outline" size={16} color={getIconColor('chat', theme)} />, 
     label: 'Chat', 
     key: 'chat', 
     requiresAuth: false 
   },
   { 
+    icon: <Feather name="rss" size={16} color={getIconColor('feed', theme)} />, 
+    label: 'Feed', 
+    key: 'feed', 
+    requiresAuth: false 
+  },
+  { 
     icon: <Feather name="users" size={16} color={getIconColor('friends', theme)} />, 
-    label: 'Friends', 
+    label: 'Friends List', 
     key: 'friends', 
     requiresAuth: false 
   },
   { 
-    icon: <Feather name="heart" size={16} color={getIconColor('connections', theme)} />, 
-    label: 'Connections', 
-    key: 'connections', 
+    icon: <Feather name="user" size={16} color={getIconColor('profile', theme)} />, 
+    label: 'Profile', 
+    key: 'profile', 
     requiresAuth: false 
   },
   { 
@@ -131,15 +131,14 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const translateYAnim = useRef(new Animated.Value(-8)).current;
   
-  // Item stagger animations (including theme selector) - use fixed array length
-  const itemAnims = useRef(Array.from({ length: 10 }, () => ({
+  // Simple opacity animations for items
+  const totalItems = menuActions.length + 1; // +1 for theme selector
+  const itemAnims = useRef(Array.from({ length: totalItems }, () => ({
     opacity: new Animated.Value(0),
-    translateY: new Animated.Value(10),
-    scale: new Animated.Value(0.9),
   }))).current;
   
-  // Button press animations - use fixed array length
-  const buttonAnims = useRef(Array.from({ length: 9 }, () => ({
+  // Dynamic button press animations
+  const buttonAnims = useRef(Array.from({ length: menuActions.length }, () => ({
     scale: new Animated.Value(1),
     opacity: new Animated.Value(1),
   }))).current;
@@ -152,8 +151,6 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
     
     itemAnims.forEach(anim => {
       anim.opacity.setValue(0);
-      anim.translateY.setValue(10);
-      anim.scale.setValue(0.9);
     });
     
     buttonAnims.forEach(anim => {
@@ -172,72 +169,28 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
     setIsAnimating(true);
     resetAnimations();
     
-    // Fast container animation
-    Animated.parallel([
-      Animated.timing(scaleAnim, {
+    // Instant container
+    scaleAnim.setValue(1);
+    opacityAnim.setValue(1);
+    translateYAnim.setValue(0);
+    
+    // Single haptic
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    // Staggered opacity fade-in for items only
+    itemAnims.slice(0, totalItems).forEach((anim, index) => {
+      Animated.timing(anim.opacity, {
         toValue: 1,
-        duration: 120,
-        easing: Easing.out(Easing.cubic),
+        duration: 150,
+        delay: index * 30,
+        easing: Easing.out(Easing.quad),
         useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: 200,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateYAnim, {
-        toValue: 0,
-        duration: 180,
-        easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      // Gentle ladder falling haptic sequence - use fixed count
-      Array.from({ length: 10 }).forEach((_, index) => {
-        setTimeout(() => {
-          if (index < 3) {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          } else if (index < 6) {
-            Haptics.selectionAsync();
-          } else {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          }
-        }, index * 25);
-      });
-      
-      // Faster staggered item animations
-      const itemAnimations = itemAnims.map((anim, index) => 
-        Animated.parallel([
-          Animated.timing(anim.opacity, {
-            toValue: 1,
-            duration: 100,
-            delay: index * 15,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(anim.translateY, {
-            toValue: 0,
-            duration: 100,
-            delay: index * 15,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(anim.scale, {
-            toValue: 1,
-            duration: 100,
-            delay: index * 15,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      
-      Animated.stagger(15, itemAnimations).start(() => {
-        setIsAnimating(false);
-      });
+      }).start();
     });
-  }, []);
+    
+    // Set not animating after last item starts
+    setTimeout(() => setIsAnimating(false), (totalItems - 1) * 30);
+  }, [totalItems]);
 
   // Hide animation
   const hideMenu = useCallback(() => {
@@ -265,11 +218,11 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
         easing: Easing.bezier(0.55, 0.06, 0.68, 0.19),
         useNativeDriver: true,
       }),
-      // Hide all items smoothly
-      ...itemAnims.map(anim => 
+      // Hide all items smoothly (only animate existing items)
+      ...itemAnims.slice(0, totalItems).map(anim => 
         Animated.timing(anim.opacity, {
           toValue: 0,
-          duration: 200,
+          duration: 120,
           easing: Easing.in(Easing.cubic),
           useNativeDriver: true,
         })
@@ -304,13 +257,11 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
     // Haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // Find the correct index in the button animations array (limited to available actions)
-    const menuActions = getMenuActions(theme, showAuthOptions, showBackButton);
-    const fullIndex = menuActions.findIndex(action => action.key === actionKey);
-    if (fullIndex === -1 || !buttonAnims[fullIndex]) return;
+    // Use the passed index directly (it's already the correct index)
+    if (index >= buttonAnims.length || !buttonAnims[index]) return;
     
-    const scaleAnim = buttonAnims[fullIndex].scale;
-    const opacityAnim = buttonAnims[fullIndex].opacity;
+    const scaleAnim = buttonAnims[index].scale;
+    const opacityAnim = buttonAnims[index].opacity;
     
     // Fast press animation
     Animated.sequence([
@@ -360,7 +311,7 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
   
   // Normal positioning for other screens
   const rightMargin = 24;
-  const topMargin = 120;
+  const topMargin = 123;
   
   menuRight = menuButtonPosition?.x 
     ? screenWidth - menuButtonPosition.x - menuButtonPosition.width + 10
@@ -425,7 +376,6 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
         
         <View style={styles.menuContent}>
           {menuActions.map((action, index) => {
-            const fullIndex = index; // Use the current index directly
             return (
             <Animated.View
               key={action.key}
@@ -438,10 +388,9 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
                   borderColor: theme === 'dark' 
                     ? 'rgba(255,255,255,0.1)' 
                     : 'rgba(0, 0, 0, 0.08)',
-                  opacity: itemAnims[fullIndex]?.opacity || 1,
+                  opacity: itemAnims[index]?.opacity || 1,
                   transform: [
-                    { translateY: itemAnims[fullIndex]?.translateY || 0 },
-                    { scale: Animated.multiply(itemAnims[fullIndex]?.scale || 1, buttonAnims[fullIndex]?.scale || 1) },
+                    { scale: buttonAnims[index]?.scale || 1 },
                   ],
                 }
               ]}
@@ -456,7 +405,7 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
                   {action.icon}
                   {/* Notification dot for connections */}
                   <NotificationDot 
-                    visible={action.key === 'connections' && potentialMatches > 0}
+                    visible={action.key === 'feed' && potentialMatches > 0}
                     color={designTokens.pastels.coral}
                     size={10}
                     glowIntensity="high"
@@ -484,10 +433,6 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
                   ? 'rgba(255,255,255,0.1)' 
                   : 'rgba(0, 0, 0, 0.08)',
                 opacity: itemAnims[menuActions.length] ? itemAnims[menuActions.length].opacity : 1,
-                transform: itemAnims[menuActions.length] ? [
-                  { translateY: itemAnims[menuActions.length].translateY },
-                  { scale: itemAnims[menuActions.length].scale },
-                ] : [],
               }
             ]}
           >
@@ -520,7 +465,7 @@ const styles = StyleSheet.create({
   arrow: {
     position: 'absolute',
     top: -8,
-    right: 35,
+    right: 16,
     width: 0,
     height: 0,
     borderLeftWidth: 8,

@@ -75,7 +75,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [keepScreenOn, setKeepScreenOn] = useState(false);
   const [showTimestamps, setShowTimestamps] = useState(true);
   const [autoLock, setAutoLock] = useState(true);
-  const [backgroundType, setBackgroundType] = useState<'blue' | 'white'>('blue');
+  const [backgroundType, setBackgroundType] = useState<'blue' | 'white' | 'sage' | 'lavender' | 'cream' | 'mint' | 'pearl'>('blue');
   const [dynamicOptions, setDynamicOptions] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [userData, setUserData] = useState<any>(null);
@@ -447,7 +447,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
-  const handleBackgroundTypeSetting = async (backgroundType: 'blue' | 'white') => {
+  const handleBackgroundTypeSetting = async (backgroundType: 'blue' | 'white' | 'sage' | 'lavender' | 'cream' | 'mint' | 'pearl') => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     try {
@@ -497,12 +497,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       setUserData(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
-      // Navigate to Hero landing screen
+      // Sign out and navigate to Auth stack
       if (navigation) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Auth' }],
-        });
+        // Clear auth state first
+        if ((global as any).clearAuthState) {
+          await (global as any).clearAuthState();
+        }
       } else {
         onSignOut?.();
       }
@@ -658,7 +658,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               <TouchableOpacity 
                 key={item.key} 
                 style={[
-                  styles.subDrawerItem, 
+                  item.key === 'backgroundType' ? styles.backgroundSelectorItem : styles.subDrawerItem, 
                   { 
                     backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0, 0, 0, 0.03)',
                     borderColor: theme === 'dark' 
@@ -675,14 +675,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   {item.type === 'selector' && <Feather name="layers" size={16} color={itemColor} />}
                 </View>
                 
-                <View style={styles.subDrawerItemContent}>
+                <View style={item.key === 'backgroundType' ? styles.backgroundSelectorContent : styles.subDrawerItemContent}>
                   <Text style={[styles.subDrawerItemLabel, { color: colors.text }]}>
                     {item.label}
                   </Text>
                   {item.type === 'switch' && (
                     <Switch
                       value={item.value as boolean}
-                      onValueChange={(value) => handleAdvancedSetting(item.key, value)}
+                      onValueChange={(value) => {
+                        if (item.key === 'theme') {
+                          handleThemeToggle();
+                        } else {
+                          handleAdvancedSetting(item.key, value);
+                        }
+                      }}
                       trackColor={{ false: colors.surfaces.sunken, true: itemColor }}
                       thumbColor={colors.surface}
                     />
@@ -727,7 +733,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                           color: backgroundType === 'blue' ? itemColor : colors.text,
                           fontWeight: backgroundType === 'blue' ? '600' : '400',
                           marginLeft: spacing[2]
-                        }]}>Blue</Text>
+                        }]}>Colors</Text>
                       </TouchableOpacity>
                       
                       <TouchableOpacity
@@ -1153,12 +1159,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     borderWidth: 1,
   },
+  backgroundSelectorItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    minHeight: 120,
+    borderRadius: 12,
+    marginHorizontal: spacing[1],
+    marginVertical: 2,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[4],
+    borderWidth: 1,
+  },
   subDrawerItemContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     flex: 1,
     minHeight: 80,
+  },
+  backgroundSelectorContent: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    flex: 1,
+    marginLeft: spacing[3],
   },
   subDrawerItemLabel: {
     fontFamily: typography.fonts.body,
@@ -1290,16 +1313,19 @@ const styles = StyleSheet.create({
   
   // Background Selector
   backgroundSelector: {
-    flexDirection: 'row',
+    flexDirection: 'column',
+    gap: spacing[2],
+    marginTop: spacing[2],
+    flex: 1,
   },
   backgroundOption: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
+    paddingVertical: spacing[3],
     borderRadius: 8,
     borderWidth: 1,
-    marginRight: spacing[2],
+    minHeight: 44,
   },
   backgroundOptionText: {
     fontFamily: typography.fonts.body,

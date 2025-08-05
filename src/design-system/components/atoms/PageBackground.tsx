@@ -16,7 +16,7 @@ import { useSettings } from '../../../hooks/useSettings';
 interface PageBackgroundProps {
   theme?: 'light' | 'dark';
   children: React.ReactNode;
-  variant?: 'default' | 'auth' | 'hero' | 'profile' | 'chat' | 'friends' | 'dashboard' | 'onboarding';
+  variant?: 'default' | 'auth' | 'hero' | 'profile' | 'chat' | 'friends' | 'dashboard' | 'onboarding' | 'social' | 'insights' | 'feed';
   style?: ViewStyle;
 }
 
@@ -54,28 +54,43 @@ export const PageBackground: React.FC<PageBackgroundProps> = ({
       
       case 'profile':
         return theme === 'light'
-          ? ['#f5f3ff', '#faf9ff', '#f5f3ff'] // Cosmic light
+          ? ['#fdfefe', '#fcfdfc', '#fdfefd'] // Very light sage
           : [darkGrey, '#1A1A1A', darkGrey]; // Consistent dark
       
       case 'chat':
         return theme === 'light'
-          ? dreamyGradientColors
+          ? dreamyGradientColors // Keep blue as is
           : [darkGrey, '#1A1A1A', darkGrey];
       
       case 'friends':
         return theme === 'light'
-          ? ['#e0f2fe', '#f0f9ff', '#e0f2fe'] // Ocean light
+          ? ['#fffefe', '#fffcfc', '#fffdfd'] // Very light coral
           : [darkGrey, '#1A1A1A', darkGrey]; // Consistent dark
       
       case 'dashboard':
         return theme === 'light'
-          ? ['#fef7ff', '#f8f4ff', '#fef7ff'] // Dashboard purple tint
+          ? ['#fefefe', '#fdfdfd', '#fefefe'] // Very light pearl
           : [darkGrey, '#1A1A1A', darkGrey]; // Consistent dark
       
       case 'onboarding':
         return theme === 'light'
-          ? dreamyGradientColors
+          ? dreamyGradientColors // Keep blue as is
           : [darkGrey, '#1A1A1A', darkGrey];
+      
+      case 'social':
+        return theme === 'light'
+          ? ['#fefeff', '#fdfeff', '#fefeff'] // Very light lavender
+          : [darkGrey, '#1A1A1A', darkGrey]; // Consistent dark
+      
+      case 'insights':
+        return theme === 'light'
+          ? ['#fffffe', '#fffffe', '#fffffe'] // Very light cream
+          : [darkGrey, '#1A1A1A', darkGrey]; // Consistent dark
+      
+      case 'feed':
+        return theme === 'light'
+          ? ['#fefefe', '#fdfdfd', '#fefefe'] // Very light pearl
+          : [darkGrey, '#1A1A1A', darkGrey]; // Consistent dark
       
       default:
         return theme === 'light' 

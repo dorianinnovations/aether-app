@@ -19,6 +19,8 @@ import {
   Platform,
   Keyboard,
   Easing,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
@@ -41,6 +43,7 @@ import { WebSearchResult } from '../../design-system/components/molecules';
 
 // Design System
 import { designTokens, getThemeColors, getLoadingTextColor } from '../../design-system/tokens/colors';
+import { getHeaderMenuShadow } from '../../design-system/tokens/shadows';
 
 // Contexts
 import { useTheme } from '../../contexts/ThemeContext';
@@ -59,9 +62,10 @@ import { useMessages } from '../../hooks/useMessages';
 import { useDynamicPrompts } from '../../hooks/useDynamicPrompts';
 import { useSimpleScroll } from '../../hooks/useSimpleScroll';
 import { useWebSearch } from '../../hooks/useWebSearch';
+import { useGhostTyping } from '../../hooks/useGhostTyping';
 
 // Services
-import { AuthAPI } from '../../services/api';
+import { AuthAPI, FriendsAPI } from '../../services/api';
 
 // Utils
 import { 
@@ -78,12 +82,26 @@ import { ToolCall } from '../../types';
 
 interface ChatScreenProps {}
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+// Dynamic dimensions hook to handle rotation
+const useDimensions = () => {
+  const [dimensions, setDimensions] = useState(() => Dimensions.get('window'));
+  
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener('change', ({ window }) => {
+      setDimensions(window);
+    });
+    
+    return () => subscription?.remove();
+  }, []);
+  
+  return dimensions;
+};
 
 const ChatScreen: React.FC<ChatScreenProps> = () => {
   const navigation = useNavigation();
   const { theme, colors, toggleTheme } = useTheme();
   const { settings } = useSettings();
+  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useDimensions();
   
   // Custom hooks
   const { greetingText, showGreeting, setShowGreeting } = useGreeting();
@@ -166,6 +184,22 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   
   // Conversation drawer state
   const [showConversationDrawer, setShowConversationDrawer] = useState(false);
+  
+  // Add Friend modal state
+  const [showAddFriendModal, setShowAddFriendModal] = useState(false);
+  const [friendUsername, setFriendUsername] = useState('');
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusType, setStatusType] = useState<'success' | 'error' | null>(null);
+  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const shakeAnim = useRef<Animated.Value>(new Animated.Value(0)).current;
+  
+  const { ghostText, isDismissing } = useGhostTyping({
+    isInputFocused,
+    inputText: friendUsername,
+  });
+  
+  const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(undefined);
 
   // Header menu hook
   const { showHeaderMenu, setShowHeaderMenu, handleMenuAction, toggleHeaderMenu } = useHeaderMenu({
@@ -173,6 +207,16 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     onSettingsPress: () => setShowSettings(true),
     onSignOut: () => setShowSignOutModal(true)
   });
+
+  // Cleanup effect for rotation stability
+  useEffect(() => {
+    return () => {
+      // Clear any pending timeouts
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Smart suggestions based on context
   const [suggestions] = useState([
@@ -223,6 +267,84 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     setShowConversationDrawer(true);
   };
 
+  // Handle Add Friend press
+  const handleAddFriendPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowAddFriendModal(true);
+  };
+
+  // Clear status function
+  const clearStatus = () => {
+    if (statusTimeoutRef.current) {
+      clearTimeout(statusTimeoutRef.current);
+      statusTimeoutRef.current = null;
+    }
+    setStatusMessage('');
+    setStatusType(null);
+  };
+
+  // Handle Add Friend submission
+  const handleAddFriendSubmit = async () => {
+    if (!friendUsername.trim()) return;
+    
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    try {
+      const result = await FriendsAPI.addFriend(friendUsername.trim());
+      
+      if (result && result.success) {
+        // Success haptic and show success message
+        setTimeout(async () => {
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }, 150);
+        
+        setStatusMessage('Request sent!');
+        setStatusType('success');
+        setFriendUsername('');
+        
+        // Auto-hide modal after success
+        statusTimeoutRef.current = setTimeout(() => {
+          setShowAddFriendModal(false);
+          clearStatus();
+        }, 1000);
+      } else {
+        // Error shake animation
+        Animated.sequence([
+          Animated.timing(shakeAnim, { toValue: 10, duration: 80, useNativeDriver: true }),
+          Animated.timing(shakeAnim, { toValue: -10, duration: 80, useNativeDriver: true }),
+          Animated.timing(shakeAnim, { toValue: 10, duration: 80, useNativeDriver: true }),
+          Animated.timing(shakeAnim, { toValue: 0, duration: 80, useNativeDriver: true }),
+        ]).start();
+        
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        setStatusMessage(result?.error || 'Failed to send request');
+        setStatusType('error');
+        
+        // Auto-clear error message
+        statusTimeoutRef.current = setTimeout(() => {
+          clearStatus();
+        }, 3000);
+      }
+    } catch (error) {
+      // Error shake animation
+      Animated.sequence([
+        Animated.timing(shakeAnim, { toValue: 10, duration: 80, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: -10, duration: 80, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 10, duration: 80, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 0, duration: 80, useNativeDriver: true }),
+      ]).start();
+      
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setStatusMessage('Network error. Please try again.');
+      setStatusType('error');
+      
+      // Auto-clear error message
+      statusTimeoutRef.current = setTimeout(() => {
+        clearStatus();
+      }, 3000);
+    }
+  };
+
 
   // Enhanced message press handler with tooltip
   const handleMessagePressWithTooltip = async (message: any) => {
@@ -240,7 +362,6 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
 
   const handleSignOut = async () => {
     try {
-      console.log('Signing out...');
       setShowSignOutModal(false);
       await AuthAPI.logout();
       // Auth check in App.tsx will handle navigation automatically
@@ -265,7 +386,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     
     if (attachments && attachments.length > 0) {
       // Handle attachments
-      console.log('Sending with attachments:', attachments);
+      // TODO: Implement attachment handling
     }
     
     // Send the message with the current input text
@@ -441,6 +562,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
               duration={3000}
               waveWidth="wide"
               enabled={true}
+              animationMode="greeting-sequence"
             >
               {greetingText}
             </ShimmerText>
@@ -471,11 +593,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
             [{ nativeEvent: { contentOffset: { y: headerAnim } } }],
             { 
               useNativeDriver: false,
-              listener: (event: any) => {
-                const offsetY = event.nativeEvent.contentOffset.y;
-                headerAnim.setValue(offsetY > 50 ? 0.8 : 1);
-                handleScroll(event);
-              }
+              listener: handleScroll
             }
           )}
           onScrollBeginDrag={handleScrollBegin}
@@ -554,11 +672,16 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
       <ConversationDrawer
         isVisible={showConversationDrawer}
         onClose={() => setShowConversationDrawer(false)}
-        onConversationSelect={handleConversationSelect}
+        onConversationSelect={(conversation) => {
+          handleConversationSelect(conversation);
+          setCurrentConversationId(conversation._id);
+        }}
         onStartNewChat={() => {
           setMessages([]);
+          setCurrentConversationId(undefined);
           setShowConversationDrawer(false);
         }}
+        currentConversationId={currentConversationId}
         theme={theme}
       />
       
@@ -567,8 +690,10 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
         title="Aether"
         showMenuButton={true}
         showConversationsButton={true}
+        leftIcon="user-plus"
         onMenuPress={toggleHeaderMenu}
         onConversationsPress={() => setShowConversationDrawer(true)}
+        onLeftPress={handleAddFriendPress}
         theme={theme}
         isVisible={headerVisible}
         isMenuOpen={showHeaderMenu}
@@ -735,6 +860,140 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
           </View>
         </Animated.View>
       )}
+
+      {/* Add Friend Dropdown */}
+      <Modal
+        visible={showAddFriendModal}
+        transparent={true}
+        animationType="none"
+        onRequestClose={() => setShowAddFriendModal(false)}
+      >
+        <View style={styles.overlay}>
+          <TouchableOpacity 
+            style={StyleSheet.absoluteFillObject}
+            activeOpacity={1}
+            onPress={() => setShowAddFriendModal(false)}
+          />
+          
+          <View style={[
+            styles.dropdown,
+            {
+              left: 24,
+              top: 123,
+              backgroundColor: theme === 'light' ? '#ffffff' : designTokens.brand.surfaceDark,
+              borderWidth: 1,
+              borderColor: theme === 'dark' ? designTokens.borders.dark.default : designTokens.borders.light.default,
+              ...getHeaderMenuShadow(theme),
+            }
+          ]}>
+            {/* Arrow pointing to header button with border */}
+            <View style={{ position: 'absolute', top: -9, left: 60 }}>
+              {/* Border triangle (slightly larger) */}
+              <View style={[
+                styles.arrow,
+                {
+                  borderBottomColor: theme === 'dark' ? designTokens.borders.dark.default : designTokens.borders.light.default,
+                  borderLeftWidth: 9,
+                  borderRightWidth: 9,
+                  borderBottomWidth: 9,
+                }
+              ]} />
+              {/* Fill triangle (smaller, on top) */}
+              <View style={[
+                styles.arrow,
+                {
+                  borderBottomColor: theme === 'light' ? '#ffffff' : designTokens.brand.surfaceDark,
+                  position: 'absolute',
+                  top: 1,
+                  left: -0.5,
+                  borderLeftWidth: 8,
+                  borderRightWidth: 8,
+                  borderBottomWidth: 8,
+                }
+              ]} />
+            </View>
+            
+            <View style={styles.dropdownContent}>
+              <Text style={[
+                styles.dropdownTitle,
+                { 
+                  color: theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.primary,
+                  fontFamily: 'CrimsonPro-Bold',
+                  letterSpacing: -0.5,
+                }
+              ]}>
+                Add a friend
+              </Text>
+              
+              <Animated.View
+                style={{
+                  transform: [{ translateX: shakeAnim }]
+                }}
+              >
+                <TextInput
+                  style={[
+                    styles.friendInput,
+                    {
+                      color: statusType === 'error' ? '#FF4444' : statusType === 'success' ? '#00AA44' : (theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.primary),
+                      backgroundColor: theme === 'dark' ? '#1a1a1a' : '#f8f8f8',
+                      borderColor: statusType === 'error' ? '#FF4444' : statusType === 'success' ? '#00AA44' : (theme === 'dark' ? designTokens.borders.dark.default : designTokens.borders.light.default),
+                    }
+                  ]}
+                  placeholder={statusMessage || ghostText}
+                  placeholderTextColor={statusType === 'error' ? '#FF4444' : statusType === 'success' ? '#00AA44' : (theme === 'dark' ? designTokens.text.mutedDark : designTokens.text.muted)}
+                  value={friendUsername}
+                  onChangeText={(text) => {
+                    setFriendUsername(text);
+                    // Clear status when user starts typing
+                    if (statusMessage) {
+                      clearStatus();
+                    }
+                  }}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardAppearance={theme === 'dark' ? 'dark' : 'light'}
+                  selectionColor={theme === 'dark' ? '#ffffff' : '#007AFF'}
+                  cursorColor={theme === 'dark' ? '#ffffff' : '#007AFF'}
+                  textAlign="center"
+                  editable={!statusMessage} // Disable input while showing status
+                />
+              </Animated.View>
+              
+              <TouchableOpacity
+                style={[
+                  styles.addButton,
+                  {
+                    backgroundColor: theme === 'dark' ? '#0d0d0d' : designTokens.brand.primary,
+                    borderColor: theme === 'dark' ? '#262626' : 'transparent',
+                    borderWidth: theme === 'dark' ? 1 : 0,
+                    // Strong tight glow for dark mode, shadow for light mode
+                    shadowColor: theme === 'dark' ? '#ffffff' : '#000000',
+                    shadowOffset: { width: 0, height: theme === 'dark' ? 0 : 2 },
+                    shadowOpacity: theme === 'dark' ? 0.4 : 0.3,
+                    shadowRadius: theme === 'dark' ? 4 : 8,
+                    elevation: theme === 'dark' ? 0 : 4,
+                  }
+                ]}
+                onPress={handleAddFriendSubmit}
+                activeOpacity={0.8}
+              >
+                <Text style={[
+                  styles.addButtonText,
+                  { 
+                    color: theme === 'dark' ? '#ffffff' : '#ffffff',
+                    fontFamily: 'Nunito-SemiBold',
+                    letterSpacing: -0.3,
+                  }
+                ]}>
+                  Add friend
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       </SafeAreaView>
     </PageBackground>
   );
@@ -864,11 +1123,13 @@ const styles = StyleSheet.create({
     transform: [{ translateY: -12 }],
   },
   greetingText: {
-    fontSize: 18,
-    fontWeight: '500',
-    fontFamily: 'Nunito_500Medium',
+    fontSize: 16,
+    fontWeight: '400',
+    fontFamily: 'Nunito_400Regular',
     letterSpacing: -0.9,
     textAlign: 'center',
+    maxWidth: 280,
+    alignSelf: 'center',
   },
 
   // Dynamic Options Modal
@@ -986,6 +1247,58 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
     fontFamily: 'Nunito-SemiBold',
+  },
+  
+  // Add Friend Dropdown Styles
+  overlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  dropdown: {
+    position: 'absolute',
+    width: 280,
+    borderRadius: 16,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[2],
+    overflow: 'visible',
+  },
+  arrow: {
+    width: 0,
+    height: 0,
+    borderStyle: 'solid',
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+  },
+  dropdownContent: {
+    paddingTop: spacing[2],
+  },
+  dropdownTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: spacing[3],
+  },
+  friendInput: {
+    width: '100%',
+    height: 44,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: spacing[3],
+    fontSize: 16,
+    fontWeight: '400',
+    textAlign: 'center',
+    marginBottom: spacing[3],
+  },
+  addButton: {
+    width: '100%',
+    height: 37,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
 

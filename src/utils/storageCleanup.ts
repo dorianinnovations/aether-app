@@ -121,4 +121,5 @@ export class StorageCleanup {
   }
 }
 
+// Default export for backward compatibility
 export default StorageCleanup;

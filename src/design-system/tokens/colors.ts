@@ -9,6 +9,16 @@ export const designTokens = {
     backgroundLight: '#FAFAFA',
     backgroundDark: '#000000',
   },
+
+  pageBackgrounds: {
+    default: '#FAFAFA',
+    white: '#FFFFFF',
+    sage: '#F8FBF8',
+    lavender: '#FAFAFE',
+    cream: '#FFFFFB',
+    mint: '#F7FFFE',
+    pearl: '#FCFCFC',
+  },
   
   pastels: {
     pink: '#FFB3D1',
@@ -21,7 +31,10 @@ export const designTokens = {
     mint: '#98FB98',
     blue: '#87CEEB',
     rose: '#FFB6C1',
-    sage: '#9ACD32',
+    sage: '#C8E6C9',
+    sageLight: '#E8F5E8',
+    purplishLight: '#F3E8FF',
+    lavenderMist: '#E6E6FA',
     cream: '#FFEFD5',
   },
   
@@ -99,7 +112,7 @@ export const designTokens = {
     },
     mint: {
       primary: '#B2DFDB',
-      background: '#FAFAFA',
+      background: '#F7FFFE',
       surface: '#FFFFFF',
     },
     orange: {
@@ -109,7 +122,12 @@ export const designTokens = {
     },
     purple: {
       primary: '#E1BEE7',
-      background: '#FAFAFA',
+      background: '#FAFAFE',
+      surface: '#FFFFFF',
+    },
+    purplishLight: {
+      primary: '#F3E8FF',
+      background: '#FAFAFE',
       surface: '#FFFFFF',
     },
     coral: {
@@ -122,6 +140,16 @@ export const designTokens = {
       background: '#FAFAFA',
       surface: '#FFFFFF',
     },
+    sage: {
+      primary: '#C8E6C9',
+      background: '#F8FBF8',
+      surface: '#FFFFFF',
+    },
+    sageLight: {
+      primary: '#E8F5E8',
+      background: '#F8FBF8',
+      surface: '#FFFFFF',
+    },
     yellow: {
       primary: '#FFF9C4',
       background: '#FAFAFA',
@@ -130,6 +158,11 @@ export const designTokens = {
     rainbow: {
       primary: '#E6F3FF',
       background: '#FAFAFA',
+      surface: '#FFFFFF',
+    },
+    white: {
+      primary: '#E6F3FF',
+      background: '#FFFFFF',
       surface: '#FFFFFF',
     },
     oled: {
@@ -169,15 +202,25 @@ export const stateColors = {
   }
 };
 
-export const getThemeColors = (theme: 'light' | 'dark' = 'light') => ({
+export const getPageBackground = (
+  backgroundType: 'default' | 'white' | 'sage' | 'lavender' | 'cream' | 'mint' | 'pearl' = 'default'
+): string => {
+  return designTokens.pageBackgrounds[backgroundType];
+};
+
+export const getThemeColors = (
+  theme: 'light' | 'dark' = 'light',
+  pageBackground: 'default' | 'white' | 'sage' | 'lavender' | 'cream' | 'mint' | 'pearl' = 'default'
+) => ({
   primary: designTokens.brand.primary,
-  background: theme === 'light' ? designTokens.brand.backgroundLight : designTokens.brand.backgroundDark,
+  background: theme === 'light' ? getPageBackground(pageBackground) : designTokens.brand.backgroundDark,
   surface: theme === 'light' ? designTokens.brand.surface : designTokens.brand.surfaceDark,
   text: theme === 'light' ? designTokens.text.primary : designTokens.text.primaryDark,
   textSecondary: theme === 'light' ? designTokens.text.secondary : designTokens.text.secondaryDark,
   textMuted: theme === 'light' ? designTokens.text.muted : designTokens.text.mutedDark,
   surfaces: designTokens.surfaces[theme],
   borders: designTokens.borders[theme],
+  pageBackground: getPageBackground(pageBackground),
 });
 
 export const getBorderStyle = (
@@ -246,14 +289,14 @@ export const getUserMessageColor = (messageIndex: number, theme: 'light' | 'dark
 };
 
 export const iconColors = {
-  profile: '#FF6B6B',
-  chat: '#FFB347',
+  profile: '#6AE86F',         // Green (4th in rainbow)
+  chat: '#FF6B6B',           // Red (1st in rainbow - top priority)
   dashboard: '#FFE066',
-  friends: '#6AE86F',
-  connections: '#FF69B4',
-  settings: '#5CC7E8',
+  friends: '#FFE066',        // Yellow (3rd in rainbow)
+  feed: '#FFB347',           // Orange (2nd in rainbow)
+  settings: '#5CC7E8',       // Blue (5th in rainbow) 
   theme_toggle: '#C95FD6',
-  signout: '#FF8FA3',
+  signout: '#C95FD6',        // Purple (6th in rainbow - lowest priority)
   
   home: '#4FB3D9',
   help: '#FFD54F',
