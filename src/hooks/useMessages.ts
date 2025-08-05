@@ -25,6 +25,10 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  
+  // Conversation-specific message cache
+  const messageCache = useRef<Map<string, Message[]>>(new Map());
+  const currentConversationRef = useRef<string | undefined>(conversationId);
 
   // Track streaming state without legacy scroll logic
   useEffect(() => {
@@ -37,10 +41,29 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
     }
   }, [messages]);
 
-  // Load conversation messages when conversationId changes
+  // Handle conversation switching with caching
   useEffect(() => {
-    if (conversationId) {
-      const loadConversationMessages = async () => {
+    const handleConversationSwitch = async () => {
+      // Save current messages to cache before switching
+      if (currentConversationRef.current && messages.length > 0) {
+        messageCache.current.set(currentConversationRef.current, [...messages]);
+      }
+      
+      // Update current conversation reference
+      currentConversationRef.current = conversationId;
+      
+      if (conversationId) {
+        // Check cache first
+        const cachedMessages = messageCache.current.get(conversationId);
+        if (cachedMessages && cachedMessages.length > 0) {
+          setMessages(cachedMessages);
+          if (onHideGreeting) {
+            onHideGreeting();
+          }
+          return;
+        }
+        
+        // Load from server if not cached
         try {
           setIsLoading(true);
           const conversation = await ConversationAPI.getConversation(conversationId, 500);
@@ -54,6 +77,8 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
               variant: 'default',
             }));
             
+            // Cache the loaded messages
+            messageCache.current.set(conversationId, convertedMessages);
             setMessages(convertedMessages);
             
             // Hide greeting when conversation is loaded
@@ -67,10 +92,13 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         } finally {
           setIsLoading(false);
         }
-      };
-      
-      loadConversationMessages();
-    }
+      } else {
+        // No conversation selected - clear messages
+        setMessages([]);
+      }
+    };
+    
+    handleConversationSwitch();
   }, [conversationId]);
 
   const handleSend = async (inputText: string, attachments: MessageAttachment[] = []) => {
@@ -99,7 +127,14 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
 
 
     // Add user message with optimistic update
-    setMessages(prev => [...prev, userMessage]);
+    setMessages(prev => {
+      const newMessages = [...prev, userMessage];
+      // Update cache with new messages
+      if (currentConversationRef.current) {
+        messageCache.current.set(currentConversationRef.current, newMessages);
+      }
+      return newMessages;
+    });
     setIsLoading(true);
 
     // Force immediate render cycle for better perceived performance
@@ -118,7 +153,14 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         },
       };
 
-      setMessages(prev => [...prev, streamingMessage]);
+      setMessages(prev => {
+        const newMessages = [...prev, streamingMessage];
+        // Update cache with streaming message
+        if (currentConversationRef.current) {
+          messageCache.current.set(currentConversationRef.current, newMessages);
+        }
+        return newMessages;
+      });
       
       // Start streaming with word animation
       let accumulatedText = '';
@@ -155,45 +197,59 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         wordCount++;
         
         // Update the streaming message while keeping streaming variant
-        setMessages(prev => prev.map(msg => 
-          msg.id === streamingMessage.id 
-            ? { ...msg, message: accumulatedText, variant: 'streaming', timestamp: new Date().toISOString() }
-            : msg
-        ));
+        setMessages(prev => {
+          const updatedMessages = prev.map(msg => 
+            msg.id === streamingMessage.id 
+              ? { ...msg, message: accumulatedText, variant: 'streaming' as const, timestamp: new Date().toISOString() }
+              : msg
+          );
+          // Update cache with streaming updates
+          if (currentConversationRef.current) {
+            messageCache.current.set(currentConversationRef.current, updatedMessages);
+          }
+          return updatedMessages;
+        });
       }
       
       // Mark as complete with metadata if available
-      setMessages(prev => prev.map(msg => 
-        msg.id === streamingMessage.id 
-          ? { 
-              ...msg, 
-              variant: 'default',
-              metadata: messageMetadata ? {
-                ...msg.metadata,
-                ...messageMetadata,
-                // Convert tool results format if needed
-                toolCalls: messageMetadata.toolResults ? 
-                  messageMetadata.toolResults.map((toolResult: any, index: number) => ({
-                    id: `tool-${index}-${Date.now()}`,
-                    name: toolResult.tool,
-                    parameters: { query: toolResult.query },
-                    result: toolResult.data,
-                    status: toolResult.success ? 'completed' : 'failed'
-                  })) : (messageMetadata.searchResults && messageMetadata.sources ? 
-                  [{
-                    id: 'search-' + Date.now(),
-                    name: 'insane_web_search',
-                    parameters: { query: messageMetadata.query },
-                    result: {
-                      sources: messageMetadata.sources,
-                      query: messageMetadata.query
-                    },
-                    status: 'completed'
-                  }] : messageMetadata.toolCalls)
-              } : msg.metadata
-            }
-          : msg
-      ));
+      setMessages(prev => {
+        const finalMessages = prev.map(msg => 
+          msg.id === streamingMessage.id 
+            ? { 
+                ...msg, 
+                variant: 'default' as const,
+                metadata: messageMetadata ? {
+                  ...msg.metadata,
+                  ...messageMetadata,
+                  // Convert tool results format if needed
+                  toolCalls: messageMetadata.toolResults ? 
+                    messageMetadata.toolResults.map((toolResult: any, index: number) => ({
+                      id: `tool-${index}-${Date.now()}`,
+                      name: toolResult.tool,
+                      parameters: { query: toolResult.query },
+                      result: toolResult.data,
+                      status: toolResult.success ? 'completed' : 'failed'
+                    })) : (messageMetadata.searchResults && messageMetadata.sources ? 
+                    [{
+                      id: 'search-' + Date.now(),
+                      name: 'insane_web_search',
+                      parameters: { query: messageMetadata.query },
+                      result: {
+                        sources: messageMetadata.sources,
+                        query: messageMetadata.query
+                      },
+                      status: 'completed'
+                    }] : messageMetadata.toolCalls)
+                } : msg.metadata
+              }
+            : msg
+        );
+        // Update cache with final message state
+        if (currentConversationRef.current) {
+          messageCache.current.set(currentConversationRef.current, finalMessages);
+        }
+        return finalMessages;
+      });
       
       
       // Metadata processing complete
@@ -215,7 +271,14 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         variant: 'error',
       };
       
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => {
+        const newMessages = [...prev, errorMessage];
+        // Update cache with error message
+        if (currentConversationRef.current) {
+          messageCache.current.set(currentConversationRef.current, newMessages);
+        }
+        return newMessages;
+      });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsLoading(false);
@@ -282,6 +345,8 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         ];
         
         setMessages(demoMessages);
+        // Cache demo messages
+        messageCache.current.set(conversationId, demoMessages);
         
         // Hide greeting for demo conversations too
         if (onHideGreeting) {
@@ -308,8 +373,9 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         variant: 'default',
       }));
       
-      // Replace current messages with loaded conversation
+      // Replace current messages with loaded conversation and cache them
       setMessages(convertedMessages);
+      messageCache.current.set(conversationId, convertedMessages);
       
       // Hide greeting when conversation is loaded (same as when sending a message)
       if (onHideGreeting) {

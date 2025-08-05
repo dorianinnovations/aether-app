@@ -648,6 +648,11 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
                     ? getUserMessageColor(nextMessageIndex, theme)
                     : themeColors.surface,
                   transform: [{ scale: sendButtonScale }],
+                  // Enhanced border and shadow for light mode
+                  borderWidth: theme === 'light' ? 1 : 0.5,
+                  borderColor: theme === 'light' 
+                    ? 'rgba(0, 0, 0, 0.08)' 
+                    : 'rgba(255, 255, 255, 0.1)',
                 }
               ]}>
                 {isLoading || isUploading ? (
