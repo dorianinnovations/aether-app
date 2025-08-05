@@ -30,6 +30,7 @@ import { getGlassmorphicStyle } from '../../tokens/glassmorphism';
 import { ToolCall, Message, MessageAttachment } from '../../../types';
 import BasicMarkdown from '../atoms/BasicMarkdown';
 import { PhotoPreview } from './PhotoPreview';
+import { ImagePreviewModal } from '../organisms/ImagePreviewModal';
 
 const { width } = Dimensions.get('window');
 
@@ -221,6 +222,8 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const [isVisible, setIsVisible] = useState(false);
+  const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<MessageAttachment | undefined>();
   
   const isUser = message.sender === 'user';
   const isSystem = message.isSystem || message.sender === 'system';
@@ -268,8 +271,8 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
 
   const handleImagePress = useCallback((attachment: MessageAttachment) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    console.log('Image pressed:', attachment.uri);
-    // TODO: Open full-screen image viewer
+    setSelectedImage(attachment);
+    setImageModalVisible(true);
   }, []);
 
   // Format timestamp for display
@@ -330,17 +333,19 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
         {isUser ? (
           // User messages
           <View style={styles.userMessageContainer}>
-            {/* Render photo attachments first */}
-            {renderPhotoAttachments()}
-            {(message.text?.trim() || message.message?.trim()) && (
-              <Animated.View style={[
-                styles.userProfileBubble,
-                {
-                  backgroundColor: theme === 'light' ? '#FF0000' : '#202020',
-                  borderWidth: 1,
-                  borderColor: theme === 'light' ? '#E5E5E7' : '#38383A',
-                }
-              ]}>
+            {/* Show message bubble for both text and image-only messages */}
+            <Animated.View style={[
+              styles.userProfileBubble,
+              {
+                backgroundColor: theme === 'light' ? '#F0F0F0' : '#202020',
+                borderWidth: 1,
+                borderColor: theme === 'light' ? '#E5E5E7' : '#38383A',
+              }
+            ]}>
+              {/* Render photo attachments within the bubble */}
+              {renderPhotoAttachments()}
+              {/* Only render text if there is actual text content */}
+              {((message.text && message.text.trim().length > 0) || (message.message && message.message.trim().length > 0)) && (
                 <Text 
                   style={[
                     styles.messageText,
@@ -352,13 +357,14 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
                       fontWeight: '400',
                       color: theme === 'dark' ? '#ffffff' : '#1a1a1a',
                       textAlign: 'left',
+                      marginTop: message.attachments && message.attachments.length > 0 ? 8 : 0,
                     }
                   ]}
                 >
                   {message.text || message.message}
                 </Text>
-              </Animated.View>
-            )}
+              )}
+            </Animated.View>
           </View>
         ) : (
           // Bot messages - no bubble, just animated text
@@ -402,6 +408,14 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
           </View>
         )}
       </View>
+      
+      {/* Image Preview Modal */}
+      <ImagePreviewModal
+        visible={imageModalVisible}
+        onClose={() => setImageModalVisible(false)}
+        attachment={selectedImage}
+        theme={theme}
+      />
     </Animated.View>
   );
 });
@@ -570,6 +584,7 @@ const styles = StyleSheet.create({
   photoAttachmentsContainer: {
     gap: 6,
     alignItems: 'flex-end',
+    marginBottom: 0,
   },
   aiPhotoAttachmentsContainer: {
     gap: 6,

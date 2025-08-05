@@ -118,6 +118,8 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
   const hasAttachments = attachments.length > 0;
   const canSend = (!isInputEmpty || hasAttachments) && !isLoading && !isUploading;
   const hasImageOnlyMessage = isInputEmpty && attachments.some(att => att.type === 'image');
+  const hasImages = attachments.some(att => att.type === 'image');
+
 
   // Voice recording animation
   useEffect(() => {
@@ -303,6 +305,53 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
 
     if (onAttachmentsChange) {
       onAttachmentsChange([...attachments, newAttachment]);
+      
+      // Close attachment popout when adding images
+      if (newAttachment.type === 'image' && attachmentButtonsVisible) {
+        setAttachmentButtonsVisible(false);
+        
+        // Slide out icons quickly
+        Animated.parallel([
+          Animated.timing(cameraSlideAnim, {
+            toValue: 50,
+            duration: 100,
+            useNativeDriver: true,
+            easing: Easing.in(Easing.cubic),
+          }),
+          Animated.timing(gallerySlideAnim, {
+            toValue: 50,
+            duration: 100,
+            useNativeDriver: true,
+            easing: Easing.in(Easing.cubic),
+          }),
+          Animated.timing(documentSlideAnim, {
+            toValue: 50,
+            duration: 100,
+            useNativeDriver: true,
+            easing: Easing.in(Easing.cubic),
+          }),
+        ]).start();
+
+        // Container closing animation
+        Animated.parallel([
+          Animated.timing(attachmentButtonScale, {
+            toValue: 1,
+            duration: 50,
+            useNativeDriver: true,
+          }),
+          Animated.timing(attachmentButtonsAnim, {
+            toValue: 0,
+            duration: 120,
+            useNativeDriver: false,
+            easing: Easing.out(Easing.cubic),
+          }),
+        ]).start(() => {
+          // Reset positions for next open
+          cameraSlideAnim.setValue(-50);
+          gallerySlideAnim.setValue(-50);
+          documentSlideAnim.setValue(-50);
+        });
+      }
     }
   };
 
@@ -440,6 +489,14 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
           elevation: 1000,
         }
       ]}>
+      
+      {/* Modern Attachment Preview - Moved above input */}
+      <AttachmentPreview
+        attachments={attachments}
+        onRemoveAttachment={handleRemoveAttachment}
+        theme={theme}
+      />
+
       {/* Character Count */}
       {value.length > maxLength * 0.8 && (
         <View style={styles.characterCount}>
@@ -699,13 +756,6 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
           )}
         </Animated.View>
       )}
-
-      {/* Modern Attachment Preview */}
-      <AttachmentPreview
-        attachments={attachments}
-        onRemoveAttachment={handleRemoveAttachment}
-        theme={theme}
-      />
 
     </View>
     </PanGestureHandler>

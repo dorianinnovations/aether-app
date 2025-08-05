@@ -7,7 +7,7 @@
 
 import { TokenManager } from './api';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://server-a7od.onrender.com';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://aether-server-j5kh.onrender.com';
 
 export interface StreamChunk {
   text: string;

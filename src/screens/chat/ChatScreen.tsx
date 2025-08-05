@@ -389,7 +389,8 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     
     if (attachments.length > 0) {
       // Handle attachments - send message with attachments
-      const messageText = inputText.trim() || "📎 Image attached";
+      // Only send text if there's actual input text, don't use fallback for image-only messages
+      const messageText = inputText.trim() || "";
       handleMessageSend(messageText, attachments);
     } else {
       // Send the message with the current input text

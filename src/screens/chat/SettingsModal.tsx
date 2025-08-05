@@ -510,9 +510,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     } catch (error) {
       console.error('Sign out error:', error);
       Alert.alert('Error', 'Failed to sign out. Please try again.');
+      throw error; // Re-throw to let SignOutModal handle error state
     } finally {
       setIsLoading(false);
-      setShowSignOutModal(false);
     }
   };
 

@@ -3,8 +3,8 @@
  * Handles: bold, lists, basic formatting with colors
  */
 
-import React from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { Text, View, StyleSheet, Animated, Easing } from 'react-native';
 import { getCyclingPastelColor } from '../../tokens/colors';
 
 interface BasicMarkdownProps {
@@ -12,6 +12,91 @@ interface BasicMarkdownProps {
   theme?: 'light' | 'dark';
   style?: any;
 }
+
+// Animated Question Container Component
+const AnimatedQuestionContainer: React.FC<{
+  children: React.ReactNode;
+  colorIndex: number;
+  theme: 'light' | 'dark';
+}> = ({ children, colorIndex, theme }) => {
+  const slideAnim = useRef(new Animated.Value(-3)).current;
+  const fadeAnim = useRef(new Animated.Value(0.3)).current;
+  const borderColorAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Very subtle entrance animation
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Very gentle color animation - much slower and subtler
+    const animateColor = () => {
+      Animated.sequence([
+        Animated.timing(borderColorAnim, {
+          toValue: 1,
+          duration: 6000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+        Animated.timing(borderColorAnim, {
+          toValue: 0,
+          duration: 6000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+      ]).start(() => animateColor());
+    };
+
+    // Start color animation after a longer delay
+    setTimeout(() => animateColor(), 1200);
+  }, []);
+
+  // Use more subtle, similar pastel colors for gentler transition
+  const primaryColor = getCyclingPastelColor(colorIndex, theme);
+  const secondaryColor = getCyclingPastelColor(colorIndex + 2, theme); // Skip one for more subtle difference
+
+  // Make color transition more subtle with opacity blending
+  const interpolatedBorderColor = borderColorAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [
+      `${primaryColor}88`, // Add transparency for subtlety
+      `${secondaryColor}88`
+    ],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        {
+          opacity: fadeAnim,
+          transform: [{ translateX: slideAnim }],
+        },
+      ]}
+    >
+      <Animated.View
+        style={[
+          styles.questionContainer,
+          {
+            borderLeftColor: interpolatedBorderColor,
+          },
+        ]}
+      >
+        {children}
+      </Animated.View>
+    </Animated.View>
+  );
+};
 
 const BasicMarkdown: React.FC<BasicMarkdownProps> = ({ children, theme = 'light', style = {} }) => {
   const renderText = () => {
@@ -108,11 +193,11 @@ const BasicMarkdown: React.FC<BasicMarkdownProps> = ({ children, theme = 'light'
       // Question/important text (starts with ? or contains key phrases)
       else if (/^\?/.test(line) || /\b(how|what|why|when|where|should|could|would)\b/i.test(line.substring(0, 50))) {
         elements.push(
-          <View key={index} style={styles.questionContainer}>
+          <AnimatedQuestionContainer key={index} colorIndex={colorIndex++} theme={theme}>
             <Text style={[styles.questionText, style]}>
               {formatInlineText(line, theme)}
             </Text>
-          </View>
+          </AnimatedQuestionContainer>
         );
       }
       // Regular text - detect if it's a longer paragraph vs short sentence
@@ -264,9 +349,10 @@ const styles = StyleSheet.create({
     marginVertical: 4,
     paddingLeft: 8,
     paddingRight: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: 'rgba(100, 181, 246, 0.4)',
+    borderLeftWidth: 3, // Reduced from 4 for subtlety
     paddingVertical: 2,
+    borderRadius: 4, // Slightly less rounded
+    backgroundColor: 'rgba(255, 255, 255, 0.01)', // Even more subtle background
   },
   questionText: {
     fontSize: 18,

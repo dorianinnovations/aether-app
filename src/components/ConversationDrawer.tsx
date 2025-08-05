@@ -1,6 +1,6 @@
 /**
  * ConversationDrawer - Simple slide-out conversation history
- * Clean implementation with three labeled categories: Aether, Friends, Connections
+ * Clean implementation with three labeled categories: Aether, Friends, Custom
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -24,7 +24,7 @@ import { typography } from '../design-system/tokens/typography';
 import { getGlassmorphicStyle } from '../design-system/tokens/glassmorphism';
 import { useConversationEvents } from '../hooks/useConversationEvents';
 import { log } from '../utils/logger';
-import { ConversationAPI } from '../services/api';
+import { ConversationAPI, FriendsAPI } from '../services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -34,6 +34,7 @@ interface Conversation {
   lastActivity: string;
   messageCount: number;
   summary?: string;
+  type?: 'aether' | 'friend' | 'custom';
 }
 
 interface ConversationDrawerProps {
@@ -53,12 +54,18 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   currentConversationId,
   theme,
 }) => {
-  const [currentTab, setCurrentTab] = useState(0); // Start on Friends tab
+  const [currentTab, setCurrentTab] = useState(0); // Start on Aether tab
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [pressedIndex, setPressedIndex] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [longPressedId, setLongPressedId] = useState<string | null>(null);
+  
+  // Cache conversations per tab to avoid unnecessary API calls
+  const [conversationCache, setConversationCache] = useState<{
+    [key: number]: { data: Conversation[], timestamp: number }
+  }>({});
+  const CACHE_DURATION = 30000; // 30 seconds
   
   // Simplified animations
   const slideAnim = useRef(new Animated.Value(-screenWidth * 0.85)).current;
@@ -109,33 +116,111 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     }
   });
 
-  // Real-time conversation events with stable handlers
-  const { isConnected: isSSEConnected, eventCount } = useConversationEvents(eventHandlers.current);
+  // Real-time conversation events with stable handlers - only when drawer is visible
+  const { isConnected: isSSEConnected, eventCount } = useConversationEvents({
+    ...eventHandlers.current,
+    autoRefresh: isVisible // Only connect SSE when drawer is visible
+  });
 
-  // Load conversations from API
-  const loadConversations = useCallback(async () => {
-    if (currentTab !== 0) return; // Only load for Aether tab
-    
+  // Load conversations from API based on current tab with caching
+  const loadConversations = useCallback(async (forceRefresh: boolean = false) => {
     try {
-      setIsLoading(true);
-      const response = await ConversationAPI.getRecentConversations(20);
-      if (response.conversations) {
-        setConversations(response.conversations);
-        log.debug('Loaded conversations:', response.conversations.length);
+      // Check cache first unless force refresh
+      if (!forceRefresh) {
+        const cached = conversationCache[currentTab];
+        if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+          setConversations(cached.data);
+          log.debug(`Using cached data for tab ${currentTab}:`, cached.data.length);
+          return;
+        }
       }
+      
+      setIsLoading(true);
+      let newConversations: Conversation[] = [];
+      
+      switch (currentTab) {
+        case 0: // Aether - AI conversations
+          try {
+            const aetherResponse = await ConversationAPI.getRecentConversations(20);
+            if (aetherResponse.conversations) {
+              newConversations = aetherResponse.conversations;
+              log.debug('Loaded Aether conversations:', newConversations.length);
+              if (newConversations.length > 0) {
+                log.debug('First conversation structure:', newConversations[0]);
+              }
+            }
+          } catch (error: any) {
+            if (error.status === 404) {
+              log.debug('No conversations found (404), showing empty state');
+              newConversations = [];
+            } else {
+              throw error;
+            }
+          }
+          break;
+          
+        case 1: // Friends - Convert friends list to conversation format
+          try {
+            const friendsResponse = await FriendsAPI.getFriendsList();
+            if (friendsResponse.friends && Array.isArray(friendsResponse.friends)) {
+              newConversations = friendsResponse.friends.map((friend: any) => ({
+                _id: `friend-${friend.username}`,
+                title: friend.displayName || friend.username,
+                lastActivity: friend.lastSeen || 'Recently active',
+                messageCount: 0,
+                summary: `Chat with ${friend.displayName || friend.username}`,
+                type: 'friend'
+              }));
+              log.debug('Loaded friend conversations:', newConversations.length);
+            }
+          } catch (friendsError) {
+            log.debug('Friends API not available yet, showing empty state');
+            newConversations = [];
+          }
+          break;
+          
+        case 2: // Custom - Placeholder for future implementation
+          newConversations = [];
+          log.debug('Custom tab - feature coming soon');
+          break;
+          
+        default:
+          newConversations = [];
+      }
+      
+      // Update cache and state
+      setConversationCache(prev => ({
+        ...prev,
+        [currentTab]: { data: newConversations, timestamp: Date.now() }
+      }));
+      setConversations(newConversations);
+      
     } catch (error) {
       log.error('Failed to load conversations:', error);
+      setConversations([]);
     } finally {
       setIsLoading(false);
     }
-  }, [currentTab]);
+  }, [currentTab, conversationCache, CACHE_DURATION]);
 
   // Load conversations when drawer opens or tab changes
   useEffect(() => {
-    if (isVisible && currentTab === 0) {
+    if (isVisible) {
       loadConversations();
     }
-  }, [isVisible, currentTab]); // Removed loadConversations dependency to prevent infinite re-renders
+  }, [isVisible, currentTab]);
+  
+  // Clear cache when drawer closes to save memory
+  useEffect(() => {
+    if (!isVisible) {
+      // Clear old cache entries after 5 minutes of drawer being closed
+      const clearCacheTimer = setTimeout(() => {
+        setConversationCache({});
+        setConversations([]);
+      }, 300000);
+      return () => clearTimeout(clearCacheTimer);
+    }
+  }, [isVisible]);
 
   // Delete conversation function
   const handleDeleteConversation = useCallback(async (conversationId: string) => {
@@ -160,6 +245,22 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, [isAnimating, currentTab]);
 
+  // Debug function to test conversation creation
+  const handleDebugCreateConversation = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      log.debug('Creating test conversation...');
+      const result = await ConversationAPI.debugCreateTestConversation();
+      log.debug('Test conversation result:', result);
+      // Refresh conversations after creation
+      await loadConversations(true);
+    } catch (error) {
+      log.error('Failed to create test conversation:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [loadConversations]);
+
   const tabs = [
     { 
       label: 'Aether', 
@@ -174,8 +275,8 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
       iconColor: themeColors.textSecondary,
     },
     { 
-      label: 'Links', 
-      icon: 'link-2', 
+      label: 'Custom', 
+      icon: 'settings', 
       color: themeColors.textSecondary,
       iconColor: themeColors.textSecondary,
     }
@@ -291,12 +392,12 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
             badge: item.lastActivity.includes('now') ? '•' : '•',
             subtitle: item.summary || item.lastActivity
           };
-        case 2: // Links - Shared resources
+        case 2: // Custom - Custom conversations
           return {
             accentColor: tabConfig.color,
-            icon: 'link',
+            icon: 'settings',
             badge: '•',
-            subtitle: item.summary || 'Shared resource'
+            subtitle: item.summary || 'Custom conversation'
           };
         default:
           return {
@@ -406,25 +507,23 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   };
   
   const getTabContent = () => {
-    switch (currentTab) {
-      case 0: // Aether - Real conversations
-        return conversations;
-      case 1: // Friends - Coming soon
-        return [];
-      case 2: // Links - Coming soon  
-        return [];
-      default:
-        return conversations;
-    }
+    return conversations;
   };
   
   const renderEmptyState = () => {
     const tabConfig = tabs[currentTab];
-    const emptyMessages = [
-      isLoading ? 'Loading conversations...' : 'Start your first conversation',
-      'Friends feature coming soon',
-      'Link sharing coming soon'
-    ];
+    const getEmptyMessage = () => {
+      if (isLoading) return 'Loading...';
+      
+      switch (currentTab) {
+        case 0: return 'Start your first conversation with Aether';
+        case 1: return 'Add friends to start chatting';
+        case 2: return 'Custom conversations coming soon';
+        default: return 'No conversations yet';
+      }
+    };
+    
+    const emptyMessage = getEmptyMessage();
     
     return (
       <View style={styles.emptyState}>
@@ -452,7 +551,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
           styles.emptyText,
           { color: themeColors.textSecondary }
         ]}>
-          {emptyMessages[currentTab]}
+          {emptyMessage}
         </Text>
       </View>
     );

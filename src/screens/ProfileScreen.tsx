@@ -98,12 +98,12 @@ export const ProfileScreen: React.FC = () => {
 
   const handleSignOut = async () => {
     try {
-      setShowSignOutModal(false);
       await AuthAPI.logout();
       // Auth check in App.tsx will handle navigation automatically
     } catch (error) {
       console.error('Sign out error:', error);
       Alert.alert('Error', 'Failed to sign out. Please try again.');
+      throw error; // Re-throw to let SignOutModal handle error state
     }
   };
 

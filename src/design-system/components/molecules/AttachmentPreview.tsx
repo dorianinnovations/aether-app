@@ -92,28 +92,7 @@ const ImagePreview: React.FC<{
         )}
       </View>
       
-      {/* Image Info */}
-      <View style={styles.imageInfo}>
-        <Text
-          style={[
-            styles.imageName,
-            typography.textStyles.bodySmall,
-            { color: themeColors.text }
-          ]}
-          numberOfLines={1}
-        >
-          {attachment.name}
-        </Text>
-        <Text
-          style={[
-            styles.imageSize,
-            typography.textStyles.caption,
-            { color: themeColors.textMuted }
-          ]}
-        >
-          {formatFileSize(attachment.size)}
-        </Text>
-      </View>
+      {/* Image Info - Hidden for compact view */}
       
       {/* Remove Button */}
       <TouchableOpacity
@@ -128,7 +107,7 @@ const ImagePreview: React.FC<{
         <FontAwesome5
           name="times"
           size={12}
-          color={themeColors.textMuted}
+          color="#FFFFFF"
         />
       </TouchableOpacity>
     </View>
@@ -219,7 +198,7 @@ const DocumentPreview: React.FC<{
         <FontAwesome5
           name="times"
           size={12}
-          color={themeColors.textMuted}
+          color="#FFFFFF"
         />
       </TouchableOpacity>
     </View>
@@ -271,7 +250,7 @@ export const AttachmentPreview: React.FC<AttachmentPreviewProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: spacing[2],
+    marginBottom: spacing[2], // Changed from marginTop to marginBottom
     gap: spacing[2],
   },
   
@@ -283,22 +262,21 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing[2],
   },
   imagePreviewContainer: {
-    width: (width - spacing[4] * 3) / 2, // Two columns with spacing
-    borderRadius: borderRadius.lg,
+    width: 80, // Smaller fixed width
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     overflow: 'hidden',
     position: 'relative',
   },
   imageThumbnailContainer: {
     width: '100%',
-    height: 120,
+    height: 60, // Smaller height
     position: 'relative',
   },
   imageThumbnail: {
     width: '100%',
     height: '100%',
-    borderTopLeftRadius: borderRadius.lg - 1,
-    borderTopRightRadius: borderRadius.lg - 1,
+    borderRadius: borderRadius.md - 1, // Full rounded for smaller preview
   },
   statusOverlay: {
     position: 'absolute',
@@ -367,15 +345,16 @@ const styles = StyleSheet.create({
   // Shared Styles
   removeButton: {
     position: 'absolute',
-    top: spacing[2],
-    right: spacing[2],
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    top: 2,
+    right: 2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    zIndex: 100,
+    elevation: 100,
   },
 });
 

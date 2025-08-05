@@ -240,9 +240,18 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
     ]).start(() => {
       // Start the signout process - the Lottie animation will show during isConfirming state
       // We'll delay the actual onConfirm call to allow users to see the animation
-      setTimeout(() => {
-        onConfirm();
-        setIsConfirming(false);
+      setTimeout(async () => {
+        try {
+          await onConfirm();
+          // Close modal after successful signout
+          onClose();
+        } catch (error) {
+          console.error('SignOut error in modal:', error);
+          // Still close modal on error
+          onClose();
+        } finally {
+          setIsConfirming(false);
+        }
       }, 1500); // 1.5 second delay to show the signout animation
     });
   };
