@@ -3,7 +3,7 @@
  * Clean implementation with three labeled categories: Aether, Friends, Custom
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -60,6 +60,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const [pressedIndex, setPressedIndex] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [longPressedId, setLongPressedId] = useState<string | null>(null);
+  const [shouldRender, setShouldRender] = useState(false);
   
   // Cache conversations per tab to avoid unnecessary API calls
   const [conversationCache, setConversationCache] = useState<{
@@ -324,13 +325,13 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: -screenWidth * 0.85,
-        duration: 200,
+        duration: 300,
         easing: Easing.in(Easing.quad),
         useNativeDriver: true,
       }),
       Animated.timing(overlayOpacity, {
         toValue: 0,
-        duration: 200,
+        duration: 300,
         easing: Easing.in(Easing.quad),
         useNativeDriver: true,
       }),
@@ -340,11 +341,20 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   }, []);
 
   // Effect to handle visibility changes
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isVisible) {
-      showDrawer();
+      setShouldRender(true);
+      // Delay animation start to avoid insertion effect warning
+      requestAnimationFrame(() => {
+        showDrawer();
+      });
     } else {
       hideDrawer();
+      // Delay unmounting to allow slide-out animation
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+      }, 300); // Match 0.3-second slide duration
+      return () => clearTimeout(timer);
     }
   }, [isVisible]);
 
@@ -557,11 +567,11 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     );
   };
   
-  if (!isVisible) return null;
+  if (!shouldRender) return null;
 
   return (
     <Modal
-      visible={isVisible}
+      visible={shouldRender}
       transparent={true}
       animationType="none"
       onRequestClose={handleClose}

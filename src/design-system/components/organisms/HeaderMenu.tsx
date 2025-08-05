@@ -3,7 +3,7 @@
  * Sophisticated menu with intricate animations from aether-mobile
  */
 
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -125,6 +125,7 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
   // State to prevent multiple rapid presses
   const [isAnimating, setIsAnimating] = useState(false);
   const [pressedIndex, setPressedIndex] = useState<number | null>(null);
+  const [shouldRender, setShouldRender] = useState(false);
   
   // Main menu animations
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -198,46 +199,35 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
     
     setIsAnimating(true);
     
-    // Ultra-fast exit animation
-    Animated.parallel([
-      Animated.timing(scaleAnim, {
-        toValue: 0.9,
-        duration: 80,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 180,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateYAnim, {
-        toValue: -8,
-        duration: 120,
-        easing: Easing.bezier(0.55, 0.06, 0.68, 0.19),
-        useNativeDriver: true,
-      }),
-      // Hide all items smoothly (only animate existing items)
-      ...itemAnims.slice(0, totalItems).map(anim => 
-        Animated.timing(anim.opacity, {
-          toValue: 0,
-          duration: 120,
-          easing: Easing.in(Easing.cubic),
-          useNativeDriver: true,
-        })
-      ),
-    ]).start(() => {
+    // Simple 0.3-second fade out
+    Animated.timing(opacityAnim, {
+      toValue: 0,
+      duration: 300,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start(() => {
       resetAnimations();
     });
   }, []);
 
   // Effect to handle visibility changes
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (visible) {
-      showMenu();
+      setShouldRender(true);
+      // Defer animation to avoid useInsertionEffect warning
+      requestAnimationFrame(() => {
+        showMenu();
+      });
     } else {
-      hideMenu();
+      // Defer hide animation to avoid scheduling during insertion
+      requestAnimationFrame(() => {
+        hideMenu();
+      });
+      // Delay unmounting to allow exit animation
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+      }, 300); // Match 0.3-second fade duration
+      return () => clearTimeout(timer);
     }
   }, [visible]);
 
@@ -302,7 +292,7 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
     });
   }, [onAction]);
 
-  if (!visible) return null;
+  if (!shouldRender) return null;
 
   // Calculate position based on menu button and header layout
   const menuWidth = 280;
@@ -322,7 +312,7 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
 
   return (
     <Modal
-      visible={visible}
+      visible={shouldRender}
       transparent={true}
       animationType="none"
       onRequestClose={onClose}

@@ -47,31 +47,31 @@ interface OnboardingStep {
 
 const onboardingSteps: OnboardingStep[] = [
   {
-    title: "Your AI Conversation Partner",
-    subtitle: "Intelligent chat that learns from you",
-    description: "Chat with advanced AI that understands context and maintains conversation history. Ask questions, get help with tasks, or just have a conversation.",
-    accent: "CHAT",
+    title: "The Anti-Algorithm Introduction",
+    subtitle: "Your social life isn't a feed—it's a constellation",
+    description: "Instead of scrolling through everyone's highlight reel, you just... talk. Tell our AI what's new in your world, what you're into lately, or what random thought just crossed your mind. It listens, updates your profile, and quietly works its magic.",
+    accent: "AUTHENTIC",
     category: "FOUNDATION"
   },
   {
-    title: "Smart Insights & Analytics", 
-    subtitle: "Track your conversation patterns",
-    description: "Get insights into your chat patterns, emotional trends, and conversation topics. Understand how you interact with AI over time.",
-    accent: "INSIGHTS",
+    title: "The Effortless Update", 
+    subtitle: "Just chat with your AI like texting a friend",
+    description: "Mention you're learning pottery, obsessing over that new sushi place, or finally reading that book everyone recommended. Your profile evolves as naturally as you do. This isn't social media; it's your social constellation, always current, never performative.",
+    accent: "NATURAL",
     category: "CONNECTION"
   },
   {
-    title: "Personalized Experience",
-    subtitle: "Themes and settings that match your style", 
-    description: "Customize your chat interface with light and dark themes, personal settings, and preferences that make the app truly yours.",
-    accent: "PERSONALIZATION",
+    title: "The Synchronicity Engine",
+    subtitle: "Life's best moments aren't scheduled—they're discovered", 
+    description: "While you're living your life, sharing random updates through voice notes or quick texts with your AI, something beautiful happens. When the stars align, you and your best friend from college both have time and happen to be in the same neighborhood.",
+    accent: "DISCOVERY",
     category: "EXPERIENCE"
   },
   {
-    title: "Connect & Share",
-    subtitle: "Friends features for the AI era",
-    description: "Share interesting conversations, connect with other users, and explore a social platform built around meaningful AI interactions.",
-    accent: "FRIENDS",
+    title: "The Privacy-First Promise",
+    subtitle: "Your inner circle's digital living room",
+    description: "Every update you share stays within the network you build. Your AI companion learns your rhythms without selling them. Choose exactly who sees what. When connections happen, they're organic chemistry, not algorithmic manipulation.",
+    accent: "PRIVATE",
     category: "FRIENDS"
   }
 ];

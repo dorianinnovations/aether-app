@@ -26,3 +26,9 @@ export { ThemeSelector } from './ThemeSelector';
 
 // Social components
 export { SocialCard } from './SocialCard';
+
+// Conversation components
+export { default as ConversationTabBar } from './ConversationTabBar';
+export { default as ConversationItem } from './ConversationItem';
+export { default as ConversationEmptyState } from './ConversationEmptyState';
+export { default as ConversationActionBar } from './ConversationActionBar';

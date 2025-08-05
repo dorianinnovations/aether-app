@@ -3,7 +3,7 @@
  * The heart of Aether - AI that learns and adapts to your patterns
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   View,
   FlatList,
@@ -154,12 +154,14 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   
   // Add Friend modal state
   const [showAddFriendModal, setShowAddFriendModal] = useState(false);
+  const [shouldRenderAddFriendModal, setShouldRenderAddFriendModal] = useState(false);
   const [friendUsername, setFriendUsername] = useState('');
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'success' | 'error' | null>(null);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const shakeAnim = useRef<Animated.Value>(new Animated.Value(0)).current;
+  const addFriendModalOpacity = useRef<Animated.Value>(new Animated.Value(1)).current;
   
   const { ghostText, isDismissing } = useGhostTyping({
     isInputFocused,
@@ -210,6 +212,33 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     onSettingsPress: () => setShowSettings(true),
     onSignOut: () => setShowSignOutModal(true)
   });
+
+  // Add Friend modal visibility effect with delay
+  useLayoutEffect(() => {
+    if (showAddFriendModal) {
+      setShouldRenderAddFriendModal(true);
+      // Fade in
+      Animated.timing(addFriendModalOpacity, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // Fade out animation
+      Animated.timing(addFriendModalOpacity, {
+        toValue: 0,
+        duration: 300,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }).start();
+      
+      // Delay unmounting to allow fade-out animation
+      const timer = setTimeout(() => {
+        setShouldRenderAddFriendModal(false);
+      }, 300); // Match fade duration
+      return () => clearTimeout(timer);
+    }
+  }, [showAddFriendModal]);
 
   // Cleanup effect for rotation stability
   useEffect(() => {
@@ -823,20 +852,21 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
       )}
 
       {/* Add Friend Dropdown */}
+      {shouldRenderAddFriendModal && (
       <Modal
-        visible={showAddFriendModal}
+        visible={shouldRenderAddFriendModal}
         transparent={true}
         animationType="none"
         onRequestClose={() => setShowAddFriendModal(false)}
       >
-        <View style={styles.overlay}>
+        <Animated.View style={[styles.overlay, { opacity: addFriendModalOpacity }]}>
           <TouchableOpacity 
             style={StyleSheet.absoluteFillObject}
             activeOpacity={1}
             onPress={() => setShowAddFriendModal(false)}
           />
           
-          <View style={[
+          <Animated.View style={[
             styles.dropdown,
             {
               left: 24,
@@ -879,11 +909,11 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
                 styles.dropdownTitle,
                 { 
                   color: theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.primary,
-                  fontFamily: 'CrimsonPro-Bold',
-                  letterSpacing: -0.5,
+                  fontFamily: 'Nunito-SemiBold',
+                  letterSpacing: -0.7,
                 }
               ]}>
-                Add a friend
+                Add a friend by username
               </Text>
               
               <Animated.View
@@ -952,9 +982,10 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
+          </Animated.View>
+        </Animated.View>
       </Modal>
+      )}
       </SafeAreaView>
     </PageBackground>
   );
