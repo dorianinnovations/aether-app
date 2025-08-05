@@ -394,9 +394,6 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
               <View style={[
                 styles.header,
                 { 
-                  borderBottomColor: theme === 'dark' 
-                    ? designTokens.borders.dark.subtle 
-                    : designTokens.borders.light.subtle,
                   backgroundColor: 'transparent'
                 }
               ]}>
@@ -476,7 +473,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
     paddingTop: 18,
-    borderBottomWidth: 0.5,
     borderTopRightRadius: 22,
   },
   content: {

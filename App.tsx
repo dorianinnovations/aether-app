@@ -45,6 +45,15 @@ import { colorFadeTransition } from './src/design-system/transitions/colorFadeTr
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
+// Suppress useInsertionEffect warning - it's just noise
+const originalWarn = console.warn;
+console.warn = (message, ...args) => {
+  if (typeof message === 'string' && message.includes('useInsertionEffect must not schedule updates')) {
+    return;
+  }
+  originalWarn(message, ...args);
+};
+
 const { width } = Dimensions.get('window');
 
 // Navigation Types

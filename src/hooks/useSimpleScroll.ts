@@ -38,9 +38,12 @@ export const useSimpleScroll = () => {
     }, 2000);
   }, [checkIfAtBottom]);
 
-  // Smooth scroll to bottom (for input focus)
+  // Smooth scroll to bottom (for input focus and keyboard events)
   const scrollToBottom = useCallback(() => {
-    flatListRef.current?.scrollToEnd({ animated: true });
+    // Use a small delay to ensure layout changes are complete
+    requestAnimationFrame(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    });
   }, []);
 
   // Gentle pull down (for new messages, but respect user scrolling)

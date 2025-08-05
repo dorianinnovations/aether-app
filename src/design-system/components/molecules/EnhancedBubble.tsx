@@ -17,6 +17,8 @@ import {
   Platform,
   Image,
   ScrollView,
+  PanResponder,
+  Modal,
 } from 'react-native';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -224,6 +226,9 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
   const [isVisible, setIsVisible] = useState(false);
   const [imageModalVisible, setImageModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState<MessageAttachment | undefined>();
+  const [showActionModal, setShowActionModal] = useState(false);
+  const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+  const [selectedAction, setSelectedAction] = useState<string | null>(null);
   
   const isUser = message.sender === 'user';
   const isSystem = message.isSystem || message.sender === 'system';
@@ -274,6 +279,85 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
     setSelectedImage(attachment);
     setImageModalVisible(true);
   }, []);
+
+  // Long press handler for both bot and user messages
+  const handleLongPress = useCallback((event: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const { pageX, pageY } = event.nativeEvent;
+    
+    // Calculate modal width based on number of options
+    const optionCount = isUser ? 2 : 3;
+    const modalWidth = optionCount * 80;
+    const modalX = Math.max(10, Math.min(pageX - modalWidth / 2, width - modalWidth - 10));
+    
+    setModalPosition({ x: modalX, y: pageY - 100 });
+    setShowActionModal(true);
+  }, [isUser]);
+
+  // Action modal options - different for user vs bot messages
+  const actionOptions = isUser 
+    ? [
+        { id: 'copy', label: 'Copy', icon: 'copy-outline' },
+        { id: 'share', label: 'Share', icon: 'share-outline' },
+      ]
+    : [
+        { id: 'copy', label: 'Copy', icon: 'copy-outline' },
+        { id: 'share', label: 'Share', icon: 'share-outline' },
+        { id: 'report', label: 'Report', icon: 'flag-outline' },
+      ];
+
+  const handleActionSelect = useCallback((actionId: string) => {
+    setSelectedAction(actionId);
+    
+    switch (actionId) {
+      case 'copy':
+        handleCopyMessage();
+        break;
+      case 'share':
+        handleShare();
+        break;
+      case 'report':
+        handleReport();
+        break;
+    }
+    
+    setTimeout(() => {
+      setShowActionModal(false);
+      setSelectedAction(null);
+    }, 200);
+  }, [handleCopyMessage, handleShare, handleReport]);
+
+  // Pan responder for drag-to-select functionality
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => showActionModal,
+    onMoveShouldSetPanResponder: () => showActionModal,
+    onPanResponderMove: (event) => {
+      if (!showActionModal) return;
+      
+      const { locationX, locationY } = event.nativeEvent;
+      const optionWidth = 80;
+      const optionHeight = 60;
+      
+      // Calculate which option is being hovered
+      const optionIndex = Math.floor(locationX / optionWidth);
+      if (optionIndex >= 0 && optionIndex < actionOptions.length) {
+        const hoveredAction = actionOptions[optionIndex].id;
+        if (hoveredAction !== selectedAction) {
+          setSelectedAction(hoveredAction);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+      } else {
+        setSelectedAction(null);
+      }
+    },
+    onPanResponderRelease: () => {
+      if (selectedAction) {
+        handleActionSelect(selectedAction);
+      } else {
+        setShowActionModal(false);
+      }
+    },
+  });
 
   // Format timestamp for display
   const formatTimestamp = useCallback((timestamp: string) => {
@@ -336,42 +420,53 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
             {/* Show message bubble when there's text or attachments */}
             {(((message.text && message.text.trim().length > 0) || (message.message && message.message.trim().length > 0)) || 
               (message.attachments && message.attachments.length > 0)) && (
-              <Animated.View style={[
-                styles.userProfileBubble,
-                {
-                  backgroundColor: theme === 'light' ? '#F0F0F0' : '#202020',
-                  borderWidth: 1,
-                  borderColor: theme === 'light' ? '#E5E5E7' : '#38383A',
-                }
-              ]}>
-                {/* Render photo attachments within the bubble */}
-                {renderPhotoAttachments()}
-                {/* Only render text if there is actual text content */}
-                {((message.text && message.text.trim().length > 0) || (message.message && message.message.trim().length > 0)) && (
-                  <Text 
-                    style={[
-                      styles.messageText,
-                      {
-                        fontSize: 12,
-                        lineHeight: 22,
-                        letterSpacing: -0.1,
-                        fontFamily: 'Nunito-Regular',
-                        fontWeight: '400',
-                        color: theme === 'dark' ? '#ffffff' : '#1a1a1a',
-                        textAlign: 'left',
-                        marginTop: message.attachments && message.attachments.length > 0 ? 8 : 0,
-                      }
-                    ]}
-                  >
-                    {message.text || message.message}
-                  </Text>
-                )}
-              </Animated.View>
+              <TouchableOpacity
+                onLongPress={handleLongPress}
+                activeOpacity={1}
+                delayLongPress={300}
+              >
+                <Animated.View style={[
+                  styles.userProfileBubble,
+                  {
+                    backgroundColor: theme === 'light' ? '#F0F0F0' : '#202020',
+                    borderWidth: 1,
+                    borderColor: theme === 'light' ? '#E5E5E7' : '#38383A',
+                  }
+                ]}>
+                  {/* Render photo attachments within the bubble */}
+                  {renderPhotoAttachments()}
+                  {/* Only render text if there is actual text content */}
+                  {((message.text && message.text.trim().length > 0) || (message.message && message.message.trim().length > 0)) && (
+                    <Text 
+                      style={[
+                        styles.messageText,
+                        {
+                          fontSize: 16,
+                          lineHeight: 24,
+                          letterSpacing: -0.1,
+                          fontFamily: 'Nunito-Regular',
+                          fontWeight: '400',
+                          color: theme === 'dark' ? '#ffffff' : '#1a1a1a',
+                          textAlign: 'left',
+                          marginTop: message.attachments && message.attachments.length > 0 ? 4 : 0,
+                        }
+                      ]}
+                    >
+                      {message.text || message.message}
+                    </Text>
+                  )}
+                </Animated.View>
+              </TouchableOpacity>
             )}
           </View>
         ) : (
           // Bot messages - no bubble, just animated text
-          <View style={styles.botTextWrapper}>
+          <TouchableOpacity 
+            style={styles.botTextWrapper}
+            onLongPress={handleLongPress}
+            activeOpacity={1}
+            delayLongPress={300}
+          >
             <StreamContent 
               text={message.text || message.message}
               theme={theme}
@@ -381,34 +476,12 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
             />
             {showTimestampAndActions && (
               <View style={styles.botMessageFooter}>
-                <TouchableOpacity 
-                  onPress={handleCopyMessage}
-                  style={styles.actionButton}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons 
-                    name="copy-outline" 
-                    size={14} 
-                    color={theme === 'dark' ? '#888888' : '#666666'} 
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  onPress={handleReport}
-                  style={styles.actionButton}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons 
-                    name="ellipsis-horizontal" 
-                    size={14} 
-                    color={theme === 'dark' ? '#888888' : '#666666'} 
-                  />
-                </TouchableOpacity>
                 <Text style={[styles.timestamp, { color: theme === 'dark' ? '#888888' : '#666666' }]}>
                   {formatTimestamp(message.timestamp)}
                 </Text>
               </View>
             )}
-          </View>
+          </TouchableOpacity>
         )}
       </View>
       
@@ -419,6 +492,62 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
         attachment={selectedImage}
         theme={theme}
       />
+
+      {/* Action Modal */}
+      <Modal
+        visible={showActionModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowActionModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowActionModal(false)}
+        >
+          <View
+            style={[
+              styles.actionModal,
+              {
+                left: modalPosition.x,
+                top: modalPosition.y,
+                width: actionOptions.length * 80,
+                backgroundColor: theme === 'dark' ? 'rgba(40, 40, 40, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+              }
+            ]}
+            {...panResponder.panHandlers}
+          >
+            {actionOptions.map((option, index) => (
+              <TouchableOpacity
+                key={option.id}
+                style={[
+                  styles.actionOption,
+                  {
+                    backgroundColor: selectedAction === option.id 
+                      ? (theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)')
+                      : 'transparent',
+                  }
+                ]}
+                onPress={() => handleActionSelect(option.id)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={option.icon as any}
+                  size={20}
+                  color={theme === 'dark' ? '#ffffff' : '#333333'}
+                />
+                <Text style={[
+                  styles.actionLabel,
+                  { color: theme === 'dark' ? '#ffffff' : '#333333' }
+                ]}>
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </Animated.View>
   );
 });
@@ -434,8 +563,8 @@ const styles = StyleSheet.create({
   },
   userProfileBubble: {
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
     maxWidth: width * 0.8,
     alignSelf: 'flex-end',
     shadowColor: '#000',
@@ -447,7 +576,7 @@ const styles = StyleSheet.create({
     borderColor: '#D1D1D6',
   },
   userMessageText: {
-    fontSize: 12,
+    fontSize: 16,
     lineHeight: 20,
   },
   botTextWrapper: {
@@ -561,10 +690,13 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   botMessageFooter: {
+    flexDirection: 'row',
     justifyContent: 'flex-start',
+    alignItems: 'center',
     paddingHorizontal: spacing[1],
     marginTop: 0,
     marginBottom: 0,
+    gap: spacing[2],
   },
   timestamp: {
     fontSize: 11,
@@ -593,6 +725,37 @@ const styles = StyleSheet.create({
     gap: 6,
     alignItems: 'flex-start',
     marginBottom: spacing[2],
+  },
+  
+  // Action Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  actionModal: {
+    position: 'absolute',
+    flexDirection: 'row',
+    borderRadius: 12,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  actionOption: {
+    width: 80,
+    height: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  actionLabel: {
+    fontSize: 12,
+    fontFamily: 'Nunito-Medium',
+    marginTop: 4,
+    textAlign: 'center',
   },
 });
 

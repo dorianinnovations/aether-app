@@ -27,18 +27,7 @@ const TabButton: React.FC<TabButtonProps> = ({
 
   return (
     <TouchableOpacity
-      style={[
-        styles.tabButton,
-        {
-          backgroundColor: isActive 
-            ? (theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)')
-            : 'transparent',
-          borderWidth: 1,
-          borderColor: theme === 'light' 
-            ? 'rgba(0,0,0,0.08)' 
-            : 'rgba(255,255,255,0.1)',
-        }
-      ]}
+      style={styles.tabButton}
       onPress={onPress}
       activeOpacity={0.9}
       disabled={disabled}

@@ -139,6 +139,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   const [headerVisible, setHeaderVisible] = useState(true);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+  const [isChatInputFocused, setIsChatInputFocused] = useState(false);
   
   // Animation refs
   const tooltipOpacity = useRef(new Animated.Value(1)).current;
@@ -240,6 +241,27 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     }
   }, [showAddFriendModal]);
 
+  // Keyboard event listeners for proper scroll behavior (only for chat input)
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+      // Only scroll to bottom if the chat input is focused
+      if (isChatInputFocused) {
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 150);
+      }
+    });
+
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      // Optional: scroll adjustment when keyboard hides if needed
+    });
+
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardDidHideListener?.remove();
+    };
+  }, [isChatInputFocused]);
+
   // Cleanup effect for rotation stability
   useEffect(() => {
     return () => {
@@ -269,12 +291,9 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     const currentText = inputText;
     const currentAttachments = [...attachments];
     
-    // Clear input immediately to maintain responsive UX, but use requestAnimationFrame 
-    // to prevent keyboard state conflicts
-    requestAnimationFrame(() => {
-      setInputText('');
-      setAttachments([]);
-    });
+    // Clear input immediately without requestAnimationFrame to prevent keyboard avoiding view issues
+    setInputText('');
+    setAttachments([]);
     
     // Send with stored values to ensure message content integrity
     await handleMessageSend(currentText, currentAttachments);
@@ -416,25 +435,31 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   const handleEnhancedSend = () => {
     if (!inputText.trim() && attachments.length === 0) return;
     
-    if (attachments.length > 0) {
+    // Store current values before clearing
+    const currentText = inputText;
+    const currentAttachments = [...attachments];
+    
+    // Dismiss keyboard immediately to prevent KeyboardAvoidingView positioning issues
+    Keyboard.dismiss();
+    
+    // Clear input immediately
+    setInputText('');
+    setAttachments([]);
+    
+    if (currentAttachments.length > 0) {
       // Handle attachments - send message with attachments
-      // Only send text if there's actual input text, don't use fallback for image-only messages
-      const messageText = inputText.trim() || "";
-      handleMessageSend(messageText, attachments);
+      const messageText = currentText.trim() || "";
+      handleMessageSend(messageText, currentAttachments);
     } else {
       // Send the message with the current input text
-      handleMessageSend(inputText);
+      handleMessageSend(currentText);
     }
-    
-    // Clear the input text after sending
-    setInputText('');
-    
-    // Clear attachments after sending
-    setAttachments([]);
   };
 
   // Handle input focus/blur for tooltip fade
   const handleInputFocus = () => {
+    setIsChatInputFocused(true);
+    
     // Smooth fade out with gentle easing
     Animated.timing(tooltipOpacity, {
       toValue: 0,
@@ -443,11 +468,15 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
       useNativeDriver: true,
     }).start();
     
-    // Smooth scroll to bottom when input is focused
-    scrollToBottom();
+    // Delay scroll to bottom to allow keyboard to animate in first
+    setTimeout(() => {
+      scrollToBottom();
+    }, 100);
   };
 
   const handleInputBlur = () => {
+    setIsChatInputFocused(false);
+    
     // Smooth fade in with delay and gentle easing
     setTimeout(() => {
       Animated.timing(tooltipOpacity, {
@@ -597,8 +626,10 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
       </View>
 
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.inputContainer}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        enabled={true}
       >
         <Animated.View 
           style={[
@@ -1020,7 +1051,8 @@ const styles = StyleSheet.create({
   chatInputWrapper: {
     paddingHorizontal: 10,
     paddingVertical: 2,
-    marginBottom: -19, // Move chat input down by pushing it lower
+    // Remove negative margin that might cause positioning issues
+    marginBottom: 0,
   },
 
   // Message Styles

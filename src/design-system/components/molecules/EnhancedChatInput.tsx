@@ -193,18 +193,15 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
     // Call onSend immediately to avoid keyboard state mismatch
     onSend();
     
-    // Close attachment buttons after sending with a slight delay to prevent keyboard conflicts
+    // Close attachment buttons immediately after sending to prevent keyboard avoiding view issues
     if (attachmentButtonsVisible) {
-      // Use requestAnimationFrame to ensure smooth transition
-      requestAnimationFrame(() => {
-        setAttachmentButtonsVisible(false);
-        Animated.spring(attachmentButtonsAnim, {
-          toValue: 0,
-          useNativeDriver: false,
-          tension: 220,
-          friction: 10,
-        }).start();
-      });
+      setAttachmentButtonsVisible(false);
+      Animated.spring(attachmentButtonsAnim, {
+        toValue: 0,
+        useNativeDriver: false,
+        tension: 220,
+        friction: 10,
+      }).start();
     }
   }, [canSend, sendButtonScale, onSend, attachmentButtonsVisible, attachmentButtonsAnim]);
 
@@ -463,8 +460,10 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
       useNativeDriver: false,
     }).start();
     
-    // Call parent's onFocus if provided
-    onFocus?.();
+    // Call parent's onFocus after a small delay to ensure proper keyboard handling
+    setTimeout(() => {
+      onFocus?.();
+    }, 50);
   }, [inputFocusAnim, onFocus]);
 
   const handleInputBlur = useCallback(() => {
