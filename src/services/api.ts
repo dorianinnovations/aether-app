@@ -461,7 +461,7 @@ export const ChatAPI = {
   },
 
   // Streaming social chat for real-time responses - React Native compatible with XMLHttpRequest  
-  streamSocialChat(message: string): AsyncGenerator<string, void, unknown> {
+  streamSocialChat(message: string, attachments?: any[]): AsyncGenerator<string, void, unknown> {
     const self = this;
     
     return (async function* () {
@@ -469,6 +469,41 @@ export const ChatAPI = {
         const token = await TokenManager.getToken();
         if (!token) {
           throw new Error('No authentication token available');
+        }
+
+        // Convert local file URIs to base64 for backend processing
+        let processedAttachments = attachments || [];
+        if (attachments && attachments.length > 0) {
+          processedAttachments = await Promise.all(attachments.map(async (attachment) => {
+            if (attachment.type === 'image' && attachment.uri && attachment.uri.startsWith('file://')) {
+              try {
+                console.log('🔄 Converting local file to base64:', attachment.name);
+                // Use fetch to read the local file and convert to base64
+                const response = await fetch(attachment.uri);
+                const blob = await response.blob();
+                const reader = new FileReader();
+                
+                const base64 = await new Promise<string>((resolve, reject) => {
+                  reader.onloadend = () => {
+                    const result = reader.result as string;
+                    resolve(result);
+                  };
+                  reader.onerror = reject;
+                  reader.readAsDataURL(blob);
+                });
+                
+                console.log('✅ Successfully converted to base64, size:', base64.length);
+                return {
+                  ...attachment,
+                  uri: base64
+                };
+              } catch (error) {
+                console.error('❌ Failed to convert file to base64:', error);
+                return attachment; // Return original if conversion fails
+              }
+            }
+            return attachment;
+          }));
         }
 
         // Use Promise to handle XMLHttpRequest with async generator
@@ -530,13 +565,20 @@ export const ChatAPI = {
           xhr.onerror = () => reject(new Error('Network error occurred during streaming'));
           xhr.ontimeout = () => reject(new Error('Request timed out'));
           xhr.timeout = 30000;
-          xhr.send(JSON.stringify({ message, stream: true }));
+          const requestBody = { 
+            message, 
+            stream: true,
+            attachments: processedAttachments
+          };
+          
+
+          xhr.send(JSON.stringify(requestBody));
         });
 
-        // Yield chunks with a small delay for streaming effect
+        // Yield chunks with minimal delay for faster streaming
         for (const chunk of chunks) {
           yield chunk;
-          await new Promise(resolve => setTimeout(resolve, 50)); // Small delay for streaming effect
+          await new Promise(resolve => setTimeout(resolve, 10)); // Reduced delay for faster streaming
         }
 
       } catch (error) {
@@ -694,9 +736,32 @@ export const UserAPI = {
 export const ConversationAPI = {
   async getRecentConversations(limit: number = 20): Promise<any> {
     const response = await api.get(`/conversation/conversations/recent?limit=${limit}`);
+    
+    // Handle different possible response formats from Aether API
+    let conversations = [];
+    let total = 0;
+    
+    if (response.data.success && response.data.data) {
+      // Format: { success: true, data: [...] }
+      conversations = Array.isArray(response.data.data) ? response.data.data : [];
+      total = response.data.total || conversations.length;
+    } else if (Array.isArray(response.data.data)) {
+      // Format: { data: [...] }
+      conversations = response.data.data;
+      total = response.data.total || conversations.length;
+    } else if (Array.isArray(response.data)) {
+      // Format: [...]
+      conversations = response.data;
+      total = conversations.length;
+    } else {
+      // Fallback - try to extract from data field
+      conversations = response.data.conversations || response.data.data || [];
+      total = response.data.total || conversations.length;
+    }
+    
     return {
-      conversations: response.data.data || [],
-      total: response.data.total || 0
+      conversations,
+      total
     };
   },
 
@@ -705,7 +770,15 @@ export const ConversationAPI = {
     const limit = Math.min(messageLimit || 500, 500); // Respect server max of 500
     const params = `?messageLimit=${limit}`;
     const response = await api.get(`/conversation/conversations/${conversationId}${params}`);
-    return response.data.data;
+    
+    // Handle different response formats
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    } else if (response.data.data) {
+      return response.data.data;
+    } else {
+      return response.data;
+    }
   },
 
   async createConversation(title?: string): Promise<any> {
@@ -736,6 +809,40 @@ export const ConversationAPI = {
   async deleteAllConversations(): Promise<any> {
     const response = await api.delete('/conversation/conversations/all');
     return response.data;
+  },
+
+  // Debug function to directly query conversations with full response logging
+  async debugConversations(): Promise<any> {
+    console.log('DEBUG: Making direct API call to /conversation/conversations/recent');
+    try {
+      const response = await api.get('/conversation/conversations/recent?limit=20');
+      console.log('DEBUG: Full API response:', JSON.stringify(response.data, null, 2));
+      console.log('DEBUG: Response status:', response.status);
+      console.log('DEBUG: Response headers:', response.headers);
+      return response.data;
+    } catch (error: any) {
+      console.log('DEBUG: API call failed:', error);
+      console.log('DEBUG: Error response:', error.response?.data);
+      console.log('DEBUG: Error status:', error.response?.status);
+      throw error;
+    }
+  },
+
+  // Debug function to test conversation creation
+  async debugCreateTestConversation(): Promise<any> {
+    console.log('DEBUG: Attempting to create a test conversation');
+    try {
+      // First try to send a test message which should create a conversation
+      const testMessage = await ChatAPI.socialChat('Hello, this is a test message to create a conversation.');
+      console.log('DEBUG: Test message sent:', testMessage);
+      
+      // Then try to get conversations again
+      const conversations = await this.debugConversations();
+      return conversations;
+    } catch (error: any) {
+      console.log('DEBUG: Failed to create test conversation:', error);
+      throw error;
+    }
   },
 };
 

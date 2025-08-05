@@ -20,7 +20,7 @@ interface UseMessagesReturn {
   flatListRef: React.RefObject<FlatList | null>;
 }
 
-export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
+export const useMessages = (onHideGreeting?: () => void, conversationId?: string): UseMessagesReturn => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -37,9 +37,46 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
     }
   }, [messages]);
 
+  // Load conversation messages when conversationId changes
+  useEffect(() => {
+    if (conversationId) {
+      const loadConversationMessages = async () => {
+        try {
+          setIsLoading(true);
+          const conversation = await ConversationAPI.getConversation(conversationId, 500);
+          
+          if (conversation.messages && Array.isArray(conversation.messages)) {
+            const convertedMessages: Message[] = conversation.messages.map((msg: any, index: number) => ({
+              id: msg._id || `${conversationId}-${index}`,
+              sender: msg.role === 'user' ? 'user' : 'aether',
+              message: msg.content,
+              timestamp: msg.timestamp,
+              variant: 'default',
+            }));
+            
+            setMessages(convertedMessages);
+            
+            // Hide greeting when conversation is loaded
+            if (onHideGreeting) {
+              onHideGreeting();
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load conversation messages:', error);
+          // Don't show error - just leave messages as is
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      loadConversationMessages();
+    }
+  }, [conversationId]);
+
   const handleSend = async (inputText: string, attachments: MessageAttachment[] = []) => {
     // Allow sending if there's text OR attachments
     if ((!inputText.trim() && attachments.length === 0) || isLoading) return;
+
 
     // Hide greeting on first message
     if (onHideGreeting) {
@@ -88,7 +125,7 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
       let wordCount = 0;
       let messageMetadata: any = undefined;
       
-      for await (const chunk of ChatAPI.streamSocialChat(apiPrompt)) {
+      for await (const chunk of ChatAPI.streamSocialChat(apiPrompt, attachments)) {
         // Check if chunk is metadata object
         if (typeof chunk === 'object' && chunk !== null && 'metadata' in chunk) {
           messageMetadata = (chunk as any).metadata;
@@ -245,6 +282,12 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
         ];
         
         setMessages(demoMessages);
+        
+        // Hide greeting for demo conversations too
+        if (onHideGreeting) {
+          onHideGreeting();
+        }
+        
         return;
       }
       
@@ -267,6 +310,11 @@ export const useMessages = (onHideGreeting?: () => void): UseMessagesReturn => {
       
       // Replace current messages with loaded conversation
       setMessages(convertedMessages);
+      
+      // Hide greeting when conversation is loaded (same as when sending a message)
+      if (onHideGreeting) {
+        onHideGreeting();
+      }
       
     } catch (error: any) {
       console.error('Failed to load conversation:', error);

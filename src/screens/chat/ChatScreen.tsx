@@ -65,7 +65,7 @@ import { useWebSearch } from '../../hooks/useWebSearch';
 import { useGhostTyping } from '../../hooks/useGhostTyping';
 
 // Services
-import { AuthAPI, FriendsAPI } from '../../services/api';
+import { AuthAPI, FriendsAPI, ConversationAPI } from '../../services/api';
 
 // Utils
 import { 
@@ -106,17 +106,6 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   // Custom hooks
   const { greetingText, showGreeting, setShowGreeting } = useGreeting();
   const { keyboardHeight, greetingAnimY, greetingOpacity } = useKeyboardAnimation();
-  const {
-    messages,
-    isLoading,
-    isStreaming,
-    handleSend: handleMessageSend,
-    handleMessagePress,
-    handleMessageLongPress,
-    handleConversationSelect,
-    setMessages,
-    flatListRef: messagesRef,
-  } = useMessages(() => setShowGreeting(false));
 
   // Simple scroll hook
   const { 
@@ -140,28 +129,6 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     clearSearch
   } = useWebSearch();
 
-  // Dynamic prompts hook for intelligent contextual options
-  const {
-    prompts: dynamicPrompts,
-    isAnalyzing: isAnalyzingContext,
-    executePrompt,
-    refreshPrompts
-  } = useDynamicPrompts({
-    messages: messages.map(msg => ({
-      id: msg.id,
-      text: msg.message,
-      sender: msg.sender === 'aether' ? 'ai' : msg.sender === 'system' ? 'ai' : msg.sender,
-      timestamp: new Date(msg.timestamp).getTime()
-    })),
-    onPromptExecute: (promptText: string) => {
-      // Execute the hidden prompt directly
-      handleMessageSend(promptText);
-      // Hide the modal after execution
-      hideModalAnimation(modalAnimationRefs, () => setShowDynamicOptionsModal(false));
-    },
-    enabled: true,
-    refreshInterval: 3
-  });
   
   // UI State
   const [inputText, setInputText] = useState('');
@@ -200,6 +167,42 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   });
   
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(undefined);
+
+  // Message handling with streaming (must be after currentConversationId declaration)
+  const {
+    messages,
+    isLoading,
+    isStreaming,
+    handleSend: handleMessageSend,
+    handleMessagePress,
+    handleMessageLongPress,
+    handleConversationSelect,
+    setMessages,
+    flatListRef: messagesRef,
+  } = useMessages(() => setShowGreeting(false), currentConversationId);
+
+  // Dynamic prompts hook for intelligent contextual options (after useMessages)
+  const {
+    prompts: dynamicPrompts,
+    isAnalyzing: isAnalyzingContext,
+    executePrompt,
+    refreshPrompts
+  } = useDynamicPrompts({
+    messages: messages.map(msg => ({
+      id: msg.id,
+      text: msg.message,
+      sender: msg.sender === 'aether' ? 'ai' : msg.sender === 'system' ? 'ai' : msg.sender,
+      timestamp: new Date(msg.timestamp).getTime()
+    })),
+    onPromptExecute: (promptText: string) => {
+      // Execute the hidden prompt directly
+      handleMessageSend(promptText);
+      // Hide the modal after execution
+      hideModalAnimation(modalAnimationRefs, () => setShowDynamicOptionsModal(false));
+    },
+    enabled: true,
+    refreshInterval: 3
+  });
 
   // Header menu hook
   const { showHeaderMenu, setShowHeaderMenu, handleMenuAction, toggleHeaderMenu } = useHeaderMenu({
@@ -362,11 +365,11 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
 
   const handleSignOut = async () => {
     try {
-      setShowSignOutModal(false);
       await AuthAPI.logout();
       // Auth check in App.tsx will handle navigation automatically
     } catch (error) {
       console.error('Sign out failed:', error);
+      throw error; // Re-throw to let SignOutModal handle error state
     }
   };
 
@@ -381,16 +384,17 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     // Add voice processing logic here
   };
 
-  const handleEnhancedSend = (attachments?: any[]) => {
-    if (!inputText.trim() && (!attachments || attachments.length === 0)) return;
+  const handleEnhancedSend = () => {
+    if (!inputText.trim() && attachments.length === 0) return;
     
-    if (attachments && attachments.length > 0) {
-      // Handle attachments
-      // TODO: Implement attachment handling
+    if (attachments.length > 0) {
+      // Handle attachments - send message with attachments
+      const messageText = inputText.trim() || "📎 Image attached";
+      handleMessageSend(messageText, attachments);
+    } else {
+      // Send the message with the current input text
+      handleMessageSend(inputText);
     }
-    
-    // Send the message with the current input text
-    handleMessageSend(inputText);
     
     // Clear the input text after sending
     setInputText('');
@@ -440,6 +444,43 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   const handleHideModal = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     hideModalAnimation(modalAnimationRefs, () => setShowDynamicOptionsModal(false));
+  };
+
+  // Handle creating a new conversation
+  const handleStartNewChat = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      // Create a new conversation on the backend
+      const response = await ConversationAPI.createConversation('New Chat');
+      
+      if (response.success && response.data) {
+        // Clear current messages and set new conversation ID
+        setMessages([]);
+        setCurrentConversationId(response.data._id);
+        setShowConversationDrawer(false);
+        
+        // Show success feedback
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        throw new Error('Failed to create conversation');
+      }
+    } catch (error) {
+      console.error('Error creating new conversation:', error);
+      
+      // Fallback to clearing current state
+      setMessages([]);
+      setCurrentConversationId(undefined);
+      setShowConversationDrawer(false);
+      
+      // Show error feedback
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(
+        'Error',
+        'Failed to create new conversation. Starting fresh chat.',
+        [{ text: 'OK', style: 'default' }]
+      );
+    }
   };
 
   // Render message item
@@ -676,11 +717,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
           handleConversationSelect(conversation);
           setCurrentConversationId(conversation._id);
         }}
-        onStartNewChat={() => {
-          setMessages([]);
-          setCurrentConversationId(undefined);
-          setShowConversationDrawer(false);
-        }}
+        onStartNewChat={handleStartNewChat}
         currentConversationId={currentConversationId}
         theme={theme}
       />

@@ -95,6 +95,10 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
   const inputFocusAnim = useRef(new Animated.Value(0)).current;
   const attachmentButtonsAnim = useRef(new Animated.Value(0)).current;
   const attachmentButtonScale = useRef(new Animated.Value(1)).current;
+  // Individual icon slide animations
+  const cameraSlideAnim = useRef(new Animated.Value(-50)).current;
+  const gallerySlideAnim = useRef(new Animated.Value(-50)).current;
+  const documentSlideAnim = useRef(new Animated.Value(-50)).current;
 
   // Swipe up gesture handler
   const handleSwipeUp = (event: any) => {
@@ -223,7 +227,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: false,
         quality: 0.9,
       });
@@ -244,7 +248,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
 
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: false,
         quality: 0.9,
         allowsMultipleSelection: true,
@@ -310,32 +314,96 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
     
     setAttachmentButtonsVisible(newVisibility);
     
-    // Fast, responsive animations
-    Animated.parallel([
-      // Button scale animation - instant feedback
-      Animated.timing(attachmentButtonScale, {
-        toValue: newVisibility ? 0.95 : 1,
-        duration: 50,
-        useNativeDriver: true,
-      }),
-      // Container animation - much faster
-      Animated.timing(attachmentButtonsAnim, {
-        toValue: newVisibility ? 1 : 0,
-        duration: 120,
-        useNativeDriver: false,
-        easing: Easing.out(Easing.cubic),
-      }),
-    ]).start(() => {
-      // Return button to normal scale quickly
-      if (newVisibility) {
+    if (newVisibility) {
+      // Opening: slide in from left with staggered timing
+      Animated.parallel([
+        // Button scale animation - instant feedback
+        Animated.timing(attachmentButtonScale, {
+          toValue: 0.95,
+          duration: 50,
+          useNativeDriver: true,
+        }),
+        // Container animation
+        Animated.timing(attachmentButtonsAnim, {
+          toValue: 1,
+          duration: 120,
+          useNativeDriver: false,
+          easing: Easing.out(Easing.cubic),
+        }),
+        // Staggered slide-in animations from left
+        Animated.stagger(40, [
+          Animated.timing(cameraSlideAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+            easing: Easing.out(Easing.back(1.2)),
+          }),
+          Animated.timing(gallerySlideAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+            easing: Easing.out(Easing.back(1.2)),
+          }),
+          Animated.timing(documentSlideAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+            easing: Easing.out(Easing.back(1.2)),
+          }),
+        ]),
+      ]).start(() => {
+        // Return button to normal scale
         Animated.timing(attachmentButtonScale, {
           toValue: 1,
           duration: 50,
           useNativeDriver: true,
         }).start();
-      }
-    });
-  }, [attachmentButtonsVisible, attachmentButtonsAnim, attachmentButtonScale]);
+      });
+    } else {
+      // Closing: slide out to right, but don't wait for it
+      // Start icon slide-out immediately (faster exit)
+      Animated.parallel([
+        Animated.timing(cameraSlideAnim, {
+          toValue: 50,
+          duration: 100,
+          useNativeDriver: true,
+          easing: Easing.in(Easing.cubic),
+        }),
+        Animated.timing(gallerySlideAnim, {
+          toValue: 50,
+          duration: 100,
+          useNativeDriver: true,
+          easing: Easing.in(Easing.cubic),
+        }),
+        Animated.timing(documentSlideAnim, {
+          toValue: 50,
+          duration: 100,
+          useNativeDriver: true,
+          easing: Easing.in(Easing.cubic),
+        }),
+      ]).start();
+
+      // Container closing animation runs independently
+      Animated.parallel([
+        Animated.timing(attachmentButtonScale, {
+          toValue: 1,
+          duration: 50,
+          useNativeDriver: true,
+        }),
+        Animated.timing(attachmentButtonsAnim, {
+          toValue: 0,
+          duration: 120,
+          useNativeDriver: false,
+          easing: Easing.out(Easing.cubic),
+        }),
+      ]).start(() => {
+        // Reset positions for next open after container is closed
+        cameraSlideAnim.setValue(-50);
+        gallerySlideAnim.setValue(-50);
+        documentSlideAnim.setValue(-50);
+      });
+    }
+  }, [attachmentButtonsVisible, attachmentButtonsAnim, attachmentButtonScale, cameraSlideAnim, gallerySlideAnim, documentSlideAnim]);
 
   const handleInputFocus = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -590,31 +658,43 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
           {attachmentButtonsVisible && (
             <>
               {/* Camera Button */}
-              <TouchableOpacity
-                style={styles.attachmentIconButton}
-                onPress={handleCameraPress}
-                activeOpacity={0.7}
-              >
-                <FontAwesome5 name="camera" size={18} color={themeColors.textSecondary} />
-              </TouchableOpacity>
+              <Animated.View style={{
+                transform: [{ translateX: cameraSlideAnim }]
+              }}>
+                <TouchableOpacity
+                  style={styles.attachmentIconButton}
+                  onPress={handleCameraPress}
+                  activeOpacity={0.7}
+                >
+                  <FontAwesome5 name="camera" size={18} color={themeColors.textSecondary} />
+                </TouchableOpacity>
+              </Animated.View>
 
               {/* Gallery Button */}
-              <TouchableOpacity
-                style={styles.attachmentIconButton}
-                onPress={handleGalleryPress}
-                activeOpacity={0.7}
-              >
-                <FontAwesome5 name="image" size={18} color={themeColors.textSecondary} />
-              </TouchableOpacity>
+              <Animated.View style={{
+                transform: [{ translateX: gallerySlideAnim }]
+              }}>
+                <TouchableOpacity
+                  style={styles.attachmentIconButton}
+                  onPress={handleGalleryPress}
+                  activeOpacity={0.7}
+                >
+                  <FontAwesome5 name="image" size={18} color={themeColors.textSecondary} />
+                </TouchableOpacity>
+              </Animated.View>
 
               {/* Document Button */}
-              <TouchableOpacity
-                style={styles.attachmentIconButton}
-                onPress={handleDocumentPress}
-                activeOpacity={0.7}
-              >
-                <FontAwesome5 name="file-alt" size={18} color={themeColors.textSecondary} />
-              </TouchableOpacity>
+              <Animated.View style={{
+                transform: [{ translateX: documentSlideAnim }]
+              }}>
+                <TouchableOpacity
+                  style={styles.attachmentIconButton}
+                  onPress={handleDocumentPress}
+                  activeOpacity={0.7}
+                >
+                  <FontAwesome5 name="file-alt" size={18} color={themeColors.textSecondary} />
+                </TouchableOpacity>
+              </Animated.View>
             </>
           )}
         </Animated.View>
