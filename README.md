@@ -313,9 +313,10 @@ Aether Platform incorporates open-source components under various licenses. See 
 #### Support & Services
 
 For licensing inquiries, enterprise support, or custom development services:
-- **Enterprise Sales**: enterprise@aether-platform.com
-- **Technical Support**: support@aether-platform.com
-- **Partnership Inquiries**: partnerships@aether-platform.com
+- **Enterprise Sales**: enterprise@aethershare.com
+- **Technical Support**: support@aethershare.com
+- **Partnership Inquiries**: partnerships@aethershare.com
+- **General Inquiries**: aethershare.com/contact
 
 ### Compliance & Certifications
 
