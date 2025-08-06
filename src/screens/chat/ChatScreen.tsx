@@ -245,11 +245,14 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   }, [showAddFriendModal]);
 
   // Manage SignOutModal lifecycle with shouldRender pattern
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (showSignOutModal) {
-      setShouldRenderSignOutModal(true);
+      // Defer to avoid useInsertionEffect warning
+      requestAnimationFrame(() => {
+        setShouldRenderSignOutModal(true);
+      });
     } else {
-      // Delay unmounting to allow exit animation
+      // Defer to avoid useInsertionEffect warning and delay unmounting
       const timer = setTimeout(() => {
         setShouldRenderSignOutModal(false);
       }, 300);

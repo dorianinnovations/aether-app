@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -80,11 +80,14 @@ export const ProfileScreen: React.FC = () => {
   });
 
   // Manage SignOutModal lifecycle with shouldRender pattern
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (showSignOutModal) {
-      setShouldRenderSignOutModal(true);
+      // Defer to avoid useInsertionEffect warning
+      requestAnimationFrame(() => {
+        setShouldRenderSignOutModal(true);
+      });
     } else {
-      // Delay unmounting to allow exit animation
+      // Defer to avoid useInsertionEffect warning and delay unmounting
       const timer = setTimeout(() => {
         setShouldRenderSignOutModal(false);
       }, 300);
