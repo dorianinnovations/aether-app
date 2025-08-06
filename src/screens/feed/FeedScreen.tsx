@@ -25,24 +25,10 @@ import * as Haptics from 'expo-haptics';
 // Types
 import type { SocialCard, HangoutRequest } from '../../types/social';
 import { PostsAPI, type Post } from '../../services/postsApi';
-import { SocialProxyAPI } from '../../services/apiModules/endpoints/social';
+import { SocialProxyAPI } from '../../services/apiModules';
 
-// Card Layout Types
-type CardLayout = 'classic' | 'modern' | 'minimal' | 'magazine' | 'artistic';
-type ProfilePlacement = 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-right' | 'inline';
-type TextStyle = 'elegant' | 'casual' | 'bold' | 'compact';
-
-interface CardPreferences {
-  layout: CardLayout;
-  profilePlacement: ProfilePlacement;
-  textStyle: TextStyle;
-  accentColor: string;
-  showEngagement: boolean;
-  showTimestamp: boolean;
-  showLocation: boolean;
-  cardCornerRadius: number;
-  textSize: 'small' | 'medium' | 'large';
-}
+// Import component types
+import { PostCard, type CardLayout, type ProfilePlacement, type TextStyle, type CardPreferences, type ProfileMockup } from './components';
 
 // Design System
 import { PageBackground } from '../../design-system/components/atoms/PageBackground';
