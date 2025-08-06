@@ -136,6 +136,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   const [showTestTooltip, setShowTestTooltip] = useState(true);
   const [showDynamicOptionsModal, setShowDynamicOptionsModal] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [shouldRenderSignOutModal, setShouldRenderSignOutModal] = useState(false);
   const [headerVisible, setHeaderVisible] = useState(true);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [isVoiceRecording, setIsVoiceRecording] = useState(false);
@@ -159,7 +160,9 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   const [friendUsername, setFriendUsername] = useState('');
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
-  const [statusType, setStatusType] = useState<'success' | 'error' | null>(null);
+  const [statusType, setStatusType] = useState<'success' | 'error' | 'warning' | 'loading' | null>(null);
+  const [isSubmittingFriendRequest, setIsSubmittingFriendRequest] = useState(false);
+  const [validationError, setValidationError] = useState('');
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const shakeAnim = useRef<Animated.Value>(new Animated.Value(0)).current;
   const addFriendModalOpacity = useRef<Animated.Value>(new Animated.Value(1)).current;
@@ -240,6 +243,19 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
       return () => clearTimeout(timer);
     }
   }, [showAddFriendModal]);
+
+  // Manage SignOutModal lifecycle with shouldRender pattern
+  useLayoutEffect(() => {
+    if (showSignOutModal) {
+      setShouldRenderSignOutModal(true);
+    } else {
+      // Delay unmounting to allow exit animation
+      const timer = setTimeout(() => {
+        setShouldRenderSignOutModal(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [showSignOutModal]);
 
   // Keyboard event listeners for proper scroll behavior (only for chat input)
   useEffect(() => {
@@ -324,6 +340,29 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     setShowAddFriendModal(true);
   };
 
+  // Username validation function
+  const validateUsername = (username: string): string | null => {
+    if (!username.trim()) {
+      return 'Username is required';
+    }
+    
+    if (username.trim().length < 3) {
+      return 'Username must be at least 3 characters';
+    }
+    
+    if (username.trim().length > 20) {
+      return 'Username cannot exceed 20 characters';
+    }
+    
+    // Check for valid username pattern (alphanumeric, underscores, hyphens)
+    const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+    if (!usernameRegex.test(username.trim())) {
+      return 'Username can only contain letters, numbers, underscores, and hyphens';
+    }
+    
+    return null; // Valid
+  };
+
   // Clear status function
   const clearStatus = () => {
     if (statusTimeoutRef.current) {
@@ -332,67 +371,131 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     }
     setStatusMessage('');
     setStatusType(null);
+    setValidationError('');
   };
 
-  // Handle Add Friend submission
+  // Enhanced status display function
+  const showStatus = (message: string, type: 'success' | 'error' | 'warning' | 'loading', duration: number = 3000) => {
+    clearStatus();
+    setStatusMessage(message);
+    setStatusType(type);
+    
+    if (type !== 'loading' && duration > 0) {
+      statusTimeoutRef.current = setTimeout(() => {
+        clearStatus();
+      }, duration);
+    }
+  };
+
+  // Enhanced shake animation
+  const performShakeAnimation = () => {
+    Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 12, duration: 75, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -12, duration: 75, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 8, duration: 75, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -8, duration: 75, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 75, useNativeDriver: true }),
+    ]).start();
+  };
+
+  // Handle Add Friend submission with comprehensive error handling
   const handleAddFriendSubmit = async () => {
-    if (!friendUsername.trim()) return;
+    const username = friendUsername.trim();
+    
+    // Client-side validation
+    const validationError = validateUsername(username);
+    if (validationError) {
+      setValidationError(validationError);
+      performShakeAnimation();
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    // Clear any previous validation errors
+    setValidationError('');
+    setIsSubmittingFriendRequest(true);
+    showStatus('Sending friend request...', 'loading');
     
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     try {
-      const result = await FriendsAPI.addFriend(friendUsername.trim());
+      const result = await FriendsAPI.addFriend(username);
       
       if (result && result.success) {
-        // Success haptic and show success message
+        // Success scenario
         setTimeout(async () => {
           await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }, 150);
         
-        setStatusMessage('Request sent!');
-        setStatusType('success');
+        showStatus('Friend request sent successfully!', 'success', 2000);
         setFriendUsername('');
         
         // Auto-hide modal after success
         statusTimeoutRef.current = setTimeout(() => {
           setShowAddFriendModal(false);
           clearStatus();
-        }, 1000);
+        }, 1500);
+        
       } else {
-        // Error shake animation
-        Animated.sequence([
-          Animated.timing(shakeAnim, { toValue: 10, duration: 80, useNativeDriver: true }),
-          Animated.timing(shakeAnim, { toValue: -10, duration: 80, useNativeDriver: true }),
-          Animated.timing(shakeAnim, { toValue: 10, duration: 80, useNativeDriver: true }),
-          Animated.timing(shakeAnim, { toValue: 0, duration: 80, useNativeDriver: true }),
-        ]).start();
-        
+        // Handle various API error responses
+        performShakeAnimation();
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setStatusMessage(result?.error || 'Failed to send request');
-        setStatusType('error');
         
-        // Auto-clear error message
-        statusTimeoutRef.current = setTimeout(() => {
-          clearStatus();
-        }, 3000);
+        let errorMessage = 'Failed to send friend request';
+        
+        if (result?.error) {
+          const error = result.error.toLowerCase();
+          
+          if (error.includes('already friends') || error.includes('friend already exists')) {
+            errorMessage = 'You are already friends with this user';
+            showStatus(errorMessage, 'warning', 4000);
+          } else if (error.includes('request already sent') || error.includes('pending')) {
+            errorMessage = 'Friend request already sent';
+            showStatus(errorMessage, 'warning', 4000);
+          } else if (error.includes('user not found') || error.includes('does not exist')) {
+            errorMessage = 'User not found. Check the username and try again';
+            showStatus(errorMessage, 'error', 4000);
+          } else if (error.includes('cannot add yourself') || error.includes('self')) {
+            errorMessage = 'You cannot add yourself as a friend';
+            showStatus(errorMessage, 'warning', 3000);
+          } else if (error.includes('blocked') || error.includes('restricted')) {
+            errorMessage = 'Unable to send request to this user';
+            showStatus(errorMessage, 'error', 4000);
+          } else if (error.includes('limit') || error.includes('maximum')) {
+            errorMessage = 'Friend request limit reached. Try again later';
+            showStatus(errorMessage, 'warning', 4000);
+          } else {
+            errorMessage = result.error;
+            showStatus(errorMessage, 'error', 4000);
+          }
+        } else {
+          showStatus(errorMessage, 'error', 3000);
+        }
       }
-    } catch (error) {
-      // Error shake animation
-      Animated.sequence([
-        Animated.timing(shakeAnim, { toValue: 10, duration: 80, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: -10, duration: 80, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: 10, duration: 80, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: 0, duration: 80, useNativeDriver: true }),
-      ]).start();
-      
+    } catch (error: any) {
+      // Network and other errors
+      performShakeAnimation();
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setStatusMessage('Network error. Please try again.');
-      setStatusType('error');
       
-      // Auto-clear error message
-      statusTimeoutRef.current = setTimeout(() => {
-        clearStatus();
-      }, 3000);
+      let errorMessage = 'Network error. Please try again.';
+      
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        errorMessage = 'Request timed out. Check your connection and try again.';
+      } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('network')) {
+        errorMessage = 'Network error. Check your internet connection.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Authentication failed. Please sign in again.';
+      } else if (error.response?.status === 429) {
+        errorMessage = 'Too many requests. Please wait and try again.';
+      } else if (error.response?.status >= 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else if (error.message) {
+        errorMessage = `Error: ${error.message}`;
+      }
+      
+      showStatus(errorMessage, 'error', 4000);
+    } finally {
+      setIsSubmittingFriendRequest(false);
     }
   };
 
@@ -698,8 +801,9 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
         isVisible={showConversationDrawer}
         onClose={() => setShowConversationDrawer(false)}
         onConversationSelect={(conversation) => {
+          const conversationId = conversation._id;
+          setCurrentConversationId(conversationId);
           handleConversationSelect(conversation);
-          setCurrentConversationId(conversation._id);
         }}
         onStartNewChat={handleStartNewChat}
         currentConversationId={currentConversationId}
@@ -734,17 +838,19 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
       />
       
       {/* Sign Out Modal */}
-      <SignOutModal
-        visible={showSignOutModal}
-        onClose={() => setShowSignOutModal(false)}
-        onConfirm={handleSignOut}
-        theme={theme}
-        title="Sign Out"
-        message="Are you sure you want to sign out of your account?"
-        confirmText="Sign Out"
-        cancelText="Cancel"
-        variant="danger"
-      />
+      {shouldRenderSignOutModal && (
+        <SignOutModal
+          visible={showSignOutModal}
+          onClose={() => setShowSignOutModal(false)}
+          onConfirm={handleSignOut}
+          theme={theme}
+          title="Sign Out"
+          message="Are you sure you want to sign out of your account?"
+          confirmText="Sign Out"
+          cancelText="Cancel"
+          variant="danger"
+        />
+      )}
       
       {/* Dynamic Options Modal */}
       {showDynamicOptionsModal && (
@@ -956,19 +1062,65 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
                   style={[
                     styles.friendInput,
                     {
-                      color: statusType === 'error' ? '#FF4444' : statusType === 'success' ? '#00AA44' : (theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.primary),
-                      backgroundColor: theme === 'dark' ? '#1a1a1a' : '#f8f8f8',
-                      borderColor: statusType === 'error' ? '#FF4444' : statusType === 'success' ? '#00AA44' : (theme === 'dark' ? designTokens.borders.dark.default : designTokens.borders.light.default),
+                      color: validationError 
+                        ? '#FF6B6B' 
+                        : statusType === 'error' 
+                          ? '#FF4444' 
+                          : statusType === 'success' 
+                            ? '#00DD44' 
+                            : statusType === 'warning'
+                              ? '#FFB366'
+                              : (theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.primary),
+                      backgroundColor: isSubmittingFriendRequest 
+                        ? (theme === 'dark' ? '#2a2a2a' : '#f0f0f0')
+                        : (theme === 'dark' ? '#1a1a1a' : '#f8f8f8'),
+                      borderColor: validationError
+                        ? '#FF6B6B'
+                        : statusType === 'error' 
+                          ? '#FF4444' 
+                          : statusType === 'success' 
+                            ? '#00DD44'
+                            : statusType === 'warning'
+                              ? '#FFB366'
+                              : statusType === 'loading'
+                                ? '#4A90E2'
+                                : (theme === 'dark' ? designTokens.borders.dark.default : designTokens.borders.light.default),
+                      borderWidth: (validationError || statusType) ? 2 : 1,
                     }
                   ]}
-                  placeholder={statusMessage || ghostText}
-                  placeholderTextColor={statusType === 'error' ? '#FF4444' : statusType === 'success' ? '#00AA44' : (theme === 'dark' ? designTokens.text.mutedDark : designTokens.text.muted)}
+                  placeholder={validationError || statusMessage || ghostText}
+                  placeholderTextColor={
+                    validationError 
+                      ? '#FF6B6B' 
+                      : statusType === 'error' 
+                        ? '#FF4444' 
+                        : statusType === 'success' 
+                          ? '#00BB44' 
+                          : statusType === 'warning'
+                            ? '#FF9933'
+                            : statusType === 'loading'
+                              ? '#4A90E2'
+                              : (theme === 'dark' ? designTokens.text.mutedDark : designTokens.text.muted)
+                  }
                   value={friendUsername}
                   onChangeText={(text) => {
                     setFriendUsername(text);
-                    // Clear status when user starts typing
-                    if (statusMessage) {
+                    // Clear status and validation errors when user starts typing
+                    if (statusMessage || validationError) {
                       clearStatus();
+                    }
+                    
+                    // Real-time validation (only show after user stops typing)
+                    if (text.trim().length > 0) {
+                      const validation = validateUsername(text);
+                      if (validation && text.trim().length >= 3) {
+                        // Only show validation error for longer inputs to avoid annoying users
+                        setValidationError(validation);
+                      } else {
+                        setValidationError('');
+                      }
+                    } else {
+                      setValidationError('');
                     }
                   }}
                   onFocus={() => setIsInputFocused(true)}
@@ -979,7 +1131,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
                   selectionColor={theme === 'dark' ? '#ffffff' : '#007AFF'}
                   cursorColor={theme === 'dark' ? '#ffffff' : '#007AFF'}
                   textAlign="center"
-                  editable={!statusMessage} // Disable input while showing status
+                  editable={!isSubmittingFriendRequest && !statusMessage} // Disable input while submitting or showing status
                 />
               </Animated.View>
               
@@ -987,9 +1139,20 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
                 style={[
                   styles.addButton,
                   {
-                    backgroundColor: theme === 'dark' ? '#0d0d0d' : designTokens.brand.primary,
-                    borderColor: theme === 'dark' ? '#262626' : 'transparent',
+                    backgroundColor: isSubmittingFriendRequest 
+                      ? (theme === 'dark' ? '#333333' : '#cccccc')
+                      : statusType === 'success'
+                        ? '#00AA44'
+                        : statusType === 'error' || validationError
+                          ? '#FF4444'
+                          : statusType === 'warning'
+                            ? '#FF9933'
+                            : (theme === 'dark' ? '#0d0d0d' : designTokens.brand.primary),
+                    borderColor: isSubmittingFriendRequest
+                      ? (theme === 'dark' ? '#555555' : '#aaaaaa')
+                      : (theme === 'dark' ? '#262626' : 'transparent'),
                     borderWidth: theme === 'dark' ? 1 : 0,
+                    opacity: isSubmittingFriendRequest ? 0.7 : 1,
                     // Strong tight glow for dark mode, shadow for light mode
                     shadowColor: theme === 'dark' ? '#ffffff' : '#000000',
                     shadowOffset: { width: 0, height: theme === 'dark' ? 0 : 2 },
@@ -1000,16 +1163,24 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
                 ]}
                 onPress={handleAddFriendSubmit}
                 activeOpacity={0.8}
+                disabled={isSubmittingFriendRequest || !!validationError}
               >
                 <Text style={[
                   styles.addButtonText,
                   { 
-                    color: theme === 'dark' ? '#ffffff' : '#ffffff',
+                    color: '#ffffff',
                     fontFamily: 'Nunito-SemiBold',
                     letterSpacing: -0.3,
                   }
                 ]}>
-                  Add friend
+                  {isSubmittingFriendRequest 
+                    ? 'Sending...' 
+                    : statusType === 'success'
+                      ? 'Sent!'
+                      : statusType === 'error' || validationError
+                        ? 'Try Again'
+                        : 'Add Friend'
+                  }
                 </Text>
               </TouchableOpacity>
             </View>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { PageBackground } from '../design-system/components/atoms/PageBackground';
 import { Header, HeaderMenu, SignOutModal } from '../design-system/components/organisms';
 import { SpotifyIntegration } from '../design-system/components/molecules';
+import SettingsModal from './chat/SettingsModal';
 import { useTheme } from '../contexts/ThemeContext';
 import { useHeaderMenu } from '../design-system/hooks';
 import { typography } from '../design-system/tokens/typography';
@@ -53,7 +54,9 @@ export const ProfileScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [shouldRenderSignOutModal, setShouldRenderSignOutModal] = useState(false);
   const [showAnalysisData, setShowAnalysisData] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   // Animation refs for sequential fade-in
   const interestsOpacity = useRef(new Animated.Value(0)).current;
@@ -72,8 +75,22 @@ export const ProfileScreen: React.FC = () => {
   // Header menu hook
   const { showHeaderMenu, setShowHeaderMenu, handleMenuAction, toggleHeaderMenu } = useHeaderMenu({
     screenName: 'profile',
+    onSettingsPress: () => setShowSettingsModal(true),
     onSignOut: () => setShowSignOutModal(true)
   });
+
+  // Manage SignOutModal lifecycle with shouldRender pattern
+  useLayoutEffect(() => {
+    if (showSignOutModal) {
+      setShouldRenderSignOutModal(true);
+    } else {
+      // Delay unmounting to allow exit animation
+      const timer = setTimeout(() => {
+        setShouldRenderSignOutModal(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [showSignOutModal]);
 
   useEffect(() => {
     const initializeProfile = async () => {
@@ -836,13 +853,30 @@ export const ProfileScreen: React.FC = () => {
         </TouchableOpacity>
 
         {/* Sign Out Modal */}
-        <SignOutModal
-          visible={showSignOutModal}
-          onClose={() => setShowSignOutModal(false)}
-          onConfirm={handleSignOut}
-          theme={theme}
+        {shouldRenderSignOutModal && (
+          <SignOutModal
+            visible={showSignOutModal}
+            onClose={() => setShowSignOutModal(false)}
+            onConfirm={handleSignOut}
+            theme={theme}
+          />
+        )}
+        
+        {/* Settings Modal */}
+        <SettingsModal
+          visible={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          navigation={navigation}
         />
       </SafeAreaView>
+
+      {/* Header Menu */}
+      <HeaderMenu
+        visible={showHeaderMenu}
+        onClose={() => setShowHeaderMenu(false)}
+        onAction={handleMenuAction}
+        showAuthOptions={true}
+      />
     </PageBackground>
   );
 };
