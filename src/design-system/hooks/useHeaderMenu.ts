@@ -53,10 +53,8 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
         toggleTheme();
         break;
       case 'sign_out':
-        console.log('HeaderMenu: sign_out action triggered');
         // Defer to avoid useInsertionEffect warnings
         requestAnimationFrame(() => {
-          console.log('HeaderMenu: calling onSignOut callback');
           onSignOut?.();
         });
         break;

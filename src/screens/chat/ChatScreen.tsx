@@ -214,10 +214,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   const { showHeaderMenu, setShowHeaderMenu, handleMenuAction, toggleHeaderMenu } = useHeaderMenu({
     screenName: 'chat',
     onSettingsPress: () => setShowSettings(true),
-    onSignOut: () => {
-      console.log('ChatScreen: onSignOut callback executed');
-      setShowSignOutModal(true);
-    }
+    onSignOut: () => setShowSignOutModal(true)
   });
 
   // Add Friend modal visibility effect with delay
@@ -249,15 +246,11 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
 
   // Manage SignOutModal lifecycle with shouldRender pattern
   useEffect(() => {
-    console.log('SignOut effect - showSignOutModal:', showSignOutModal, 'shouldRenderSignOutModal:', shouldRenderSignOutModal);
     if (showSignOutModal) {
-      console.log('Setting shouldRenderSignOutModal to true');
       setShouldRenderSignOutModal(true);
     } else if (shouldRenderSignOutModal) {
       // Only set timeout if modal was actually rendered
-      console.log('Setting unmount timer');
       const timer = setTimeout(() => {
-        console.log('Unmounting SignOutModal');
         setShouldRenderSignOutModal(false);
       }, 300);
       return () => clearTimeout(timer);
@@ -846,20 +839,17 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
       
       {/* Sign Out Modal */}
       {shouldRenderSignOutModal && (
-        <>
-          {console.log('Rendering SignOutModal with visible:', showSignOutModal)}
-          <SignOutModal
-            visible={showSignOutModal}
-            onClose={() => setShowSignOutModal(false)}
-            onConfirm={handleSignOut}
-            theme={theme}
-            title="Sign Out"
-            message="Are you sure you want to sign out of your account?"
-            confirmText="Sign Out"
-            cancelText="Cancel"
-            variant="danger"
-          />
-        </>
+        <SignOutModal
+          visible={showSignOutModal}
+          onClose={() => setShowSignOutModal(false)}
+          onConfirm={handleSignOut}
+          theme={theme}
+          title="Sign Out"
+          message="Are you sure you want to sign out of your account?"
+          confirmText="Sign Out"
+          cancelText="Cancel"
+          variant="danger"
+        />
       )}
       
       {/* Dynamic Options Modal */}
