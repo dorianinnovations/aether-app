@@ -453,34 +453,42 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
         />
         
         <View style={styles.content}>
-          {/* Custom Lottie refresh spinner */}
-          {refreshing && (
-            <View style={[
-              styles.refreshSpinner,
-              {
-                top: 133, // Position below header
-              }
-            ]}>
-              <LottieLoader
-                size={40}
-              />
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <LottieLoader size="large" />
             </View>
+          ) : (
+            <>
+              {/* Custom Lottie refresh spinner */}
+              {refreshing && (
+                <View style={[
+                  styles.refreshSpinner,
+                  {
+                    top: 133, // Position below header
+                  }
+                ]}>
+                  <LottieLoader
+                    size={40}
+                  />
+                </View>
+              )}
+              
+              <FlatList
+                data={friends}
+                renderItem={renderFriend}
+                keyExtractor={keyExtractor}
+                style={styles.friendsList}
+                contentContainerStyle={[
+                  styles.friendsListContent,
+                  friends.length === 0 && { flex: 1, justifyContent: 'center' }
+                ]}
+                showsVerticalScrollIndicator={false}
+                ItemSeparatorComponent={() => <View style={styles.separator} />}
+                ListEmptyComponent={renderEmptyState}
+                refreshControl={renderRefreshControl()}
+              />
+            </>
           )}
-          
-          <FlatList
-            data={friends}
-            renderItem={renderFriend}
-            keyExtractor={keyExtractor}
-            style={styles.friendsList}
-            contentContainerStyle={[
-              styles.friendsListContent,
-              friends.length === 0 && { flex: 1, justifyContent: 'center' }
-            ]}
-            showsVerticalScrollIndicator={false}
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
-            ListEmptyComponent={!loading ? renderEmptyState : null}
-            refreshControl={renderRefreshControl()}
-          />
         </View>
       </SafeAreaView>
 
@@ -795,6 +803,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     letterSpacing: -0.5,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

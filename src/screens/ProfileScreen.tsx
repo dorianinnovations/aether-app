@@ -20,6 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 // Design System
 import { PageBackground } from '../design-system/components/atoms/PageBackground';
+import { LottieLoader } from '../design-system/components/atoms/LottieLoader';
 import { Header, HeaderMenu, SignOutModal } from '../design-system/components/organisms';
 import { SpotifyIntegration } from '../design-system/components/molecules';
 import SettingsModal from './chat/SettingsModal';
@@ -438,8 +439,7 @@ export const ProfileScreen: React.FC = () => {
             theme={theme}
           />
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={[styles.loadingText, { color: colors.text }]}>Loading profile...</Text>
+            <LottieLoader size="large" />
           </View>
         </SafeAreaView>
       </PageBackground>
@@ -1127,10 +1127,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 100,
-  },
-  loadingText: {
-    marginTop: spacing[3],
-    ...typography.textStyles.bodyMedium,
   },
   errorContainer: {
     flex: 1,

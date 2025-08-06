@@ -76,6 +76,7 @@ const MainStack = createStackNavigator<MainStackParamList>();
 
 // All screens are now implemented
 
+
 // Auth Stack Navigator
 const AuthNavigator = () => {
   return (
