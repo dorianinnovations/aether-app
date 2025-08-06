@@ -5,6 +5,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, AUTH_TOKEN_KEY, getStorageKeys } from '../core/types';
+import { logger } from '../../../utils/logger';
 
 // Token management
 export const TokenManager = {
@@ -13,7 +14,7 @@ export const TokenManager = {
       const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
       return token;
     } catch (error) {
-      console.error('Error getting token:', error);
+      logger.error('Error getting token:', error);
       return null;
     }
   },
@@ -23,7 +24,7 @@ export const TokenManager = {
       const token = await this.getToken();
       return !!token;
     } catch (error) {
-      console.error('Error checking authentication:', error);
+      logger.error('Error checking authentication:', error);
       return false;
     }
   },
@@ -31,13 +32,13 @@ export const TokenManager = {
   async setToken(token: string): Promise<void> {
     try {
       if (!token || token === 'undefined' || token === 'null') {
-        console.warn('Attempted to set undefined/null token, removing instead:', token);
+        logger.warn('Attempted to set undefined/null token, removing instead:', token);
         await this.removeToken();
         return;
       }
       await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
     } catch (error) {
-      console.error('Error setting token:', error);
+      logger.error('Error setting token:', error);
     }
   },
 
@@ -59,7 +60,7 @@ export const TokenManager = {
         ]);
       }
     } catch (error) {
-      console.error('Error removing token:', error);
+      logger.error('Error removing token:', error);
     }
   },
 
@@ -79,7 +80,7 @@ export const TokenManager = {
       const userData = await AsyncStorage.getItem(tempKeys.USER_DATA);
       return userData ? JSON.parse(userData) : null;
     } catch (error) {
-      console.error('Error getting user data:', error);
+      logger.error('Error getting user data:', error);
       return null;
     }
   },
@@ -89,7 +90,7 @@ export const TokenManager = {
       const userId = userData?.id;
       
       if (!userId) {
-        console.warn('User data missing ID, storing in temp location:', userData);
+        logger.warn('User data missing ID, storing in temp location:', userData);
         // Store in temp location if no user ID
         const tempKeys = getStorageKeys();
         await AsyncStorage.setItem(tempKeys.USER_DATA, JSON.stringify(userData));
@@ -105,7 +106,7 @@ export const TokenManager = {
       const tempKeys = getStorageKeys();
       await AsyncStorage.removeItem(tempKeys.USER_DATA);
     } catch (error) {
-      console.error('Error setting user data:', error);
+      logger.error('Error setting user data:', error);
     }
   },
 };

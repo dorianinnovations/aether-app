@@ -3,10 +3,10 @@
  * Centralized authentication logic with standardized patterns and error handling
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthAPI, TokenManager } from './api';
-import { AuthResponse, User, StandardAPIResponse } from '../types/api';
+import { User, StandardAPIResponse } from '../types/api';
 import { StorageCleanup } from '../utils/storageCleanup';
+import { logger } from '../utils/logger';
 
 // ========================================
 // AUTHENTICATION STATE MANAGEMENT
@@ -90,7 +90,7 @@ class AuthenticationService {
         });
       }
     } catch (error) {
-      console.error('Auth initialization failed:', error);
+      logger.error('Auth initialization failed:', error);
       this.setState({
         isAuthenticated: false,
         user: null,
@@ -223,7 +223,7 @@ class AuthenticationService {
 
     } catch (error) {
       // Even if logout API call fails, we should clear local state
-      console.error('Logout API call failed:', error);
+      logger.error('Logout API call failed:', error);
       
       this.setState({
         isAuthenticated: false,
@@ -250,7 +250,7 @@ class AuthenticationService {
       return false;
       
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      logger.error('Token refresh failed:', error);
       await this.logout(); // Clear auth state on refresh failure
       return false;
     }

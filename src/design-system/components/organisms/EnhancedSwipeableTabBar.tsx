@@ -16,9 +16,11 @@ import {
 import {
   PanGestureHandler,
   State,
+  PanGestureHandlerGestureEvent,
   // GestureHandlerRootView,
 } from 'react-native-gesture-handler';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { Route } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { designTokens, getThemeColors } from '../../tokens/colors';
 import { typography } from '../../tokens/typography';
@@ -78,7 +80,7 @@ export const EnhancedSwipeableTabBar: React.FC<EnhancedSwipeableTabBarProps> = (
   }, [isHidden]);
 
   // Handle swipe gesture for tab bar and header menu reveal
-  const handleSwipeGesture = (event: any) => {
+  const handleSwipeGesture = (event: PanGestureHandlerGestureEvent) => {
     const { translationY, velocityY, state: gestureState, absoluteY } = event.nativeEvent;
     
     if (gestureState === State.BEGAN) {
@@ -132,7 +134,7 @@ export const EnhancedSwipeableTabBar: React.FC<EnhancedSwipeableTabBarProps> = (
     }
   };
 
-  const handleTabPress = (route: any, index: number) => {
+  const handleTabPress = (route: Route<string>, index: number) => {
     const isFocused = state.index === index;
     
     const onPress = () => {
@@ -174,7 +176,7 @@ export const EnhancedSwipeableTabBar: React.FC<EnhancedSwipeableTabBarProps> = (
     return { onPress, onLongPress };
   };
 
-  const renderTabItem = (route: any, index: number) => {
+  const renderTabItem = (route: Route<string>, index: number) => {
     const { options } = descriptors[route.key];
     const label = options.tabBarLabel || route.name;
     const isFocused = state.index === index;

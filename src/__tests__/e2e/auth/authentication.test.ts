@@ -2,6 +2,7 @@
  * E2E Authentication Tests
  * Tests all authentication-related endpoints and flows
  */
+/* eslint-disable no-console */
 
 import { testApiClient } from '../setup/apiClient';
 import { TEST_USERS, testState, assertCondition, generateTestData } from '../setup/testSetup';

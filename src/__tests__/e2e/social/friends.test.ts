@@ -2,6 +2,7 @@
  * E2E Friends Management Tests
  * Tests friend connections, lookup, and management features
  */
+/* eslint-disable no-console */
 
 import { testApiClient } from '../setup/apiClient';
 import { TEST_USERS, testState, assertCondition, generateTestData, delay } from '../setup/testSetup';

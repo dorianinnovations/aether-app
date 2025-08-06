@@ -43,9 +43,9 @@ interface SignUpScreenProps {
 
 const SignUpScreen: React.FC<SignUpScreenProps> = ({
   navigation,
-  route,
+  route: _route,
 }) => {
-  const { theme, colors, toggleTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   
   // Custom hooks
   const {

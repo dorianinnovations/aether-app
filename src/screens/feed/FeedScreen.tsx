@@ -40,6 +40,7 @@ import { useHeaderMenu } from '../../design-system/hooks';
 // Hooks & Services
 import { useTheme } from '../../hooks/useTheme';
 import { useSocialCards } from '../../hooks/useSocialCards';
+import { logger } from '../../utils/logger';
 
 // Tokens
 import { getThemeColors, getCyclingPastelColor, designTokens } from '../../design-system/tokens/colors';
@@ -119,7 +120,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
 
   const handleCardPress = useCallback((card: SocialCard) => {
     // Navigate to detailed card view or expand inline
-    console.log('Card pressed:', card.name);
+    logger.debug('Card pressed:', card.name);
     // TODO: Navigate to detailed profile view
   }, []);
 
@@ -147,7 +148,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
       setSelectedCard(null);
       setHangoutMessage('');
     } catch (error) {
-      console.error('Error sending hangout request:', error);
+      logger.error('Error sending hangout request:', error);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', 'Failed to send hangout request');
     }
@@ -161,7 +162,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
       
       // Update social proxy status instead of creating a post
       const response = await SocialProxyAPI.updateStatus(newStatus);
-      console.log('Social proxy status updated successfully:', response);
+      logger.debug('Social proxy status updated successfully:', response);
       
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setStatusModalVisible(false);
@@ -172,7 +173,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
       refreshCards();
       
     } catch (error) {
-      console.error('Error updating social proxy status:', error);
+      logger.error('Error updating social proxy status:', error);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', 'Failed to update status');
     }
@@ -181,19 +182,19 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
   const loadPosts = useCallback(async () => {
     try {
       setPostsLoading(true);
-      console.log('Loading posts from timeline...');
+      logger.debug('Loading posts from timeline...');
       
       // Load real timeline data from server
       const timelineResponse = await SocialProxyAPI.getTimeline();
-      console.log('Timeline data received:', timelineResponse);
+      logger.debug('Timeline data received:', timelineResponse);
       
       // Handle nested response structure (data.timeline vs timeline)
       const timeline = timelineResponse.data?.timeline || timelineResponse.timeline;
       const success = timelineResponse.data?.success || timelineResponse.success;
       
       if (success && timeline && Array.isArray(timeline)) {
-        console.log('Timeline activities found:', timeline.length);
-        console.log('Activity types:', timeline.map((a: any) => a.type));
+        logger.debug('Timeline activities found:', timeline.length);
+        logger.debug('Activity types:', timeline.map((a: any) => a.type));
         
         // Transform server activities to Post format for UI compatibility
         const transformedPosts: Post[] = timeline
@@ -215,13 +216,13 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
           }));
         
         setPosts(transformedPosts);
-        console.log('Posts loaded from timeline:', transformedPosts.length);
+        logger.debug('Posts loaded from timeline:', transformedPosts.length);
       } else {
-        console.warn('No timeline data available:', { success, timeline: !!timeline, isArray: Array.isArray(timeline) });
+        logger.warn('No timeline data available:', { success, timeline: !!timeline, isArray: Array.isArray(timeline) });
         setPosts([]);
       }
     } catch (error) {
-      console.error('Error loading posts from timeline:', error);
+      logger.error('Error loading posts from timeline:', error);
       // Fall back to empty array instead of mock data
       setPosts([]);
     } finally {
@@ -242,13 +243,13 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
   const handleToolPress = async (tool: string) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     // TODO: Implement tool functionality
-    console.log(`${tool} tool pressed`);
+    logger.debug(`${tool} tool pressed`);
   };
 
   const handlePostReaction = async (postId: string, reactionType: 'like' | 'love' | 'laugh' | 'curious' | 'relate') => {
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      console.log(`Reacting to post ${postId} with ${reactionType}`);
+      logger.debug(`Reacting to post ${postId} with ${reactionType}`);
       
       await SocialProxyAPI.reactToActivity(postId, reactionType);
       
@@ -268,7 +269,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
-      console.error('Error reacting to post:', error);
+      logger.error('Error reacting to post:', error);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   };
@@ -276,22 +277,22 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
   const handlePostComment = async (postId: string) => {
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      console.log(`Opening comments for post ${postId}`);
+      logger.debug(`Opening comments for post ${postId}`);
       // TODO: Implement comment modal or navigate to comments screen
       Alert.alert('Comments', 'Comment functionality coming soon!');
     } catch (error) {
-      console.error('Error opening comments:', error);
+      logger.error('Error opening comments:', error);
     }
   };
 
   const handlePostShare = async (postId: string) => {
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      console.log(`Sharing post ${postId}`);
+      logger.debug(`Sharing post ${postId}`);
       // TODO: Implement sharing functionality
       Alert.alert('Share', 'Share functionality coming soon!');
     } catch (error) {
-      console.error('Error sharing post:', error);
+      logger.error('Error sharing post:', error);
     }
   };
 
@@ -415,7 +416,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
     // Sort by timestamp (newest first)
     const sortedItems = feedItems.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
     
-    console.log('Combined feed data:', {
+    logger.debug('Combined feed data:', {
       posts: posts.length,
       cards: cards.length,
       total: sortedItems.length,
@@ -435,7 +436,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
 
 
   const renderEmptyState = () => {
-    console.log('Rendering empty state. Posts:', posts.length, 'Cards:', cards.length, 'Combined:', combinedFeedData.length);
+    logger.debug('Rendering empty state. Posts:', posts.length, 'Cards:', cards.length, 'Combined:', combinedFeedData.length);
     return (
       <View style={styles.emptyContainer}>
         <Feather name="edit-3" size={64} color={themeColors.textMuted} />

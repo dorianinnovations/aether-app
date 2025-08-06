@@ -2,6 +2,7 @@
  * Global E2E Test Setup
  * Configures test environment, mock services, and global utilities
  */
+/* eslint-disable no-console */
 
 import { setupMocks, mockAsyncStorage } from './mocks';
 

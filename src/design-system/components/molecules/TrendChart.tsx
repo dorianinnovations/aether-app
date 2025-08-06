@@ -184,14 +184,6 @@ const styles = StyleSheet.create({
   container: {
     marginVertical: spacing[2],
   },
-  
-  title: {
-    ...typography.textStyles.bodyMedium,
-    fontWeight: '600',
-    marginBottom: spacing[1],
-    textAlign: 'center',
-  },
-  
   currentDetail: {
     ...typography.textStyles.bodySmall,
     fontWeight: '600',

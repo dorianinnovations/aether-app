@@ -4,7 +4,7 @@
  */
 
 import { StandardAPIResponse, APIError, EnhancedApiError } from './types';
-import { errorHandler, handleError } from '../../../utils/errorHandler';
+import { errorHandler } from '../../../utils/errorHandler';
 
 /**
  * Response transformer to ensure consistent API response format

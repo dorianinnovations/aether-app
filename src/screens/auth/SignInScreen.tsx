@@ -24,10 +24,11 @@ import * as Haptics from 'expo-haptics';
 import { PageBackground } from '../../design-system/components/atoms/PageBackground';
 import { AnimatedAuthStatus } from '../../design-system/components/atoms/AnimatedAuthStatus';
 import { Header, HeaderMenu } from '../../design-system/components/organisms';
-import { designTokens, getThemeColors } from '../../design-system/tokens/colors';
+import { designTokens } from '../../design-system/tokens/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { typography } from '../../design-system/tokens/typography';
 import { AuthAPI } from '../../services/api';
+import { logger } from '../../utils/logger';
 import type { NavigationProp } from '@react-navigation/native';
 
 type RootStackParamList = {
@@ -61,12 +62,10 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
   
   // Rainbow pastel colors for success shimmer text
   const rainbowPastels = ['#FF8FA3', '#FFB84D', '#FFD23F', '#4ECDC4', '#C77DFF', '#FF6B9D'];
-  const [currentColorIndex] = useState(0);
   
   // Use either auth loading or local loading
   const loading = localLoading;
 
-  const _themeColors = getThemeColors(theme);
 
   // Animation refs - Staggered load-in animations
   const titleOpacity = useRef(new Animated.Value(0)).current;
@@ -263,7 +262,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
     } catch (err: unknown) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       
-      console.error('SignIn error:', err);
+      logger.error('SignIn error:', err);
       
       // Set graceful error message for unexpected errors
       let errorMessage = 'Network error, try again in a few minutes';
@@ -803,10 +802,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
     fontWeight: '600',
-  },
-  subtitleBold: {
-    fontWeight: '700',
-    fontSize: 12,
   },
   formContent: {
     gap: 24,

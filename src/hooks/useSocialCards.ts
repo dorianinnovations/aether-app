@@ -4,8 +4,19 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { SocialCard, Activity, Plan, SpotifyData } from '../types/social';
+import type { SocialCard, Activity, Plan, SpotifyData, AvailabilityStatus } from '../types/social';
 import { SocialProxyAPI, FriendsAPI } from '../services/api';
+import { logger } from '../utils/logger';
+
+interface SocialProxyData {
+  mood?: string;
+  recentActivities?: unknown[];
+  socialProxy?: {
+    currentPlans?: unknown;
+    mood?: string;
+    spotify?: unknown;
+  };
+}
 
 export interface UseSocialCardsReturn {
   cards: SocialCard[];
@@ -16,7 +27,7 @@ export interface UseSocialCardsReturn {
   refreshCards: () => Promise<void>;
   sendHangoutRequest: (toUserId: string, type: string, message?: string) => Promise<void>;
   updateUserStatus: (status: string) => Promise<void>;
-  updateAvailability: (availability: any) => Promise<void>;
+  updateAvailability: (availability: AvailabilityStatus) => Promise<void>;
 }
 
 // Helper functions for data transformation
@@ -26,7 +37,7 @@ const isRecentlyActive = (lastUpdated?: string): boolean => {
   return new Date(lastUpdated).getTime() > fiveMinutesAgo;
 };
 
-const determineAvailabilityStatus = (socialProxy: any): 'available' | 'busy' | 'do-not-disturb' | 'away' => {
+const determineAvailabilityStatus = (socialProxy: SocialProxyData): 'available' | 'busy' | 'do-not-disturb' | 'away' => {
   if (!socialProxy?.mood) return 'away';
 
   switch (socialProxy.mood) {
@@ -182,7 +193,7 @@ export const useSocialCards = (): UseSocialCardsReturn => {
 
               return transformToSocialCard(friend, profileResponse.friend);
             } catch (error) {
-              console.warn(`Failed to load profile for ${friend.username}:`, error);
+              logger.warn(`Failed to load profile for ${friend.username}:`, error);
               return createFallbackSocialCard(friend);
             }
           })
@@ -194,7 +205,7 @@ export const useSocialCards = (): UseSocialCardsReturn => {
       }
     } catch (err: any) {
       setError(err.message || 'Failed to fetch social cards');
-      console.error('Error fetching social cards:', err);
+      logger.error('Error fetching social cards:', err);
     } finally {
       setLoading(false);
     }
@@ -218,7 +229,7 @@ export const useSocialCards = (): UseSocialCardsReturn => {
 
               return transformToSocialCard(friend, profileResponse.friend);
             } catch (error) {
-              console.warn(`Failed to load profile for ${friend.username}:`, error);
+              logger.warn(`Failed to load profile for ${friend.username}:`, error);
               return createFallbackSocialCard(friend);
             }
           })
@@ -230,7 +241,7 @@ export const useSocialCards = (): UseSocialCardsReturn => {
       }
     } catch (err: any) {
       setError(err.message || 'Failed to refresh social cards');
-      console.error('Error refreshing social cards:', err);
+      logger.error('Error refreshing social cards:', err);
     } finally {
       setRefreshing(false);
     }
@@ -239,11 +250,11 @@ export const useSocialCards = (): UseSocialCardsReturn => {
   const sendHangoutRequest = useCallback(async (toUserId: string, type: string, message?: string) => {
     try {
       // TODO: Implement hangout request API
-      console.log('Hangout request:', { toUserId, type, message });
+      logger.debug('Hangout request:', { toUserId, type, message });
       // For now, just show success
       return Promise.resolve();
     } catch (err: any) {
-      console.error('Failed to send hangout request:', err);
+      logger.error('Failed to send hangout request:', err);
       throw err;
     }
   }, []);
@@ -254,7 +265,7 @@ export const useSocialCards = (): UseSocialCardsReturn => {
       // Refresh cards to show updated status
       await refreshCards();
     } catch (err: any) {
-      console.error('Failed to update user status:', err);
+      logger.error('Failed to update user status:', err);
       throw err;
     }
   }, [refreshCards]);
@@ -262,14 +273,14 @@ export const useSocialCards = (): UseSocialCardsReturn => {
   const updateAvailability = useCallback(async (availability: any) => {
     try {
       // TODO: Implement actual API call
-      console.log('Updating availability:', availability);
+      logger.debug('Updating availability:', availability);
       
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // TODO: Update local state or refetch cards
     } catch (err) {
-      console.error('Error updating availability:', err);
+      logger.error('Error updating availability:', err);
       throw err;
     }
   }, []);

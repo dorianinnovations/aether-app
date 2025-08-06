@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ConversationAnalyzer, Message } from '../utils/conversationAnalyzer';
 import { PromptTemplateEngine, PromptOption, ConversationContext } from '../utils/promptTemplates';
+import { logger } from '../utils/logger';
 
 interface UseDynamicPromptsProps {
   messages: Message[];
@@ -97,7 +98,7 @@ export const useDynamicPrompts = ({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to analyze conversation';
       setError(errorMessage);
-      console.error('Dynamic Prompts Error:', err);
+      logger.error('Dynamic Prompts Error:', err);
       
       // Fallback to basic prompts if analysis fails
       setPrompts([
@@ -135,7 +136,7 @@ export const useDynamicPrompts = ({
     const selectedPrompt = prompts.find(p => p.id === promptId);
     
     if (!selectedPrompt) {
-      console.warn(`Prompt with ID ${promptId} not found`);
+      logger.warn(`Prompt with ID ${promptId} not found`);
       return;
     }
 

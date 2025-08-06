@@ -2,6 +2,7 @@
  * Environment Setup for E2E Tests
  * Sets up environment variables and test-specific configurations
  */
+/* eslint-disable no-console */
 
 // Set test environment
 process.env.NODE_ENV = 'test';

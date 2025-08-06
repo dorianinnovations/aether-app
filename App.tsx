@@ -10,7 +10,7 @@ import * as Font from 'expo-font';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 // Removed bottom tabs - using stack navigation only
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Image } from 'react-native';
 
 // Enhanced Components
 import { LottieLoader } from './src/design-system/components/atoms';
@@ -36,6 +36,9 @@ import { SettingsProvider } from './src/contexts/SettingsContext';
 import { getThemeColors } from './src/design-system/tokens/colors';
 import { fontConfig } from './src/design-system/tokens/typography';
 import { spacing } from './src/design-system/tokens/spacing';
+
+// Utils
+import { logger } from './src/utils/logger';
 
 // Custom Transitions
 import { colorFadeTransition } from './src/design-system/transitions/colorFadeTransition';
@@ -133,9 +136,27 @@ const LoadingScreen = () => {
 
   return (
     <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
-      <Text style={[styles.logoText, { color: '#5A5A5A' }]}>
-        Aether
-      </Text>
+      <View style={styles.logoContainer}>
+        <Image
+          source={theme === 'dark' 
+            ? require('./assets/images/aether-logo-dark-mode.webp')
+            : require('./assets/images/aether-logo-light-mode.webp')
+          }
+          style={[styles.logo, { 
+            opacity: theme === 'dark' ? 0.5 : 0.2, 
+            transform: [{ rotate: '25deg' }, { scaleX: 2.0 }] 
+          }]}
+          resizeMode="contain"
+        />
+        <Image
+          source={theme === 'dark' 
+            ? require('./assets/images/aether-brand-logo-dark.webp')
+            : require('./assets/images/aether-brand-logo-light.webp')
+          }
+          style={styles.brandLogoOverlay}
+          resizeMode="contain"
+        />
+      </View>
       <LottieLoader 
         size="large"
         style={styles.loadingSpinner}
@@ -160,7 +181,7 @@ export default function App() {
       await Font.loadAsync(fontConfig);
       setFontsLoaded(true);
     } catch (error) {
-      console.error('Font loading error:', error);
+      logger.error('Font loading error:', error);
       setFontsLoaded(true); // Continue with fallback fonts
     }
   };
@@ -179,7 +200,7 @@ export default function App() {
         await new Promise(resolve => setTimeout(resolve, 1000));
         
       } catch (error) {
-        console.error('App initialization error:', error);
+        logger.error('App initialization error:', error);
       } finally {
         setIsLoading(false);
         await SplashScreen.hideAsync();
@@ -191,7 +212,7 @@ export default function App() {
     // Listen for auth state changes by checking periodically (optimized frequency)
     const authCheckInterval = setInterval(checkAuthStatus, 5000);
     
-    (global as any).clearAuthState = async () => {
+    (global as typeof globalThis & { clearAuthState?: () => Promise<void> }).clearAuthState = async () => {
       await TokenManager.removeToken();
       setIsAuthenticated(false);
     };
@@ -238,13 +259,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing[6],
   },
-  logoText: {
-    fontSize: width < 350 ? 42 : width < 400 ? 48 : 54,
-    fontWeight: '700',
-    letterSpacing: -4.5,
-    textAlign: 'center',
+  logoContainer: {
+    position: 'relative',
+    height: 60,
+    width: 200,
+    overflow: 'visible',
     marginBottom: spacing[8],
-    fontFamily: 'CrimsonPro-Bold',
+  },
+  logo: {
+    height: 60,
+    width: 200,
+  },
+  brandLogoOverlay: {
+    position: 'absolute',
+    height: 200,
+    width: 200,
+    top: -70,
+    left: 0,
+    zIndex: 2,
+    opacity: 0.9,
   },
   loadingSpinner: {
     marginBottom: spacing[4],

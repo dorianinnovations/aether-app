@@ -7,6 +7,7 @@ import { AxiosRequestConfig } from 'axios';
 import { api } from '../core/client';
 import { StandardAPIResponse } from '../core/types';
 import { handleError } from '../../../utils/errorHandler';
+import { logger } from '../../../utils/logger';
 
 /**
  * Base API request method with standardized error handling
@@ -28,7 +29,7 @@ export const makeRequest = async <T = unknown>(
     return response.data;
   } catch (error: unknown) {
     // Use unified error handler for consistent error responses
-    const standardResponse = handleError(error, {
+    handleError(error, {
       endpoint,
       method,
       requestData: data,
@@ -69,7 +70,7 @@ export const ApiUtils = {
       });
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch recent conversations:', error);
+      logger.error('Failed to fetch recent conversations:', error);
       throw error;
     }
   },
@@ -79,7 +80,7 @@ export const ApiUtils = {
       const response = await api.delete(`/conversation/conversations/${conversationId}`);
       return response.data;
     } catch (error) {
-      console.error('Failed to delete conversation:', error);
+      logger.error('Failed to delete conversation:', error);
       throw error;
     }
   },
@@ -89,7 +90,7 @@ export const ApiUtils = {
       const response = await api.delete('/conversation/conversations/all');
       return response.data;
     } catch (error) {
-      console.error('Failed to delete all conversations:', error);
+      logger.error('Failed to delete all conversations:', error);
       throw error;
     }
   },
@@ -101,7 +102,7 @@ export const ApiUtils = {
       });
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch conversation:', error);
+      logger.error('Failed to fetch conversation:', error);
       throw error;
     }
   },

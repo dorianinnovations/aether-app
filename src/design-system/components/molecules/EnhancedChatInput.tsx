@@ -20,6 +20,11 @@ import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+
+// Type definitions for picker results
+type ImagePickerAsset = ImagePicker.ImagePickerAsset;
+type DocumentPickerAsset = DocumentPicker.DocumentPickerAsset;
+type PickerAsset = ImagePickerAsset | DocumentPickerAsset;
 import { getThemeColors, getUserMessageColor } from '../../tokens/colors';
 import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
@@ -42,6 +47,8 @@ interface ChatInputProps {
   placeholder?: string;
   theme?: 'light' | 'dark';
   isLoading?: boolean;
+  isStreaming?: boolean;
+  onHaltStreaming?: () => void;
   maxLength?: number;
   nextMessageIndex?: number;
   voiceEnabled?: boolean;
@@ -64,6 +71,8 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
   onVoiceStart,
   onVoiceEnd,
   isLoading = false,
+  isStreaming = false,
+  onHaltStreaming,
   maxLength = 500,
   placeholder = "Ask Aether anything...",
   voiceEnabled = true,
@@ -99,7 +108,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
   const documentSlideAnim = useRef(new Animated.Value(-50)).current;
 
   // Swipe up gesture handler
-  const handleSwipeUp = (event: any) => {
+  const handleSwipeUp = (event: Parameters<NonNullable<React.ComponentProps<typeof PanGestureHandler>['onHandlerStateChange']>>[0]) => {
     if (event.nativeEvent.oldState === State.ACTIVE) {
       const { translationY, velocityY } = event.nativeEvent;
       
@@ -172,7 +181,11 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
   const handleSendPress = useCallback(async () => {
     if (!canSend) return;
 
+    // Off-beat double light haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setTimeout(() => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }, 120); // Off-beat timing
 
     Animated.spring(sendButtonScale, {
       toValue: 0.95,
@@ -238,6 +251,26 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
       });
     }
   }, [canSend, sendButtonScale, onSend, attachmentButtonsVisible, attachmentButtonsAnim, attachmentButtonScale, cameraSlideAnim, gallerySlideAnim, documentSlideAnim]);
+
+  const handleHaltPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    Animated.spring(sendButtonScale, {
+      toValue: 0.9,
+      useNativeDriver: true,
+      tension: 200,
+      friction: 10,
+    }).start(() => {
+      Animated.spring(sendButtonScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 200,
+        friction: 10,
+      }).start();
+    });
+
+    onHaltStreaming?.();
+  }, [sendButtonScale, onHaltStreaming]);
 
   const handleRemoveAttachment = (attachmentId: string) => {
     if (onAttachmentsChange) {
@@ -318,7 +351,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
-  const handleNewAttachment = async (asset: any) => {
+  const handleNewAttachment = async (asset: PickerAsset) => {
     if (attachments.length >= maxAttachments) {
       Alert.alert('Attachment Limit', `You can attach up to ${maxAttachments} files.`);
       return;
@@ -494,10 +527,8 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
       useNativeDriver: false,
     }).start();
     
-    // Call parent's onFocus after a small delay to ensure proper keyboard handling
-    setTimeout(() => {
-      onFocus?.();
-    }, 50);
+    // Call parent's onFocus immediately
+    onFocus?.();
   }, [inputFocusAnim, onFocus]);
 
   const handleInputBlur = useCallback(() => {
@@ -669,8 +700,8 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
           {/* Send Button */}
           <View style={styles.sendButtonContainer}>
             <TouchableOpacity
-              onPress={handleSendPress}
-              disabled={!canSend}
+              onPress={isStreaming ? handleHaltPress : handleSendPress}
+              disabled={!canSend && !isStreaming}
               activeOpacity={0.7}
               style={styles.sendButtonContainer}
             >
@@ -678,24 +709,40 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
                 styles.sendButton,
                 getNeumorphicStyle('elevated', theme),
                 {
-                  backgroundColor: canSend
-                    ? getUserMessageColor(nextMessageIndex, theme)
-                    : themeColors.surface,
+                  backgroundColor: isStreaming
+                    ? 'rgba(255, 107, 107, 0.15)' // Translucent glassy red for stop button
+                    : theme === 'light'
+                      ? themeColors.surface // Keep background constant in light mode
+                      : canSend
+                        ? getUserMessageColor(nextMessageIndex, theme)
+                        : themeColors.surface,
                   transform: [{ scale: sendButtonScale }],
                   // Enhanced border and shadow for light mode
-                  borderWidth: theme === 'light' ? 1 : 0.5,
-                  borderColor: theme === 'light' 
-                    ? 'rgba(0, 0, 0, 0.08)' 
-                    : 'rgba(255, 255, 255, 0.1)',
+                  borderWidth: isStreaming ? 1.5 : (theme === 'light' ? 1 : 0.5),
+                  borderColor: isStreaming
+                    ? 'rgba(255, 107, 107, 0.4)' // Subtle red border accent for stop button
+                    : theme === 'light' 
+                      ? 'rgba(0, 0, 0, 0.08)' 
+                      : 'rgba(255, 255, 255, 0.1)',
                 }
               ]}>
-                {isLoading || isUploading ? (
+                {isStreaming ? (
+                  <FontAwesome5
+                    name="stop"
+                    size={18}
+                    color="#ffffff"
+                  />
+                ) : isLoading || isUploading ? (
                   <LottieLoader size={40} />
                 ) : (
                   <FontAwesome5
                     name="arrow-up"
                     size={18}
-                    color={canSend ? (theme === 'dark' ? '#ffffff' : '#444444') : themeColors.textMuted}
+                    color={
+                      canSend 
+                        ? (theme === 'dark' ? '#ffffff' : '#222222') // Darker in light mode when input detected
+                        : themeColors.textMuted
+                    }
                   />
                 )}
               </Animated.View>
@@ -887,7 +934,7 @@ const styles = StyleSheet.create({
     // Remove marginBottom for alignment
   },
   sendButton: {
-    width: 70,
+    width: 60,
     height: 36,
     borderRadius: 8,
     justifyContent: 'center',
@@ -933,18 +980,6 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  disclaimerContainer: {
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[2],
-    paddingBottom: spacing[1],
-    alignItems: 'center',
-  },
-  disclaimerText: {
-    fontSize: 10,
-    fontWeight: '400',
-    opacity: 0.6,
-    textAlign: 'center',
   },
 });
 

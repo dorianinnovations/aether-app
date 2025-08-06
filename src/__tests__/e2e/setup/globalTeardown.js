@@ -2,6 +2,7 @@
  * Global Teardown for E2E Tests
  * Runs once after all tests in the suite
  */
+/* eslint-disable no-console */
 
 const fs = require('fs');
 const path = require('path');

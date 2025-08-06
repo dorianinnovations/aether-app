@@ -156,7 +156,7 @@ export class FileProcessingService {
     }
 
     // Validate individual files
-    attachments.forEach((attachment, index) => {
+    attachments.forEach((attachment) => {
       const validation = this.validateFile(attachment);
       if (!validation.isValid) {
         errors.push(validation.error!);

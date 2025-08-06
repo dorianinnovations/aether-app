@@ -2,6 +2,7 @@
  * Global Setup for E2E Tests
  * Runs once before all tests in the suite
  */
+/* eslint-disable no-console */
 
 const axios = require('axios');
 

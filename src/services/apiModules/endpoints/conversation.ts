@@ -94,16 +94,23 @@ export const ConversationAPI = {
 
   // Debug function to directly query conversations with full response logging
   async debugConversations(): Promise<any> {
+    // eslint-disable-next-line no-console
     console.log('DEBUG: Making direct API call to /conversation/conversations/recent');
     try {
       const response = await api.get('/conversation/conversations/recent?limit=20');
+      // eslint-disable-next-line no-console
       console.log('DEBUG: Full API response:', JSON.stringify(response.data, null, 2));
+      // eslint-disable-next-line no-console
       console.log('DEBUG: Response status:', response.status);
+      // eslint-disable-next-line no-console
       console.log('DEBUG: Response headers:', response.headers);
       return response.data;
     } catch (error: unknown) {
+      // eslint-disable-next-line no-console
       console.log('DEBUG: API call failed:', error);
+      // eslint-disable-next-line no-console
       console.log('DEBUG: Error response:', error.response?.data);
+      // eslint-disable-next-line no-console
       console.log('DEBUG: Error status:', error.response?.status);
       throw error;
     }
@@ -111,16 +118,19 @@ export const ConversationAPI = {
 
   // Debug function to test conversation creation
   async debugCreateTestConversation(): Promise<any> {
+    // eslint-disable-next-line no-console
     console.log('DEBUG: Attempting to create a test conversation');
     try {
       // First try to send a test message which should create a conversation
       const testMessage = await ChatAPI.socialChat('Hello, this is a test message to create a conversation.');
+      // eslint-disable-next-line no-console
       console.log('DEBUG: Test message sent:', testMessage);
       
       // Then try to get conversations again
       const conversations = await this.debugConversations();
       return conversations;
     } catch (error: unknown) {
+      // eslint-disable-next-line no-console
       console.log('DEBUG: Failed to create test conversation:', error);
       throw error;
     }

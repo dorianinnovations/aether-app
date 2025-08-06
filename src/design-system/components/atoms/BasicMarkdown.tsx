@@ -3,98 +3,35 @@
  * Handles: bold, lists, basic formatting with colors
  */
 
-import React, { useRef, useEffect } from 'react';
-import { Text, View, StyleSheet, Animated, Easing } from 'react-native';
+import React from 'react';
+import { Text, View, StyleSheet, TextStyle } from 'react-native';
 import { getCyclingPastelColor } from '../../tokens/colors';
 
 interface BasicMarkdownProps {
   children: string;
   theme?: 'light' | 'dark';
-  style?: any;
+  style?: TextStyle;
 }
 
-// Animated Question Container Component
-const AnimatedQuestionContainer: React.FC<{
+// Simple Question Container Component - minimalistic approach
+const QuestionContainer: React.FC<{
   children: React.ReactNode;
-  colorIndex: number;
   theme: 'light' | 'dark';
-}> = ({ children, colorIndex, theme }) => {
-  const slideAnim = useRef(new Animated.Value(-3)).current;
-  const fadeAnim = useRef(new Animated.Value(0.3)).current;
-  const borderColorAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    // Very subtle entrance animation
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 800,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Very gentle color animation - much slower and subtler
-    const animateColor = () => {
-      Animated.sequence([
-        Animated.timing(borderColorAnim, {
-          toValue: 1,
-          duration: 6000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-        Animated.timing(borderColorAnim, {
-          toValue: 0,
-          duration: 6000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-      ]).start(() => animateColor());
-    };
-
-    // Start color animation after a longer delay
-    setTimeout(() => animateColor(), 1200);
-  }, []);
-
-  // Use more subtle, similar pastel colors for gentler transition
-  const primaryColor = getCyclingPastelColor(colorIndex, theme);
-  const secondaryColor = getCyclingPastelColor(colorIndex + 2, theme); // Skip one for more subtle difference
-
-  // Make color transition more subtle with opacity blending
-  const interpolatedBorderColor = borderColorAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [
-      `${primaryColor}88`, // Add transparency for subtlety
-      `${secondaryColor}88`
-    ],
-  });
-
+}> = ({ children, theme }) => {
+  // Simple, static styling with subtle accent
+  const borderColor = theme === 'dark' ? '#4a5568' : '#e2e8f0';
+  
   return (
-    <Animated.View
+    <View
       style={[
+        styles.questionContainer,
         {
-          opacity: fadeAnim,
-          transform: [{ translateX: slideAnim }],
+          borderLeftColor: borderColor,
         },
       ]}
     >
-      <Animated.View
-        style={[
-          styles.questionContainer,
-          {
-            borderLeftColor: interpolatedBorderColor,
-          },
-        ]}
-      >
-        {children}
-      </Animated.View>
-    </Animated.View>
+      {children}
+    </View>
   );
 };
 
@@ -193,11 +130,11 @@ const BasicMarkdown: React.FC<BasicMarkdownProps> = ({ children, theme = 'light'
       // Question/important text (starts with ? or contains key phrases)
       else if (/^\?/.test(line) || /\b(how|what|why|when|where|should|could|would)\b/i.test(line.substring(0, 50))) {
         elements.push(
-          <AnimatedQuestionContainer key={index} colorIndex={colorIndex++} theme={theme}>
+          <QuestionContainer key={index} theme={theme}>
             <Text style={[styles.questionText, style]}>
               {formatInlineText(line, theme)}
             </Text>
-          </AnimatedQuestionContainer>
+          </QuestionContainer>
         );
       }
       // Regular text - detect if it's a longer paragraph vs short sentence
@@ -346,13 +283,12 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   questionContainer: {
-    marginVertical: 4,
-    paddingLeft: 8,
+    marginVertical: 6,
+    paddingLeft: 12,
     paddingRight: 8,
-    borderLeftWidth: 3, // Reduced from 4 for subtlety
-    paddingVertical: 2,
-    borderRadius: 4, // Slightly less rounded
-    backgroundColor: 'rgba(255, 255, 255, 0.01)', // Even more subtle background
+    borderLeftWidth: 2,
+    paddingVertical: 4,
+    backgroundColor: 'transparent',
   },
   questionText: {
     fontSize: 18,

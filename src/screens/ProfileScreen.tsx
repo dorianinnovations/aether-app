@@ -27,6 +27,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useHeaderMenu } from '../design-system/hooks';
 import { typography } from '../design-system/tokens/typography';
 import { spacing } from '../design-system/tokens/spacing';
+import { logger } from '../utils/logger';
 // import { getButtonColors } from '../design-system/tokens/colors';
 
 // Services
@@ -121,7 +122,7 @@ export const ProfileScreen: React.FC = () => {
       await AuthAPI.logout();
       // Auth check in App.tsx will handle navigation automatically
     } catch (error) {
-      console.error('Sign out error:', error);
+      logger.error('Sign out error:', error);
       Alert.alert('Error', 'Failed to sign out. Please try again.');
       throw error; // Re-throw to let SignOutModal handle error state
     }
@@ -156,11 +157,11 @@ export const ProfileScreen: React.FC = () => {
           username: usernameResponse.username || userData.username,
         });
       } else {
-        console.error('Profile response missing user data:', profileResponse);
+        logger.error('Profile response missing user data:', profileResponse);
         throw new Error('Profile data is incomplete');
       }
     } catch (error: any) {
-      console.error('Error loading profile:', error);
+      logger.error('Error loading profile:', error);
       // Don't show error for auth failures
       if (error.status !== 401) {
         Alert.alert('Error', 'Failed to load profile. Please try again.');
@@ -195,7 +196,7 @@ export const ProfileScreen: React.FC = () => {
         Alert.alert('Error', response.message || 'Failed to save profile changes.');
       }
     } catch (error: any) {
-      console.error('Error saving profile:', error);
+      logger.error('Error saving profile:', error);
       const errorMessage = error.message || 'Failed to save profile. Please try again.';
       Alert.alert('Error', errorMessage);
     } finally {
@@ -231,7 +232,7 @@ export const ProfileScreen: React.FC = () => {
           Alert.alert('Success', 'Profile picture updated successfully!');
         }
       } catch (error) {
-        console.error('Error uploading profile picture:', error);
+        logger.error('Error uploading profile picture:', error);
         Alert.alert('Error', 'Failed to upload profile picture. Please try again.');
       } finally {
         setUploading(false);
@@ -267,7 +268,7 @@ export const ProfileScreen: React.FC = () => {
           Alert.alert('Success', 'Banner image updated successfully!');
         }
       } catch (error) {
-        console.error('Error uploading banner image:', error);
+        logger.error('Error uploading banner image:', error);
         Alert.alert('Error', 'Failed to upload banner image. Please try again.');
       } finally {
         setUploading(false);
@@ -296,7 +297,7 @@ export const ProfileScreen: React.FC = () => {
               } : null);
               Alert.alert('Success', 'Profile picture deleted successfully!');
             } catch (error) {
-              console.error('Error deleting profile picture:', error);
+              logger.error('Error deleting profile picture:', error);
               Alert.alert('Error', 'Failed to delete profile picture. Please try again.');
             } finally {
               setUploading(false);
@@ -328,7 +329,7 @@ export const ProfileScreen: React.FC = () => {
               } : null);
               Alert.alert('Success', 'Banner image deleted successfully!');
             } catch (error) {
-              console.error('Error deleting banner image:', error);
+              logger.error('Error deleting banner image:', error);
               Alert.alert('Error', 'Failed to delete banner image. Please try again.');
             } finally {
               setUploading(false);

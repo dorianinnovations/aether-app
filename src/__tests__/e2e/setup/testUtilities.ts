@@ -2,6 +2,7 @@
  * Shared Test Utilities
  * Common patterns and utilities for E2E tests to reduce code duplication
  */
+/* eslint-disable no-console */
 
 import { testApiClient } from './apiClient';
 import { generateTestData, testState } from './testSetup';

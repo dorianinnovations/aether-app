@@ -3,6 +3,7 @@
  * Tests conversation CRUD operations, sync, and history management
  * Refactored to use shared test utilities for better maintainability
  */
+/* eslint-disable no-console */
 
 import { testApiClient } from '../setup/apiClient';
 import { assertCondition, delay, generateTestData } from '../setup/testSetup';

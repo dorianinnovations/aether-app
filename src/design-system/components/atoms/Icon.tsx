@@ -11,6 +11,13 @@ import {
   Ionicons,
   AntDesign,
 } from '@expo/vector-icons';
+import { logger } from '../../../utils/logger';
+
+// Icon component prop types
+type FeatherIconNames = keyof typeof Feather.glyphMap;
+type MaterialIconNames = keyof typeof MaterialIcons.glyphMap;
+type IoniconsIconNames = keyof typeof Ionicons.glyphMap;
+type AntDesignIconNames = keyof typeof AntDesign.glyphMap;
 
 import { designTokens, getThemeColors } from '../../tokens/colors';
 
@@ -216,7 +223,7 @@ const Icon: React.FC<IconProps> = ({
   const iconConfig = iconMap[name];
   
   if (!iconConfig) {
-    console.warn(`Icon "${name}" not found in iconMap`);
+    logger.warn(`Icon "${name}" not found in iconMap`);
     return null;
   }
   
@@ -229,15 +236,15 @@ const Icon: React.FC<IconProps> = ({
   
   switch (iconConfig.family) {
     case 'Feather':
-      return <Feather name={iconConfig.name as any} {...iconProps} />;
+      return <Feather name={iconConfig.name as FeatherIconNames} {...iconProps} />;
     case 'MaterialIcons':
-      return <MaterialIcons name={iconConfig.name as any} {...iconProps} />;
+      return <MaterialIcons name={iconConfig.name as MaterialIconNames} {...iconProps} />;
     case 'Ionicons':
-      return <Ionicons name={iconConfig.name as any} {...iconProps} />;
+      return <Ionicons name={iconConfig.name as IoniconsIconNames} {...iconProps} />;
     case 'AntDesign':
-      return <AntDesign name={iconConfig.name as any} {...iconProps} />;
+      return <AntDesign name={iconConfig.name as AntDesignIconNames} {...iconProps} />;
     default:
-      console.warn(`Icon family "${iconConfig.family}" not supported`);
+      logger.warn(`Icon family "${iconConfig.family}" not supported`);
       return null;
   }
 };

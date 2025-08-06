@@ -44,16 +44,16 @@ export const AuthAPI = {
     });
     
     if (response.success && response.data) {
-      // Handle nested response structure from backend
+      // Handle nested response structure from backend - the response.data contains token + data.user
       const token = response.data.token;
-      const user = response.data.user;
+      const user = response.data.data?.user || response.data.user;
       
       console.log('Login response structure:', { 
         hasToken: !!token, 
         hasUser: !!user, 
         userHasId: !!(user?.id),
         responseKeys: Object.keys(response.data),
-        dataKeys: null,
+        dataKeys: response.data.data ? Object.keys(response.data.data) : null,
         userData: user,
         fullResponse: response
       });

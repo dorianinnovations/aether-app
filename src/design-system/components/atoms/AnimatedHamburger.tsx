@@ -343,19 +343,6 @@ const styles = StyleSheet.create({
   bar: {
     borderRadius: 2,
   },
-  glow: {
-    position: 'absolute',
-    borderRadius: 50,
-    shadowColor: '#fff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  particle: {
-    position: 'absolute',
-    borderRadius: 50,
-  },
 });
 
 export default AnimatedHamburger;

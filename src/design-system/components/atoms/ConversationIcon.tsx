@@ -3,8 +3,10 @@ import { View, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { designTokens } from '../../tokens/colors';
 
+type FeatherIconNames = keyof typeof Feather.glyphMap;
+
 interface ConversationIconProps {
-  icon: string;
+  icon: FeatherIconNames;
   theme: 'light' | 'dark';
   size?: number;
   color?: string;
@@ -34,7 +36,7 @@ const ConversationIcon: React.FC<ConversationIconProps> = ({
       }
     ]}>
       <Feather 
-        name={icon as any} 
+        name={icon} 
         size={size}
         color={defaultColor} 
       />

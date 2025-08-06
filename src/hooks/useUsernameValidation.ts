@@ -26,7 +26,7 @@ export const useUsernameValidation = (username: string): UseUsernameValidationRe
           if (!available) {
             setUsernameError(result.message || result.data?.message || 'Username not available');
           }
-        } catch (error) {
+        } catch {
           setUsernameError('Error checking username');
           setUsernameAvailable(null);
         } finally {

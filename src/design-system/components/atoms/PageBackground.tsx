@@ -130,7 +130,7 @@ export const PageBackground: React.FC<PageBackgroundProps> = ({
   // Light mode with dreamy gradients
   return (
     <LinearGradient
-      colors={getGradientColors() as any}
+      colors={getGradientColors()}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={[styles.container, style]}

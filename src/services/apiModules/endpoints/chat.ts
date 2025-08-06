@@ -6,10 +6,11 @@
 import { API_BASE_URL } from '../core/client';
 import { TokenManager } from '../utils/storage';
 import type { ChatResponse } from '../core/types';
+import { logger } from '../../../utils/logger';
 
 export const ChatAPI = {
   // Non-streaming social chat for compatibility (when streaming isn't needed)
-  async sendMessage(prompt: string, stream: boolean = false, attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>): Promise<ChatResponse> {
+  async sendMessage(prompt: string, _stream: boolean = false, attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>): Promise<ChatResponse> {
     try {
       const token = await TokenManager.getToken();
       if (!token) {
@@ -22,7 +23,7 @@ export const ChatAPI = {
         processedAttachments = await Promise.all(attachments.map(async (attachment) => {
           if (attachment.uri && attachment.uri.startsWith('file://')) {
             try {
-              console.log('🔄 Converting local file to base64:', attachment.name);
+              logger.debug('🔄 Converting local file to base64:', attachment.name);
               const response = await fetch(attachment.uri);
               const blob = await response.blob();
               const reader = new FileReader();
@@ -36,13 +37,13 @@ export const ChatAPI = {
                 reader.readAsDataURL(blob);
               });
               
-              console.log('✅ Successfully converted to base64, size:', base64.length);
+              logger.debug('✅ Successfully converted to base64, size:', base64.length);
               return {
                 ...attachment,
                 uri: base64
               };
             } catch (error) {
-              console.error('❌ Failed to convert file to base64:', error);
+              logger.error('❌ Failed to convert file to base64:', error);
               return attachment;
             }
           }
@@ -66,7 +67,10 @@ export const ChatAPI = {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (response.status === 0 || !response.status) {
+          throw new Error('Request took too long, please try your message once more');
+        }
+        throw new Error('Request took too long, please try your message once more');
       }
 
       const data = await response.json();
@@ -91,8 +95,11 @@ export const ChatAPI = {
       };
       
       return chatResponse;
-    } catch (error) {
-      console.error('Social chat error:', error);
+    } catch (error: any) {
+      logger.error('Social chat error:', error);
+      if (error.message === 'Network request failed' || error.code === 'NETWORK_ERROR') {
+        throw new Error('Request took too long, please try your message once more');
+      }
       throw error;
     }
   },
@@ -111,7 +118,6 @@ export const ChatAPI = {
 
   // Streaming social chat for real-time responses - React Native compatible with XMLHttpRequest  
   streamSocialChat(message: string, attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>): AsyncGenerator<string, void, unknown> {
-    const self = this;
     
     return (async function* () {
       try {
@@ -126,7 +132,7 @@ export const ChatAPI = {
           processedAttachments = await Promise.all(attachments.map(async (attachment) => {
             if (attachment.type === 'image' && attachment.uri && attachment.uri.startsWith('file://')) {
               try {
-                console.log('🔄 Converting local file to base64:', attachment.name);
+                logger.debug('🔄 Converting local file to base64:', attachment.name);
                 // Use fetch to read the local file and convert to base64
                 const response = await fetch(attachment.uri);
                 const blob = await response.blob();
@@ -141,13 +147,13 @@ export const ChatAPI = {
                   reader.readAsDataURL(blob);
                 });
                 
-                console.log('✅ Successfully converted to base64, size:', base64.length);
+                logger.debug('✅ Successfully converted to base64, size:', base64.length);
                 return {
                   ...attachment,
                   uri: base64
                 };
               } catch (error) {
-                console.error('❌ Failed to convert file to base64:', error);
+                logger.error('❌ Failed to convert file to base64:', error);
                 return attachment; // Return original if conversion fails
               }
             }
@@ -194,7 +200,7 @@ export const ChatAPI = {
                         if (parsed.content) {
                           allChunks.push(parsed.content);
                         }
-                      } catch (e) {
+                      } catch {
                         // Skip invalid JSON
                         continue;
                       }
@@ -206,13 +212,17 @@ export const ChatAPI = {
                   resolve(allChunks);
                 }
               } else if (xhr.readyState === 4) {
-                reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText || 'Request failed'}`));
+                if (xhr.status === 0) {
+                  reject(new Error('Request took too long, please try your message once more'));
+                } else {
+                  reject(new Error('Request took too long, please try your message once more'));
+                }
               }
             }
           };
 
-          xhr.onerror = () => reject(new Error('Network error occurred during streaming'));
-          xhr.ontimeout = () => reject(new Error('Request timed out'));
+          xhr.onerror = () => reject(new Error('Request took too long, please try your message once more'));
+          xhr.ontimeout = () => reject(new Error('Request took too long, please try your message once more'));
           xhr.timeout = 30000;
           const requestBody = { 
             message: message, 
@@ -230,7 +240,7 @@ export const ChatAPI = {
         }
 
       } catch (error) {
-        console.error('Streaming social chat error:', error);
+        logger.error('Streaming social chat error:', error);
         throw error;
       }
     })();

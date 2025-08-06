@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 // import * as AuthSession from 'expo-auth-session';
 import { Ionicons } from '@expo/vector-icons';
+import { logger } from '../../../utils/logger';
 
 // Design System
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -26,6 +27,9 @@ import { spacing } from '../../tokens/spacing';
 
 // API
 import { SpotifyAPI } from '../../../services/api';
+
+// Types
+import { SpotifyData } from '../../../types/social';
 
 interface SpotifyIntegrationProps {
   spotifyData?: {
@@ -55,7 +59,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
   onStatusChange
 }) => {
   const { theme, colors } = useTheme();
-  const [spotifyStatus, setSpotifyStatus] = useState<any>(null);
+  const [spotifyStatus, setSpotifyStatus] = useState<SpotifyData | null>(null);
   const [loading, setLoading] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -76,7 +80,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         setSpotifyStatus(response.data);
       }
     } catch (err) {
-      console.log('Failed to load Spotify status:', err);
+      logger.warn('Failed to load Spotify status:', err);
     } finally {
       setLoading(false);
     }
@@ -94,7 +98,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         throw new Error('Failed to get authentication URL');
       }
 
-      console.log('Opening Spotify auth URL:', authUrl);
+      logger.debug('Opening Spotify auth URL:', authUrl);
 
       // Open in browser for OAuth flow
       const supported = await Linking.canOpenURL(authUrl);
@@ -122,9 +126,9 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         ]
       );
       
-    } catch (err: any) {
-      console.error('Spotify connection error:', err);
-      Alert.alert('Connection Failed', err.message || 'Failed to connect to Spotify');
+    } catch (err: unknown) {
+      logger.error('Spotify connection error:', err);
+      Alert.alert('Connection Failed', err instanceof Error ? err.message : 'Failed to connect to Spotify');
     } finally {
       setConnecting(false);
     }
@@ -146,8 +150,8 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
               setSpotifyStatus(null);
               Alert.alert('Success', 'Spotify disconnected successfully');
               onStatusChange?.();
-            } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to disconnect Spotify');
+            } catch (err: unknown) {
+              Alert.alert('Error', err instanceof Error ? err.message : 'Failed to disconnect Spotify');
             } finally {
               setLoading(false);
             }
@@ -165,8 +169,8 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         await loadSpotifyStatus();
         Alert.alert('Success', 'Spotify data refreshed');
       }
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to refresh Spotify data');
+    } catch (err: unknown) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to refresh Spotify data');
     } finally {
       setRefreshing(false);
     }
@@ -183,7 +187,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         Alert.alert('Error', 'Cannot open Spotify');
       }
     } catch (err) {
-      console.error('Failed to open Spotify:', err);
+      logger.error('Failed to open Spotify:', err);
     }
   };
 
@@ -206,11 +210,6 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       fontSize: 18,
       fontWeight: '600',
       color: colors.text,
-    },
-    spotifyLogo: {
-      width: 24,
-      height: 24,
-      tintColor: '#1DB954',
     },
     connectButton: {
       backgroundColor: '#1DB954',

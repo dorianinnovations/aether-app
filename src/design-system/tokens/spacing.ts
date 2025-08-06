@@ -146,7 +146,7 @@ export const createSpacingStyle = (
   bottom?: keyof typeof spacing,
   left?: keyof typeof spacing
 ) => {
-  const styles: any = {};
+  const styles: Record<string, number> = {};
   
   if (top !== undefined) styles.marginTop = spacing[top];
   if (right !== undefined) styles.marginRight = spacing[right];
@@ -162,7 +162,7 @@ export const createPaddingStyle = (
   bottom?: keyof typeof spacing,
   left?: keyof typeof spacing
 ) => {
-  const styles: any = {};
+  const styles: Record<string, number> = {};
   
   if (top !== undefined) styles.paddingTop = spacing[top];
   if (right !== undefined) styles.paddingRight = spacing[right];

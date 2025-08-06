@@ -11,7 +11,10 @@ import Icon from '../atoms/Icon';
 
 interface ChatHeaderProps {
   theme: 'light' | 'dark';
-  colors: any;
+  colors: {
+    text: string;
+    textSecondary: string;
+  };
   isLoading: boolean;
   messageCount: number;
   headerAnim: Animated.Value;
@@ -137,24 +140,6 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-  },
-  buildingText: {
-    transform: [
-      { perspective: 500 },
-      { rotateX: '30deg' },
-      { scaleY: 1.3 },
-      { scaleX: 1.0 },
-    ],
-    fontWeight: '700',
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-    backgroundColor: 'transparent',
-    letterSpacing: -1.0,
-    textTransform: 'none',
-    fontSize: 12,
-    lineHeight: 14,
-    textAlign: 'left',
   },
   headerSubtitle: {
     ...typography.textStyles.caption,

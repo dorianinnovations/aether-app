@@ -18,6 +18,7 @@ import { Feather, MaterialIcons } from '@expo/vector-icons';
 
 // Design System
 import { useTheme } from '../../../contexts/ThemeContext';
+import { logger } from '../../../utils/logger';
 import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
 
@@ -93,9 +94,9 @@ export const LiveSpotifyStatus: React.FC<LiveSpotifyStatusProps> = ({
       if (!response.success) {
         setError(response.error || 'Failed to get live status');
       }
-    } catch (err: any) {
-      console.error('Error fetching live Spotify status:', err);
-      setError(err.message || 'Failed to get live status');
+    } catch (err: unknown) {
+      logger.error('Error fetching live Spotify status:', err);
+      setError(err instanceof Error ? err.message : 'Failed to get live status');
     } finally {
       setLoading(false);
     }

@@ -165,7 +165,7 @@ const WebSearchResult: React.FC<WebSearchResultProps> = ({
           </View>
           <View style={styles.domainRow}>
             <FontAwesome5
-              name={siteIcon.name as any}
+              name={siteIcon.name as keyof typeof FontAwesome5.glyphMap}
               size={12}
               color={siteIcon.color}
               style={styles.domainIcon}
@@ -222,7 +222,7 @@ const WebSearchResult: React.FC<WebSearchResultProps> = ({
             }
           ]}>
             <FontAwesome5
-              name={siteIcon.name as any}
+              name={siteIcon.name as keyof typeof FontAwesome5.glyphMap}
               size={18}
               color={siteIcon.color}
             />

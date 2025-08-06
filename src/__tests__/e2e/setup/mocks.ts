@@ -2,6 +2,7 @@
  * Mock implementations for E2E tests
  * Provides Node.js compatible versions of React Native modules
  */
+/* eslint-disable no-console */
 
 // Mock AsyncStorage for Node.js environment
 class MockAsyncStorage {

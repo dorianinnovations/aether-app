@@ -6,6 +6,7 @@
  */
 
 import { TokenManager } from './api';
+import { logger } from '../utils/logger';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://aether-server-j5kh.onrender.com';
 
@@ -39,7 +40,7 @@ export class StreamEngine {
         
         if (!content || content.trim() === '') {
           // Log response for debugging
-          console.warn('Empty vision response:', JSON.stringify(response, null, 2));
+          logger.warn('Empty vision response:', JSON.stringify(response, null, 2));
           yield 'I received your image but the vision analysis returned an empty response. Please try sending the image again or check if the image is clear and properly formatted.';
           return;
         }
@@ -64,7 +65,7 @@ export class StreamEngine {
         return;
         
       } catch (error) {
-        console.error('Vision API error:', error);
+        logger.error('Vision API error:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         yield `I encountered an error while processing your image: ${errorMessage}. Please try again.`;
         return;
@@ -117,7 +118,7 @@ export class StreamEngine {
                   currentMetadata = parsed.metadata;
                 }
               } catch (e) {
-                console.warn('Streaming parse error:', e);
+                logger.warn('Streaming parse error:', e);
               }
             }
           }

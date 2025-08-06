@@ -118,7 +118,7 @@ class WebSocketClient {
       this.send('join_community', { community: 'global' });
     });
 
-    this.ws.addEventListener('close', (event) => {
+    this.ws.addEventListener('close', () => {
       this.isConnected = false;
       this.attemptReconnect();
     });

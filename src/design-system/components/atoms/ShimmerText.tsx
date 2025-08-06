@@ -64,7 +64,7 @@ export const ShimmerText: React.FC<ShimmerTextProps> = ({
   useEffect(() => {
     if (!enabled) return;
 
-    let animationRef: any = null;
+    let animationRef: Animated.CompositeAnimation | null = null;
     let timeoutId: NodeJS.Timeout | null = null;
 
     const animate = () => {

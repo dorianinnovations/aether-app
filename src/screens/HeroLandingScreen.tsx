@@ -29,6 +29,7 @@ import type { NavigationProp } from '@react-navigation/native';
 type RootStackParamList = {
   SignUp: undefined;
   SignIn: undefined;
+  Onboarding: undefined;
 };
 
 const { width } = Dimensions.get("window");
@@ -40,7 +41,6 @@ interface HeroLandingScreenProps {
 
 const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
   navigation,
-  _route,
 }) => {
   const { theme, colors } = useTheme();
   const { settings } = useSettings();
@@ -100,7 +100,7 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
     }
   };
 
-  const handleSignUpButtonPress = () => {
+  const handleAboutButtonPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     navigation.navigate("Onboarding");
     Animated.sequence([
@@ -276,7 +276,7 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                 duration={3000}
                 delay={1000}
               >
-                Find a new way to connect
+                Keeping you closer with those who matter
               </ShimmerText>
             </View>
 
@@ -341,7 +341,7 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                 >
                   <TouchableOpacity
                     style={{ width: "100%" }}
-                    onPress={handleSignUpButtonPress}
+                    onPress={handleAboutButtonPress}
                     activeOpacity={0.9}
                   >
                     <View
@@ -536,36 +536,6 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     paddingHorizontal: Platform.OS === "web" ? 40 : 24,
   },
-  brandText: {
-    fontSize: width < 350 ? 52 : width < 400 ? 60 : 68,
-    fontWeight: "600",
-    letterSpacing: -5,
-    textAlign: "center",
-    marginTop: 20,
-    fontFamily: "CrimsonPro-Bold",
-    transform: [
-      { perspective: -50 },
-      { rotateX: '-15deg' },
-      { scaleY: 0.8 },
-      { scaleX: 1 },
-    ],
-    textShadowColor: 'rgba(145, 145, 145, 0.9)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
-    backgroundColor: 'transparent',
-    elevation: 12,
-  },
-  brandTextBase: {
-    fontSize: width < 350 ? 52 : width < 400 ? 60 : 68,
-    fontWeight: "600",
-    letterSpacing: -5,
-    textAlign: "center",
-    marginTop: 20,
-    fontFamily: "CrimsonPro-Bold",
-    backgroundColor: 'transparent',
-    elevation: 12,
-  },
-
   buttonsContainer: {
     width: "100%",
     alignItems: "center",

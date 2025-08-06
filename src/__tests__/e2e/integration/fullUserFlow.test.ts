@@ -2,6 +2,7 @@
  * E2E Full User Flow Integration Tests
  * Tests complete user journeys from registration to advanced features
  */
+/* eslint-disable no-console */
 
 import { testApiClient } from '../setup/apiClient';
 import { testState, assertCondition, generateTestData, delay } from '../setup/testSetup';

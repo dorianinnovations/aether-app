@@ -17,6 +17,15 @@ import {
   Easing,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+
+// Type definitions
+type FeatherIconNames = keyof typeof Feather.glyphMap;
+interface Friend {
+  username: string;
+  displayName?: string;
+  lastSeen?: string;
+  [key: string]: unknown;
+}
 import * as Haptics from 'expo-haptics';
 import { designTokens, getThemeColors } from '../design-system/tokens/colors';
 import { spacing } from '../design-system/tokens/spacing';
@@ -154,8 +163,9 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                 log.debug('First conversation structure:', newConversations[0]);
               }
             }
-          } catch (error: any) {
-            if (error.status === 404) {
+          } catch (error: unknown) {
+            const errorWithStatus = error as { status?: number };
+            if (errorWithStatus.status === 404) {
               log.debug('No conversations found (404), showing empty state');
               newConversations = [];
             } else {
@@ -168,7 +178,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
           try {
             const friendsResponse = await FriendsAPI.getFriendsList();
             if (friendsResponse.friends && Array.isArray(friendsResponse.friends)) {
-              newConversations = friendsResponse.friends.map((friend: any) => ({
+              newConversations = friendsResponse.friends.map((friend: Friend) => ({
                 _id: `friend-${friend.username}`,
                 title: friend.displayName || friend.username,
                 lastActivity: friend.lastSeen || 'Recently active',
@@ -476,7 +486,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
               }
             ]}>
               <Feather 
-                name={styling.icon as any} 
+                name={styling.icon as FeatherIconNames} 
                 size={16}
                 color={themeColors.textSecondary} 
               />
@@ -547,7 +557,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
           }
         ]}>
           <Feather 
-            name={tabConfig.icon as any} 
+            name={tabConfig.icon as FeatherIconNames} 
             size={28} 
             color={themeColors.text} 
           />
@@ -663,7 +673,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                             disabled={isAnimating}
                           >
                             <Feather 
-                              name={tab.icon as any} 
+                              name={tab.icon as FeatherIconNames} 
                               size={16} 
                               color={isActive ? tab.iconColor : themeColors.textSecondary} 
                             />

@@ -4,13 +4,13 @@
  */
 
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ViewStyle } from 'react-native';
 import LottieView from 'lottie-react-native';
 
 interface LottieLoaderProps {
   size?: 'small' | 'medium' | 'large' | number;
   color?: string; // Note: This won't affect the Lottie animation colors, but included for API compatibility
-  style?: any;
+  style?: ViewStyle;
 }
 
 export const LottieLoader: React.FC<LottieLoaderProps> = ({

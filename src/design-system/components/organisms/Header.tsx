@@ -18,6 +18,9 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+
+// Icon types
+type FeatherIconNames = keyof typeof Feather.glyphMap;
 import { designTokens, getThemeColors, getStandardBorder } from '../../tokens/colors';
 import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
@@ -179,7 +182,7 @@ export const Header: React.FC<HeaderProps> = ({
           activeOpacity={0.8}
         >
           <IconComponent
-            name={iconName as any}
+            name={iconName as FeatherIconNames}
             size={23}
             color={color}
             style={{ opacity: isPressed ? 0.7 : 1 }}
@@ -219,7 +222,7 @@ export const Header: React.FC<HeaderProps> = ({
         >
           {typeof leftIcon === 'string' ? (
             <Feather
-              name={leftIcon as any}
+              name={leftIcon as FeatherIconNames}
               size={23}
               color={theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary}
             />
@@ -290,7 +293,7 @@ export const Header: React.FC<HeaderProps> = ({
         >
           {typeof rightIcon === 'string' ? (
             <Feather
-              name={rightIcon as any}
+              name={rightIcon as FeatherIconNames}
               size={23}
               color={theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary}
             />
@@ -491,24 +494,6 @@ const styles = StyleSheet.create({
     left: 0,
     zIndex: 2,
     opacity: 0.9,
-  },
-  buildingText: {
-    fontFamily: 'CrimsonPro-Bold',
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: -4.0,
-    lineHeight: 20,
-    textAlign: 'center',
-    transform: [
-      { perspective: -50 },
-      { rotateX: '55deg' },
-      { scaleY: 2.0 },
-      { scaleX: 1.2 },
-    ],
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
-    textShadowOffset: { width: 0, height: 5 },
-    textShadowRadius: 8,
-    backgroundColor: 'transparent',
   },
   subtitle: {
     marginTop: 2,

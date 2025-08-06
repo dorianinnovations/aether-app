@@ -4,6 +4,7 @@
  */
 
 import { api } from '../core/client';
+import { logger } from '../../../utils/logger';
 
 export const SocialProxyAPI = {
   // Get user's social proxy profile
@@ -12,7 +13,7 @@ export const SocialProxyAPI = {
       const response = await api.get('/social-proxy/profile');
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch social proxy profile:', error);
+      logger.error('Failed to fetch social proxy profile:', error);
       throw error;
     }
   },
@@ -27,7 +28,7 @@ export const SocialProxyAPI = {
       });
       return response.data;
     } catch (error) {
-      console.error('Failed to update social proxy status:', error);
+      logger.error('Failed to update social proxy status:', error);
       throw error;
     }
   },
@@ -40,7 +41,7 @@ export const SocialProxyAPI = {
       });
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch timeline:', error);
+      logger.error('Failed to fetch timeline:', error);
       throw error;
     }
   },
@@ -51,7 +52,7 @@ export const SocialProxyAPI = {
       const response = await api.get(`/social-proxy/friend/${username}`);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch friend profile:', error);
+      logger.error('Failed to fetch friend profile:', error);
       throw error;
     }
   },
@@ -62,7 +63,7 @@ export const SocialProxyAPI = {
       const response = await api.post(`/social-proxy/activity/${activityId}/react`, { type });
       return response.data;
     } catch (error) {
-      console.error('Failed to react to activity:', error);
+      logger.error('Failed to react to activity:', error);
       throw error;
     }
   },
@@ -73,7 +74,7 @@ export const SocialProxyAPI = {
       const response = await api.post(`/social-proxy/activity/${activityId}/comment`, { text });
       return response.data;
     } catch (error) {
-      console.error('Failed to comment on activity:', error);
+      logger.error('Failed to comment on activity:', error);
       throw error;
     }
   },
@@ -84,7 +85,7 @@ export const SocialProxyAPI = {
       const response = await api.post('/social-proxy/posts', { text, visibility });
       return response.data;
     } catch (error) {
-      console.error('Failed to create post:', error);
+      logger.error('Failed to create post:', error);
       throw error;
     }
   }

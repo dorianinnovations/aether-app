@@ -285,18 +285,6 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
   },
-  imageInfo: {
-    padding: spacing[2],
-    paddingRight: spacing[8], // Space for remove button
-  },
-  imageName: {
-    fontWeight: '600',
-    marginBottom: spacing[1],
-  },
-  imageSize: {
-    fontSize: 11,
-  },
-  
   // Document Preview Styles
   documentsContainer: {
     gap: spacing[2],

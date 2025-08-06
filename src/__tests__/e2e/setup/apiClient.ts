@@ -2,6 +2,7 @@
  * Test-specific API Client
  * Enhanced API client for E2E testing with detailed logging and assertions
  */
+/* eslint-disable no-console */
 
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { TEST_CONFIG, testState, assertCondition, recordTestResult } from './testSetup';

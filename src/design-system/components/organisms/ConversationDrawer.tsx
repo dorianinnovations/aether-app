@@ -142,8 +142,8 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
               newConversations = aetherResponse.conversations;
               log.debug('Loaded Aether conversations:', newConversations.length);
             }
-          } catch (error: any) {
-            if (error.status === 404) {
+          } catch (error: unknown) {
+            if ((error as { status?: number }).status === 404) {
               log.debug('No conversations found (404), showing empty state');
               newConversations = [];
             } else {
@@ -156,7 +156,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
           try {
             const friendsResponse = await FriendsAPI.getFriendsList();
             if (friendsResponse.friends && Array.isArray(friendsResponse.friends)) {
-              newConversations = friendsResponse.friends.map((friend: any) => ({
+              newConversations = friendsResponse.friends.map((friend: { username: string; displayName?: string; lastSeen?: string }) => ({
                 _id: `friend-${friend.username}`,
                 title: friend.displayName || friend.username,
                 lastActivity: friend.lastSeen || 'Recently active',

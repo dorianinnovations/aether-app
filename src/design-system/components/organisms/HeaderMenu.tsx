@@ -160,25 +160,34 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
     setPressedIndex(null);
   }, []);
 
-  // Simplified show animation
+  // Sequential fade-in animation
   const showMenu = useCallback(() => {
     if (isAnimating) return;
     
     setIsAnimating(true);
     resetAnimations();
     
-    // Simple, instant show
+    // Show menu container instantly
     scaleAnim.setValue(1);
     opacityAnim.setValue(1);
     translateYAnim.setValue(0);
     
-    // Set all items visible instantly
-    itemAnims.forEach(anim => {
-      anim.opacity.setValue(1);
+    // Sequential fade-in for each menu item (top to bottom)
+    const animations = itemAnims.map((anim, index) => 
+      Animated.timing(anim.opacity, {
+        toValue: 1,
+        duration: 120,
+        delay: index * 40, // 40ms delay between each item
+        useNativeDriver: true,
+      })
+    );
+    
+    // Start all animations simultaneously with their delays
+    Animated.parallel(animations).start(() => {
+      setIsAnimating(false);
     });
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setIsAnimating(false);
   }, []);
 
   // Simplified hide animation

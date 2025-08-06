@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Dimensions,
   Animated,
   RefreshControl,
 } from 'react-native';
@@ -16,6 +15,7 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Header, HeaderMenu } from '../design-system/components/organisms';
 import { PageBackground } from '../design-system/components/atoms/PageBackground';
 import { LottieLoader } from '../design-system/components/atoms/LottieLoader';
+import { logger } from '../utils/logger';
 // import { getGlassmorphicStyle } from '../design-system/tokens/glassmorphism';
 import { getHeaderMenuShadow } from '../design-system/tokens/shadows';
 import { designTokens, getThemeColors } from '../design-system/tokens/colors';
@@ -40,13 +40,6 @@ interface Friend {
   topInterests?: string[];
 }
 
-interface FriendRequest {
-  username: string;
-  name?: string;
-  avatar?: string;
-  sentAt?: string;
-  message?: string;
-}
 
 interface FriendCardProps {
   friend: Friend;
@@ -131,6 +124,7 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const shakeAnim = useRef(new Animated.Value(0)).current;
+  const inputRef = useRef<TextInput>(null);
 
   const { ghostText } = useGhostTyping({
     isInputFocused,
@@ -189,7 +183,7 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
         setLoading(true);
       }
       
-      const [friendsResponse, requestsResponse] = await Promise.all([
+      const [friendsResponse, _requestsResponse] = await Promise.all([
         FriendsAPI.getFriendsList(),
         FriendsAPI.getFriendRequests().catch(() => ({ success: false, requests: [] }))
       ]);
@@ -203,7 +197,7 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
       //   setRequests(requestsResponse.requests);
       // }
     } catch (error: any) {
-      console.error('Error fetching friends:', error);
+      logger.error('Error fetching friends:', error);
       // Don't show error for auth failures
       if (error.status !== 401) {
         // Handle other errors if needed
@@ -306,15 +300,20 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
       // Handle network/server errors with user-friendly messages
       let errorMsg = 'Something went wrong';
       
-      // Check if this is actually an API error response (like 404)
+      // Check if this is actually an API error response
       if (error.response?.data) {
         const errorData = error.response.data;
-        if (errorData.error?.includes('not found') || error.response.status === 404) {
-          errorMsg = 'User not found';
-        } else if (errorData.error?.includes('already')) {
+        const errorText = errorData.error || errorData.message || '';
+        
+        if (errorText.toLowerCase().includes('already friends') || errorText.toLowerCase().includes('already')) {
           errorMsg = 'Already friends';
-        } else if (errorData.error?.includes('yourself')) {
+        } else if (errorText.toLowerCase().includes('not found') || error.response.status === 404) {
+          errorMsg = 'User not found';
+        } else if (errorText.toLowerCase().includes('yourself')) {
           errorMsg = 'Cannot add yourself';
+        } else if (error.response.status === 400) {
+          // Handle other 400 errors with a more specific message
+          errorMsg = errorText || 'Invalid request';
         }
       } else if (error.response?.status >= 500) {
         errorMsg = 'Server busy, try again';
@@ -390,6 +389,10 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setShowAddFriendModal(true);
+            // Focus input after modal opens
+            setTimeout(() => {
+              inputRef.current?.focus();
+            }, 100);
           }}
         >
           <Feather
@@ -498,37 +501,40 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
           <View style={[
             styles.dropdown,
             {
-              right: 24,
-              top: 110,
+              alignSelf: 'center',
+              top: '20%',
+              marginTop: 40, // Position below the "Add your first friend" button
               backgroundColor: theme === 'light' ? '#ffffff' : designTokens.brand.surfaceDark,
               borderWidth: 1,
               borderColor: theme === 'dark' ? designTokens.borders.dark.default : designTokens.borders.light.default,
               ...getHeaderMenuShadow(theme),
             }
           ]}>
-            {/* Arrow pointing to header button with border */}
-            <View style={{ position: 'absolute', top: -9, right: 10 }}>
+            {/* Arrow pointing down from the bottom */}
+            <View style={{ position: 'absolute', bottom: -9, alignSelf: 'center' }}>
               {/* Border triangle (slightly larger) */}
               <View style={[
                 styles.arrow,
                 {
-                  borderBottomColor: theme === 'dark' ? designTokens.borders.dark.default : designTokens.borders.light.default,
+                  borderTopColor: theme === 'dark' ? designTokens.borders.dark.default : designTokens.borders.light.default,
                   borderLeftWidth: 9,
                   borderRightWidth: 9,
-                  borderBottomWidth: 9,
+                  borderTopWidth: 9,
+                  borderBottomWidth: 0,
                 }
               ]} />
               {/* Fill triangle (smaller, on top) */}
               <View style={[
                 styles.arrow,
                 {
-                  borderBottomColor: theme === 'light' ? '#ffffff' : designTokens.brand.surfaceDark,
+                  borderTopColor: theme === 'light' ? '#ffffff' : designTokens.brand.surfaceDark,
                   position: 'absolute',
-                  top: 1,
+                  top: -1,
                   left: -0.5,
                   borderLeftWidth: 8,
                   borderRightWidth: 8,
-                  borderBottomWidth: 8,
+                  borderTopWidth: 8,
+                  borderBottomWidth: 0,
                 }
               ]} />
             </View>
@@ -551,6 +557,7 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
                 }}
               >
                 <TextInput
+                  ref={inputRef}
                   style={[
                     styles.friendInput,
                     {
@@ -740,63 +747,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    marginBottom: spacing[4],
-    backgroundColor: 'transparent',
-    borderRadius: 8,
-    padding: 2,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: spacing[2],
-    paddingHorizontal: spacing[3],
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activeTab: {
-    // Styling applied via backgroundColor in component
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  requestCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 56,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  requestInfo: {
-    flex: 1,
-    marginRight: spacing[3],
-  },
-  requestMessage: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  requestActions: {
-    flexDirection: 'row',
-    gap: spacing[2],
-  },
-  actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  acceptButton: {
-    borderColor: 'transparent',
-  },
-  declineButton: {
-    // Styling applied via backgroundColor in component
   },
   emptyContainer: {
     alignItems: 'center',

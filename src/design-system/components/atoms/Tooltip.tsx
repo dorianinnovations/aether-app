@@ -89,7 +89,7 @@ const Tooltip: React.FC<TooltipProps> = ({
     currentAnimations.current = [];
   };
 
-  const onHandlerStateChange = (event: any) => {
+  const onHandlerStateChange = (event: Parameters<NonNullable<React.ComponentProps<typeof PanGestureHandler>['onHandlerStateChange']>>[0]) => {
     if (event.nativeEvent.oldState === State.ACTIVE) {
       const { translationY, velocityY } = event.nativeEvent;
       

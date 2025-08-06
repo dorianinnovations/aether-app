@@ -17,7 +17,11 @@ import {
   Platform,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { logger } from '../../../utils/logger';
 import { FontAwesome5, Feather } from '@expo/vector-icons';
+
+// Icon types
+type FeatherIconNames = keyof typeof Feather.glyphMap;
 import LottieView from 'lottie-react-native';
 import { designTokens, getThemeColors } from '../../tokens/colors';
 import { typography } from '../../tokens/typography';
@@ -86,7 +90,7 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
       await onConfirm();
       onClose();
     } catch (error) {
-      console.error('SignOut error in modal:', error);
+      logger.error('SignOut error in modal:', error);
       onClose();
     } finally {
       setIsConfirming(false);
@@ -129,7 +133,7 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
         }
       ]}>
         <IconComponent
-          name={iconName as any}
+          name={iconName as FeatherIconNames}
           size={20}
           color={iconColor}
         />

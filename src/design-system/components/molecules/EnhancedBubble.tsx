@@ -17,6 +17,9 @@ import {
   Modal,
 } from 'react-native';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+
+// Icon types
+type IoniconsIconNames = keyof typeof Ionicons.glyphMap;
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 import LottieView from 'lottie-react-native';
@@ -71,7 +74,7 @@ const StreamingText: React.FC<{
     fontSize: 16,
     lineHeight: 24,
     letterSpacing: -0.1,
-    fontFamily: 'Nunito-Regular',
+    fontFamily: 'Poppins-Regular',
     fontWeight: '400' as '400',
     color: theme === 'dark' ? '#ffffff' : '#1a1a1a',
   };
@@ -114,7 +117,7 @@ const StreamContent: React.FC<{
   if (isTypingMessage || (isStreaming && !safeText.trim())) {
     return (
       <LottieView
-        source={require('../../../../assets/AetherSpinner.json')}
+        source={require('../../../../assets/AetherTwister.json')}
         autoPlay
         loop
         style={styles.lottieAnimation}
@@ -370,9 +373,9 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
   }, []);
 
   // Long press handler for both bot and user messages
-  const handleLongPress = useCallback((event: { nativeEvent: { locationX: number; locationY: number } }) => {
+  const handleLongPress = useCallback((event: { nativeEvent: { pageX?: number; pageY?: number; locationX: number; locationY: number } }) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const { pageX, pageY } = event.nativeEvent;
+    const { pageX = 0, pageY = 0 } = event.nativeEvent;
     
     // Calculate modal width based on number of options
     const optionCount = isUser ? 2 : 3;
@@ -534,7 +537,7 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
                           fontSize: 16,
                           lineHeight: 24,
                           letterSpacing: -0.1,
-                          fontFamily: 'Nunito-Regular',
+                          fontFamily: 'Poppins-Regular',
                           fontWeight: '400',
                           color: theme === 'dark' ? '#ffffff' : '#1a1a1a',
                           textAlign: 'left',
@@ -623,7 +626,7 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
                 activeOpacity={0.7}
               >
                 <Ionicons
-                  name={option.icon as any}
+                  name={option.icon as IoniconsIconNames}
                   size={20}
                   color={theme === 'dark' ? '#ffffff' : '#333333'}
                 />
@@ -653,7 +656,7 @@ const styles = StyleSheet.create({
   },
   userProfileBubble: {
     borderRadius: 12,
-    paddingHorizontal: 6,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     maxWidth: width * 0.8,
     alignSelf: 'flex-end',
@@ -681,8 +684,8 @@ const styles = StyleSheet.create({
     ...typography.textStyles.body,
   },
   lottieAnimation: {
-    width: 76.5, // Reduced by 15% from 90
-    height: 46.75, // Reduced by 15% from 55
+    width: 120, // Enlarged for better visibility
+    height: 120, // Make it square for the twister animation
     alignSelf: 'flex-start',
   },
   searchResultsContainer: {

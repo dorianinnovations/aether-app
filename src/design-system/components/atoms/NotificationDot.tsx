@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ViewStyle } from 'react-native';
 import { designTokens } from '../../tokens/colors';
 
 interface NotificationDotProps {
@@ -12,7 +12,7 @@ interface NotificationDotProps {
   color?: string;
   size?: number;
   glowIntensity?: 'low' | 'medium' | 'high';
-  style?: any;
+  style?: ViewStyle;
 }
 
 export const NotificationDot: React.FC<NotificationDotProps> = ({

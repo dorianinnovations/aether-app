@@ -6,13 +6,15 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { metricsTracker, MetricEvent, UserJourneyStep, ChokePoint } from '../services/metricsTracker';
 
+type MetricsData = Record<string, unknown>;
+
 interface UseMetricsReturn {
-  trackJourneyStep: (step: string, screen: string, data?: any) => void;
-  trackEvent: (event: string, screen?: string, data?: any, duration?: number) => void;
+  trackJourneyStep: (step: string, screen: string, data?: MetricsData) => void;
+  trackEvent: (event: string, screen?: string, data?: MetricsData, duration?: number) => void;
   trackChokePoint: (name: string, success: boolean, duration?: number, errorMessage?: string) => void;
   trackUserSatisfaction: (screen: string, rating: number, feedback?: string) => void;
-  trackConversion: (type: string, screen: string, data?: any) => void;
-  trackError: (error: string, screen: string, context?: any) => void;
+  trackConversion: (type: string, screen: string, data?: MetricsData) => void;
+  trackError: (error: string, screen: string, context?: MetricsData) => void;
   startTiming: (eventName: string) => () => void;
   getSessionMetrics: () => {
     events: MetricEvent[];
@@ -48,12 +50,12 @@ export const useMetrics = (screenName?: string): UseMetricsReturn => {
     }
   }, [screenName]);
 
-  const trackJourneyStep = useCallback((step: string, screen?: string, data?: any) => {
+  const trackJourneyStep = useCallback((step: string, screen?: string, data?: MetricsData) => {
     const targetScreen = screen || screenRef.current || 'unknown';
     metricsTracker.trackJourneyStep(step, targetScreen, data);
   }, []);
 
-  const trackEvent = useCallback((event: string, screen?: string, data?: any, duration?: number) => {
+  const trackEvent = useCallback((event: string, screen?: string, data?: MetricsData, duration?: number) => {
     const targetScreen = screen || screenRef.current;
     metricsTracker.trackEvent(event, targetScreen, data, duration);
   }, []);
@@ -66,12 +68,12 @@ export const useMetrics = (screenName?: string): UseMetricsReturn => {
     metricsTracker.trackUserSatisfaction(screen, rating, feedback);
   }, []);
 
-  const trackConversion = useCallback((type: string, screen?: string, data?: any) => {
+  const trackConversion = useCallback((type: string, screen?: string, data?: MetricsData) => {
     const targetScreen = screen || screenRef.current || 'unknown';
     metricsTracker.trackConversion(type, targetScreen, data);
   }, []);
 
-  const trackError = useCallback((error: string, screen?: string, context?: any) => {
+  const trackError = useCallback((error: string, screen?: string, context?: MetricsData) => {
     const targetScreen = screen || screenRef.current || 'unknown';
     metricsTracker.trackError(error, targetScreen, context);
   }, []);

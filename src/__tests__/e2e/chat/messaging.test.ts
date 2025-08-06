@@ -2,6 +2,7 @@
  * E2E Chat and Messaging Tests
  * Tests AI chat functionality, streaming, and message handling
  */
+/* eslint-disable no-console */
 
 import { testApiClient } from '../setup/apiClient';
 import { TEST_USERS, testState, assertCondition, generateTestData, delay } from '../setup/testSetup';

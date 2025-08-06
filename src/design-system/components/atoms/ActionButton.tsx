@@ -4,8 +4,10 @@ import { Feather } from '@expo/vector-icons';
 import { spacing } from '../../tokens/spacing';
 import { designTokens } from '../../tokens/colors';
 
+type FeatherIconNames = keyof typeof Feather.glyphMap;
+
 interface ActionButtonProps {
-  icon: string;
+  icon: FeatherIconNames;
   label?: string;
   theme: 'light' | 'dark';
   variant: 'primary' | 'secondary';
@@ -72,7 +74,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
           }
         ]}
       >
-        <Feather name={icon as any} size={18} color={textColor} />
+        <Feather name={icon} size={18} color={textColor} />
         {label && (
           <Text style={[styles.buttonText, { color: textColor }]}>
             {label}

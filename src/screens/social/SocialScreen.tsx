@@ -23,6 +23,7 @@ import type { SocialTab, Post, CreatePostData } from './types';
 // Design System
 import { PageBackground } from '../../design-system/components/atoms/PageBackground';
 import { Header } from '../../design-system/components/organisms/Header';
+import { logger } from '../../utils/logger';
 
 // Social Components
 import { CommunityChip } from './components';
@@ -111,14 +112,14 @@ const SocialScreen: React.FC<SocialScreenProps> = ({ navigation }) => {
       
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
-      console.error('Error creating post:', error);
+      logger.error('Error creating post:', error);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   }, [addPost]);
   
   const handlePostPress = useCallback((post: Post) => {
     // Navigate to post detail or expand inline
-    console.log('Post pressed:', post.id);
+    logger.debug('Post pressed:', post.id);
   }, []);
   
   // Filter posts based on search query

@@ -5,6 +5,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import SettingsStorage, { DEFAULT_SETTINGS } from '../services/settingsStorage';
+import { logger } from '../utils/logger';
 
 type SettingsContextType = {
   settings: typeof DEFAULT_SETTINGS;
@@ -37,7 +38,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       const loadedSettings = await SettingsStorage.getAllSettings();
       setSettings(loadedSettings);
     } catch (error) {
-      console.error('Failed to load settings:', error);
+      logger.error('Failed to load settings:', error);
     }
   };
 
@@ -49,7 +50,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       await SettingsStorage.setSetting(key, value);
       setSettings(prev => ({ ...prev, [key]: value }));
     } catch (error) {
-      console.error(`Failed to update setting ${key}:`, error);
+      logger.error(`Failed to update setting ${key}:`, error);
       throw error;
     }
   };

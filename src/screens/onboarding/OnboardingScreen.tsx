@@ -76,8 +76,8 @@ const onboardingSteps: OnboardingStep[] = [
   }
 ];
 
-const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route }) => {
-  const { theme, colors } = useTheme();
+const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route: _route }) => {
+  const { theme } = useTheme();
   const themeColors = getThemeColors(theme);
   
   const [currentStep, setCurrentStep] = useState(0);

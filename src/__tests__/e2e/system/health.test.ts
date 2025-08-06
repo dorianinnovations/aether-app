@@ -2,6 +2,7 @@
  * E2E System Health Tests
  * Tests system monitoring, health checks, and performance validation
  */
+/* eslint-disable no-console */
 
 import { testApiClient } from '../setup/apiClient';
 import { testState, assertCondition, delay } from '../setup/testSetup';

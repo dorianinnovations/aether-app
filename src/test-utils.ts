@@ -56,13 +56,13 @@ export const metricsUtils = {
 
 // User journey helpers for testing
 export const userJourneyHelpers = {
-  signIn: async (email: string, password: string) => {
+  signIn: async (email: string, _password: string) => {
     return { success: true, user: { email } };
   },
   signUp: async (email: string, password: string, username: string) => {
     return { success: true, user: { email, username } };
   },
-  sendMessage: async (message: string) => {
+  sendMessage: async (_message: string) => {
     return { success: true, messageId: 'test-id' };
   },
   completeSignInFlow: jest.fn(async (screen: any) => {
@@ -110,7 +110,7 @@ export const userJourneyHelpers = {
 // General test utilities
 export const testUtils = {
   wait: (ms: number) => new Promise(resolve => setTimeout(resolve, ms)),
-  waitForAnimations: jest.fn((duration?: number) => Promise.resolve()),
+  waitForAnimations: jest.fn((_duration?: number) => Promise.resolve()),
   createMockNavigation: jest.fn(() => ({
     navigate: jest.fn(),
     goBack: jest.fn(),

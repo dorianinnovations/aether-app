@@ -171,7 +171,7 @@ export const useChatScrollManager = (config: ScrollManagerConfig = {}) => {
         flatListRef.current?.scrollToEnd({ animated: true });
         setTimeout(() => {
           // Get current scroll position and scroll back up to create space
-          const currentOffset = (flatListRef.current as any)?._listRef?._scrollMetrics?.offset || 0;
+          const currentOffset = (flatListRef.current as unknown as { _listRef?: { _scrollMetrics?: { offset?: number } } })?._listRef?._scrollMetrics?.offset || 0;
           flatListRef.current?.scrollToOffset({
             offset: Math.max(0, currentOffset - 120), // Scroll back 120px for flow space
             animated: false

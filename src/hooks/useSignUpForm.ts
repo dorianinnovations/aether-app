@@ -144,9 +144,9 @@ export const useSignUpForm = (): UseSignUpFormReturn => {
           setAuthStatus('idle');
         }, 3000);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      const errorMessage = err.message || 'Network error, try again in a few minutes';
+      const errorMessage = (err as Error)?.message || 'Network error, try again in a few minutes';
       setError(errorMessage);
       setIsSignUpSuccess(false);
       setAuthStatus('error');

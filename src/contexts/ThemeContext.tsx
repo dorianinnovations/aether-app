@@ -6,6 +6,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
 import { getThemeColors } from '../design-system/tokens/colors';
 import { SettingsStorage } from '../services/settingsStorage';
+import { logger } from '../utils/logger';
 
 export type ThemeMode = 'light' | 'dark';
 
@@ -31,7 +32,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         const isDarkMode = await SettingsStorage.getSetting('darkMode', false);
         setTheme(isDarkMode ? 'dark' : 'light');
       } catch (error) {
-        console.warn('Failed to load theme preference:', error);
+        logger.warn('Failed to load theme preference:', error);
       } finally {
         setIsLoading(false);
       }
@@ -46,7 +47,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       setTheme(newTheme);
       await SettingsStorage.setSetting('darkMode', newTheme === 'dark');
     } catch (error) {
-      console.warn('Failed to save theme preference:', error);
+      logger.warn('Failed to save theme preference:', error);
     }
   }, [theme]);
 

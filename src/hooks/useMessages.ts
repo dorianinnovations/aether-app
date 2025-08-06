@@ -7,6 +7,8 @@ import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 import { ChatAPI, ConversationAPI } from '../services/api';
 import { Message, MessageAttachment, Conversation } from '../types';
+import { logger } from '../utils/logger';
+
 
 interface UseMessagesReturn {
   messages: Message[];
@@ -16,6 +18,7 @@ interface UseMessagesReturn {
   handleMessagePress: (message: Message) => Promise<void>;
   handleMessageLongPress: (message: Message) => void;
   handleConversationSelect: (conversation: Conversation) => Promise<void>;
+  handleHaltStreaming: () => void;
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   flatListRef: React.RefObject<FlatList | null>;
 }
@@ -87,7 +90,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
             }
           }
         } catch (error) {
-          console.error('Failed to load conversation messages:', error);
+          logger.error('Failed to load conversation messages:', error);
           // Don't show error - just leave messages as is
         } finally {
           setIsLoading(false);
@@ -162,15 +165,16 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         return newMessages;
       });
       
-      // Start streaming with word animation
+      // Start streaming with word animation - create abortable stream
       let accumulatedText = '';
       let wordCount = 0;
       let messageMetadata: { toolResults?: unknown[]; toolUsed?: string; thinking?: string } | undefined = undefined;
       
+      // Use the ChatAPI streaming method directly
       for await (const chunk of ChatAPI.streamSocialChat(apiPrompt, attachments)) {
         // Check if chunk is metadata object
         if (typeof chunk === 'object' && chunk !== null && 'metadata' in chunk) {
-          messageMetadata = (chunk as any).metadata;
+          messageMetadata = (chunk as { metadata: Record<string, unknown> }).metadata;
           continue;
         }
         
@@ -182,13 +186,13 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
               messageMetadata = parsed.metadata;
               continue;
             }
-          } catch (e) {
+          } catch {
             // Not valid JSON, treat as regular text
           }
         }
         
         // Server sends streaming text content
-        const word = typeof chunk === 'string' ? chunk : (chunk as any).text;
+        const word = typeof chunk === 'string' ? chunk : (chunk as { text?: string }).text || '';
         // Add space before word if we already have content (except for punctuation)
         if (accumulatedText && word && !word.match(/^[.,!?;:]/)) {
           accumulatedText += ' ';
@@ -261,7 +265,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
       }, refinedHapticDelay);
 
     } catch (error: unknown) {
-      console.error('Chat Error:', error);
+      logger.error('Chat Error:', error);
       
       const errorMessage: Message = {
         id: Date.now().toString(),
@@ -298,7 +302,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }, 50);
       } catch (error) {
-        console.error('Failed to copy to clipboard:', error);
+        logger.error('Failed to copy to clipboard:', error);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
     }
@@ -383,7 +387,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
       }
       
     } catch (error: unknown) {
-      console.error('Failed to load conversation:', error);
+      logger.error('Failed to load conversation:', error);
       
       let errorTitle = 'Error Loading Conversation';
       let errorMessage = 'Failed to load conversation. Please try again.';
@@ -414,6 +418,15 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
     }
   };
 
+  const handleHaltStreaming = () => {
+    // For now, just stop the loading states
+    // TODO: Implement proper stream cancellation in ChatAPI
+    logger.info('🛑 Halting streaming...');
+    setIsStreaming(false);
+    setIsLoading(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+  };
+
   return {
     messages,
     isLoading,
@@ -422,6 +435,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
     handleMessagePress,
     handleMessageLongPress,
     handleConversationSelect,
+    handleHaltStreaming,
     setMessages,
     flatListRef,
   };

@@ -3,7 +3,7 @@
  * The heart of Aether - AI that learns and adapts to your patterns
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   FlatList,
@@ -15,7 +15,6 @@ import {
   SafeAreaView,
   StatusBar,
   TouchableOpacity,
-  KeyboardAvoidingView,
   Platform,
   Keyboard,
   Easing,
@@ -46,13 +45,13 @@ import { typography } from '../../design-system/tokens/typography';
 import { spacing } from '../../design-system/tokens/spacing';
 import { getGlassmorphicStyle } from '../../design-system/tokens/glassmorphism';
 import { useHeaderMenu } from '../../design-system/hooks';
+import { logger } from '../../utils/logger';
 
 // Custom hooks
 import { useGreeting } from '../../hooks/useGreeting';
 import { useKeyboardAnimation } from '../../hooks/useKeyboardAnimation';
 import { useMessages } from '../../hooks/useMessages';
 import { useDynamicPrompts } from '../../hooks/useDynamicPrompts';
-import { useSimpleScroll } from '../../hooks/useSimpleScroll';
 import { useWebSearch } from '../../hooks/useWebSearch';
 import { useGhostTyping } from '../../hooks/useGhostTyping';
 
@@ -100,18 +99,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   const { greetingText, showGreeting, setShowGreeting } = useGreeting();
   const { greetingAnimY, greetingOpacity } = useKeyboardAnimation();
 
-  // Simple scroll hook
-  const { 
-    flatListRef, 
-    scrollToBottom, 
-    gentleScrollDown, 
-    handleScrollBegin, 
-    handleScrollEnd,
-    handleScroll,
-    showScrollButton,
-    buttonOpacity,
-    // isAtBottom
-  } = useSimpleScroll();
+  const flatListRef = useRef<FlatList>(null);
 
   // Web search hook  
   const {
@@ -180,6 +168,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     handleMessagePress,
     // handleMessageLongPress,
     handleConversationSelect,
+    handleHaltStreaming,
     setMessages,
     // flatListRef: messagesRef,
   } = useMessages(() => setShowGreeting(false), currentConversationId);
@@ -188,7 +177,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   const {
     prompts: dynamicPrompts,
     isAnalyzing: isAnalyzingContext,
-    // executePrompt,
+    executePrompt,
     // refreshPrompts
   } = useDynamicPrompts({
     messages: messages.map(msg => ({
@@ -260,12 +249,6 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
         useNativeDriver: true,
       }).start();
       
-      // Only scroll to bottom if the chat input is focused
-      if (isChatInputFocused) {
-        setTimeout(() => {
-          flatListRef.current?.scrollToEnd({ animated: true });
-        }, 150);
-      }
     });
 
     const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
@@ -322,8 +305,6 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     
     // Send with stored values to ensure message content integrity
     await handleMessageSend(currentText, currentAttachments);
-    
-    // Auto-scroll will be handled by the FlatList onContentSizeChange
   };
 
   // Handle suggestion press
@@ -516,10 +497,6 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     setShowCopyTooltip(true);
   };
 
-  // Handle scroll to bottom button press
-  const _handleScrollToBottom = () => {
-    flatListRef.current?.scrollToEnd({ animated: true });
-  };
 
   // Enhanced handlers for new components
   // Note: handleMenuAction now provided by useHeaderMenu hook
@@ -571,10 +548,6 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
       useNativeDriver: true,
     }).start();
     
-    // Delay scroll to bottom to allow keyboard to animate in first
-    setTimeout(() => {
-      scrollToBottom();
-    }, 100);
   };
 
   const handleInputBlur = () => {
@@ -628,7 +601,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
         throw new Error('Failed to create conversation');
       }
     } catch (error) {
-      console.error('Error creating new conversation:', error);
+      logger.error('Error creating new conversation:', error);
       
       // Fallback to clearing current state
       setMessages([]);
@@ -688,7 +661,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
               duration={3000}
               waveWidth="wide"
               enabled={true}
-              animationMode="greeting-sequence"
+              animationMode="greeting-once"
             >
               {greetingText}
             </ShimmerText>
@@ -712,21 +685,24 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
           renderItem={renderMessage}
           keyExtractor={(item) => item.id}
           style={styles.messagesList}
-          contentContainerStyle={styles.messagesContainer}
+          contentContainerStyle={[
+            styles.messagesContainer,
+            {
+              // Dynamic padding bottom when keyboard/input is focused
+              paddingBottom: isChatInputFocused 
+                ? keyboardHeight + 120 // Keyboard height + input container height + buffer
+                : 12, // Default padding when not focused
+            }
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           ItemSeparatorComponent={() => <View style={{ height: 0 }} />}
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: headerAnim } } }],
-            { 
-              useNativeDriver: false,
-              listener: handleScroll
-            }
+            { useNativeDriver: false }
           )}
-          onScrollBeginDrag={handleScrollBegin}
-          onScrollEndDrag={handleScrollEnd}
-          onContentSizeChange={gentleScrollDown}
         />
+
       </View>
 
       <Animated.View 
@@ -737,30 +713,6 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
           }
         ]}
       >
-        <Animated.View 
-          style={[
-            styles.scrollToBottomButton,
-            { opacity: buttonOpacity }
-          ]}
-          pointerEvents={showScrollButton ? 'auto' : 'none'}
-        >
-          <TouchableOpacity 
-            onPress={scrollToBottom}
-            activeOpacity={0.7}
-          >
-            <View style={[
-              styles.scrollButtonCircle,
-              { backgroundColor: theme === 'dark' ? '#2A2A2A' : '#ffffff' }
-            ]}>
-              <Text style={[
-                styles.scrollButtonArrow,
-                { color: theme === 'dark' ? '#ffffff' : '#444444' }
-              ]}>
-                ↓
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </Animated.View>
         
         <View style={[
           styles.chatInputWrapper,
@@ -781,6 +733,8 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
             onVoiceStart={handleVoiceStart}
             onVoiceEnd={handleVoiceEnd}
             isLoading={isLoading}
+            isStreaming={isStreaming}
+            onHaltStreaming={handleHaltStreaming}
             theme={theme}
             placeholder="What up?"
             nextMessageIndex={messages.length}
@@ -814,7 +768,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
             await AuthAPI.logout();
             // Auth check in App.tsx will handle navigation automatically
           } catch (error) {
-            console.error('Sign out error:', error);
+            logger.error('Sign out error:', error);
           }
         }}
         theme={theme}
@@ -1219,7 +1173,7 @@ const styles = StyleSheet.create({
   
   messagesContainer: {
     paddingTop: Platform.OS === 'ios' ? 90 : 70,
-    paddingBottom: 12,
+    // paddingBottom is now handled dynamically based on keyboard state
     gap: 0,
   },
   
@@ -1303,7 +1257,7 @@ const styles = StyleSheet.create({
   // Scroll to Bottom Button
   scrollToBottomButton: {
     position: 'absolute',
-    bottom: 110,
+    bottom: 180,
     alignSelf: 'center',
     zIndex: 1000,
   },

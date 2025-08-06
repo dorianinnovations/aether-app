@@ -36,7 +36,7 @@ export const createStaggeredEntrance = (
     delay?: number;
     increment?: number;
     duration?: number;
-    easing?: any;
+    easing?: (value: number) => number;
   } = {}
 ) => {
   const {
@@ -226,7 +226,7 @@ export const getEntranceTransforms = (animatedValues: {
   scale?: Animated.Value;
   rotate?: Animated.Value;
 }) => {
-  const transforms: any[] = [];
+  const transforms: Record<string, unknown>[] = [];
 
   if (animatedValues.translateY) {
     transforms.push({

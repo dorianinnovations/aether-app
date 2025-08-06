@@ -7,6 +7,12 @@ import { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../contexts/ThemeContext';
 
+// Navigation type
+type NavigationProp = {
+  goBack: () => void;
+  navigate: (screen: string) => void;
+};
+
 interface UseHeaderMenuOptions {
   screenName?: string;
   onSettingsPress?: () => void;
@@ -28,22 +34,22 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
         break;
       case 'profile':
         if (screenName !== 'profile') {
-          (navigation as any).navigate('Profile');
+          (navigation as NavigationProp).navigate('Profile');
         }
         break;
       case 'chat':
         if (screenName !== 'chat') {
-          (navigation as any).navigate('Chat');
+          (navigation as NavigationProp).navigate('Chat');
         }
         break;
       case 'friends':
         if (screenName !== 'friends') {
-          (navigation as any).navigate('Friends');
+          (navigation as NavigationProp).navigate('Friends');
         }
         break;
       case 'feed':
         if (screenName !== 'feed') {
-          (navigation as any).navigate('Feed');
+          (navigation as NavigationProp).navigate('Feed');
         }
         break;
       case 'settings':

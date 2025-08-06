@@ -4,7 +4,7 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, LayoutChangeEvent } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, LayoutChangeEvent, ViewStyle } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -15,7 +15,7 @@ import { spacing } from '../../tokens/spacing';
 type ThemeMode = 'light' | 'system' | 'dark';
 
 interface ThemeSelectorProps {
-  style?: any;
+  style?: ViewStyle;
   onThemeChange?: (mode: ThemeMode) => void;
 }
 
@@ -98,7 +98,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ style: _style, onT
             activeOpacity={0.7}
           >
             <Feather 
-              name={option.icon as any} 
+              name={option.icon as keyof typeof Feather.glyphMap} 
               size={16} 
               color={isSelected 
                 ? (isDarkMode ? '#FFFFFF' : '#000000')

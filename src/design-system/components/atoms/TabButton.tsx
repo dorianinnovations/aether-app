@@ -4,9 +4,11 @@ import { Feather } from '@expo/vector-icons';
 import { spacing } from '../../tokens/spacing';
 import { designTokens } from '../../tokens/colors';
 
+type FeatherIconNames = keyof typeof Feather.glyphMap;
+
 interface TabButtonProps {
   label: string;
-  icon: string;
+  icon: FeatherIconNames;
   isActive: boolean;
   theme: 'light' | 'dark';
   onPress: () => void;
@@ -86,7 +88,7 @@ const TabButton: React.FC<TabButtonProps> = ({
         
         <View style={styles.content}>
           <Feather 
-            name={icon as any} 
+            name={icon} 
             size={16} 
             color={textColor}
           />

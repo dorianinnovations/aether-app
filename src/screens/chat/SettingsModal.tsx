@@ -28,6 +28,7 @@ import { designTokens, getThemeColors, getBorderStyle, getIconColor } from '../.
 import { colorPatterns } from '../../design-system/tokens/color-patterns';
 import { typography } from '../../design-system/tokens/typography';
 import { spacing } from '../../design-system/tokens/spacing';
+import { logger } from '../../utils/logger';
 import { getGlassmorphicStyle, getBrickButtonStyle } from '../../design-system/tokens/glassmorphism';
 import Icon from '../../design-system/components/atoms/Icon';
 
@@ -93,6 +94,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const accountSectionOpacity = useRef(new Animated.Value(0)).current;
   const categoriesSectionOpacity = useRef(new Animated.Value(0)).current;
   const quickActionsOpacity = useRef(new Animated.Value(0)).current;
+  
+  // Individual button animations
+  const accountButtonOpacity = useRef(new Animated.Value(0)).current;
+  const categoryButtonAnims = useRef([new Animated.Value(0), new Animated.Value(0), new Animated.Value(0), new Animated.Value(0), new Animated.Value(0)]).current;
+  const quickActionAnims = useRef([new Animated.Value(0), new Animated.Value(0)]).current;
   
   // Sub-drawer animation refs
   const subDrawerHeaderOpacity = useRef(new Animated.Value(0)).current;
@@ -222,6 +228,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       accountSectionOpacity.setValue(0);
       categoriesSectionOpacity.setValue(0);
       quickActionsOpacity.setValue(0);
+      
+      // Reset individual button animations
+      accountButtonOpacity.setValue(0);
+      categoryButtonAnims.forEach(anim => anim.setValue(0));
+      quickActionAnims.forEach(anim => anim.setValue(0));
     }
   }, [visible]);
 
@@ -254,6 +265,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         duration: 450,
         useNativeDriver: true,
       }).start();
+      
+      // Account button animation
+      setTimeout(() => {
+        Animated.timing(accountButtonOpacity, {
+          toValue: 1,
+          duration: 120,
+          useNativeDriver: true,
+        }).start();
+      }, 40);
     }, 200);
 
     // Categories section (300ms delay)
@@ -263,6 +283,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         duration: 500,
         useNativeDriver: true,
       }).start();
+      
+      // Sequential category button animations
+      categoryButtonAnims.forEach((anim, index) => {
+        setTimeout(() => {
+          Animated.timing(anim, {
+            toValue: 1,
+            duration: 120,
+            useNativeDriver: true,
+          }).start();
+        }, 60 + (index * 40));
+      });
     }, 300);
 
     // Quick actions (450ms delay)
@@ -272,6 +303,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         duration: 450,
         useNativeDriver: true,
       }).start();
+      
+      // Sequential quick action animations
+      quickActionAnims.forEach((anim, index) => {
+        setTimeout(() => {
+          Animated.timing(anim, {
+            toValue: 1,
+            duration: 120,
+            useNativeDriver: true,
+          }).start();
+        }, 60 + (index * 40));
+      });
     }, 450);
   };
 
@@ -315,7 +357,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       setBackgroundType(settings.backgroundType || globalSettings.backgroundType);
       setDynamicOptions(settings.dynamicOptions);
     } catch (error) {
-      console.error('Failed to load settings:', error);
+      logger.error('Failed to load settings:', error);
     }
   };
 
@@ -326,7 +368,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       setIsSignedIn(!!token);
       setUserData(user);
     } catch (error) {
-      console.error('Error checking auth state:', error);
+      logger.error('Error checking auth state:', error);
       setIsSignedIn(false);
       setUserData(null);
     }
@@ -443,7 +485,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           break;
       }
     } catch (error) {
-      console.error(`Failed to save ${setting} setting:`, error);
+      logger.error(`Failed to save ${setting} setting:`, error);
     }
   };
 
@@ -454,7 +496,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       setBackgroundType(backgroundType);
       await updateSetting('backgroundType', backgroundType);
     } catch (error) {
-      console.error('Failed to save backgroundType setting:', error);
+      logger.error('Failed to save backgroundType setting:', error);
     }
   };
 
@@ -508,7 +550,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       }
       onClose();
     } catch (error) {
-      console.error('Sign out error:', error);
+      logger.error('Sign out error:', error);
       Alert.alert('Error', 'Failed to sign out. Please try again.');
       throw error; // Re-throw to let SignOutModal handle error state
     } finally {
@@ -526,7 +568,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         title: 'Aether Settings Export',
       });
     } catch (error) {
-      console.error('Export error:', error);
+      logger.error('Export error:', error);
       Alert.alert('Error', 'Failed to export settings. Please try again.');
     } finally {
       setIsLoading(false);
@@ -563,7 +605,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               
             } catch (error: any) {
-              console.error('Failed to clear data:', error);
+              logger.error('Failed to clear data:', error);
               
               Alert.alert(
                 'Error', 
@@ -585,7 +627,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     const itemColor = getSettingsIconColor(index);
     return (
       <TouchableOpacity
-        key={section}
         style={[
           styles.settingsItem, 
           { 
@@ -817,15 +858,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             {/* Account Section - Show first if signed in */}
             {isSignedIn && (
               <Animated.View style={[styles.accountSection, { opacity: accountSectionOpacity }]}>
-                <TouchableOpacity style={[
-                  styles.accountItem, 
-                  { 
-                    backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0, 0, 0, 0.03)',
-                    borderColor: theme === 'dark' 
-                      ? 'rgba(255,255,255,0.1)' 
-                      : 'rgba(0, 0, 0, 0.08)',
-                  }
-                ]}>
+                <Animated.View style={{ opacity: accountButtonOpacity }}>
+                  <TouchableOpacity style={[
+                    styles.accountItem, 
+                    { 
+                      backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0, 0, 0, 0.03)',
+                      borderColor: theme === 'dark' 
+                        ? 'rgba(255,255,255,0.1)' 
+                        : 'rgba(0, 0, 0, 0.08)',
+                    }
+                  ]}>
                   <View style={styles.iconContainer}>
                     <Feather name="user" size={16} color={getSettingsIconColor(0)} />
                   </View>
@@ -837,65 +879,72 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       Signed in
                     </Text>
                   </View>
-                  <TouchableOpacity onPress={handleSignOut} style={styles.signOutButton}>
-                    <Feather name="log-out" size={16} color="#ff4757" />
+                    <TouchableOpacity onPress={handleSignOut} style={styles.signOutButton}>
+                      <Feather name="log-out" size={16} color="#ff4757" />
+                    </TouchableOpacity>
                   </TouchableOpacity>
-                </TouchableOpacity>
+                </Animated.View>
               </Animated.View>
             )}
 
             {/* Main Settings Categories */}
             <Animated.View style={[styles.categoriesSection, { opacity: categoriesSectionOpacity }]}>
-              {Object.keys(subDrawerSections).map((section, index) => 
-                renderSettingsItem(section, index)
-              )}
+              {Object.keys(subDrawerSections).map((section, index) => (
+                <Animated.View key={section} style={{ opacity: categoryButtonAnims[index] }}>
+                  {renderSettingsItem(section, index)}
+                </Animated.View>
+              ))}
             </Animated.View>
 
             {/* Quick Actions */}
             <Animated.View style={[styles.quickActionsSection, { opacity: quickActionsOpacity }]}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
               
-              <TouchableOpacity 
-                style={[styles.quickAction, { 
-                  backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0, 0, 0, 0.03)',
-                  borderColor: theme === 'dark' 
-                    ? 'rgba(255,255,255,0.1)' 
-                    : 'rgba(0, 0, 0, 0.08)',
-                }]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-                activeOpacity={0.8}
-              >
-                <View style={styles.iconContainer}>
-                  <Feather name="help-circle" size={16} color={getSettingsIconColor(10)} />
-                </View>
-                <Text style={[styles.quickActionText, { color: colors.text }]}>Help & Support</Text>
-              </TouchableOpacity>
+              <Animated.View style={{ opacity: quickActionAnims[0] }}>
+                <TouchableOpacity 
+                  style={[styles.quickAction, { 
+                    backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0, 0, 0, 0.03)',
+                    borderColor: theme === 'dark' 
+                      ? 'rgba(255,255,255,0.1)' 
+                      : 'rgba(0, 0, 0, 0.08)',
+                  }]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.iconContainer}>
+                    <Feather name="help-circle" size={16} color={getSettingsIconColor(10)} />
+                  </View>
+                  <Text style={[styles.quickActionText, { color: colors.text }]}>Help & Support</Text>
+                </TouchableOpacity>
+              </Animated.View>
               
-              <TouchableOpacity 
-                style={[styles.quickAction, { 
-                  backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0, 0, 0, 0.03)',
-                  borderColor: theme === 'dark' 
-                    ? 'rgba(255,255,255,0.1)' 
-                    : 'rgba(0, 0, 0, 0.08)',
-                }]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setShowAboutModal(true);
-                }}
-                activeOpacity={0.8}
-              >
-                <View style={styles.iconContainer}>
-                  <Feather name="info" size={16} color={getSettingsIconColor(11)} />
-                </View>
-                <View style={styles.aboutQuickAction}>
-                  <Text style={[styles.quickActionText, { color: colors.text }]}>About Aether</Text>
-                  <Text style={[styles.versionText, { color: colors.textMuted }]}>
-                    v{Constants.expoConfig?.version || '1.0.0'}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+              <Animated.View style={{ opacity: quickActionAnims[1] }}>
+                <TouchableOpacity 
+                  style={[styles.quickAction, { 
+                    backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0, 0, 0, 0.03)',
+                    borderColor: theme === 'dark' 
+                      ? 'rgba(255,255,255,0.1)' 
+                      : 'rgba(0, 0, 0, 0.08)',
+                  }]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setShowAboutModal(true);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.iconContainer}>
+                    <Feather name="info" size={16} color={getSettingsIconColor(11)} />
+                  </View>
+                  <View style={styles.aboutQuickAction}>
+                    <Text style={[styles.quickActionText, { color: colors.text }]}>About Aether</Text>
+                    <Text style={[styles.versionText, { color: colors.textMuted }]}>
+                      v{Constants.expoConfig?.version || '1.0.0'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
             </Animated.View>
           </ScrollView>
           
@@ -907,7 +956,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 {
                   opacity: subDrawerAnim.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [0, 0.8],
+                    outputRange: [0, 0.9],
                   }),
                 }
               ]}
@@ -1005,7 +1054,9 @@ const styles = StyleSheet.create({
     width: screenWidth,
     height: screenHeight,
     padding: spacing[4],
-    paddingTop: 60, // Account for status bar/notch
+    paddingLeft: spacing[6], // More inward
+    paddingRight: spacing[6], // More inward
+    paddingTop: 80, // More down from status bar/notch
   },
   
   modalHeader: {
@@ -1013,8 +1064,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingBottom: spacing[4],
+    paddingLeft: spacing[2], // More inward
+    paddingRight: spacing[2], // More inward
+    paddingTop: spacing[3], // More down
     marginBottom: spacing[4],
-    borderBottomWidth: 1,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
   modalTitle: {
     fontFamily: typography.fonts.headingSemiBold,
@@ -1041,7 +1096,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
   },
   
   // Account Section
@@ -1122,7 +1177,7 @@ const styles = StyleSheet.create({
     top: 0,
     right: 0,
     bottom: 0,
-    width: screenWidth * 0.78,
+    width: screenWidth * 0.88,
     borderRadius: 12,
     borderWidth: 1,
     overflow: 'hidden',

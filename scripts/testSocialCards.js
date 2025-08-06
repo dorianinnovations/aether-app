@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 // Test script to verify social cards API integration
 const axios = require('axios');
 

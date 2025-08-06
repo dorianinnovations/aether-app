@@ -5,6 +5,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUserStorageKeys } from '../constants';
+import { logger } from './logger';
 
 export class StorageCleanup {
   /**
@@ -33,7 +34,7 @@ export class StorageCleanup {
       );
       
     } catch (error) {
-      console.error('❌ Storage cleanup error:', error);
+      logger.error('❌ Storage cleanup error:', error);
     }
   }
 
@@ -52,7 +53,7 @@ export class StorageCleanup {
       ]);
       
     } catch (error) {
-      console.error('Error clearing user data:', error);
+      logger.error('Error clearing user data:', error);
     }
   }
 
@@ -87,7 +88,7 @@ export class StorageCleanup {
       );
       
     } catch (error) {
-      console.error('Emergency cleanup error:', error);
+      logger.error('Emergency cleanup error:', error);
     }
   }
 
@@ -112,7 +113,7 @@ export class StorageCleanup {
       
       return true;
     } catch (error) {
-      console.error('Storage verification error:', error);
+      logger.error('Storage verification error:', error);
       return false;
     }
   }

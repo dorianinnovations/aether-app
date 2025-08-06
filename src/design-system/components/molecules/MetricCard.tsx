@@ -142,7 +142,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
       <View style={[styles.progressBar, { backgroundColor: `${metricColor}20` }]}>
         <View style={[styles.progressFill, { 
           backgroundColor: metricColor,
-          width: typeof value === 'string' && value.includes('%') ? value as any : '70%'
+          width: typeof value === 'string' && value.includes('%') ? value : '70%'
         }]} />
       </View>
     </Animated.View>
