@@ -67,7 +67,7 @@ export interface Activity {
   type: string;
   content: {
     text: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
   };
   visibility: string;
   reactions: Array<{
@@ -125,7 +125,7 @@ export const useSocialProxy = (): UseSocialProxyReturn => {
       if (response.success) {
         setProfile(response.profile);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to fetch social proxy profile:', err);
       setError(err.message || 'Failed to load profile');
     } finally {
@@ -148,7 +148,7 @@ export const useSocialProxy = (): UseSocialProxyReturn => {
           lastUpdated: new Date().toISOString()
         } : null);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to update status:', err);
       setError(err.message || 'Failed to update status');
       throw err;
@@ -164,7 +164,7 @@ export const useSocialProxy = (): UseSocialProxyReturn => {
       if (response.success) {
         setTimeline(response.timeline);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to fetch timeline:', err);
       setError(err.message || 'Failed to load timeline');
     } finally {
@@ -189,7 +189,7 @@ export const useSocialProxy = (): UseSocialProxyReturn => {
             : activity
         ));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to react to activity:', err);
       throw err;
     }
@@ -207,7 +207,7 @@ export const useSocialProxy = (): UseSocialProxyReturn => {
             : activity
         ));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to comment on activity:', err);
       throw err;
     }
@@ -221,7 +221,7 @@ export const useSocialProxy = (): UseSocialProxyReturn => {
         return response.authUrl;
       }
       throw new Error('Failed to get Spotify auth URL');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to connect Spotify:', err);
       throw err;
     }
@@ -242,7 +242,7 @@ export const useSocialProxy = (): UseSocialProxyReturn => {
           }
         } : null);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to disconnect Spotify:', err);
       throw err;
     }
@@ -256,7 +256,7 @@ export const useSocialProxy = (): UseSocialProxyReturn => {
         // Refresh profile to get updated Spotify data
         await fetchProfile();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to refresh Spotify data:', err);
       throw err;
     }
@@ -270,7 +270,7 @@ export const useSocialProxy = (): UseSocialProxyReturn => {
         // Refresh timeline to show the shared track
         await refreshTimeline();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to share track:', err);
       throw err;
     }

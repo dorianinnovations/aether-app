@@ -11,7 +11,7 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://aether-server-j
 
 export interface StreamChunk {
   text: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export class StreamEngine {
@@ -21,7 +21,7 @@ export class StreamEngine {
   static async *streamChat(
     prompt: string,
     endpoint: string = '/social-chat',
-    attachments?: any[]
+    attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>
   ): AsyncGenerator<string | StreamChunk, void, unknown> {
     
     // For attachments, fall back to non-streaming (as per backend)
@@ -78,7 +78,7 @@ export class StreamEngine {
     let completed = false;
     let buffer = '';
     let processedChunks = 0;
-    let currentMetadata: any = null;
+    let currentMetadata: Record<string, unknown> | null = null;
     
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url, true);

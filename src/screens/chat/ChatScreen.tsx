@@ -3,7 +3,7 @@
  * The heart of Aether - AI that learns and adapts to your patterns
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   FlatList,
@@ -682,7 +682,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
             <ShimmerText 
               style={{
                 ...styles.greetingText,
-                color: theme === 'dark' ? colors.text : '#5A5A5A',
+                color: theme === 'dark' ? '#4d4d4dff' : '#8a8a8a',
               }}
               intensity="subtle"
               duration={3000}
@@ -694,6 +694,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
             </ShimmerText>
           </Animated.View>
         )}
+
       
       <View style={styles.chatArea}>
         {/* Web Search Indicator */}

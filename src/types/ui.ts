@@ -27,9 +27,9 @@ export type IconName = string; // This would be expanded based on actual icon li
 
 // Animation Types
 export interface ModalAnimationRefs {
-  fadeAnim: any; // Animated.Value
-  scaleAnim: any; // Animated.Value
-  slideAnim: any; // Animated.Value
+  fadeAnim: object; // Animated.Value
+  scaleAnim: object; // Animated.Value
+  slideAnim: object; // Animated.Value
 }
 
 // Hook Types
@@ -39,7 +39,7 @@ export interface UseKeyboardAnimationOptions {
 }
 
 export interface UseKeyboardAnimationReturn {
-  keyboardHeight: any; // Animated.Value
+  keyboardHeight: object; // Animated.Value
   keyboardVisible: boolean;
 }
 

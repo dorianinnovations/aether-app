@@ -6,7 +6,7 @@ import { FlatList, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 import { ChatAPI, ConversationAPI } from '../services/api';
-import { Message, MessageAttachment } from '../types';
+import { Message, MessageAttachment, Conversation } from '../types';
 
 interface UseMessagesReturn {
   messages: Message[];
@@ -15,7 +15,7 @@ interface UseMessagesReturn {
   handleSend: (inputText: string, attachments?: MessageAttachment[]) => Promise<void>;
   handleMessagePress: (message: Message) => Promise<void>;
   handleMessageLongPress: (message: Message) => void;
-  handleConversationSelect: (conversation: any) => Promise<void>;
+  handleConversationSelect: (conversation: Conversation) => Promise<void>;
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   flatListRef: React.RefObject<FlatList | null>;
 }
@@ -69,7 +69,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
           const conversation = await ConversationAPI.getConversation(conversationId, 500);
           
           if (conversation.messages && Array.isArray(conversation.messages)) {
-            const convertedMessages: Message[] = conversation.messages.map((msg: any, index: number) => ({
+            const convertedMessages: Message[] = conversation.messages.map((msg: { id: string; sender: string; message: string; timestamp: string; metadata?: unknown; attachments?: unknown }, index: number) => ({
               id: msg._id || `${conversationId}-${index}`,
               sender: msg.role === 'user' ? 'user' : 'aether',
               message: msg.content,
@@ -165,7 +165,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
       // Start streaming with word animation
       let accumulatedText = '';
       let wordCount = 0;
-      let messageMetadata: any = undefined;
+      let messageMetadata: { toolResults?: unknown[]; toolUsed?: string; thinking?: string } | undefined = undefined;
       
       for await (const chunk of ChatAPI.streamSocialChat(apiPrompt, attachments)) {
         // Check if chunk is metadata object
@@ -223,7 +223,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
                   ...messageMetadata,
                   // Convert tool results format if needed
                   toolCalls: messageMetadata.toolResults ? 
-                    messageMetadata.toolResults.map((toolResult: any, index: number) => ({
+                    messageMetadata.toolResults.map((toolResult: { name: string; parameters: unknown; result: unknown }, index: number) => ({
                       id: `tool-${index}-${Date.now()}`,
                       name: toolResult.tool,
                       parameters: { query: toolResult.query },
@@ -260,7 +260,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }, refinedHapticDelay);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Chat Error:', error);
       
       const errorMessage: Message = {
@@ -320,7 +320,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
   };
 
   // Handle conversation selection
-  const handleConversationSelect = async (conversation: any) => {
+  const handleConversationSelect = async (conversation: Conversation) => {
     // Check if we have a valid conversation ID first - try multiple potential fields
     const conversationId = conversation._id || conversation.id || conversation.conversationId || conversation.objectId;
     
@@ -365,7 +365,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
       }
       
       // Convert server messages to app format
-      const convertedMessages: Message[] = fullConversation.messages.map((msg: any, index: number) => ({
+      const convertedMessages: Message[] = fullConversation.messages.map((msg: { id: string; sender: string; message: string; timestamp: string; metadata?: unknown; attachments?: unknown }, index: number) => ({
         id: msg._id || `${conversationId}-${index}`,
         sender: msg.role === 'user' ? 'user' : 'aether',
         message: msg.content,
@@ -382,7 +382,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         onHideGreeting();
       }
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to load conversation:', error);
       
       let errorTitle = 'Error Loading Conversation';

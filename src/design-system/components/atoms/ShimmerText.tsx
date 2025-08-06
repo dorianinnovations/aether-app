@@ -5,6 +5,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { Animated, Text, TextStyle } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../../contexts/ThemeContext';
 
 interface ShimmerTextProps {
@@ -17,7 +18,8 @@ interface ShimmerTextProps {
   customShimmerColor?: string;
   waveWidth?: 'narrow' | 'normal' | 'wide';
   colorMode?: 'static' | 'pastel-cycle';
-  animationMode?: 'loop' | 'greeting-sequence';
+  animationMode?: 'loop' | 'greeting-sequence' | 'greeting-once';
+  onAnimationComplete?: () => void;
 }
 
 export const ShimmerText: React.FC<ShimmerTextProps> = ({
@@ -30,7 +32,8 @@ export const ShimmerText: React.FC<ShimmerTextProps> = ({
   _customShimmerColor,
   waveWidth = 'normal',
   _colorMode = 'static',
-  animationMode = 'loop'
+  animationMode = 'loop',
+  onAnimationComplete
 }) => {
   const { theme } = useTheme();
   const animatedValue = useRef(new Animated.Value(0)).current;
@@ -66,8 +69,16 @@ export const ShimmerText: React.FC<ShimmerTextProps> = ({
 
     const animate = () => {
       if (animationMode === 'greeting-sequence') {
-        // Custom greeting sequence: 2.49s forward (-15% speed, stops at 1.0) → 0.1s pause → 0.45s reverse (1.1x faster) → 16.96s pause (total 20s)
-        const runGreetingSequence = () => {
+        // Custom greeting sequence: run once, then check if it should repeat
+        const runGreetingSequence = async () => {
+          // Check if shimmer has already run
+          const hasRun = await AsyncStorage.getItem('@greeting_shimmer_has_run');
+          
+          if (hasRun === 'true') {
+            // Don't animate, just stay static
+            return;
+          }
+          
           animatedValue.setValue(0);
           
           // Forward animation (2.49s) - stops at 1.0 when shimmer finishes crossing text
@@ -83,17 +94,40 @@ export const ShimmerText: React.FC<ShimmerTextProps> = ({
                 toValue: 0,
                 duration: 454,
                 useNativeDriver: false,
-              }).start(() => {
-                // 16.96s pause before repeating (total cycle = 20s)
-                setTimeout(() => {
-                  runGreetingSequence();
-                }, 16956);
+              }).start(async () => {
+                // Mark as run and don't repeat
+                await AsyncStorage.setItem('@greeting_shimmer_has_run', 'true');
               });
             }, 100);
           });
         };
         
         runGreetingSequence();
+      } else if (animationMode === 'greeting-once') {
+        // One-time greeting sequence: same as greeting-sequence but without repeating
+        animatedValue.setValue(0);
+        
+        // Forward animation (2.49s) - stops at 1.0 when shimmer finishes crossing text
+        Animated.timing(animatedValue, {
+          toValue: 1.0,
+          duration: 2490,
+          useNativeDriver: false,
+        }).start(() => {
+          // 0.1s pause, then reverse
+          setTimeout(() => {
+            // Reverse animation (0.45s) - 1.1x faster than original 0.5s
+            Animated.timing(animatedValue, {
+              toValue: 0,
+              duration: 454,
+              useNativeDriver: false,
+            }).start(() => {
+              // Animation complete - no repeat
+              if (onAnimationComplete) {
+                onAnimationComplete();
+              }
+            });
+          }, 100);
+        });
       } else {
         // Default loop animation
         animatedValue.setValue(0);
@@ -117,7 +151,7 @@ export const ShimmerText: React.FC<ShimmerTextProps> = ({
       if (timeoutId) clearTimeout(timeoutId);
       if (animationRef) animationRef.stop();
     };
-  }, [animatedValue, enabled, delay, animationMode]);
+  }, [animatedValue, enabled, delay, animationMode, onAnimationComplete]);
 
   if (!enabled) {
     return <Text style={style}>{children}</Text>;

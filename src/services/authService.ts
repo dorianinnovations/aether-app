@@ -135,7 +135,7 @@ class AuthenticationService {
       
       throw new Error('Signup failed: Invalid response format');
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = error.message || 'Signup failed';
       this.setState({
         isAuthenticated: false,
@@ -185,7 +185,7 @@ class AuthenticationService {
       
       throw new Error('Login failed: Invalid response format');
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = error.message || 'Login failed';
       this.setState({
         isAuthenticated: false,
@@ -266,7 +266,7 @@ class AuthenticationService {
     try {
       const response = await AuthAPI.checkUsernameAvailability(username);
       return response;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         status: 'error',
@@ -287,7 +287,7 @@ class AuthenticationService {
     try {
       const response = await AuthAPI.connectSpotify();
       return response;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         status: 'error',
@@ -304,7 +304,7 @@ class AuthenticationService {
     try {
       const response = await AuthAPI.disconnectSpotify();
       return response;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         status: 'error',

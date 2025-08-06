@@ -2,6 +2,7 @@
  * Custom hook for managing dynamic greeting state and logic
  */
 import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TokenManager } from '../services/api';
 
 interface UseGreetingReturn {
@@ -9,12 +10,18 @@ interface UseGreetingReturn {
   greetingText: string;
   showGreeting: boolean;
   setShowGreeting: (show: boolean) => void;
+  hasShimmerRun: boolean;
+  markShimmerAsRun: () => Promise<void>;
+  resetShimmerState: () => Promise<void>;
 }
+
+const SHIMMER_RUN_KEY = '@greeting_shimmer_has_run';
 
 export const useGreeting = (): UseGreetingReturn => {
   const [userName, setUserName] = useState<string>('');
   const [greetingText, setGreetingText] = useState<string>('');
   const [showGreeting, setShowGreeting] = useState<boolean>(true);
+  const [hasShimmerRun, setHasShimmerRun] = useState<boolean>(false);
 
   // Check if a greeting works well with a name appended
   const isNameFriendly = (greeting: string): boolean => {
@@ -117,9 +124,42 @@ export const useGreeting = (): UseGreetingReturn => {
     }
   };
 
+  // Function to mark shimmer as run
+  const markShimmerAsRun = async () => {
+    try {
+      await AsyncStorage.setItem(SHIMMER_RUN_KEY, 'true');
+      setHasShimmerRun(true);
+    } catch (error) {
+      console.error('Error saving shimmer run state:', error);
+    }
+  };
+
+  // Function to reset shimmer state (for testing)
+  const resetShimmerState = async () => {
+    try {
+      await AsyncStorage.removeItem(SHIMMER_RUN_KEY);
+      setHasShimmerRun(false);
+    } catch (error) {
+      console.error('Error resetting shimmer state:', error);
+    }
+  };
+
+  // Check if shimmer has already run
+  const checkShimmerRunState = async () => {
+    try {
+      const hasRun = await AsyncStorage.getItem(SHIMMER_RUN_KEY);
+      setHasShimmerRun(hasRun === 'true');
+    } catch (error) {
+      console.error('Error checking shimmer run state:', error);
+      setHasShimmerRun(false);
+    }
+  };
+
   // Initialize dynamic greeting
   useEffect(() => {
     const initializeGreeting = async () => {
+      // Check shimmer run state first
+      await checkShimmerRunState();
       try {
         const userData = await TokenManager.getUserData();
         
@@ -176,5 +216,8 @@ export const useGreeting = (): UseGreetingReturn => {
     greetingText,
     showGreeting,
     setShowGreeting,
+    hasShimmerRun,
+    markShimmerAsRun,
+    resetShimmerState,
   };
 };

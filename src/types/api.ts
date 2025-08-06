@@ -19,7 +19,7 @@ export interface StandardAPIResponse<T = any> {
   error?: {
     code: string;
     message: string;
-    details?: any;
+    details?: Record<string, unknown>;
     statusCode?: number;
   };
   timestamp?: string;
@@ -36,7 +36,7 @@ export interface APIError {
     code: string;
     message: string;
     statusCode: number;
-    details?: any;
+    details?: Record<string, unknown>;
   };
   timestamp: string;
   requestId?: string;
@@ -93,7 +93,7 @@ export interface ChatResponse extends StandardAPIResponse<{
     query?: string;
     type?: string;
     success: boolean;
-    data?: any;
+    data?: unknown;
     tier?: string;
     processingTime?: number;
   }>;
@@ -106,7 +106,7 @@ export interface ChatResponse extends StandardAPIResponse<{
   // Legacy support properties for backward compatibility
   content?: string; // Alternative property name for response text
   response?: string; // Direct response property
-  metadata?: any; // Metadata property for additional response data
+  metadata?: Record<string, unknown>; // Metadata property for additional response data
 }
 
 export interface Message {

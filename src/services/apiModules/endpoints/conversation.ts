@@ -59,7 +59,7 @@ export const ConversationAPI = {
     return response.data;
   },
 
-  async syncConversations(conversations?: any[], lastSyncTime?: string): Promise<any> {
+  async syncConversations(conversations?: unknown[], lastSyncTime?: string): Promise<unknown> {
     const response = await api.post('/conversation/conversations/sync', { 
       conversations,
       lastSyncTime 
@@ -72,7 +72,7 @@ export const ConversationAPI = {
     return response.data;
   },
 
-  async addMessageToConversation(conversationId: string, message: any): Promise<any> {
+  async addMessageToConversation(conversationId: string, message: Record<string, unknown>): Promise<unknown> {
     const response = await api.post(`/conversation/conversations/${conversationId}/messages`, message);
     return response.data;
   },
@@ -101,7 +101,7 @@ export const ConversationAPI = {
       console.log('DEBUG: Response status:', response.status);
       console.log('DEBUG: Response headers:', response.headers);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.log('DEBUG: API call failed:', error);
       console.log('DEBUG: Error response:', error.response?.data);
       console.log('DEBUG: Error status:', error.response?.status);
@@ -120,7 +120,7 @@ export const ConversationAPI = {
       // Then try to get conversations again
       const conversations = await this.debugConversations();
       return conversations;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.log('DEBUG: Failed to create test conversation:', error);
       throw error;
     }

@@ -53,7 +53,7 @@ const Input: React.FC<InputProps> = ({
   const themeColors = getThemeColors(theme);
 
   // Focus animations
-  const handleFocus = (e: any) => {
+  const handleFocus = (e: { nativeEvent: { target: number } }) => {
     setIsFocused(true);
     
     if (hasAnimation) {
@@ -81,7 +81,7 @@ const Input: React.FC<InputProps> = ({
     onFocus?.(e);
   };
 
-  const handleBlur = (e: any) => {
+  const handleBlur = (e: { nativeEvent: { target: number } }) => {
     setIsFocused(false);
     
     if (hasAnimation) {

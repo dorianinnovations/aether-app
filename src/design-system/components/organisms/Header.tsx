@@ -46,7 +46,7 @@ interface HeaderProps {
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
   searchPlaceholder?: string;
-  style?: any;
+  style?: object;
   // Scroll-responsive props
   scrollY?: Animated.Value;
   isScrolled?: boolean;
@@ -88,7 +88,7 @@ export const Header: React.FC<HeaderProps> = ({
   _isScrolled = false,
 }) => {
   const themeColors = getThemeColors(theme as 'light' | 'dark');
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation();
   const [backPressed] = useState(false);
   // Removed unused _menuPressed
   const [conversationsPressed] = useState(false);

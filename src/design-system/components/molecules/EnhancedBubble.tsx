@@ -136,7 +136,7 @@ const StreamContent: React.FC<{
           <Text style={[styles.searchResultsTitle, { color: theme === 'dark' ? '#a8d8ff' : '#8fc7ffff' }]}>
              Search Results for "{metadata.query}"
           </Text>
-          {metadata.sources.map((source: any, index: number) => (
+          {metadata.sources.map((source: { title: string; url: string; domain: string }, index: number) => (
             <View key={index} style={styles.sourceCard}>
               <Text style={[styles.sourceTitle, { color: theme === 'dark' ? '#ffffff' : '#333333' }]}>
                 {source.title}
@@ -170,7 +170,7 @@ const StreamContent: React.FC<{
                       <Text style={[styles.searchQuery, { color: theme === 'dark' ? '#515151ff' : '#333333' }]}>
                         Query: "{toolCall.result.data.structure.query}"
                       </Text>
-                      {toolCall.result.data.structure.results.map((result: any, resultIndex: number) => (
+                      {toolCall.result.data.structure.results.map((result: { title: string; url: string; snippet: string }, resultIndex: number) => (
                         <View key={resultIndex} style={[
                           styles.searchResultItem,
                           {
@@ -370,7 +370,7 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
   }, []);
 
   // Long press handler for both bot and user messages
-  const handleLongPress = useCallback((event: any) => {
+  const handleLongPress = useCallback((event: { nativeEvent: { locationX: number; locationY: number } }) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const { pageX, pageY } = event.nativeEvent;
     

@@ -7,12 +7,12 @@ import { api } from '../core/client';
 import { TokenManager } from '../utils/storage';
 
 export const UserAPI = {
-  async getProfile(): Promise<any> {
+  async getProfile(): Promise<unknown> {
     try {
       // Use the correct profile endpoint
       const response = await api.get('/user/profile');
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.status === 404) {
         // Fallback: try to get basic user info from auth endpoint or token data
         const userData = await TokenManager.getUserData();
@@ -32,11 +32,11 @@ export const UserAPI = {
     }
   },
 
-  async updateProfile(profileData: any): Promise<any> {
+  async updateProfile(profileData: Record<string, unknown>): Promise<unknown> {
     try {
       const response = await api.put('/user/profile', profileData);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.status === 404) {
         // Profile update endpoint not available yet
         // For now, just update local storage and return success
@@ -75,7 +75,7 @@ export const UserAPI = {
         },
       });
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.status === 404) {
         throw new Error('Profile picture upload endpoint not available yet on server');
       }
@@ -87,7 +87,7 @@ export const UserAPI = {
     try {
       const response = await api.delete('/user/profile/picture');
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.status === 404) {
         throw new Error('Profile picture delete endpoint not available yet on server');
       }
@@ -114,7 +114,7 @@ export const UserAPI = {
         },
       });
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.status === 404) {
         throw new Error('Banner image upload endpoint not available yet on server');
       }
@@ -126,7 +126,7 @@ export const UserAPI = {
     try {
       const response = await api.delete('/user/profile/banner');
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.status === 404) {
         throw new Error('Banner image delete endpoint not available yet on server');
       }
