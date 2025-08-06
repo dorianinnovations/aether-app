@@ -82,18 +82,15 @@ export const ProfileScreen: React.FC = () => {
   // Manage SignOutModal lifecycle with shouldRender pattern
   useEffect(() => {
     if (showSignOutModal) {
-      // Defer to avoid useInsertionEffect warning
-      requestAnimationFrame(() => {
-        setShouldRenderSignOutModal(true);
-      });
-    } else {
-      // Defer to avoid useInsertionEffect warning and delay unmounting
+      setShouldRenderSignOutModal(true);
+    } else if (shouldRenderSignOutModal) {
+      // Only set timeout if modal was actually rendered
       const timer = setTimeout(() => {
         setShouldRenderSignOutModal(false);
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [showSignOutModal]);
+  }, [showSignOutModal, shouldRenderSignOutModal]);
 
   useEffect(() => {
     const initializeProfile = async () => {
