@@ -24,6 +24,25 @@ import * as Haptics from 'expo-haptics';
 
 // Types
 import type { SocialCard, HangoutRequest } from '../../types/social';
+import { PostsAPI, type Post } from '../../services/postsApi';
+import { SocialProxyAPI } from '../../services/apiModules/endpoints/social';
+
+// Card Layout Types
+type CardLayout = 'classic' | 'modern' | 'minimal' | 'magazine' | 'artistic';
+type ProfilePlacement = 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-right' | 'inline';
+type TextStyle = 'elegant' | 'casual' | 'bold' | 'compact';
+
+interface CardPreferences {
+  layout: CardLayout;
+  profilePlacement: ProfilePlacement;
+  textStyle: TextStyle;
+  accentColor: string;
+  showEngagement: boolean;
+  showTimestamp: boolean;
+  showLocation: boolean;
+  cardCornerRadius: number;
+  textSize: 'small' | 'medium' | 'large';
+}
 
 // Design System
 import { PageBackground } from '../../design-system/components/atoms/PageBackground';
@@ -65,6 +84,8 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
   const [statusModalVisible, setStatusModalVisible] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [postsLoading, setPostsLoading] = useState(false);
 
   // Animation refs for status modal
   const modalOpacity = useRef(new Animated.Value(0)).current;
@@ -151,18 +172,74 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
     
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      await updateUserStatus(newStatus);
+      
+      // Create post using the server API
+      const response = await SocialProxyAPI.createPost(newStatus, 'friends');
+      console.log('Post created successfully:', response);
+      
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setStatusModalVisible(false);
       setNewStatus('');
-      // Refresh cards to show updated status
+      
+      // Refresh feed to show new post
+      await loadPosts();
       refreshCards();
+      
     } catch (error) {
-      console.error('Error updating status:', error);
+      console.error('Error creating post:', error);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', 'Failed to update status');
+      Alert.alert('Error', 'Failed to create post');
     }
   };
+
+  const loadPosts = useCallback(async () => {
+    try {
+      setPostsLoading(true);
+      console.log('Loading posts from timeline...');
+      
+      // Load real timeline data from server
+      const timelineResponse = await SocialProxyAPI.getTimeline();
+      console.log('Timeline data received:', timelineResponse);
+      
+      if (timelineResponse.success && timelineResponse.timeline) {
+        // Transform server activities to Post format for UI compatibility
+        const transformedPosts: Post[] = timelineResponse.timeline
+          .filter((activity: any) => activity.type === 'post')
+          .map((activity: any) => ({
+            id: activity._id,
+            title: activity.content?.text || '',
+            content: '',
+            author: activity.user?.username || 'Unknown',
+            time: activity.createdAt,
+            community: 'feed',
+            likesCount: activity.reactions?.length || 0,
+            commentsCount: activity.comments?.length || 0,
+            sharesCount: 0, // Not implemented in server yet
+            userHasLiked: false, // TODO: Check if current user has reacted
+            badge: 'post',
+            engagement: activity.reactions?.length > 5 ? 'high' : activity.reactions?.length > 2 ? 'medium' : 'low',
+            comments: activity.comments || []
+          }));
+        
+        setPosts(transformedPosts);
+        console.log('Posts loaded from timeline:', transformedPosts.length);
+      } else {
+        console.warn('No timeline data available, using empty array');
+        setPosts([]);
+      }
+    } catch (error) {
+      console.error('Error loading posts from timeline:', error);
+      // Fall back to empty array instead of mock data
+      setPosts([]);
+    } finally {
+      setPostsLoading(false);
+    }
+  }, []);
+
+  // Load posts on mount
+  useEffect(() => {
+    loadPosts();
+  }, [loadPosts]);
 
   const handleModalClose = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -173,6 +250,56 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     // TODO: Implement tool functionality
     console.log(`${tool} tool pressed`);
+  };
+
+  const handlePostReaction = async (postId: string, reactionType: 'like' | 'love' | 'laugh' | 'curious' | 'relate') => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      console.log(`Reacting to post ${postId} with ${reactionType}`);
+      
+      await SocialProxyAPI.reactToActivity(postId, reactionType);
+      
+      // Update local post state to reflect the reaction
+      setPosts(prevPosts => prevPosts.map(post => {
+        if (post.id === postId) {
+          const newLikesCount = post.userHasLiked ? post.likesCount - 1 : post.likesCount + 1;
+          return {
+            ...post,
+            userHasLiked: !post.userHasLiked,
+            likesCount: newLikesCount,
+            engagement: newLikesCount > 5 ? 'high' : newLikesCount > 2 ? 'medium' : 'low'
+          };
+        }
+        return post;
+      }));
+
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error('Error reacting to post:', error);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+  };
+
+  const handlePostComment = async (postId: string) => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      console.log(`Opening comments for post ${postId}`);
+      // TODO: Implement comment modal or navigate to comments screen
+      Alert.alert('Comments', 'Comment functionality coming soon!');
+    } catch (error) {
+      console.error('Error opening comments:', error);
+    }
+  };
+
+  const handlePostShare = async (postId: string) => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      console.log(`Sharing post ${postId}`);
+      // TODO: Implement sharing functionality
+      Alert.alert('Share', 'Share functionality coming soon!');
+    } catch (error) {
+      console.error('Error sharing post:', error);
+    }
   };
 
   const handleScroll = (event: any) => {
@@ -192,17 +319,456 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
     />
   ), [handleCardPress, handleHangoutRequest]);
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <Feather name="users" size={64} color={themeColors.textMuted} />
-      <Text style={[styles.emptyTitle, { color: themeColors.text }]}>
-        No Feed Yet
-      </Text>
-      <Text style={[styles.emptySubtitle, { color: themeColors.textMuted }]}>
-        Add friends and family to see their living profiles here
-      </Text>
-    </View>
-  );
+  // Generate relationship-focused profile data with preferences
+  const getProfileMockup = useCallback((author: string) => {
+    // Special case for current user
+    if (author === 'You') {
+      return { 
+        name: 'You', 
+        avatar: '⭐', 
+        relationship: 'You',
+        relationshipDetail: 'Your profile',
+        location: 'Home',
+        color: '#9F7AEA',
+        gradient: ['#9F7AEA', '#667EEA'],
+        preferences: {
+          layout: 'modern' as CardLayout,
+          profilePlacement: 'top-left' as ProfilePlacement,
+          textStyle: 'elegant' as TextStyle,
+          accentColor: '#9F7AEA',
+          showEngagement: true,
+          showTimestamp: true,
+          showLocation: true,
+          cardCornerRadius: 20,
+          textSize: 'medium' as const
+        }
+      };
+    }
+    
+    const profiles = [
+      { 
+        name: 'Emma', 
+        avatar: '👩‍🎓', 
+        relationship: 'Family',
+        relationshipDetail: 'Daughter • College Sophomore',
+        location: 'University of Washington',
+        color: '#FF6B6B',
+        gradient: ['#FF6B6B', '#FF8E53'],
+        preferences: {
+          layout: 'artistic' as CardLayout,
+          profilePlacement: 'bottom-right' as ProfilePlacement,
+          textStyle: 'casual' as TextStyle,
+          accentColor: '#FF6B6B',
+          showEngagement: true,
+          showTimestamp: true,
+          showLocation: true,
+          cardCornerRadius: 24,
+          textSize: 'medium' as const
+        }
+      },
+      { 
+        name: 'Michael', 
+        avatar: '👨‍💼', 
+        relationship: 'Family',
+        relationshipDetail: 'Son • 42 years old',
+        location: 'Denver, CO',
+        color: '#4ECDC4',
+        gradient: ['#4ECDC4', '#44A08D'],
+        preferences: {
+          layout: 'classic' as CardLayout,
+          profilePlacement: 'top-center' as ProfilePlacement,
+          textStyle: 'bold' as TextStyle,
+          accentColor: '#4ECDC4',
+          showEngagement: true,
+          showTimestamp: true,
+          showLocation: true,
+          cardCornerRadius: 16,
+          textSize: 'large' as const
+        }
+      },
+      { 
+        name: 'Sarah', 
+        avatar: '👩‍⚕️', 
+        relationship: 'Friend',
+        relationshipDetail: 'College roommate',
+        location: 'Seattle, WA',
+        color: '#45B7D1',
+        gradient: ['#45B7D1', '#2196F3'],
+        preferences: {
+          layout: 'minimal' as CardLayout,
+          profilePlacement: 'inline' as ProfilePlacement,
+          textStyle: 'compact' as TextStyle,
+          accentColor: '#45B7D1',
+          showEngagement: false,
+          showTimestamp: false,
+          showLocation: true,
+          cardCornerRadius: 12,
+          textSize: 'small' as const
+        }
+      },
+      { 
+        name: 'Jake', 
+        avatar: '👨‍🎮', 
+        relationship: 'Friend',
+        relationshipDetail: 'Gaming buddy from Discord',
+        location: 'Online',
+        color: '#96CEB4',
+        gradient: ['#96CEB4', '#FFECD2'],
+        preferences: {
+          layout: 'magazine' as CardLayout,
+          profilePlacement: 'top-right' as ProfilePlacement,
+          textStyle: 'casual' as TextStyle,
+          accentColor: '#96CEB4',
+          showEngagement: true,
+          showTimestamp: true,
+          showLocation: false,
+          cardCornerRadius: 28,
+          textSize: 'medium' as const
+        }
+      },
+      { 
+        name: 'Lisa', 
+        avatar: '👩‍🏫', 
+        relationship: 'Acquaintance',
+        relationshipDetail: 'Met at coffee shop',
+        location: 'Portland, OR',
+        color: '#FFEAA7',
+        gradient: ['#FFEAA7', '#FEBF63'],
+        preferences: {
+          layout: 'modern' as CardLayout,
+          profilePlacement: 'bottom-left' as ProfilePlacement,
+          textStyle: 'elegant' as TextStyle,
+          accentColor: '#FFEAA7',
+          showEngagement: true,
+          showTimestamp: true,
+          showLocation: true,
+          cardCornerRadius: 20,
+          textSize: 'large' as const
+        }
+      },
+    ];
+    
+    const hash = author.split('').reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0);
+    return profiles[Math.abs(hash) % profiles.length];
+  }, []);
+
+  const renderPost = useCallback(({ item }: { item: Post }) => {
+    const profile = getProfileMockup(item.author);
+    const { preferences } = profile;
+    
+    // Get dynamic text sizes based on preferences
+    const getTextSize = (base: number) => {
+      switch (preferences.textSize) {
+        case 'small': return base - 2;
+        case 'large': return base + 2;
+        default: return base;
+      }
+    };
+    
+    return (
+      <View style={[styles.premiumCard, { 
+        backgroundColor: themeColors.surface,
+        borderColor: themeColors.borders.default,
+        borderRadius: preferences.cardCornerRadius,
+        marginVertical: preferences.layout === 'minimal' ? spacing[2] : spacing[4],
+      }]}>
+        {/* Header with profile */}
+        <View style={[styles.premiumHeader, {
+          backgroundColor: preferences.layout === 'magazine' ? `${profile.color}08` : 'transparent',
+        }]}>
+          <View style={[styles.profileSection, {
+            backgroundColor: `${profile.color}08`,
+            borderColor: `${profile.color}20`,
+            flexDirection: preferences.profilePlacement === 'inline' ? 'row' : 'column',
+            alignItems: preferences.profilePlacement === 'top-center' ? 'center' : 'flex-start',
+          }]}>
+            <View style={[styles.profileAvatar, {
+              backgroundColor: `${profile.color}15`,
+              borderColor: `${profile.color}30`,
+              width: preferences.layout === 'minimal' ? 50 : 60,
+              height: preferences.layout === 'minimal' ? 50 : 60,
+              borderRadius: preferences.layout === 'artistic' ? 30 : 18,
+              marginRight: preferences.profilePlacement === 'inline' ? spacing[3] : 0,
+              marginBottom: preferences.profilePlacement === 'inline' ? 0 : spacing[2],
+            }]}>
+              <Text style={[styles.profileEmoji, {
+                fontSize: preferences.layout === 'minimal' ? 24 : preferences.layout === 'artistic' ? 32 : 28
+              }]}>{profile.avatar}</Text>
+            </View>
+            <View style={{
+              flex: preferences.profilePlacement === 'inline' ? 1 : 0,
+              alignItems: preferences.profilePlacement === 'top-center' ? 'center' : preferences.profilePlacement === 'top-right' ? 'flex-end' : 'flex-start',
+            }}>
+              <Text style={[{
+                fontSize: getTextSize(18),
+                fontFamily: preferences.textStyle === 'bold' ? 'Nunito-Bold' : preferences.textStyle === 'elegant' ? 'Nunito-Light' : 'Nunito-SemiBold',
+                fontWeight: preferences.textStyle === 'bold' ? '700' : preferences.textStyle === 'elegant' ? '300' : '600',
+                color: themeColors.text,
+                marginBottom: spacing[1],
+              }]}>
+                {profile.name}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing[1] }}>
+                <View style={[{
+                  backgroundColor: profile.color,
+                  paddingHorizontal: spacing[2],
+                  paddingVertical: 2,
+                  borderRadius: 8,
+                  marginRight: spacing[2],
+                }]}>
+                  <Text style={[{
+                    fontSize: getTextSize(10),
+                    fontFamily: 'Nunito-SemiBold',
+                    fontWeight: '600',
+                    color: 'white',
+                    textTransform: 'uppercase',
+                  }]}>
+                    {profile.relationship}
+                  </Text>
+                </View>
+                <Text style={[{
+                  fontSize: getTextSize(12),
+                  fontFamily: 'Nunito-Regular',
+                  color: themeColors.textMuted,
+                }]}>
+                  {profile.relationshipDetail}
+                </Text>
+              </View>
+              {preferences.showLocation && (
+                <Text style={[{
+                  fontSize: getTextSize(12),
+                  fontFamily: 'Nunito-Regular',
+                  color: themeColors.textMuted,
+                }]}>
+                  {profile.location}
+                </Text>
+              )}
+            </View>
+          </View>
+          {preferences.showTimestamp && (
+            <View style={styles.timestampContainer}>
+              <Text style={[styles.timestamp, { color: themeColors.textMuted }]}>
+                {new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Content with enhanced expressiveness */}
+        <View style={[styles.premiumContent, {
+          paddingHorizontal: preferences.layout === 'minimal' ? spacing[4] : spacing[6],
+          paddingBottom: preferences.layout === 'minimal' ? spacing[4] : spacing[6],
+        }]}>
+          <Text style={[{
+            fontSize: getTextSize(16),
+            lineHeight: getTextSize(preferences.textStyle === 'compact' ? 20 : preferences.textStyle === 'elegant' ? 26 : 24),
+            fontFamily: preferences.textStyle === 'bold' ? 'Nunito-SemiBold' : 'Nunito-Regular',
+            fontWeight: preferences.textStyle === 'bold' ? '600' : '400',
+            color: themeColors.text,
+          }]}>
+            {item.title}
+          </Text>
+          
+          {/* Add mood indicator based on content */}
+          {(item.title.includes('🎉') || item.title.includes('✨') || item.title.includes('🌟')) && (
+            <View style={[styles.moodIndicator, { backgroundColor: `${profile.color}15` }]}>
+              <Text style={[styles.moodText, { color: profile.color }]}>Celebrating</Text>
+            </View>
+          )}
+          {(item.title.includes('💪') || item.title.includes('🏆') || item.title.includes('CRUSHED')) && (
+            <View style={[styles.moodIndicator, { backgroundColor: '#10B98115' }]}>
+              <Text style={[styles.moodText, { color: '#10B981' }]}>Achievement</Text>
+            </View>
+          )}
+          {(item.title.includes('🎨') || item.title.includes('🎭') || item.title.includes('INCREDIBLE')) && (
+            <View style={[styles.moodIndicator, { backgroundColor: '#8B5CF615' }]}>
+              <Text style={[styles.moodText, { color: '#8B5CF6' }]}>Creative</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Footer */}
+        {preferences.showEngagement && (
+          <View style={[styles.premiumFooter, { 
+            borderTopColor: themeColors.borders.default,
+            backgroundColor: `${themeColors.surface}F8`,
+            borderBottomLeftRadius: preferences.cardCornerRadius,
+            borderBottomRightRadius: preferences.cardCornerRadius,
+          }]}>
+            <View style={styles.engagementStats}>
+              <TouchableOpacity 
+                style={[styles.engagementButton, {
+                  backgroundColor: item.userHasLiked ? '#FF6B6B15' : 'transparent'
+                }]}
+                onPress={() => handlePostReaction(item.id, 'like')}
+              >
+                <Feather 
+                  name={item.userHasLiked ? "heart" : "heart"}
+                  size={18} 
+                  color={item.userHasLiked ? "#FF6B6B" : themeColors.textMuted} 
+                />
+                <Text style={[styles.engagementText, { 
+                  color: item.userHasLiked ? "#FF6B6B" : themeColors.textMuted,
+                  fontWeight: item.userHasLiked ? '600' : '400'
+                }]}>
+                  {item.likesCount}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.engagementButton}
+                onPress={() => handlePostComment(item.id)}
+              >
+                <Feather name="message-circle" size={18} color={themeColors.textMuted} />
+                <Text style={[styles.engagementText, { color: themeColors.textMuted }]}>
+                  {item.commentsCount}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.engagementButton}
+                onPress={() => handlePostShare(item.id)}
+              >
+                <Feather name="share" size={18} color={themeColors.textMuted} />
+                <Text style={[styles.engagementText, { color: themeColors.textMuted }]}>
+                  {item.sharesCount}
+                </Text>
+              </TouchableOpacity>
+              
+              {/* Engagement level indicator */}
+              <View style={styles.engagementLevel}>
+                {item.engagement === 'high' && (
+                  <View style={[styles.engagementDot, { backgroundColor: '#10B981' }]} />
+                )}
+                {item.engagement === 'medium' && (
+                  <View style={[styles.engagementDot, { backgroundColor: '#F59E0B' }]} />
+                )}
+                {item.engagement === 'low' && (
+                  <View style={[styles.engagementDot, { backgroundColor: '#6B7280' }]} />
+                )}
+              </View>
+            </View>
+            <View style={[styles.priorityIndicator, { backgroundColor: profile.color }]} />
+          </View>
+        )}
+      </View>
+    );
+  }, [themeColors, getProfileMockup]);
+
+  // Helper functions for profile placement styles
+  const getProfileSectionStyle = (placement: ProfilePlacement, layout: CardLayout) => {
+    const baseStyle = {
+      borderRadius: 16,
+      padding: spacing[4],
+      borderWidth: 1,
+    };
+
+    switch (placement) {
+      case 'top-left':
+        return { ...baseStyle, margin: spacing[4], marginBottom: spacing[2] };
+      case 'top-center':
+        return { ...baseStyle, margin: spacing[4], marginBottom: spacing[2], alignItems: 'center' as const };
+      case 'top-right':
+        return { ...baseStyle, margin: spacing[4], marginBottom: spacing[2], alignItems: 'flex-end' as const };
+      case 'inline':
+        return { ...baseStyle, flexDirection: 'row' as const, margin: spacing[4], marginBottom: spacing[2] };
+      case 'bottom-left':
+        return { ...baseStyle, position: 'absolute' as const, bottom: spacing[4], left: spacing[4], zIndex: 2 };
+      case 'bottom-right':
+        return { ...baseStyle, position: 'absolute' as const, bottom: spacing[4], right: spacing[4], zIndex: 2 };
+      default:
+        return baseStyle;
+    }
+  };
+
+  const getProfileAvatarStyle = (placement: ProfilePlacement, layout: CardLayout) => {
+    const baseSize = layout === 'minimal' ? 50 : 60;
+    return {
+      width: baseSize,
+      height: baseSize,
+      borderRadius: layout === 'artistic' ? baseSize / 2 : 18,
+      justifyContent: 'center' as const,
+      alignItems: 'center' as const,
+      borderWidth: 2,
+      marginRight: placement === 'inline' ? spacing[3] : 0,
+      marginBottom: placement === 'inline' ? 0 : spacing[2],
+    };
+  };
+
+  const getProfileInfoStyle = (placement: ProfilePlacement, layout: CardLayout) => {
+    if (placement === 'inline') {
+      return { flex: 1 };
+    }
+    return { alignItems: placement.includes('center') ? 'center' as const : placement.includes('right') ? 'flex-end' as const : 'flex-start' as const };
+  };
+
+  const getProfileEmojiSize = (layout: CardLayout) => {
+    switch (layout) {
+      case 'minimal':
+        return { fontSize: 24 };
+      case 'artistic':
+        return { fontSize: 32 };
+      default:
+        return { fontSize: 28 };
+    }
+  };
+
+  // Combine and sort feed data
+  const combinedFeedData = React.useMemo(() => {
+    const feedItems: Array<{type: 'post' | 'social', data: Post | SocialCard, timestamp: Date}> = [];
+    
+    // Add posts
+    posts.forEach(post => {
+      feedItems.push({
+        type: 'post',
+        data: post,
+        timestamp: new Date(post.time)
+      });
+    });
+
+    // Add social cards
+    cards.forEach(card => {
+      feedItems.push({
+        type: 'social',
+        data: card,
+        timestamp: new Date(card.lastUpdated)
+      });
+    });
+
+    // Sort by timestamp (newest first)
+    const sortedItems = feedItems.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    
+    console.log('Combined feed data:', {
+      posts: posts.length,
+      cards: cards.length,
+      total: sortedItems.length,
+      items: sortedItems.map(item => `${item.type}: ${item.type === 'post' ? (item.data as Post).title : (item.data as SocialCard).name}`)
+    });
+    
+    return sortedItems;
+  }, [posts, cards]);
+
+  const renderFeedItem = useCallback(({ item }: { item: typeof combinedFeedData[0] }) => {
+    if (item.type === 'post') {
+      return renderPost({ item: item.data as Post });
+    } else {
+      return renderSocialCard({ item: item.data as SocialCard });
+    }
+  }, [renderPost, renderSocialCard]);
+
+
+  const renderEmptyState = () => {
+    console.log('Rendering empty state. Posts:', posts.length, 'Cards:', cards.length, 'Combined:', combinedFeedData.length);
+    return (
+      <View style={styles.emptyContainer}>
+        <Feather name="edit-3" size={64} color={themeColors.textMuted} />
+        <Text style={[styles.emptyTitle, { color: themeColors.text }]}>
+          Ready to Share?
+        </Text>
+        <Text style={[styles.emptySubtitle, { color: themeColors.textMuted }]}>
+          Tap the create button to share your first post with friends
+        </Text>
+      </View>
+    );
+  };
 
   const renderHangoutModal = () => (
     <Modal
@@ -421,6 +987,8 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
       <SafeAreaView style={styles.container}>
         <Header
           title="Aether"
+          showBackButton={true}
+          onBackPress={() => navigation.goBack()}
           showMenuButton={true}
           onMenuPress={toggleHeaderMenu}
           theme={theme}
@@ -454,9 +1022,9 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
             </View>
           ) : (
             <FlatList
-              data={cards}
-              renderItem={renderSocialCard}
-              keyExtractor={(item) => item.id}
+              data={combinedFeedData}
+              renderItem={renderFeedItem}
+              keyExtractor={(item) => `${item.type}-${item.type === 'post' ? (item.data as Post).id : (item.data as SocialCard).id}`}
               contentContainerStyle={styles.listContent}
               ListEmptyComponent={renderEmptyState}
               showsVerticalScrollIndicator={false}
@@ -464,8 +1032,11 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
               scrollEventThrottle={16}
               refreshControl={
                 <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={refreshCards}
+                  refreshing={refreshing || postsLoading}
+                  onRefresh={() => {
+                    refreshCards();
+                    loadPosts();
+                  }}
                   tintColor={themeColors.text}
                 />
               }
@@ -767,6 +1338,100 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito-SemiBold',
     fontWeight: '600',
     top: 25,
+  },
+  // Premium Card Layout
+  premiumCard: {
+    marginHorizontal: spacing[4],
+    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  premiumHeader: {
+    paddingHorizontal: spacing[5],
+    paddingTop: spacing[5],
+    paddingBottom: spacing[4],
+  },
+  profileSection: {
+    borderRadius: 16,
+    padding: spacing[4],
+    borderWidth: 1,
+    marginBottom: spacing[3],
+  },
+  profileEmoji: {
+    fontSize: 28,
+  },
+  timestampContainer: {
+    alignItems: 'flex-end',
+  },
+  timestamp: {
+    fontSize: 12,
+    fontFamily: 'Nunito-Regular',
+  },
+  premiumContent: {
+    paddingHorizontal: spacing[6],
+    paddingBottom: spacing[6],
+  },
+  premiumFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing[5],
+    paddingVertical: spacing[4],
+    borderTopWidth: 1,
+  },
+  engagementButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderRadius: 12,
+    backgroundColor: 'transparent',
+  },
+  // Mood and expressiveness indicators
+  moodIndicator: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[1],
+    borderRadius: 12,
+    marginTop: spacing[3],
+  },
+  moodText: {
+    fontSize: 12,
+    fontFamily: 'Nunito-SemiBold',
+    fontWeight: '600',
+  },
+  engagementLevel: {
+    marginLeft: spacing[2],
+  },
+  engagementDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  engagementStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2], // Tighter spacing for premium look
+  },
+  engagementStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+  },
+  engagementText: {
+    fontSize: 13, // Slightly larger
+    fontFamily: 'Nunito-SemiBold',
+    fontWeight: '600',
+  },
+  priorityIndicator: {
+    width: 5, // Slightly wider
+    height: 24, // Taller for premium feel
+    borderRadius: 3, // More rounded
   },
   // Floating Action Button
   fab: {

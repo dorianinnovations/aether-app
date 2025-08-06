@@ -76,5 +76,16 @@ export const SocialProxyAPI = {
       console.error('Failed to comment on activity:', error);
       throw error;
     }
+  },
+
+  // Create a new post
+  async createPost(text: string, visibility: 'public' | 'friends' | 'private' = 'friends'): Promise<any> {
+    try {
+      const response = await api.post('/social-proxy/posts', { text, visibility });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to create post:', error);
+      throw error;
+    }
   }
 };
