@@ -26,6 +26,9 @@ export { ThemeSelector } from './ThemeSelector';
 
 // Social components
 export { SocialCard } from './SocialCard';
+export { SpotifyIntegration } from './SpotifyIntegration';
+export { DynamicProfileDisplay } from './DynamicProfileDisplay';
+export { LiveSpotifyStatus } from './LiveSpotifyStatus';
 
 // Conversation components
 export { default as ConversationTabBar } from './ConversationTabBar';
