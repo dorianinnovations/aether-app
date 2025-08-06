@@ -187,9 +187,16 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
       const timelineResponse = await SocialProxyAPI.getTimeline();
       console.log('Timeline data received:', timelineResponse);
       
-      if (timelineResponse.success && timelineResponse.timeline) {
+      // Handle nested response structure (data.timeline vs timeline)
+      const timeline = timelineResponse.data?.timeline || timelineResponse.timeline;
+      const success = timelineResponse.data?.success || timelineResponse.success;
+      
+      if (success && timeline && Array.isArray(timeline)) {
+        console.log('Timeline activities found:', timeline.length);
+        console.log('Activity types:', timeline.map((a: any) => a.type));
+        
         // Transform server activities to Post format for UI compatibility
-        const transformedPosts: Post[] = timelineResponse.timeline
+        const transformedPosts: Post[] = timeline
           .filter((activity: any) => activity.type === 'post')
           .map((activity: any) => ({
             id: activity._id,
@@ -210,7 +217,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
         setPosts(transformedPosts);
         console.log('Posts loaded from timeline:', transformedPosts.length);
       } else {
-        console.warn('No timeline data available, using empty array');
+        console.warn('No timeline data available:', { success, timeline: !!timeline, isArray: Array.isArray(timeline) });
         setPosts([]);
       }
     } catch (error) {
