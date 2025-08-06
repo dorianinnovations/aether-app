@@ -312,7 +312,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
     />
   ), [handleCardPress, handleHangoutRequest]);
 
-  // Generate relationship-focused profile data with preferences
+  // Generate profile data with real usernames + consistent colors
   const getProfileMockup = useCallback((author: string) => {
     // Special case for current user
     if (author === 'You') {
@@ -337,112 +337,41 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
         }
       };
     }
-    
-    const profiles = [
-      { 
-        name: 'Emma', 
-        avatar: '👩‍🎓', 
-        relationship: 'Family',
-        relationshipDetail: 'Daughter • College Sophomore',
-        location: 'University of Washington',
-        color: '#FF6B6B',
-        gradient: ['#FF6B6B', '#FF8E53'],
-        preferences: {
-          layout: 'artistic' as CardLayout,
-          profilePlacement: 'bottom-right' as ProfilePlacement,
-          textStyle: 'casual' as TextStyle,
-          accentColor: '#FF6B6B',
-          showEngagement: true,
-          showTimestamp: true,
-          showLocation: true,
-          cardCornerRadius: 24,
-          textSize: 'medium' as const
-        }
-      },
-      { 
-        name: 'Michael', 
-        avatar: '👨‍💼', 
-        relationship: 'Family',
-        relationshipDetail: 'Son • 42 years old',
-        location: 'Denver, CO',
-        color: '#4ECDC4',
-        gradient: ['#4ECDC4', '#44A08D'],
-        preferences: {
-          layout: 'classic' as CardLayout,
-          profilePlacement: 'top-center' as ProfilePlacement,
-          textStyle: 'bold' as TextStyle,
-          accentColor: '#4ECDC4',
-          showEngagement: true,
-          showTimestamp: true,
-          showLocation: true,
-          cardCornerRadius: 16,
-          textSize: 'large' as const
-        }
-      },
-      { 
-        name: 'Sarah', 
-        avatar: '👩‍⚕️', 
-        relationship: 'Friend',
-        relationshipDetail: 'College roommate',
-        location: 'Seattle, WA',
-        color: '#45B7D1',
-        gradient: ['#45B7D1', '#2196F3'],
-        preferences: {
-          layout: 'minimal' as CardLayout,
-          profilePlacement: 'inline' as ProfilePlacement,
-          textStyle: 'compact' as TextStyle,
-          accentColor: '#45B7D1',
-          showEngagement: false,
-          showTimestamp: false,
-          showLocation: true,
-          cardCornerRadius: 12,
-          textSize: 'small' as const
-        }
-      },
-      { 
-        name: 'Jake', 
-        avatar: '👨‍🎮', 
-        relationship: 'Friend',
-        relationshipDetail: 'Gaming buddy from Discord',
-        location: 'Online',
-        color: '#96CEB4',
-        gradient: ['#96CEB4', '#FFECD2'],
-        preferences: {
-          layout: 'magazine' as CardLayout,
-          profilePlacement: 'top-right' as ProfilePlacement,
-          textStyle: 'casual' as TextStyle,
-          accentColor: '#96CEB4',
-          showEngagement: true,
-          showTimestamp: true,
-          showLocation: false,
-          cardCornerRadius: 28,
-          textSize: 'medium' as const
-        }
-      },
-      { 
-        name: 'Lisa', 
-        avatar: '👩‍🏫', 
-        relationship: 'Acquaintance',
-        relationshipDetail: 'Met at coffee shop',
-        location: 'Portland, OR',
-        color: '#FFEAA7',
-        gradient: ['#FFEAA7', '#FEBF63'],
-        preferences: {
-          layout: 'modern' as CardLayout,
-          profilePlacement: 'bottom-left' as ProfilePlacement,
-          textStyle: 'elegant' as TextStyle,
-          accentColor: '#FFEAA7',
-          showEngagement: true,
-          showTimestamp: true,
-          showLocation: true,
-          cardCornerRadius: 20,
-          textSize: 'large' as const
-        }
-      },
-    ];
+
+    // Generate consistent avatar and color for real usernames
+    const avatars = ['👤', '🙂', '😊', '👨‍💻', '👩‍💻', '🎭', '🎨', '🎵', '🌟', '⚡', '🔥', '💎', '🌈', '🚀', '✨'];
+    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#A8E6CF', '#FFB6C1', '#87CEEB', '#DDA0DD', '#F0E68C', '#FFA07A', '#98FB98', '#87CEFA', '#F5DEB3', '#D3D3D3'];
     
     const hash = author.split('').reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0);
-    return profiles[Math.abs(hash) % profiles.length];
+    const avatarIndex = Math.abs(hash) % avatars.length;
+    const colorIndex = Math.abs(hash * 2) % colors.length;
+    const color = colors[colorIndex];
+    
+    // Generate consistent layout preferences based on username
+    const layouts: CardLayout[] = ['modern', 'classic', 'minimal', 'magazine', 'artistic'];
+    const placements: ProfilePlacement[] = ['top-left', 'top-center', 'inline'];
+    const textStyles: TextStyle[] = ['elegant', 'casual', 'bold'];
+    
+    return { 
+      name: author, // Use the actual username
+      avatar: avatars[avatarIndex], 
+      relationship: 'Friend',
+      relationshipDetail: 'Connected on Aether',
+      location: 'Unknown',
+      color,
+      gradient: [color, color + '80'],
+      preferences: {
+        layout: layouts[Math.abs(hash * 3) % layouts.length],
+        profilePlacement: placements[Math.abs(hash * 4) % placements.length],
+        textStyle: textStyles[Math.abs(hash * 5) % textStyles.length],
+        accentColor: color,
+        showEngagement: true,
+        showTimestamp: true,
+        showLocation: false, // Don't show location for real users by default
+        cardCornerRadius: 16 + (Math.abs(hash * 6) % 3) * 4, // 16, 20, or 24
+        textSize: 'medium' as const
+      }
+    };
   }, []);
 
   const renderPost = useCallback(({ item }: { item: Post }) => {
