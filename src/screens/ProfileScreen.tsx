@@ -21,6 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 // Design System
 import { PageBackground } from '../design-system/components/atoms/PageBackground';
 import { Header, HeaderMenu, SignOutModal } from '../design-system/components/organisms';
+import { SpotifyIntegration } from '../design-system/components/molecules';
 import { useTheme } from '../contexts/ThemeContext';
 import { useHeaderMenu } from '../design-system/hooks';
 import { typography } from '../design-system/tokens/typography';
@@ -797,6 +798,14 @@ export const ProfileScreen: React.FC = () => {
             )}
 
           </View>
+
+          {/* Spotify Integration */}
+          <SpotifyIntegration 
+            onStatusChange={() => {
+              // Refresh profile data when Spotify status changes
+              fetchProfile();
+            }}
+          />
 
         </ScrollView>
         
