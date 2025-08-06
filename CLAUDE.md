@@ -47,6 +47,8 @@ This codebase follows **atomic design principles** with a sophisticated design s
 - **Streaming Chat**: Real-time Server-Sent Events (SSE) for AI conversations
 - **Error Handling**: Comprehensive error boundaries and retry logic
 - **Backend URL**: https://aether-server-j5kh.onrender.com (Render.com deployment)
+- **Complete Endpoint Documentation**: See `API_ENDPOINTS.md` for full backend API reference
+- **Notification Stream**: Real-time SSE notifications via `NotificationStream.ts`
 
 ## Key Architectural Decisions
 
@@ -247,6 +249,16 @@ When working with the social platform (`src/screens/social/`):
 - **Clean Code**: Remove debug logs, personal comments, and unused code before commits
 
 ### Recent Architecture Updates
+
+#### Complete Backend Integration (Latest)
+- **New Endpoints Integrated**: All 50+ backend endpoints now have frontend implementations
+- **Spotify OAuth**: Full Spotify integration with OAuth flow and real-time status
+- **Social Proxy**: Complete social platform API integration
+- **Notification Stream**: Real-time SSE notifications for friend activity
+- **File Preview**: URL preview image generation support
+- **System Monitoring**: Health check and audit endpoints for system monitoring
+- **Conversation Sync**: Offline support with conversation synchronization
+- **User Preferences**: Separate preferences and settings management
 
 #### Navigation Fix (Latest)
 - **Issue Resolved**: "Hero screen not found" navigation error

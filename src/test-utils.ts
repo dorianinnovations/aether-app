@@ -22,11 +22,23 @@ export const mockAPI = {
     track: jest.fn(),
     getInsights: jest.fn(),
   },
-  loginSuccess: jest.fn(),
-  loginError: jest.fn(),
-  signupSuccess: jest.fn(),
-  signupError: jest.fn(),
-  reset: jest.fn(),
+  loginSuccess: jest.fn(() => {
+    mockAPI.auth.login.mockResolvedValue({ success: true, user: { email: 'test@example.com' } });
+  }),
+  loginError: jest.fn((error: string) => {
+    mockAPI.auth.login.mockRejectedValue(new Error(error));
+  }),
+  signupSuccess: jest.fn(() => {
+    mockAPI.auth.signup.mockResolvedValue({ success: true, user: { email: 'test@example.com' } });
+  }),
+  signupError: jest.fn((error: string) => {
+    mockAPI.auth.signup.mockRejectedValue(new Error(error));
+  }),
+  reset: jest.fn(() => {
+    Object.values(mockAPI.auth).forEach(mock => typeof mock.mockReset === 'function' && mock.mockReset());
+    Object.values(mockAPI.chat).forEach(mock => typeof mock.mockReset === 'function' && mock.mockReset());
+    Object.values(mockAPI.metrics).forEach(mock => typeof mock.mockReset === 'function' && mock.mockReset());
+  }),
 };
 
 // Mock metrics utilities
@@ -53,8 +65,46 @@ export const userJourneyHelpers = {
   sendMessage: async (message: string) => {
     return { success: true, messageId: 'test-id' };
   },
-  completeSignInFlow: jest.fn(),
-  completeSignUpFlow: jest.fn(),
+  completeSignInFlow: jest.fn(async (screen: any) => {
+    const { fireEvent } = await import('@testing-library/react-native');
+    
+    metricsUtils.trackUserJourneyStep('signin_start');
+    
+    const emailInput = screen.getByPlaceholderText('Email');
+    const passwordInput = screen.getByPlaceholderText('Password');
+    const submitButton = screen.getByText('Sign In');
+    
+    fireEvent.changeText(emailInput, 'test@example.com');
+    metricsUtils.trackUserJourneyStep('signin_email_entered');
+    
+    fireEvent.changeText(passwordInput, 'TestPass123!');
+    metricsUtils.trackUserJourneyStep('signin_password_entered');
+    
+    fireEvent.press(submitButton);
+    metricsUtils.trackUserJourneyStep('signin_form_submitted');
+  }),
+  completeSignUpFlow: jest.fn(async (screen: any) => {
+    const { fireEvent } = await import('@testing-library/react-native');
+    
+    metricsUtils.trackUserJourneyStep('signup_start');
+    
+    const emailInput = screen.getByPlaceholderText('Email');
+    const passwordInput = screen.getByPlaceholderText('Password');
+    const confirmPasswordInput = screen.getByPlaceholderText('Confirm Password');
+    const submitButton = screen.getByText('Create Account');
+    
+    fireEvent.changeText(emailInput, 'test@example.com');
+    metricsUtils.trackUserJourneyStep('signup_email_entered');
+    
+    fireEvent.changeText(passwordInput, 'TestPass123!');
+    metricsUtils.trackUserJourneyStep('signup_password_entered');
+    
+    fireEvent.changeText(confirmPasswordInput, 'TestPass123!');
+    metricsUtils.trackUserJourneyStep('signup_confirm_password_entered');
+    
+    fireEvent.press(submitButton);
+    metricsUtils.trackUserJourneyStep('signup_form_submitted');
+  }),
 };
 
 // General test utilities

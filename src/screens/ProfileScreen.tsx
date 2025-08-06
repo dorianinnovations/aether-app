@@ -803,7 +803,7 @@ export const ProfileScreen: React.FC = () => {
           <SpotifyIntegration 
             onStatusChange={() => {
               // Refresh profile data when Spotify status changes
-              fetchProfile();
+              loadProfile();
             }}
           />
 

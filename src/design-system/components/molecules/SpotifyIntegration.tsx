@@ -1,6 +1,6 @@
 /**
  * Spotify Integration Component
- * Handles Spotify connection, display, and controls in profile
+ * Handles Spotify OAuth connection and displays current playing status
  */
 
 import React, { useState, useEffect } from 'react';
@@ -8,23 +8,22 @@ import {
   View,
   Text,
   TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  Linking,
   Image,
   StyleSheet,
-  Alert,
-  ActivityIndicator,
-  Linking,
-  Platform,
+  RefreshControl,
+  ScrollView
 } from 'react-native';
-import { Feather, MaterialIcons } from '@expo/vector-icons';
 import * as AuthSession from 'expo-auth-session';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 // Design System
 import { useTheme } from '../../../contexts/ThemeContext';
 import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
 
-// Hooks
-import { useSpotifyIntegration } from '../../../hooks/useSocialProxy';
 // API
 import { SpotifyAPI } from '../../../services/api';
 
@@ -56,77 +55,73 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
   onStatusChange
 }) => {
   const { theme, colors } = useTheme();
-  const {
-    spotifyStatus,
-    loading,
-    error,
-    getSpotifyAuth,
-    disconnectSpotify,
-    refreshSpotifyData,
-    clearError
-  } = useSpotifyIntegration();
-
+  const [spotifyStatus, setSpotifyStatus] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Use prop data if provided, otherwise use hook data
+  // Use prop data if provided, otherwise use state data
   const spotify = spotifyData || spotifyStatus;
 
+  // Load initial status
   useEffect(() => {
-    if (error) {
-      Alert.alert('Spotify Error', error);
-      clearError();
+    loadSpotifyStatus();
+  }, []);
+
+  const loadSpotifyStatus = async () => {
+    try {
+      setLoading(true);
+      const response = await SpotifyAPI.getStatus();
+      if (response.success) {
+        setSpotifyStatus(response.data);
+      }
+    } catch (err) {
+      console.log('Failed to load Spotify status:', err);
+    } finally {
+      setLoading(false);
     }
-  }, [error, clearError]);
+  };
 
   const handleConnect = async () => {
     try {
       setConnecting(true);
       
       // Get the auth URL from server
-      const authResponse = await getSpotifyAuth();
-      if (!authResponse.success) {
-        throw new Error(authResponse.message || 'Failed to get auth URL');
-      }
-
-      // Use Expo AuthSession to handle OAuth flow
-      const redirectUri = AuthSession.makeRedirectUri({ 
-        scheme: 'aether',
-        path: 'spotify-auth'
-      });
+      const authResponse = await SpotifyAPI.getAuthUrl();
+      const authUrl = authResponse.authUrl || authResponse.data?.authUrl;
       
-      console.log('OAuth redirect URI:', redirectUri);
-      console.log('Spotify auth URL:', authResponse.authUrl);
-
-      // Open the auth URL and wait for redirect
-      const result = await AuthSession.startAsync({
-        authUrl: authResponse.authUrl,
-        returnUrl: redirectUri
-      });
-
-      console.log('OAuth result:', result);
-
-      if (result.type === 'success') {
-        const { code, state } = result.params;
-        
-        if (code && state) {
-          // Send the code back to our server
-          const callbackResponse = await SpotifyAPI.handleMobileCallback(code, state);
-          
-          if (callbackResponse.success) {
-            Alert.alert('Success', 'Spotify connected successfully!');
-            onStatusChange?.();
-          } else {
-            Alert.alert('Connection Failed', callbackResponse.message || 'Failed to connect Spotify');
-          }
-        } else {
-          Alert.alert('Connection Failed', 'Missing authorization code');
-        }
-      } else if (result.type === 'error') {
-        Alert.alert('Connection Failed', result.errorCode || 'Authorization failed');
-      } else {
-        // User cancelled
-        console.log('User cancelled OAuth flow');
+      if (!authUrl) {
+        throw new Error('Failed to get authentication URL');
       }
+
+      console.log('Opening Spotify auth URL:', authUrl);
+
+      // Open in browser for OAuth flow
+      const supported = await Linking.canOpenURL(authUrl);
+      if (!supported) {
+        throw new Error('Cannot open Spotify authentication page');
+      }
+      
+      await Linking.openURL(authUrl);
+      
+      // Show instructions to user
+      Alert.alert(
+        'Complete Authentication',
+        'Please complete the Spotify login in your browser. Once done, return to the app.',
+        [
+          {
+            text: 'OK',
+            onPress: async () => {
+              // Check status after user returns
+              setTimeout(async () => {
+                await loadSpotifyStatus();
+                onStatusChange?.();
+              }, 2000);
+            }
+          }
+        ]
+      );
+      
     } catch (err: any) {
       console.error('Spotify connection error:', err);
       Alert.alert('Connection Failed', err.message || 'Failed to connect to Spotify');
@@ -146,11 +141,15 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
           style: 'destructive',
           onPress: async () => {
             try {
-              await disconnectSpotify();
+              setLoading(true);
+              await SpotifyAPI.disconnect();
+              setSpotifyStatus(null);
+              Alert.alert('Success', 'Spotify disconnected successfully');
               onStatusChange?.();
-              Alert.alert('Success', 'Spotify account disconnected');
             } catch (err: any) {
               Alert.alert('Error', err.message || 'Failed to disconnect Spotify');
+            } finally {
+              setLoading(false);
             }
           }
         }
@@ -160,309 +159,242 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
 
   const handleRefresh = async () => {
     try {
-      await refreshSpotifyData();
-      onStatusChange?.();
+      setRefreshing(true);
+      const response = await SpotifyAPI.refresh();
+      if (response.success) {
+        await loadSpotifyStatus();
+        Alert.alert('Success', 'Spotify data refreshed');
+      }
     } catch (err: any) {
-      Alert.alert('Refresh Failed', err.message || 'Failed to refresh Spotify data');
+      Alert.alert('Error', err.message || 'Failed to refresh Spotify data');
+    } finally {
+      setRefreshing(false);
     }
   };
 
-  const openTrackInSpotify = (spotifyUrl?: string) => {
-    if (spotifyUrl) {
-      Linking.openURL(spotifyUrl).catch(() => {
-        Alert.alert('Error', 'Failed to open Spotify');
-      });
+  const openTrackInSpotify = async (url?: string) => {
+    if (!url) return;
+    
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert('Error', 'Cannot open Spotify');
+      }
+    } catch (err) {
+      console.error('Failed to open Spotify:', err);
     }
   };
 
-  if (!spotify?.connected) {
+  const styles = StyleSheet.create({
+    container: {
+      backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+      borderRadius: 16,
+      padding: spacing.md,
+      marginTop: spacing.md,
+      borderWidth: 1,
+      borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: spacing.md,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    spotifyLogo: {
+      width: 24,
+      height: 24,
+      tintColor: '#1DB954',
+    },
+    connectButton: {
+      backgroundColor: '#1DB954',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      borderRadius: 999,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    connectButtonText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: '#FFFFFF',
+      marginLeft: spacing.xs,
+    },
+    connectedContent: {
+      marginTop: spacing.sm,
+    },
+    currentTrack: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.6)',
+      borderRadius: 12,
+      padding: spacing.sm,
+      marginBottom: spacing.sm,
+    },
+    albumArt: {
+      width: 60,
+      height: 60,
+      borderRadius: 8,
+      marginRight: spacing.sm,
+    },
+    trackInfo: {
+      flex: 1,
+    },
+    trackName: {
+      fontSize: 16,
+      color: colors.text,
+      fontWeight: '600',
+    },
+    artistName: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    albumName: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+    playingIndicator: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: spacing.xs,
+    },
+    playingText: {
+      fontSize: 12,
+      color: '#1DB954',
+      marginLeft: spacing.xs,
+    },
+    actionButtons: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginTop: spacing.md,
+    },
+    actionButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: 12,
+      backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.6)',
+    },
+    actionButtonText: {
+      fontSize: 14,
+      color: colors.text,
+      marginLeft: spacing.xs,
+    },
+    noTrack: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginVertical: spacing.md,
+    },
+    loader: {
+      marginVertical: spacing.lg,
+    },
+  });
+
+  if (loading && !spotify) {
     return (
-      <View style={[styles.spotifySection, { backgroundColor: colors.surface }]}>
-        <View style={styles.spotifyHeader}>
-          <View style={styles.spotifyTitleRow}>
-            <MaterialIcons name="music-note" size={20} color="#1DB954" />
-            <Text style={[styles.spotifyTitle, { color: colors.text }]}>
-              Spotify Integration
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={handleConnect}
-            disabled={connecting || loading}
-            style={[styles.connectButton, { backgroundColor: '#1DB954' }]}
-            activeOpacity={0.8}
-          >
-            {connecting || loading ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <>
-                <MaterialIcons name="link" size={16} color="white" />
-                <Text style={styles.connectButtonText}>Connect</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-        
-        <Text style={[styles.spotifyDescription, { color: colors.textSecondary }]}>
-          Connect your Spotify account to share your music taste with friends and show live listening status.
-        </Text>
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color={colors.primary || '#1DB954'} style={styles.loader} />
       </View>
     );
   }
 
   return (
-    <View style={[styles.spotifySection, { backgroundColor: colors.surface }]}>
-      <View style={styles.spotifyHeader}>
-        <View style={styles.spotifyTitleRow}>
-          <MaterialIcons name="music-note" size={20} color="#1DB954" />
-          <Text style={[styles.spotifyTitle, { color: colors.text }]}>
-            Spotify Connected
-          </Text>
-          <View style={[styles.connectedIndicator, { backgroundColor: '#1DB954' }]} />
-        </View>
-        
-        <View style={styles.spotifyActions}>
-          <TouchableOpacity
-            onPress={handleRefresh}
-            disabled={loading}
-            style={[styles.actionButton, { backgroundColor: colors.background }]}
-            activeOpacity={0.7}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color={colors.text} />
-            ) : (
-              <Feather name="refresh-cw" size={14} color={colors.text} />
-            )}
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            onPress={handleDisconnect}
-            style={[styles.actionButton, { backgroundColor: colors.background }]}
-            activeOpacity={0.7}
-          >
-            <Feather name="x" size={14} color={colors.text} />
-          </TouchableOpacity>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Icon name="musical-notes" size={24} color="#1DB954" />
+          <Text style={styles.title}> Spotify</Text>
         </View>
       </View>
 
-      {/* Current Track */}
-      {spotify.currentTrack && (
+      {!spotify?.connected ? (
         <TouchableOpacity
-          style={[styles.currentTrack, { borderColor: colors.borders.default }]}
-          onPress={() => openTrackInSpotify(spotify.currentTrack?.spotifyUrl)}
-          activeOpacity={0.8}
+          style={styles.connectButton}
+          onPress={handleConnect}
+          disabled={connecting}
         >
-          <View style={styles.trackInfo}>
-            {spotify.currentTrack.imageUrl && (
-              <Image
-                source={{ uri: spotify.currentTrack.imageUrl }}
-                style={styles.trackImage}
-              />
-            )}
-            <View style={styles.trackDetails}>
-              <Text style={[styles.trackName, { color: colors.text }]} numberOfLines={1}>
-                {spotify.currentTrack.name}
-              </Text>
-              <Text style={[styles.trackArtist, { color: colors.textSecondary }]} numberOfLines={1}>
-                {spotify.currentTrack.artist}
-              </Text>
-              {spotify.currentTrack.lastPlayed && (
-                <Text style={[styles.trackTime, { color: colors.textSecondary }]}>
-                  {spotify.currentTrack.isPlaying ? 'Now playing' : 'Recently played'}
-                </Text>
-              )}
-            </View>
-          </View>
-          <Feather name="external-link" size={16} color={colors.textSecondary} />
+          {connecting ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <Icon name="logo-spotify" size={20} color="#FFFFFF" />
+              <Text style={styles.connectButtonText}>Connect Spotify</Text>
+            </>
+          )}
         </TouchableOpacity>
-      )}
-
-      {/* Top Tracks */}
-      {spotify.topTracks && spotify.topTracks.length > 0 && (
-        <View style={styles.topTracksSection}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-            Recent Favorites
-          </Text>
-          {spotify.topTracks.slice(0, 3).map((track: any, index: number) => (
+      ) : (
+        <View style={styles.connectedContent}>
+          {spotify.currentTrack ? (
             <TouchableOpacity
-              key={index}
-              style={[styles.topTrack, { borderColor: colors.borders.default }]}
-              onPress={() => openTrackInSpotify(track.spotifyUrl)}
+              style={styles.currentTrack}
+              onPress={() => openTrackInSpotify(spotify.currentTrack.spotifyUrl)}
               activeOpacity={0.8}
             >
-              {track.imageUrl && (
+              {spotify.currentTrack.imageUrl && (
                 <Image
-                  source={{ uri: track.imageUrl }}
-                  style={styles.topTrackImage}
+                  source={{ uri: spotify.currentTrack.imageUrl }}
+                  style={styles.albumArt}
                 />
               )}
-              <View style={styles.topTrackDetails}>
-                <Text style={[styles.topTrackName, { color: colors.text }]} numberOfLines={1}>
-                  {track.name}
+              <View style={styles.trackInfo}>
+                <Text style={styles.trackName} numberOfLines={1}>
+                  {spotify.currentTrack.name}
                 </Text>
-                <Text style={[styles.topTrackArtist, { color: colors.textSecondary }]} numberOfLines={1}>
-                  {track.artist}
+                <Text style={styles.artistName} numberOfLines={1}>
+                  {spotify.currentTrack.artist}
                 </Text>
+                <Text style={styles.albumName} numberOfLines={1}>
+                  {spotify.currentTrack.album}
+                </Text>
+                {spotify.currentTrack.isPlaying && (
+                  <View style={styles.playingIndicator}>
+                    <Icon name="play-circle" size={14} color="#1DB954" />
+                    <Text style={styles.playingText}>Now Playing</Text>
+                  </View>
+                )}
               </View>
             </TouchableOpacity>
-          ))}
+          ) : (
+            <Text style={styles.noTrack}>No track currently playing</Text>
+          )}
+
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleRefresh}
+              disabled={refreshing}
+            >
+              {refreshing ? (
+                <ActivityIndicator size="small" color={colors.primary || '#1DB954'} />
+              ) : (
+                <>
+                  <Icon name="refresh" size={18} color={colors.text} />
+                  <Text style={styles.actionButtonText}>Refresh</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleDisconnect}
+            >
+              <Icon name="unlink" size={18} color={colors.text} />
+              <Text style={styles.actionButtonText}>Disconnect</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  spotifySection: {
-    borderRadius: 16,
-    padding: spacing[4],
-    marginVertical: spacing[3],
-    borderWidth: 1,
-    borderColor: 'rgba(29, 185, 84, 0.2)',
-  },
-  
-  spotifyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing[3],
-  },
-  
-  spotifyTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-  },
-  
-  spotifyTitle: {
-    ...typography.textStyles.bodyMedium,
-    fontWeight: '600',
-  },
-  
-  connectedIndicator: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  
-  spotifyActions: {
-    flexDirection: 'row',
-    gap: spacing[2],
-  },
-  
-  connectButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    borderRadius: 8,
-    gap: spacing[1],
-  },
-  
-  connectButtonText: {
-    color: 'white',
-    ...typography.textStyles.bodySmall,
-    fontWeight: '600',
-  },
-  
-  actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  
-  spotifyDescription: {
-    ...typography.textStyles.bodySmall,
-    lineHeight: 20,
-  },
-  
-  currentTrack: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing[3],
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: spacing[3],
-  },
-  
-  trackInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  
-  trackImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    marginRight: spacing[3],
-  },
-  
-  trackDetails: {
-    flex: 1,
-  },
-  
-  trackName: {
-    ...typography.textStyles.bodyMedium,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  
-  trackArtist: {
-    ...typography.textStyles.bodySmall,
-    marginBottom: 2,
-  },
-  
-  trackTime: {
-    ...typography.textStyles.caption,
-    fontSize: 11,
-  },
-  
-  topTracksSection: {
-    marginTop: spacing[2],
-  },
-  
-  sectionTitle: {
-    ...typography.textStyles.bodySmall,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing[2],
-  },
-  
-  topTrack: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing[2],
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: spacing[1],
-  },
-  
-  topTrackImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 4,
-    marginRight: spacing[2],
-  },
-  
-  topTrackDetails: {
-    flex: 1,
-  },
-  
-  topTrackName: {
-    ...typography.textStyles.bodySmall,
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  
-  topTrackArtist: {
-    ...typography.textStyles.caption,
-  },
-});
-
-export default SpotifyIntegration;

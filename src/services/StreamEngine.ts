@@ -31,10 +31,10 @@ export class StreamEngine {
         const response = await ChatAPI.sendMessage(prompt, false, attachments);
         
         // Extract content from various response formats
-        const content = response.content || 
+        const content = (response as any).content || 
                        response.data?.response || 
-                       response.data?.content ||
-                       response.response || 
+                       (response.data as any)?.content ||
+                       (response as any).response || 
                        '';
         
         if (!content || content.trim() === '') {
@@ -54,7 +54,7 @@ export class StreamEngine {
         }
         
         // Yield metadata if available from various response structures
-        const responseMetadata = response.metadata || 
+        const responseMetadata = (response as any).metadata || 
                                 (response.data as any)?.metadata ||
                                 (response.data as any)?.toolResults ||
                                 (response.data as any)?.data?.toolResults;

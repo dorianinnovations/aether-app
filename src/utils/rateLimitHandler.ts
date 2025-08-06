@@ -3,7 +3,7 @@
  * Provides graceful handling of 429 rate limit errors
  */
 
-import { ApiError } from '../services/api';
+import { EnhancedApiError } from '../services/api';
 
 export interface RateLimitInfo {
   isRateLimit: boolean;
@@ -16,7 +16,7 @@ export const RateLimitHandler = {
   /**
    * Check if an error is a rate limit error and extract relevant info
    */
-  analyze(error: ApiError): RateLimitInfo {
+  analyze(error: EnhancedApiError): RateLimitInfo {
     const isRateLimit = error.isRateLimit || error.status === 429;
     const retryAfter = error.retryAfter || 60;
     

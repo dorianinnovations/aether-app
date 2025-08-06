@@ -211,9 +211,10 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
         
         try {
           const result = await AuthAPI.checkUsernameAvailability(username);
-          setUsernameAvailable(result.available);
-          if (!result.available) {
-            setUsernameError(result.message || 'Username not available');
+          const available = (result as any).available ?? result.data?.available;
+          setUsernameAvailable(available);
+          if (!available) {
+            setUsernameError(result.message || result.data?.message || 'Username not available');
           }
         } catch (error) {
           setUsernameError('Error checking username');

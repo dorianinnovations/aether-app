@@ -7,7 +7,12 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  firstName?: string; // Additional name property variants
+  fullName?: string;
+  full_name?: string;
+  username?: string;
   profilePicture?: string;
+  avatar?: string; // Alternative to profilePicture
   createdAt: string;
   updatedAt: string;
 }
