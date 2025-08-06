@@ -1,0 +1,73 @@
+/**
+ * Authentication Interceptors and Token Management
+ * Request/response interceptors for token handling and auth refresh
+ */
+
+import { AxiosResponse } from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { api } from './client';
+import { TokenManager } from '../utils/storage';
+import { transformResponse, createEnhancedError } from './errors';
+
+// Setup request interceptor - Add auth token
+api.interceptors.request.use(
+  async (config: any) => {
+    const token = await TokenManager.getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    // Request logging can be enabled for debugging if needed
+    
+    return config;
+  },
+  (error) => {
+    console.error('Request interceptor error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Setup response interceptor - Standardized error handling and token refresh
+api.interceptors.response.use(
+  (response: AxiosResponse) => {
+    // Transform response to standard format if needed
+    response.data = transformResponse(response.data);
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+    
+    console.error('API Error:', error.response?.status, error.response?.data);
+    
+    // Handle unauthorized - attempt token refresh first
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      try {
+        // Get refresh token from storage directly to avoid circular dependency
+        const refreshToken = await AsyncStorage.getItem('@aether_refresh_token');
+        if (refreshToken) {
+          const refreshResponse = await api.post('/auth/refresh', { refreshToken });
+          if (refreshResponse.data?.success && refreshResponse.data?.data?.token) {
+            await TokenManager.setToken(refreshResponse.data.data.token);
+            if (refreshResponse.data.data.refreshToken) {
+              await AsyncStorage.setItem('@aether_refresh_token', refreshResponse.data.data.refreshToken);
+            }
+            originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.data.token}`;
+            return api(originalRequest);
+          }
+        }
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
+        // Only remove token if this is a critical endpoint, not for optional requests
+        if (!originalRequest.url?.includes('/conversations') && !originalRequest.url?.includes('/socket.io')) {
+          await TokenManager.removeToken();
+        }
+        // Navigation to login should be handled by the app
+      }
+    }
+
+    const enhancedError = createEnhancedError(error, originalRequest);
+    return Promise.reject(enhancedError);
+  }
+);
