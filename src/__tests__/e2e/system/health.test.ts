@@ -153,13 +153,13 @@ describe('E2E System Health and Monitoring', () => {
             error: true
           }));
 
-          const statusOk = service.expectStatus.includes(response.status) || 
+          const statusOk = service.expectStatus.includes((response as any).status) || 
                           service.expectStatus.includes(200);
 
-          if (statusOk || response.error) {
+          if (statusOk || (response as any).error) {
             console.log(`✅ ${service.name}: Service Available`);
           } else {
-            console.log(`⚠️  ${service.name}: Unexpected status ${response.status}`);
+            console.log(`⚠️  ${service.name}: Unexpected status ${(response as any).status}`);
           }
 
         } catch (error) {
@@ -178,7 +178,7 @@ describe('E2E System Health and Monitoring', () => {
       );
 
       // Look for database status in health check
-      const dbStatus = response.database || response.db || response.mongodb;
+      const dbStatus = (response as any).database || (response as any).db || (response as any).mongodb;
       
       if (dbStatus) {
         const isConnected = dbStatus.connected || 
@@ -219,7 +219,7 @@ describe('E2E System Health and Monitoring', () => {
             available: error.response?.status !== 503
           }));
 
-          if (response.status === 200 || response.available) {
+          if ((response as any).status === 200 || (response as any).available) {
             console.log(`✅ ${service.name}: Integration Available`);
           } else {
             console.log(`⚠️  ${service.name}: Integration may be limited`);
@@ -308,8 +308,8 @@ describe('E2E System Health and Monitoring', () => {
       const results = await Promise.all(promises);
       const endTime = Date.now();
 
-      const successful = results.filter(r => !r.error).length;
-      const failed = results.filter(r => r.error).length;
+      const successful = results.filter((r: any) => !r.error).length;
+      const failed = results.filter((r: any) => r.error).length;
       const totalTime = endTime - startTime;
 
       console.log(`📊 Concurrent Request Results:`);
@@ -480,7 +480,7 @@ describe('E2E System Health and Monitoring', () => {
         // Check if rate limited responses include retry information
         const rateLimitedResponse = results.find((r: any) => r.rateLimited);
         if (rateLimitedResponse) {
-          console.log(`ℹ️  Rate limit response status: ${rateLimitedResponse.status}`);
+          console.log(`ℹ️  Rate limit response status: ${(rateLimitedResponse as any).status}`);
         }
       } else {
         console.log(`ℹ️  No rate limiting detected (may not be configured for this endpoint)`);
@@ -490,7 +490,7 @@ describe('E2E System Health and Monitoring', () => {
 
   describe('Security and Compliance', () => {
     test('should enforce HTTPS in production', async () => {
-      const apiUrl = global.__E2E_CONFIG__?.API_BASE_URL || process.env.EXPO_PUBLIC_API_URL;
+      const apiUrl = (global as any).__E2E_CONFIG__?.API_BASE_URL || process.env.EXPO_PUBLIC_API_URL;
       
       if (apiUrl) {
         assertCondition(
@@ -509,7 +509,7 @@ describe('E2E System Health and Monitoring', () => {
         
         // Note: In a real test, you'd inspect response.headers
         // For E2E tests through our API client, we'll verify the connection is secure
-        console.log(`🔐 Security headers test completed (connection secure: ${global.__E2E_CONFIG__?.API_BASE_URL?.startsWith('https')})`);
+        console.log(`🔐 Security headers test completed (connection secure: ${(global as any).__E2E_CONFIG__?.API_BASE_URL?.startsWith('https')})`);
         
       } catch (error) {
         console.log('ℹ️  Security headers test could not be fully validated');

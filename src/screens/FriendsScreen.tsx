@@ -13,7 +13,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Header } from '../design-system/components/organisms/Header';
+import { Header, HeaderMenu } from '../design-system/components/organisms';
 import { PageBackground } from '../design-system/components/atoms/PageBackground';
 import { LottieLoader } from '../design-system/components/atoms/LottieLoader';
 import { getGlassmorphicStyle } from '../design-system/tokens/glassmorphism';
@@ -22,6 +22,8 @@ import { designTokens, getThemeColors } from '../design-system/tokens/colors';
 import { spacing } from '../design-system/tokens/spacing';
 import { useTheme } from '../hooks/useTheme';
 import { useGhostTyping } from '../hooks/useGhostTyping';
+import { useHeaderMenu } from '../design-system/hooks';
+import SettingsModal from './chat/SettingsModal';
 import * as Haptics from 'expo-haptics';
 import { FriendsAPI } from '../services/api';
 
@@ -211,6 +213,7 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
@@ -218,6 +221,17 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
     isInputFocused,
     inputText: friendUsername,
   });
+
+  // Header menu hook
+  const { showHeaderMenu, setShowHeaderMenu, handleMenuAction, toggleHeaderMenu } = useHeaderMenu({
+    screenName: 'friends',
+    onSettingsPress: () => setShowSettingsModal(true),
+  });
+
+  // Navigation handlers
+  const handleBackPress = () => {
+    navigation.goBack();
+  };
 
   // Fetch friends list on component mount
   useEffect(() => {
@@ -309,14 +323,6 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
       Animated.timing(shakeAnim, { toValue: -10, duration: 50, useNativeDriver: true }),
       Animated.timing(shakeAnim, { toValue: 0, duration: 50, useNativeDriver: true }),
     ]).start();
-  };
-
-  const handleBackPress = () => {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    } else {
-      navigation.navigate('Chat'); // Fallback to Chat screen
-    }
   };
 
   const handleAddFriend = async () => {
@@ -506,8 +512,10 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
           title="Aether"
           theme={theme}
           showBackButton={true}
-          showMenuButton={false}
+          showMenuButton={true}
           onBackPress={handleBackPress}
+          onMenuPress={toggleHeaderMenu}
+          isMenuOpen={showHeaderMenu}
           rightIcon={
             <TouchableOpacity
               onPress={() => {
@@ -685,6 +693,21 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Header Menu */}
+      <HeaderMenu
+        visible={showHeaderMenu}
+        onClose={() => setShowHeaderMenu(false)}
+        onAction={handleMenuAction}
+        showAuthOptions={false}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        visible={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        navigation={navigation}
+      />
     </PageBackground>
   );
 };

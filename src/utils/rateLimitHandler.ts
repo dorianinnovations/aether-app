@@ -3,7 +3,7 @@
  * Provides graceful handling of 429 rate limit errors
  */
 
-import { EnhancedApiError } from '../services/api';
+import type { EnhancedApiError } from '../services/apiModules/core/types';
 
 export interface RateLimitInfo {
   isRateLimit: boolean;

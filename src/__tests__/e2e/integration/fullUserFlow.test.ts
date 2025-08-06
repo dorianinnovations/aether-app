@@ -194,7 +194,7 @@ describe('E2E Full User Flow Integration', () => {
         200
       );
 
-      conversationId = conversation.id || conversation._id || conversation.conversationId || conversation.data?.id;
+      conversationId = (conversation as any).id || (conversation as any)._id || (conversation as any).conversationId || (conversation as any).data?.id;
       assertCondition(
         !!conversationId,
         'Conversation creation should return ID',
@@ -261,7 +261,7 @@ describe('E2E Full User Flow Integration', () => {
         200
       );
 
-      const myUsername = usernameResponse.username;
+      const myUsername = (usernameResponse as any).username;
       console.log(`🆔 My username: ${myUsername}`);
 
       // Look up a potential friend (using secondary test user)
@@ -279,7 +279,7 @@ describe('E2E Full User Flow Integration', () => {
       });
 
       if (friendLookup) {
-        const friendData = friendLookup.user || friendLookup.profile || friendLookup;
+      const friendData = (friendLookup as any).user || (friendLookup as any).profile || friendLookup;
         friendUsername = friendData.username;
         
         console.log(`🔍 Found potential friend: ${friendUsername}`);
@@ -309,7 +309,7 @@ describe('E2E Full User Flow Integration', () => {
           200
         );
 
-        const friends = friendsList.friends || friendsList.data || friendsList;
+        const friends = (friendsList as any).friends || (friendsList as any).data || friendsList;
         console.log(`👥 Current friends list has ${friends.length} connections`);
       }
     });
@@ -367,7 +367,7 @@ describe('E2E Full User Flow Integration', () => {
         200
       );
 
-      const timelineData = timeline.timeline || timeline.activities || timeline.data || timeline;
+      const timelineData = (timeline as any).timeline || (timeline as any).activities || (timeline as any).data || timeline;
       const timelineItems = Array.isArray(timelineData) ? timelineData : [];
       
       console.log(`📰 Timeline loaded with ${timelineItems.length} activities`);
@@ -402,7 +402,7 @@ describe('E2E Full User Flow Integration', () => {
           200
         );
 
-        const isConnected = spotifyStatus.connected || spotifyStatus.data?.connected;
+        const isConnected = (spotifyStatus as any).connected || (spotifyStatus as any).data?.connected;
         console.log(`🎵 Spotify connection status: ${isConnected ? 'Connected' : 'Not connected'}`);
 
         if (!isConnected) {
@@ -509,7 +509,7 @@ describe('E2E Full User Flow Integration', () => {
         200
       );
 
-      const conversations = recentConversations.conversations || recentConversations.data || recentConversations;
+      const conversations = (recentConversations as any).conversations || (recentConversations as any).data || recentConversations;
       const conversationList = Array.isArray(conversations) ? conversations : [];
       
       const ourConversation = conversationList.find(conv => 
@@ -810,8 +810,8 @@ describe('E2E Full User Flow Integration', () => {
       );
 
       // Core identity should remain consistent
-      const initialUser = initialProfile.data?.user || initialProfile.user || initialProfile;
-      const finalUser = finalProfile.data?.user || finalProfile.user || finalProfile;
+      const initialUser = (initialProfile as any).data?.user || (initialProfile as any).user || initialProfile;
+      const finalUser = (finalProfile as any).data?.user || (finalProfile as any).user || finalProfile;
 
       expect(initialUser.email).toBe(finalUser.email);
       expect(initialUser.id || initialUser._id).toBe(finalUser.id || finalUser._id);

@@ -172,7 +172,7 @@ export const useSocialCards = (): UseSocialCardsReturn => {
       // Get friends list from backend
       const friendsResponse = await FriendsAPI.getFriendsList();
 
-      if (friendsResponse.success) {
+      if (friendsResponse.success && Array.isArray(friendsResponse.friends)) {
         // Transform backend friends data to SocialCard format
         const socialCards: SocialCard[] = await Promise.all(
           friendsResponse.friends.map(async (friend: any) => {
@@ -189,6 +189,8 @@ export const useSocialCards = (): UseSocialCardsReturn => {
         );
 
         setCards(socialCards);
+      } else {
+        setCards([]);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to fetch social cards');
@@ -206,7 +208,7 @@ export const useSocialCards = (): UseSocialCardsReturn => {
       // Get friends list from backend
       const friendsResponse = await FriendsAPI.getFriendsList();
 
-      if (friendsResponse.success) {
+      if (friendsResponse.success && Array.isArray(friendsResponse.friends)) {
         // Transform backend friends data to SocialCard format
         const socialCards: SocialCard[] = await Promise.all(
           friendsResponse.friends.map(async (friend: any) => {
@@ -223,6 +225,8 @@ export const useSocialCards = (): UseSocialCardsReturn => {
         );
 
         setCards(socialCards);
+      } else {
+        setCards([]);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to refresh social cards');

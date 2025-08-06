@@ -129,9 +129,9 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
     // Add user message with optimistic update
     setMessages(prev => {
       const newMessages = [...prev, userMessage];
-      // Update cache with new messages
-      if (currentConversationRef.current) {
-        messageCache.current.set(currentConversationRef.current, newMessages);
+      // Update cache with new messages - use the passed conversationId parameter
+      if (conversationId) {
+        messageCache.current.set(conversationId, newMessages);
       }
       return newMessages;
     });
@@ -155,9 +155,9 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
 
       setMessages(prev => {
         const newMessages = [...prev, streamingMessage];
-        // Update cache with streaming message
-        if (currentConversationRef.current) {
-          messageCache.current.set(currentConversationRef.current, newMessages);
+        // Update cache with streaming message - use the passed conversationId parameter
+        if (conversationId) {
+          messageCache.current.set(conversationId, newMessages);
         }
         return newMessages;
       });
@@ -203,9 +203,9 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
               ? { ...msg, message: accumulatedText, variant: 'streaming' as const, timestamp: new Date().toISOString() }
               : msg
           );
-          // Update cache with streaming updates
-          if (currentConversationRef.current) {
-            messageCache.current.set(currentConversationRef.current, updatedMessages);
+          // Update cache with streaming updates - use the passed conversationId parameter
+          if (conversationId) {
+            messageCache.current.set(conversationId, updatedMessages);
           }
           return updatedMessages;
         });
@@ -244,9 +244,9 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
               }
             : msg
         );
-        // Update cache with final message state
-        if (currentConversationRef.current) {
-          messageCache.current.set(currentConversationRef.current, finalMessages);
+        // Update cache with final message state - use the passed conversationId parameter
+        if (conversationId) {
+          messageCache.current.set(conversationId, finalMessages);
         }
         return finalMessages;
       });
@@ -273,9 +273,9 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
       
       setMessages(prev => {
         const newMessages = [...prev, errorMessage];
-        // Update cache with error message
-        if (currentConversationRef.current) {
-          messageCache.current.set(currentConversationRef.current, newMessages);
+        // Update cache with error message - use the passed conversationId parameter
+        if (conversationId) {
+          messageCache.current.set(conversationId, newMessages);
         }
         return newMessages;
       });
@@ -345,7 +345,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         ];
         
         setMessages(demoMessages);
-        // Cache demo messages
+        // Cache demo messages using the extracted conversationId
         messageCache.current.set(conversationId, demoMessages);
         
         // Hide greeting for demo conversations too
@@ -373,7 +373,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         variant: 'default',
       }));
       
-      // Replace current messages with loaded conversation and cache them
+      // Replace current messages with loaded conversation and cache them using the extracted conversationId
       setMessages(convertedMessages);
       messageCache.current.set(conversationId, convertedMessages);
       

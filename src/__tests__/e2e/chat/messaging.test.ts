@@ -27,8 +27,8 @@ describe('E2E Chat and Messaging', () => {
         201
       );
       
-      testState.authToken = signupResponse.token;
-      testState.currentUser = signupResponse.data.user;
+      testState.authToken = (signupResponse as any)?.token;
+      testState.currentUser = (signupResponse as any)?.data?.user;
       console.log(`✅ Created messaging test user: ${testUser.email}`);
       
     } catch (error) {
@@ -43,8 +43,8 @@ describe('E2E Chat and Messaging', () => {
           }
         );
         
-        testState.authToken = loginResponse.token;
-        testState.currentUser = loginResponse.data.user;
+        testState.authToken = (loginResponse as any)?.token;
+        testState.currentUser = (loginResponse as any)?.data?.user;
         console.log(`✅ Logged in messaging test user: ${testUser.email}`);
         
       } catch (loginError) {

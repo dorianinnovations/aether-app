@@ -323,7 +323,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
         relationshipDetail: 'Your profile',
         location: 'Home',
         color: '#9F7AEA',
-        gradient: ['#9F7AEA', '#667EEA'],
+        gradient: ['#9F7AEA', '#667EEA'] as [string, string],
         preferences: {
           layout: 'modern' as CardLayout,
           profilePlacement: 'top-left' as ProfilePlacement,
@@ -359,7 +359,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
       relationshipDetail: 'Connected on Aether',
       location: 'Unknown',
       color,
-      gradient: [color, color + '80'],
+      gradient: [color, color] as [string, string],
       preferences: {
         layout: layouts[Math.abs(hash * 3) % layouts.length],
         profilePlacement: placements[Math.abs(hash * 4) % placements.length],

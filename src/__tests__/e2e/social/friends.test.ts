@@ -23,7 +23,7 @@ describe('E2E Friends Management', () => {
       }
     );
     
-    primaryUserToken = primaryLogin.token;
+    primaryUserToken = (primaryLogin as any).token;
     testState.authToken = primaryUserToken;
 
     // Login secondary user for friend interactions
@@ -36,7 +36,7 @@ describe('E2E Friends Management', () => {
       }
     );
     
-    secondaryUserToken = secondaryLogin.token;
+    secondaryUserToken = (secondaryLogin as any).token;
 
     console.log('✅ Both test users logged in successfully');
   });
@@ -120,7 +120,7 @@ describe('E2E Friends Management', () => {
         200
       );
 
-      secondaryUsername = response.username;
+      secondaryUsername = (response as any).username;
       expect(secondaryUsername).toBeDefined();
       console.log(`👤 Secondary user username: ${secondaryUsername}`);
 
@@ -342,7 +342,7 @@ describe('E2E Friends Management', () => {
         }
       );
 
-      const friends = response.friends || response.data || response;
+      const friends = (response as any).friends || (response as any).data || response;
       expect(Array.isArray(friends)).toBe(true);
       console.log(`👥 Retrieved friends list with ${friends.length} friends`);
 
@@ -370,7 +370,7 @@ describe('E2E Friends Management', () => {
         200
       );
 
-      const friends = response.friends || response.data || response;
+      const friends = (response as any).friends || (response as any).data || response;
       expect(Array.isArray(friends)).toBe(true);
       
       // Empty friends list should still return valid structure
@@ -387,7 +387,7 @@ describe('E2E Friends Management', () => {
           200
         );
 
-        const friends = response.friends || response.data || response;
+        const friends = (response as any).friends || (response as any).data || response;
         expect(Array.isArray(friends)).toBe(true);
         console.log(`📄 Paginated friends list: ${friends.length} friends`);
         
@@ -579,8 +579,8 @@ describe('E2E Friends Management', () => {
 
         testState.authToken = primaryUserToken; // Switch back
 
-        const primaryFriendsList = primaryFriends.friends || primaryFriends.data || primaryFriends;
-        const secondaryFriendsList = secondaryFriends.friends || secondaryFriends.data || secondaryFriends;
+        const primaryFriendsList = (primaryFriends as any).friends || (primaryFriends as any).data || primaryFriends;
+        const secondaryFriendsList = (secondaryFriends as any).friends || (secondaryFriends as any).data || secondaryFriends;
 
         const primaryHasSecondary = primaryFriendsList.some((friend: any) => 
           friend.username === secondaryUsername ||
@@ -613,11 +613,11 @@ describe('E2E Friends Management', () => {
         200
       );
 
-      const beforeCount = (beforeFriends.friends || beforeFriends.data || beforeFriends).length;
+      const beforeCount = ((beforeFriends as any).friends || (beforeFriends as any).data || beforeFriends).length;
 
       // Perform lookup of existing friend
       if (beforeCount > 0) {
-        const existingFriend = (beforeFriends.friends || beforeFriends.data || beforeFriends)[0];
+        const existingFriend = ((beforeFriends as any).friends || (beforeFriends as any).data || beforeFriends)[0];
         const friendUsername = existingFriend.username || existingFriend.user?.username;
 
         if (friendUsername) {

@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Post } from '../types';
 import { generateMockPosts } from '../utils';
-import { SocialProxyAPI } from '../../../services/api/endpoints/social';
+import { SocialProxyAPI } from '../../../services/apiModules/endpoints/social';
 
 export interface UseSocialDataReturn {
   posts: Post[];

@@ -18,6 +18,7 @@ import {
 describe('E2E Conversation Management', () => {
   const testSuite = createTestSuite('Conversation Management');
   let testMessages: any[] = [];
+  let testConversationIds: string[] = [];
 
   beforeAll(testSuite.beforeAll);
   afterAll(testSuite.afterAll);
@@ -344,7 +345,7 @@ describe('E2E Conversation Management', () => {
         );
 
         // Empty search might return all conversations or no results
-        const results = response.conversations || response.results || response.data || response;
+        const results = (response as any)?.conversations || (response as any)?.results || (response as any)?.data || response;
         expect(results).toBeDefined();
         
       } catch (error: any) {
@@ -370,7 +371,7 @@ describe('E2E Conversation Management', () => {
             200
           );
 
-          const results = response.conversations || response.results || response.data || response;
+          const results = (response as any)?.conversations || (response as any)?.results || (response as any)?.data || response;
           console.log(`🔍 Search for "${query}": ${Array.isArray(results) ? results.length : 'N/A'} results`);
           
         } catch (error: any) {
@@ -386,7 +387,7 @@ describe('E2E Conversation Management', () => {
   describe('Conversation Sync', () => {
     test('should sync conversations for offline support', async () => {
       const syncData = {
-        conversations: testConversationIds.map(id => ({
+        conversations: testConversationIds.map((id: string) => ({
           id,
           lastModified: new Date().toISOString(),
           messageCount: 2
@@ -459,10 +460,10 @@ describe('E2E Conversation Management', () => {
         200
       );
 
-      const conversationId = deleteTestConversation.id || 
-                           deleteTestConversation._id || 
-                           deleteTestConversation.conversationId || 
-                           deleteTestConversation.data?.id;
+      const conversationId = (deleteTestConversation as any)?.id || 
+                           (deleteTestConversation as any)?._id || 
+                           (deleteTestConversation as any)?.conversationId || 
+                           (deleteTestConversation as any)?.data?.id;
 
       if (!conversationId) {
         throw new Error('Failed to create conversation for deletion test');

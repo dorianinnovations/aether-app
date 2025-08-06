@@ -59,6 +59,7 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
   const themeColors = getThemeColors(theme);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
   
   // Main modal animations
   const backgroundOpacity = useRef(new Animated.Value(0)).current;
@@ -169,6 +170,7 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
   // Effect to handle visibility changes - use useLayoutEffect to avoid insertion warnings
   useLayoutEffect(() => {
     if (visible) {
+      setShouldRender(true);
       // Schedule animation in next tick to avoid insertion effect warning
       const timeoutId = setTimeout(() => {
         showModal();
@@ -176,6 +178,11 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
       return () => clearTimeout(timeoutId);
     } else {
       hideModal();
+      // Delay unmounting to allow exit animation
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+      }, 300); // Match hideModal animation duration
+      return () => clearTimeout(timer);
     }
   }, [visible]); // Remove showModal and hideModal from dependencies to prevent infinite loop
 
@@ -304,7 +311,7 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
     );
   };
 
-  if (!visible) return null;
+  if (!shouldRender) return null;
 
   return (
     <Modal
