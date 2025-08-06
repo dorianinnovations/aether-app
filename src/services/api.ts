@@ -1048,10 +1048,24 @@ export const SpotifyAPI = {
   // Get Spotify authorization URL
   async getAuthUrl(): Promise<any> {
     try {
-      const response = await api.get('/spotify/auth');
+      const response = await api.get('/spotify/auth?platform=mobile');
       return response.data;
     } catch (error) {
       console.error('Failed to get Spotify auth URL:', error);
+      throw error;
+    }
+  },
+
+  // Handle mobile OAuth callback
+  async handleMobileCallback(code: string, state: string): Promise<any> {
+    try {
+      const response = await api.post('/spotify/mobile-callback', {
+        code,
+        state
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to handle mobile callback:', error);
       throw error;
     }
   },
@@ -1103,6 +1117,46 @@ export const SpotifyAPI = {
       return response.data;
     } catch (error) {
       console.error('Failed to share track:', error);
+      throw error;
+    }
+  },
+
+  // Get live Spotify status for a friend
+  async getLiveStatus(username: string): Promise<any> {
+    try {
+      const response = await api.get(`/spotify/live-status/${username}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get live Spotify status:', error);
+      throw error;
+    }
+  }
+};
+
+// Notifications API for real-time updates
+export const NotificationsAPI = {
+  // Get notification service stats
+  async getStats(): Promise<any> {
+    try {
+      const response = await api.get('/notifications/stats');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get notification stats:', error);
+      throw error;
+    }
+  },
+
+  // Send test notification (for development)
+  async sendTest(type?: string, message?: string, data?: any): Promise<any> {
+    try {
+      const response = await api.post('/notifications/test', {
+        type,
+        message,
+        data
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to send test notification:', error);
       throw error;
     }
   }
