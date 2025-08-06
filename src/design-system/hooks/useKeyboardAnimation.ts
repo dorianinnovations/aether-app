@@ -2,7 +2,7 @@
  * Hook for smooth keyboard animations
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Keyboard, Platform, Animated } from 'react-native';
 
 export interface UseKeyboardAnimationOptions {

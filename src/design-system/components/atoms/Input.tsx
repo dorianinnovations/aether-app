@@ -7,7 +7,6 @@ import React from 'react';
 import {
   TextInput,
   View,
-  Text,
   StyleSheet,
   Animated,
   ViewStyle,

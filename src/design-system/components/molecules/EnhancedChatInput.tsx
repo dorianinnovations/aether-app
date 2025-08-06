@@ -9,26 +9,24 @@ import {
   TextInput,
   TouchableOpacity,
   Animated,
-  Platform,
   StyleSheet,
   Dimensions,
   Text,
   Easing,
   Alert,
-  Keyboard,
 } from 'react-native';
 import { FontAwesome5, Feather } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import { designTokens, getThemeColors, getComponentBorder, getUserMessageColor } from '../../tokens/colors';
+import { getThemeColors, getUserMessageColor } from '../../tokens/colors';
 import { typography } from '../../tokens/typography';
-import { spacing, borderRadius } from '../../tokens/spacing';
+import { spacing } from '../../tokens/spacing';
 import { getNeumorphicStyle } from '../../tokens/shadows';
 import { getGlassmorphicStyle } from '../../tokens/glassmorphism';
 
-const { width } = Dimensions.get('window');
+const {} = Dimensions.get('window');
 
 // Import the centralized LottieLoader
 import { LottieLoader } from '../atoms';
@@ -75,7 +73,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
   maxAttachments = 5,
   attachments = [],
   onAttachmentsChange,
-  colorfulBubblesEnabled = false,
+  _colorfulBubblesEnabled = false,
   onFocus,
   onBlur,
   onSwipeUp,
@@ -83,10 +81,10 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
 }) => {
   const themeColors = getThemeColors(theme);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading] = useState(false);
   const [attachmentButtonsVisible, setAttachmentButtonsVisible] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const keyboardAnim = useRef(new Animated.Value(0)).current;
+  // Removed unused _keyboardHeight
+  // Removed unused _keyboardAnim
   
   // Animated values for smooth animations
   const voiceAnimScale = useRef(new Animated.Value(1)).current;
@@ -118,7 +116,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
   const hasAttachments = attachments.length > 0;
   const canSend = (!isInputEmpty || hasAttachments) && !isLoading && !isUploading;
   const hasImageOnlyMessage = isInputEmpty && attachments.some(att => att.type === 'image');
-  const hasImages = attachments.some(att => att.type === 'image');
+  // Removed unused _hasImages
 
 
   // Voice recording animation
@@ -196,14 +194,50 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
     // Close attachment buttons immediately after sending to prevent keyboard avoiding view issues
     if (attachmentButtonsVisible) {
       setAttachmentButtonsVisible(false);
-      Animated.spring(attachmentButtonsAnim, {
-        toValue: 0,
-        useNativeDriver: false,
-        tension: 220,
-        friction: 10,
-      }).start();
+      
+      // Slide out icons quickly
+      Animated.parallel([
+        Animated.timing(cameraSlideAnim, {
+          toValue: 50,
+          duration: 100,
+          useNativeDriver: true,
+          easing: Easing.in(Easing.cubic),
+        }),
+        Animated.timing(gallerySlideAnim, {
+          toValue: 50,
+          duration: 100,
+          useNativeDriver: true,
+          easing: Easing.in(Easing.cubic),
+        }),
+        Animated.timing(documentSlideAnim, {
+          toValue: 50,
+          duration: 100,
+          useNativeDriver: true,
+          easing: Easing.in(Easing.cubic),
+        }),
+      ]).start();
+
+      // Container closing animation
+      Animated.parallel([
+        Animated.timing(attachmentButtonScale, {
+          toValue: 1,
+          duration: 50,
+          useNativeDriver: true,
+        }),
+        Animated.timing(attachmentButtonsAnim, {
+          toValue: 0,
+          duration: 120,
+          useNativeDriver: false,
+          easing: Easing.out(Easing.cubic),
+        }),
+      ]).start(() => {
+        // Reset positions for next open
+        cameraSlideAnim.setValue(-50);
+        gallerySlideAnim.setValue(-50);
+        documentSlideAnim.setValue(-50);
+      });
     }
-  }, [canSend, sendButtonScale, onSend, attachmentButtonsVisible, attachmentButtonsAnim]);
+  }, [canSend, sendButtonScale, onSend, attachmentButtonsVisible, attachmentButtonsAnim, attachmentButtonScale, cameraSlideAnim, gallerySlideAnim, documentSlideAnim]);
 
   const handleRemoveAttachment = (attachmentId: string) => {
     if (onAttachmentsChange) {
@@ -234,7 +268,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
       if (!result.canceled && result.assets[0]) {
         await handleNewAttachment(result.assets[0]);
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Camera Error', 'Unable to access camera. Please try again.');
     }
   };
@@ -259,7 +293,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
           await handleNewAttachment(asset);
         }
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Gallery Error', 'Unable to access photo library. Please try again.');
     }
   };
@@ -279,7 +313,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
       if (!result.canceled && result.assets[0]) {
         await handleNewAttachment(result.assets[0]);
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Document Error', 'Unable to select document. Please try again.');
     }
   };
@@ -303,8 +337,8 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
     if (onAttachmentsChange) {
       onAttachmentsChange([...attachments, newAttachment]);
       
-      // Close attachment popout when adding images
-      if (newAttachment.type === 'image' && attachmentButtonsVisible) {
+      // Close attachment popout when adding any attachment
+      if (attachmentButtonsVisible) {
         setAttachmentButtonsVisible(false);
         
         // Slide out icons quickly

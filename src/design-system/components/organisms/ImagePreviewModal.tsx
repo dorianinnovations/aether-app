@@ -3,7 +3,7 @@
  * Fullscreen modal for viewing images with zoom and pan capabilities
  */
 
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Image,
@@ -41,8 +41,8 @@ export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
   const imageOpacity = useRef(new Animated.Value(0)).current;
   
   // State
-  const [isLoading, setIsLoading] = useState(true);
-  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  // Removed unused isLoading
+  // Removed unused imageDimensions
 
   // Calculate image dimensions to fit screen
   const getImageDimensions = useCallback(() => {

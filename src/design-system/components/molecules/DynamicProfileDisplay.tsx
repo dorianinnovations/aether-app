@@ -68,12 +68,12 @@ interface DynamicProfileDisplayProps {
 
 export const DynamicProfileDisplay: React.FC<DynamicProfileDisplayProps> = ({
   personality,
-  loading,
+  _loading,
   onRefresh
 }) => {
   const { theme, colors } = useTheme();
   const [expanded, setExpanded] = useState(false);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
+  // const [_activeSection, _setActiveSection] = useState<string | null>(null);
   
   // Animation refs
   const expandAnimation = useRef(new Animated.Value(0)).current;

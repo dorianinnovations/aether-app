@@ -43,17 +43,17 @@ interface ConnectionCardProps {
 }
 
 const ConnectionCard: React.FC<ConnectionCardProps> = ({
-  id,
+  _id,
   name,
   avatar,
   bannerImage,
   bannerColor,
-  connectionType,
+  _connectionType,
   connectionQualia,
   sharedInterests,
-  distance,
-  lastSeen,
-  bio,
+  _distance,
+  _lastSeen,
+  _bio,
   theme = 'light',
   onPress,
   onConnect,
@@ -82,12 +82,12 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({
     onConnect?.();
   };
 
-  const getConnectionTypeLabel = () => {
-    return connectionType
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, str => str.toUpperCase())
-      .trim();
-  };
+  // const _getConnectionTypeLabel = () => {
+  //   return _connectionType
+  //     .replace(/([A-Z])/g, ' $1')
+  //     .replace(/^./, str => str.toUpperCase())
+  //     .trim();
+  // };
 
   const getQualiaIcon = () => {
     if (!connectionQualia || !connectionQualia.vibe) return '✨';
@@ -130,26 +130,26 @@ const ConnectionCard: React.FC<ConnectionCardProps> = ({
     return indicators[connectionQualia.timing as keyof typeof indicators] || 'Active member';
   };
 
-  const getDefaultBannerColor = () => {
-    // Generate a beautiful gradient based on the user's name
-    const bannerColors = [
-      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-      'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-      'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-      'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-      'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-    ];
-    
-    const hash = name.split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
-      return a & a;
-    }, 0);
-    
-    return bannerColors[Math.abs(hash) % bannerColors.length];
-  };
+  // const _getDefaultBannerColor = () => {
+  //   // Generate a beautiful gradient based on the user's name
+  //   const bannerColors = [
+  //     'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  //     'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+  //     'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+  //     'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+  //     'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  //     'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+  //     'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+  //     'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+  //   ];
+  //   
+  //   const hash = name.split('').reduce((a, b) => {
+  //     a = ((a << 5) - a) + b.charCodeAt(0);
+  //     return a & a;
+  //   }, 0);
+  //   
+  //   return bannerColors[Math.abs(hash) % bannerColors.length];
+  // };
 
   const getBannerStyle = () => {
     if (bannerImage) {

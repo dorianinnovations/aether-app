@@ -108,12 +108,6 @@ const TechyToggleSwitch: React.FC<TechyToggleSwitchProps> = ({
   // Thumb animated style
   const thumbAnimatedStyle = useAnimatedStyle(() => {
     const translateX = animatedValue.value * (config.width - config.thumbSize - 6);
-    
-    const shadowOpacity = interpolateColor(
-      animatedValue.value,
-      [0, 1],
-      [0, 0.3]
-    );
 
     return {
       transform: [

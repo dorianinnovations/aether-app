@@ -25,10 +25,10 @@ export const RainbowShimmerText: React.FC<RainbowShimmerTextProps> = ({
   duration = 4000,
   enabled = true,
   delay = 0,
-  intensity = 'vibrant',
-  customShimmerColor,
+  _intensity = 'vibrant',
+  _customShimmerColor,
   waveWidth = 'wide',
-  colorMode = 'rainbow-cycle'
+  _colorMode = 'rainbow-cycle'
 }) => {
   const { theme } = useTheme();
   const animatedValue = useRef(new Animated.Value(0)).current;
@@ -49,10 +49,7 @@ export const RainbowShimmerText: React.FC<RainbowShimmerTextProps> = ({
     // Dimmer base color
     const baseColor = theme === 'dark' ? '#e0e0e0' : '#8a8a8a';
     
-    // Rainbow colors will be applied per character based on position
-    const shimmerColor = '#ffffff'; // Default, will be overridden
-    
-    return { baseColor, shimmerColor };
+    return { baseColor };
   };
 
   // Get wave width settings

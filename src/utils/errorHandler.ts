@@ -232,7 +232,7 @@ class ErrorHandler {
   /**
    * Standardize any error into our unified format
    */
-  public standardizeError(error: any, context?: Record<string, any>): StandardizedError {
+  public standardizeError(error: unknown, context?: Record<string, unknown>): StandardizedError {
     const errorId = this.generateErrorId();
     const timestamp = new Date().toISOString();
     
@@ -332,7 +332,7 @@ class ErrorHandler {
   /**
    * Handle error and return standardized API response
    */
-  public handleError<T = any>(error: any, context?: Record<string, any>): StandardAPIResponse<T> {
+  public handleError<T = unknown>(error: unknown, context?: Record<string, unknown>): StandardAPIResponse<T> {
     const standardizedError = this.standardizeError(error, context);
     return this.toAPIError(standardizedError);
   }
@@ -458,14 +458,14 @@ export const errorHandler = ErrorHandler.getInstance();
 /**
  * Quick function to standardize and handle any error
  */
-export const handleError = (error: any, context?: Record<string, any>): StandardAPIResponse => {
+export const handleError = (error: unknown, context?: Record<string, unknown>): StandardAPIResponse => {
   return errorHandler.handleError(error, context);
 };
 
 /**
  * Check if an error is retryable
  */
-export const isRetryableError = (error: any): boolean => {
+export const isRetryableError = (error: unknown): boolean => {
   const standardized = errorHandler.standardizeError(error);
   return standardized.retryable;
 };
@@ -473,7 +473,7 @@ export const isRetryableError = (error: any): boolean => {
 /**
  * Get user-friendly message from any error
  */
-export const getUserMessage = (error: any): string => {
+export const getUserMessage = (error: unknown): string => {
   const standardized = errorHandler.standardizeError(error);
   return standardized.userMessage;
 };
@@ -481,7 +481,7 @@ export const getUserMessage = (error: any): string => {
 /**
  * Check if error is network related
  */
-export const isNetworkError = (error: any): boolean => {
+export const isNetworkError = (error: unknown): boolean => {
   const standardized = errorHandler.standardizeError(error);
   return standardized.category === ErrorCategory.NETWORK;
 };
@@ -489,7 +489,7 @@ export const isNetworkError = (error: any): boolean => {
 /**
  * Check if error is authentication related
  */
-export const isAuthError = (error: any): boolean => {
+export const isAuthError = (error: unknown): boolean => {
   const standardized = errorHandler.standardizeError(error);
   return standardized.category === ErrorCategory.AUTHENTICATION;
 };

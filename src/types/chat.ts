@@ -18,8 +18,8 @@ export interface MessageAttachment {
 export interface ToolCall {
   id: string;
   name: string;
-  parameters: any;
-  result?: any;
+  parameters: Record<string, unknown>;
+  result?: unknown;
   status: 'pending' | 'running' | 'completed' | 'failed';
 }
 

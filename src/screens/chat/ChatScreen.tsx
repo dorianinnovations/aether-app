@@ -3,7 +3,7 @@
  * The heart of Aether - AI that learns and adapts to your patterns
  */
 
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   FlatList,
@@ -24,25 +24,19 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import * as Clipboard from 'expo-clipboard';
-import LottieView from 'lottie-react-native';
 
 // Enhanced Components
-import { EnhancedChatInput, ChatHeader } from '../../design-system/components/molecules';
+import { EnhancedChatInput } from '../../design-system/components/molecules';
 import EnhancedBubble from '../../design-system/components/molecules/EnhancedBubble';
-import BasicMarkdown from '../../design-system/components/atoms/BasicMarkdown';
 import { Header, HeaderMenu, SignOutModal } from '../../design-system/components/organisms';
 import { PageBackground } from '../../design-system/components/atoms/PageBackground';
 import SettingsModal from './SettingsModal';
 import ConversationDrawer from '../../components/ConversationDrawer';
-import ScrollToBottomButton from '../../design-system/components/atoms/ScrollToBottomButton';
-import Tooltip from '../../design-system/components/atoms/Tooltip';
 import { ShimmerText } from '../../design-system/components/atoms/ShimmerText';
 import { WebSearchIndicator } from '../../design-system/components/atoms';
-import { WebSearchResult } from '../../design-system/components/molecules';
 
 // Design System
-import { designTokens, getThemeColors, getLoadingTextColor } from '../../design-system/tokens/colors';
+import { designTokens } from '../../design-system/tokens/colors';
 import { getHeaderMenuShadow } from '../../design-system/tokens/shadows';
 
 // Contexts
@@ -50,9 +44,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { typography } from '../../design-system/tokens/typography';
 import { spacing } from '../../design-system/tokens/spacing';
-import { createNeumorphicContainer } from '../../design-system/tokens/shadows';
 import { getGlassmorphicStyle } from '../../design-system/tokens/glassmorphism';
-import Icon from '../../design-system/components/atoms/Icon';
 import { useHeaderMenu } from '../../design-system/hooks';
 
 // Custom hooks
@@ -63,6 +55,9 @@ import { useDynamicPrompts } from '../../hooks/useDynamicPrompts';
 import { useSimpleScroll } from '../../hooks/useSimpleScroll';
 import { useWebSearch } from '../../hooks/useWebSearch';
 import { useGhostTyping } from '../../hooks/useGhostTyping';
+
+// Types
+import type { Message } from '../../types/chat';
 
 // Services
 import { AuthAPI, FriendsAPI, ConversationAPI } from '../../services/api';
@@ -76,8 +71,6 @@ import {
   type ModalAnimationRefs 
 } from '../../utils/animations';
 
-// Types
-import { ToolCall } from '../../types';
 
 
 interface ChatScreenProps {}
@@ -99,13 +92,13 @@ const useDimensions = () => {
 
 const ChatScreen: React.FC<ChatScreenProps> = () => {
   const navigation = useNavigation();
-  const { theme, colors, toggleTheme } = useTheme();
+  const { theme, colors } = useTheme();
   const { settings } = useSettings();
-  const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = useDimensions();
+  const { width: SCREEN_WIDTH } = useDimensions();
   
   // Custom hooks
   const { greetingText, showGreeting, setShowGreeting } = useGreeting();
-  const { keyboardHeight, greetingAnimY, greetingOpacity } = useKeyboardAnimation();
+  const { greetingAnimY, greetingOpacity } = useKeyboardAnimation();
 
   // Simple scroll hook
   const { 
@@ -117,7 +110,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     handleScroll,
     showScrollButton,
     buttonOpacity,
-    isAtBottom
+    // isAtBottom
   } = useSimpleScroll();
 
   // Web search hook  
@@ -126,21 +119,22 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     isSearching,
     searchQuery,
     shouldShowSearchIndicator,
-    clearSearch
+    // clearSearch
   } = useWebSearch();
 
   
   // UI State
   const [inputText, setInputText] = useState('');
-  const [showCopyTooltip, setShowCopyTooltip] = useState(false);
-  const [showTestTooltip, setShowTestTooltip] = useState(true);
+  const [, setShowCopyTooltip] = useState(false);
+  const [, setShowTestTooltip] = useState(true);
   const [showDynamicOptionsModal, setShowDynamicOptionsModal] = useState(false);
-  const [showSignOutModal, setShowSignOutModal] = useState(false);
-  const [shouldRenderSignOutModal, setShouldRenderSignOutModal] = useState(false);
-  const [headerVisible, setHeaderVisible] = useState(true);
+  const [headerVisible] = useState(true);
   const [attachments, setAttachments] = useState<any[]>([]);
-  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+  const [, setIsVoiceRecording] = useState(false);
   const [isChatInputFocused, setIsChatInputFocused] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const inputContainerAnim = useRef(new Animated.Value(0)).current;
   
   // Animation refs
   const tooltipOpacity = useRef(new Animated.Value(1)).current;
@@ -148,8 +142,11 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   const modalAnimationRefs = useRef<ModalAnimationRefs>(createModalAnimationRefs()).current;
   const headerAnim = useRef(new Animated.Value(1)).current;
 
-  // Settings modal state
+  // Settings modal state - simplified
   const [showSettings, setShowSettings] = useState(false);
+  
+  // SignOut modal state
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
   
   // Conversation drawer state
   const [showConversationDrawer, setShowConversationDrawer] = useState(false);
@@ -181,18 +178,18 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     isStreaming,
     handleSend: handleMessageSend,
     handleMessagePress,
-    handleMessageLongPress,
+    // handleMessageLongPress,
     handleConversationSelect,
     setMessages,
-    flatListRef: messagesRef,
+    // flatListRef: messagesRef,
   } = useMessages(() => setShowGreeting(false), currentConversationId);
 
   // Dynamic prompts hook for intelligent contextual options (after useMessages)
   const {
     prompts: dynamicPrompts,
     isAnalyzing: isAnalyzingContext,
-    executePrompt,
-    refreshPrompts
+    // executePrompt,
+    // refreshPrompts
   } = useDynamicPrompts({
     messages: messages.map(msg => ({
       id: msg.id,
@@ -213,13 +210,15 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   // Header menu hook
   const { showHeaderMenu, setShowHeaderMenu, handleMenuAction, toggleHeaderMenu } = useHeaderMenu({
     screenName: 'chat',
-    onSettingsPress: () => setShowSettings(true),
+    onSettingsPress: () => {
+      setShowSettings(true);
+    },
     onSignOut: () => setShowSignOutModal(true)
   });
 
-  // Add Friend modal visibility effect with delay
-  useLayoutEffect(() => {
-    if (showAddFriendModal) {
+  // Add Friend modal visibility effect - fixed to prevent useInsertionEffect warnings
+  useEffect(() => {
+    if (showAddFriendModal && !shouldRenderAddFriendModal) {
       setShouldRenderAddFriendModal(true);
       // Fade in
       Animated.timing(addFriendModalOpacity, {
@@ -227,7 +226,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
         duration: 150,
         useNativeDriver: true,
       }).start();
-    } else {
+    } else if (!showAddFriendModal && shouldRenderAddFriendModal) {
       // Fade out animation
       Animated.timing(addFriendModalOpacity, {
         toValue: 0,
@@ -242,24 +241,25 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
       }, 300); // Match fade duration
       return () => clearTimeout(timer);
     }
-  }, [showAddFriendModal]);
+  }, [showAddFriendModal, shouldRenderAddFriendModal]);
 
-  // Manage SignOutModal lifecycle with shouldRender pattern
-  useEffect(() => {
-    if (showSignOutModal) {
-      setShouldRenderSignOutModal(true);
-    } else if (shouldRenderSignOutModal) {
-      // Only set timeout if modal was actually rendered
-      const timer = setTimeout(() => {
-        setShouldRenderSignOutModal(false);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [showSignOutModal, shouldRenderSignOutModal]);
+  // Settings modal logic removed - just use showSettings directly
+
 
   // Keyboard event listeners for proper scroll behavior (only for chat input)
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
+      setIsKeyboardVisible(true);
+      setKeyboardHeight(e.endCoordinates.height);
+      
+      // Animate to keyboard position using native driver
+      Animated.timing(inputContainerAnim, {
+        toValue: -(e.endCoordinates.height - 20),
+        duration: 200,
+        easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+        useNativeDriver: true,
+      }).start();
+      
       // Only scroll to bottom if the chat input is focused
       if (isChatInputFocused) {
         setTimeout(() => {
@@ -269,7 +269,16 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     });
 
     const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-      // Optional: scroll adjustment when keyboard hides if needed
+      setIsKeyboardVisible(false);
+      setKeyboardHeight(0);
+      
+      // Animate to hidden position using native driver
+      Animated.timing(inputContainerAnim, {
+        toValue: 0,
+        duration: 200,
+        easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+        useNativeDriver: true,
+      }).start();
     });
 
     return () => {
@@ -289,7 +298,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   }, []);
 
   // Smart suggestions based on context
-  const [suggestions] = useState([
+  const [_suggestions] = useState([
     "How are you feeling today?",
     "Help me understand my patterns",
     "What can you tell me about myself?",
@@ -300,7 +309,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
 
 
   // Handle sending message - simplified wrapper
-  const handleSend = async () => {
+  const _handleSend = async () => {
     if ((!inputText.trim() && attachments.length === 0) || isLoading) return;
     
     // Store current values before clearing to prevent race conditions
@@ -318,18 +327,18 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   };
 
   // Handle suggestion press
-  const handleSuggestionPress = (suggestion: string) => {
-    setInputText(suggestion);
+  const _handleSuggestionPress = (_suggestion: string) => {
+    setInputText(_suggestion);
   };
 
   // Handle settings press
-  const handleSettingsPress = () => {
+  const _handleSettingsPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowSettings(true);
   };
 
   // Handle conversation history press
-  const handleConversationHistoryPress = () => {
+  const _handleConversationHistoryPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowConversationDrawer(true);
   };
@@ -472,25 +481,26 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
           showStatus(errorMessage, 'error', 3000);
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Network and other errors
       performShakeAnimation();
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       
       let errorMessage = 'Network error. Please try again.';
       
-      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        errorMessage = 'Request timed out. Check your connection and try again.';
-      } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('network')) {
-        errorMessage = 'Network error. Check your internet connection.';
-      } else if (error.response?.status === 401) {
+      const errorObj = error as { code?: string; message?: string; response?: { status: number } };
+      if (errorObj.code === 'ECONNABORTED' || errorObj.message?.includes('timeout')) {
+        errorMessage = 'Network error, try again in a few minutes';
+      } else if (errorObj.code === 'NETWORK_ERROR' || errorObj.message?.includes('network')) {
+        errorMessage = 'Network error, try again in a few minutes';
+      } else if (errorObj.response?.status === 401) {
         errorMessage = 'Authentication failed. Please sign in again.';
-      } else if (error.response?.status === 429) {
+      } else if (errorObj.response?.status === 429) {
         errorMessage = 'Too many requests. Please wait and try again.';
-      } else if (error.response?.status >= 500) {
+      } else if (errorObj.response?.status && errorObj.response.status >= 500) {
         errorMessage = 'Server error. Please try again later.';
-      } else if (error.message) {
-        errorMessage = `Error: ${error.message}`;
+      } else if (errorObj.message) {
+        errorMessage = `Error: ${errorObj.message}`;
       }
       
       showStatus(errorMessage, 'error', 4000);
@@ -501,28 +511,18 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
 
 
   // Enhanced message press handler with tooltip
-  const handleMessagePressWithTooltip = async (message: any) => {
-    await handleMessagePress(message);
+  const _handleMessagePressWithTooltip = async (_message: Message) => {
+    await handleMessagePress(_message);
     setShowCopyTooltip(true);
   };
 
   // Handle scroll to bottom button press
-  const handleScrollToBottom = () => {
+  const _handleScrollToBottom = () => {
     flatListRef.current?.scrollToEnd({ animated: true });
   };
 
   // Enhanced handlers for new components
   // Note: handleMenuAction now provided by useHeaderMenu hook
-
-  const handleSignOut = async () => {
-    try {
-      await AuthAPI.logout();
-      // Auth check in App.tsx will handle navigation automatically
-    } catch (error) {
-      console.error('Sign out failed:', error);
-      throw error; // Re-throw to let SignOutModal handle error state
-    }
-  };
 
   const handleVoiceStart = () => {
     setIsVoiceRecording(true);
@@ -592,7 +592,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   };
 
   // Handle dynamic options tooltip press
-  const handleDynamicOptionsPress = () => {
+  const _handleDynamicOptionsPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     createTooltipPressAnimation(tooltipScale);
 
@@ -646,7 +646,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   };
 
   // Render message item using EnhancedBubble for proper attachment support
-  const renderMessage = ({ item, index }: { item: any; index: number }) => {
+  const renderMessage = ({ item, index }: { item: Message; index: number }) => {
     return (
       <View style={styles.messageItem}>
         <EnhancedBubble
@@ -728,11 +728,13 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
         />
       </View>
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.inputContainer}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-        enabled={true}
+      <Animated.View 
+        style={[
+          styles.inputContainer,
+          {
+            transform: [{ translateY: inputContainerAnim }],
+          }
+        ]}
       >
         <Animated.View 
           style={[
@@ -759,7 +761,18 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
           </TouchableOpacity>
         </Animated.View>
         
-        <View style={styles.chatInputWrapper}>
+        <View style={[
+          styles.chatInputWrapper,
+          {
+            backgroundColor: theme === 'dark' 
+              ? 'rgba(20, 20, 20, 0.95)' 
+              : 'rgba(250, 250, 250, 0.95)',
+            borderTopWidth: 1,
+            borderTopColor: theme === 'dark' 
+              ? 'rgba(255, 255, 255, 0.1)' 
+              : 'rgba(0, 0, 0, 0.1)',
+          }
+        ]}>
           <EnhancedChatInput
             value={inputText}
             onChangeText={setInputText}
@@ -781,12 +794,21 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
             onSwipeUp={() => setShowTestTooltip(true)}
           />
         </View>
-      </KeyboardAvoidingView>
+      </Animated.View>
       
+      {/* Settings Modal */}
       <SettingsModal
         visible={showSettings}
         onClose={() => setShowSettings(false)}
-        onSignOut={async () => {
+        onSignOut={() => setShowSignOutModal(true)}
+        navigation={navigation}
+      />
+      
+      {/* SignOut Confirmation Modal */}
+      <SignOutModal
+        visible={showSignOutModal}
+        onClose={() => setShowSignOutModal(false)}
+        onConfirm={async () => {
           try {
             await AuthAPI.logout();
             // Auth check in App.tsx will handle navigation automatically
@@ -794,7 +816,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
             console.error('Sign out error:', error);
           }
         }}
-        navigation={navigation}
+        theme={theme}
       />
       
       <ConversationDrawer
@@ -837,20 +859,6 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
         potentialMatches={5}
       />
       
-      {/* Sign Out Modal */}
-      {shouldRenderSignOutModal && (
-        <SignOutModal
-          visible={showSignOutModal}
-          onClose={() => setShowSignOutModal(false)}
-          onConfirm={handleSignOut}
-          theme={theme}
-          title="Sign Out"
-          message="Are you sure you want to sign out of your account?"
-          confirmText="Sign Out"
-          cancelText="Cancel"
-          variant="danger"
-        />
-      )}
       
       {/* Dynamic Options Modal */}
       {showDynamicOptionsModal && (
@@ -1215,15 +1223,28 @@ const styles = StyleSheet.create({
   },
   
   inputContainer: {
+    position: 'absolute',
+    bottom: -40,
+    left: 0,
+    right: 0,
     backgroundColor: 'transparent',
-    paddingBottom: 80, // Lower the chat input further
   },
   
   chatInputWrapper: {
-    paddingHorizontal: 10,
-    paddingVertical: 2,
-    // Remove negative margin that might cause positioning issues
-    marginBottom: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    paddingBottom: 200, // Extend well below viewport
+    marginHorizontal: 0, // Extend to sides
+    marginBottom: -150, // Pull down to extend below screen edge
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 0, // Keep bottom square to extend off screen
+    borderBottomRightRadius: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
 
   // Message Styles
@@ -1319,9 +1340,9 @@ const styles = StyleSheet.create({
   },
   greetingText: {
     fontSize: 16,
-    fontWeight: '400',
-    fontFamily: 'Nunito_400Regular',
-    letterSpacing: -0.9,
+    fontWeight: '400', // Regular weight for Poppins balance
+    fontFamily: 'Poppins-Regular', // Poppins for luxury + readability balance
+    letterSpacing: -0.2, // Adjusted for Poppins geometric spacing
     textAlign: 'center',
     maxWidth: 280,
     alignSelf: 'center',

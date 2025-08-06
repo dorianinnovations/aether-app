@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { designTokens, getThemeColors } from '../../tokens/colors';
@@ -19,8 +18,6 @@ import { spacing, borderRadius } from '../../tokens/spacing';
 import { getNeumorphicStyle } from '../../tokens/shadows';
 import { getGlassmorphicStyle } from '../../tokens/glassmorphism';
 import { MessageAttachment } from '../../../types';
-
-const { width } = Dimensions.get('window');
 
 interface AttachmentPreviewProps {
   attachments: MessageAttachment[];

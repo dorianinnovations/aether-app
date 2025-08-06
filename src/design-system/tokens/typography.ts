@@ -325,6 +325,11 @@ export const fontConfig = {
   'Inter-Medium': require('../../../assets/fonts/Inter-Medium.ttf'),
   'Inter-SemiBold': require('../../../assets/fonts/Inter-SemiBold.ttf'),
   'Inter-Bold': require('../../../assets/fonts/Inter-Bold.ttf'),
+  
+  // Poppins (sans-serif) - modern geometric font for luxury + readability balance
+  'Poppins-Regular': require('../../../assets/fonts/Poppins-Regular.ttf'),
+  'Poppins-Medium': require('../../../assets/fonts/Poppins-Medium.ttf'),
+  'Poppins-SemiBold': require('../../../assets/fonts/Poppins-SemiBold.ttf'),
 };
 
 export default typography;

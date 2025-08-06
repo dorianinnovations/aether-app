@@ -3,16 +3,16 @@
  * Reusable modal that can be adapted for various confirmation dialogs
  */
 
-import React, { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  Animated,
+  // Animated,
   Modal,
   Dimensions,
-  Easing,
+  // Easing,
   BackHandler,
   Platform,
 } from 'react-native';
@@ -25,7 +25,7 @@ import { spacing } from '../../tokens/spacing';
 import { getGlassmorphicStyle } from '../../tokens/glassmorphism';
 import { getNeumorphicStyle } from '../../tokens/shadows';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 interface SignOutModalProps {
   visible: boolean;
@@ -57,210 +57,40 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
   showIcon = true,
 }) => {
   const themeColors = getThemeColors(theme);
-  const [isAnimating, setIsAnimating] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
-  const [shouldRender, setShouldRender] = useState(false);
-  
-  // Main modal animations
-  const backgroundOpacity = useRef(new Animated.Value(0)).current;
-  const modalScale = useRef(new Animated.Value(0.8)).current;
-  const modalOpacity = useRef(new Animated.Value(0)).current;
-  const modalTranslateY = useRef(new Animated.Value(50)).current;
-  
-  // Button animations
-  const confirmButtonScale = useRef(new Animated.Value(1)).current;
-  const cancelButtonScale = useRef(new Animated.Value(1)).current;
-  
-  // Icon animation
-  const iconScale = useRef(new Animated.Value(0)).current;
 
-  // Cleanup animations
-  const resetAnimations = useCallback(() => {
-    backgroundOpacity.setValue(0);
-    modalScale.setValue(0.8);
-    modalOpacity.setValue(0);
-    modalTranslateY.setValue(50);
-    iconScale.setValue(0);
-    confirmButtonScale.setValue(1);
-    cancelButtonScale.setValue(1);
-    setIsAnimating(false);
-    setIsConfirming(false);
-  }, []);
-
-  // Show animation
-  const showModal = useCallback(() => {
-    if (isAnimating) return;
-    
-    setIsAnimating(true);
-    resetAnimations();
-    
-    // Much faster background and modal entrance
-    Animated.parallel([
-      Animated.timing(backgroundOpacity, {
-        toValue: 1,
-        duration: 80,
-        useNativeDriver: true,
-      }),
-      Animated.timing(modalScale, {
-        toValue: 1,
-        duration: 120,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(modalOpacity, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-        easing: Easing.out(Easing.quad),
-      }),
-      Animated.timing(modalTranslateY, {
-        toValue: 0,
-        duration: 120,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      // Icon animates with modal for speed
-      ...(showIcon ? [Animated.timing(iconScale, {
-        toValue: 1,
-        duration: 120,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      })] : []),
-    ]).start(() => {
-      setIsAnimating(false);
-    });
-  }, [isAnimating, backgroundOpacity, modalScale, modalOpacity, modalTranslateY, iconScale, showIcon]);
-
-  // Hide animation
-  const hideModal = useCallback(() => {
-    if (isAnimating) return;
-    
-    setIsAnimating(true);
-    
-    // Ultra-fast exit animation
-    Animated.parallel([
-      Animated.timing(backgroundOpacity, {
-        toValue: 0,
-        duration: 60,
-        useNativeDriver: true,
-      }),
-      Animated.timing(modalScale, {
-        toValue: 0.95,
-        duration: 60,
-        useNativeDriver: true,
-        easing: Easing.in(Easing.cubic),
-      }),
-      Animated.timing(modalOpacity, {
-        toValue: 0,
-        duration: 60,
-        useNativeDriver: true,
-        easing: Easing.in(Easing.cubic),
-      }),
-      Animated.timing(modalTranslateY, {
-        toValue: 20,
-        duration: 60,
-        useNativeDriver: true,
-        easing: Easing.in(Easing.cubic),
-      }),
-    ]).start(() => {
-      resetAnimations();
-    });
-  }, [isAnimating, backgroundOpacity, modalScale, modalOpacity, modalTranslateY, resetAnimations]);
-
-  // Effect to handle visibility changes - use useLayoutEffect to avoid insertion warnings
-  useLayoutEffect(() => {
-    if (visible) {
-      setShouldRender(true);
-      // Schedule animation in next tick to avoid insertion effect warning
-      const timeoutId = setTimeout(() => {
-        showModal();
-      }, 0);
-      return () => clearTimeout(timeoutId);
-    } else {
-      hideModal();
-      // Delay unmounting to allow exit animation
-      const timer = setTimeout(() => {
-        setShouldRender(false);
-      }, 300); // Match hideModal animation duration
-      return () => clearTimeout(timer);
-    }
-  }, [visible]); // Remove showModal and hideModal from dependencies to prevent infinite loop
-
-  // Handle Android back button
+  // Handle Android back button - simplified
   useEffect(() => {
     if (Platform.OS === 'android' && visible) {
       const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-        if (!isAnimating) {
-          handleCancel();
-        }
+        handleCancel();
         return true;
       });
       return () => backHandler.remove();
     }
-  }, [visible, isAnimating]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      resetAnimations();
-    };
-  }, [resetAnimations]);
+  }, [visible]);
 
   const handleCancel = () => {
-    if (isAnimating || isConfirming) return;
-    
+    if (isConfirming) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    Animated.sequence([
-      Animated.timing(cancelButtonScale, {
-        toValue: 0.96,
-        duration: 30,
-        useNativeDriver: true,
-      }),
-      Animated.timing(cancelButtonScale, {
-        toValue: 1,
-        duration: 50,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      onClose();
-    });
+    onClose();
   };
 
-  const handleConfirm = () => {
-    if (isAnimating || isConfirming) return;
+  const handleConfirm = async () => {
+    if (isConfirming) return;
     
     setIsConfirming(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    Animated.sequence([
-      Animated.timing(confirmButtonScale, {
-        toValue: 0.96,
-        duration: 30,
-        useNativeDriver: true,
-      }),
-      Animated.timing(confirmButtonScale, {
-        toValue: 1,
-        duration: 50,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      // Start the signout process - the Lottie animation will show during isConfirming state
-      // We'll delay the actual onConfirm call to allow users to see the animation
-      setTimeout(async () => {
-        try {
-          await onConfirm();
-          // Close modal after successful signout
-          onClose();
-        } catch (error) {
-          console.error('SignOut error in modal:', error);
-          // Still close modal on error
-          onClose();
-        } finally {
-          setIsConfirming(false);
-        }
-      }, 1500); // 1.5 second delay to show the signout animation
-    });
+    try {
+      await onConfirm();
+      onClose();
+    } catch (error) {
+      console.error('SignOut error in modal:', error);
+      onClose();
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   const getVariantColor = () => {
@@ -290,16 +120,12 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
     const iconName = variant !== 'danger' ? getVariantIcon() : icon;
     const iconColor = getVariantColor();
     
-    
     return (
-      <Animated.View style={[
+      <View style={[
         styles.iconContainer,
         {
           backgroundColor: iconColor + '15',
           borderColor: iconColor + '30',
-          transform: [
-            { scale: iconScale }
-          ],
         }
       ]}>
         <IconComponent
@@ -307,26 +133,23 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
           size={20}
           color={iconColor}
         />
-      </Animated.View>
+      </View>
     );
   };
-
-  if (!shouldRender) return null;
 
   return (
     <Modal
       transparent
       visible={visible}
       statusBarTranslucent
-      animationType="none"
+      animationType="fade"
     >
       <View style={styles.overlay}>
         {/* Background */}
-        <Animated.View
+        <View
           style={[
             styles.background,
             {
-              opacity: backgroundOpacity,
               backgroundColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.5)',
             }
           ]}
@@ -335,23 +158,16 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
             style={StyleSheet.absoluteFillObject}
             activeOpacity={1}
             onPress={handleCancel}
-            disabled={isAnimating || isConfirming}
+            disabled={isConfirming}
           />
-        </Animated.View>
+        </View>
 
         {/* Modal Content */}
         <View style={styles.modalContainer}>
-          <Animated.View
+          <View
             style={[
               styles.modal,
               getGlassmorphicStyle('overlay', theme),
-              {
-                opacity: modalOpacity,
-                transform: [
-                  { scale: modalScale },
-                  { translateY: modalTranslateY }
-                ],
-              }
             ]}
           >
             {/* Icon or Lottie Animation */}
@@ -390,19 +206,18 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
             {!isConfirming && (
               <View style={styles.buttonContainer}>
               {/* Cancel Button */}
-              <Animated.View style={[
+              <View style={[
                 styles.button,
                 getNeumorphicStyle('subtle', theme),
                 {
                   backgroundColor: themeColors.surface,
                   borderWidth: 2,
                   borderColor: theme === 'dark' ? '#404040' : '#E5E5E5',
-                  transform: [{ scale: cancelButtonScale }],
                 }
               ]}>
                 <TouchableOpacity
                   onPress={handleCancel}
-                  disabled={isAnimating || isConfirming}
+                  disabled={isConfirming}
                   style={styles.buttonInner}
                 >
                   <Text style={[
@@ -416,10 +231,10 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
                     {cancelText}
                   </Text>
                 </TouchableOpacity>
-              </Animated.View>
+              </View>
 
               {/* Confirm Button */}
-              <Animated.View style={[
+              <View style={[
                 styles.button,
                 styles.confirmButton,
                 getNeumorphicStyle('elevated', theme),
@@ -432,12 +247,11 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
                   shadowOpacity: 0.3,
                   shadowRadius: 8,
                   elevation: 8,
-                  transform: [{ scale: confirmButtonScale }],
                 }
               ]}>
                 <TouchableOpacity
                   onPress={handleConfirm}
-                  disabled={isAnimating || isConfirming}
+                  disabled={isConfirming}
                   style={styles.buttonInner}
                 >
                   <Text style={[
@@ -455,10 +269,10 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
                     {confirmText}
                   </Text>
                 </TouchableOpacity>
-              </Animated.View>
+              </View>
             </View>
             )}
-          </Animated.View>
+          </View>
         </View>
       </View>
     </Modal>

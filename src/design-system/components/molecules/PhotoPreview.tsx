@@ -29,8 +29,8 @@ export const PhotoPreview: React.FC<PhotoPreviewProps> = ({
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
 
   const isProcessing = attachment.uploadStatus === 'pending';
-  const hasError = attachment.uploadStatus === 'error';
-  const isCompleted = attachment.uploadStatus === 'uploaded';
+  // Removed unused hasError
+  // Removed unused isCompleted
 
   // Entry animation
   useEffect(() => {

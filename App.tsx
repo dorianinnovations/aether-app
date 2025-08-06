@@ -13,7 +13,6 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 
 // Enhanced Components
-import { Header } from './src/design-system/components/organisms';
 import { LottieLoader } from './src/design-system/components/atoms';
 
 // Screens
@@ -34,10 +33,9 @@ import { ThemeProvider } from './src/contexts/ThemeContext';
 import { SettingsProvider } from './src/contexts/SettingsContext';
 
 // Design System
-import { designTokens, getThemeColors } from './src/design-system/tokens/colors';
-import { typography, fontConfig } from './src/design-system/tokens/typography';
-import { spacing, borderRadius } from './src/design-system/tokens/spacing';
-import { shadows } from './src/design-system/tokens/shadows';
+import { getThemeColors } from './src/design-system/tokens/colors';
+import { fontConfig } from './src/design-system/tokens/typography';
+import { spacing } from './src/design-system/tokens/spacing';
 
 // Custom Transitions
 import { colorFadeTransition } from './src/design-system/transitions/colorFadeTransition';
@@ -45,14 +43,6 @@ import { colorFadeTransition } from './src/design-system/transitions/colorFadeTr
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
-// Suppress useInsertionEffect warning - it's just noise
-const originalWarn = console.warn;
-console.warn = (message, ...args) => {
-  if (typeof message === 'string' && message.includes('useInsertionEffect must not schedule updates')) {
-    return;
-  }
-  originalWarn(message, ...args);
-};
 
 const { width } = Dimensions.get('window');
 
@@ -90,7 +80,7 @@ const AuthNavigator = () => {
       initialRouteName="Hero"
       screenOptions={{
         headerShown: false,
-        cardStyleInterpolator: ({ current, layouts }) => ({
+        cardStyleInterpolator: ({ current }) => ({
           cardStyle: {
             opacity: current.progress,
           },
@@ -260,24 +250,4 @@ const styles = StyleSheet.create({
     marginBottom: spacing[4],
   },
 
-  // Placeholder Screens
-  placeholderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: designTokens.brand.backgroundLight,
-    paddingHorizontal: spacing[6],
-    paddingBottom: 80, // Account for floating tab bar
-  },
-  placeholderText: {
-    ...typography.textStyles.headlineLarge,
-    color: designTokens.brand.primary,
-    marginBottom: spacing[2],
-    textAlign: 'center',
-  },
-  placeholderSubtext: {
-    ...typography.textStyles.bodyLarge,
-    color: designTokens.text.secondary,
-    textAlign: 'center',
-  },
 });

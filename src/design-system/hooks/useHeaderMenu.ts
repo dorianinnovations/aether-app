@@ -47,7 +47,9 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
         }
         break;
       case 'settings':
-        onSettingsPress?.();
+        requestAnimationFrame(() => {
+          onSettingsPress?.();
+        });
         break;
       case 'theme_toggle':
         toggleTheme();

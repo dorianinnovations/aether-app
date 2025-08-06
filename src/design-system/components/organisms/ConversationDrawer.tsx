@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { designTokens, getThemeColors } from '../../tokens/colors';
+import { designTokens } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 import { 
   ConversationTabBar, 
@@ -65,7 +65,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const slideAnim = useRef(new Animated.Value(-screenWidth * 0.85)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   
-  const themeColors = getThemeColors(theme);
+  // Removed unused themeColors
 
   const tabs = [
     { label: 'Aether', icon: 'message-circle' },
@@ -115,7 +115,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     }
   });
 
-  const { isConnected: isSSEConnected, eventCount } = useConversationEvents({
+  const { } = useConversationEvents({
     ...eventHandlers.current,
     autoRefresh: isVisible
   });
@@ -166,7 +166,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
               }));
               log.debug('Loaded friend conversations:', newConversations.length);
             }
-          } catch (friendsError) {
+          } catch {
             log.debug('Friends API not available yet, showing empty state');
             newConversations = [];
           }

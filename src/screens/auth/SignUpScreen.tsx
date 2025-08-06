@@ -22,17 +22,17 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { PageBackground } from '../../design-system/components/atoms/PageBackground';
-import { AnimatedAuthStatus } from '../../design-system/components/atoms/AnimatedAuthStatus';
-import { ShimmerText } from '../../design-system/components/atoms/ShimmerText';
-import { RainbowShimmerText } from '../../design-system/components/atoms/RainbowShimmerText';
+import { LottieLoader } from '../../design-system/components/atoms/LottieLoader';
 import { Header, HeaderMenu } from '../../design-system/components/organisms';
-import { designTokens, getThemeColors, stateColors } from '../../design-system/tokens/colors';
-import { Feather } from '@expo/vector-icons';
+import { PasswordStrengthIndicator } from '../../design-system/components/molecules/PasswordStrengthIndicator';
+import { UsernameStatusIndicator } from '../../design-system/components/molecules/UsernameStatusIndicator';
+import { AuthButton } from '../../design-system/components/molecules/AuthButton';
+import { getThemeColors } from '../../design-system/tokens/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { typography } from '../../design-system/tokens/typography';
-import { spacing } from '../../design-system/tokens/spacing';
-import { AuthAPI, ApiUtils } from '../../services/api';
-import { goBack } from '../../utils/navigation';
+import { useSignUpForm } from '../../hooks/useSignUpForm';
+import { usePasswordStrength } from '../../hooks/usePasswordStrength';
+import { useUsernameValidation } from '../../hooks/useUsernameValidation';
 
 const { height } = Dimensions.get('window');
 
@@ -47,33 +47,39 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
 }) => {
   const { theme, colors, toggleTheme } = useTheme();
   
-  // Form state
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [usernameError, setUsernameError] = useState('');
-  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
-  const [checkingUsername, setCheckingUsername] = useState(false);
-  const [localLoading, setLocalLoading] = useState(false);
-  const [isSignUpSuccess, setIsSignUpSuccess] = useState(false);
-  const [authStatus, setAuthStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [showSlowServerMessage, setShowSlowServerMessage] = useState(false);
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
-  const [showHeaderMenu, setShowHeaderMenu] = useState(false);
+  // Custom hooks
+  const {
+    firstName,
+    setFirstName,
+    lastName,
+    setLastName,
+    username,
+    setUsername,
+    email,
+    setEmail,
+    password,
+    setPassword,
+    confirmPassword,
+    setConfirmPassword,
+    error,
+    localLoading,
+    authStatus,
+    setAuthStatus,
+    isSignUpSuccess,
+    showSlowServerMessage,
+    clearErrorOnChange,
+    validateAndSubmit,
+  } = useSignUpForm();
   
-  // Rainbow pastel colors for shimmer text
-  const rainbowPastels = ['#FF8FA3', '#FFB84D', '#FFD23F', '#4ECDC4', '#C77DFF', '#FF6B9D'];
-  const [currentColorIndex, setCurrentColorIndex] = useState(0);
+  const passwordStrength = usePasswordStrength(password);
+  const { usernameAvailable, usernameError, checkingUsername } = useUsernameValidation(username);
+  
+  // Component state
+  const [showHeaderMenu, setShowHeaderMenu] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   
   // Use either auth loading or local loading
   const loading = localLoading;
-
-  // Success state for final screen
-  const [isSuccess, setIsSuccess] = useState(false);
 
   const themeColors = getThemeColors(theme);
 
@@ -176,252 +182,22 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
     };
   }, []);
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [timeoutId]);
 
-  // Cycle through rainbow colors every 5 seconds (reduced from 2s to prevent overheating)
-  useEffect(() => {
-    const colorCycleInterval = setInterval(() => {
-      setCurrentColorIndex((prev) => (prev + 1) % rainbowPastels.length);
-    }, 5000);
-    
-    return () => clearInterval(colorCycleInterval);
-  }, [rainbowPastels.length]);
 
-  const clearErrorOnChange = () => {
-    if (error) {
-      setError('');
-      setAuthStatus('idle');
-    }
-  };
-
-  // Username availability check with debouncing
-  useEffect(() => {
-    const checkUsername = async () => {
-      if (username.length >= 3 && /^[a-zA-Z0-9_-]+$/.test(username)) {
-        setCheckingUsername(true);
-        setUsernameError('');
-        setUsernameAvailable(null);
-        
-        try {
-          const result = await AuthAPI.checkUsernameAvailability(username);
-          const available = (result as any).available ?? result.data?.available;
-          setUsernameAvailable(available);
-          if (!available) {
-            setUsernameError(result.message || result.data?.message || 'Username not available');
-          }
-        } catch (error) {
-          setUsernameError('Error checking username');
-          setUsernameAvailable(null);
-        } finally {
-          setCheckingUsername(false);
-        }
-      } else {
-        setUsernameAvailable(null);
-        setUsernameError('');
-        setCheckingUsername(false);
-      }
-    };
-
-    const timeoutId = setTimeout(checkUsername, 500); // Debounce for 500ms
-    return () => clearTimeout(timeoutId);
-  }, [username]);
-
-  // Password strength calculation
-  const getPasswordStrength = (pass: string): {
-    score: number;
-    label: string;
-    color: string;
-  } => {
-    let score = 0;
-    
-    if (pass.length >= 8) score += 1;
-    if (/[a-z]/.test(pass)) score += 1;
-    if (/[A-Z]/.test(pass)) score += 1;
-    if (/[0-9]/.test(pass)) score += 1;
-    if (/[^A-Za-z0-9]/.test(pass)) score += 1;
-
-    const labels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
-    const colors = [
-      designTokens.semantic.error,
-      '#f59e0b',
-      '#eab308',
-      '#22c55e',
-      designTokens.semantic.success,
-    ];
-
-    return {
-      score,
-      label: labels[Math.min(score, 4)],
-      color: colors[Math.min(score, 4)],
-    };
-  };
-
-  const passwordStrength = getPasswordStrength(password);
-
-  // Static minimal glow color for Sign Up button
-  const getMinimalGlowColor = () => {
-    return theme === 'dark' 
-      ? 'rgba(173, 213, 250, 0.15)'  // Very subtle light blue glow in dark mode
-      : 'rgba(26, 26, 26, 0.08)';    // Extremely subtle dark glow in light mode
-  };
 
   const handleSubmit = async () => {
-    // Dismiss keyboard when form is submitted
     Keyboard.dismiss();
+    await validateAndSubmit(usernameAvailable, passwordStrength);
     
-    if (!firstName.trim() || !lastName.trim() || !username.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
-      setError('Please fill in all fields');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
-
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      setError('Please enter a valid email address');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
-
-    if (username.length < 3 || username.length > 20) {
-      setError('Username must be between 3 and 20 characters');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
-
-    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
-      setError('Username can only contain letters, numbers, hyphens, and underscores');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
-
-    if (usernameAvailable === false) {
-      setError('Username is not available');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
-
-    if (passwordStrength.score < 2) {
-      setError('Password is too weak. Add uppercase, numbers, or symbols');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
-
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-    setError('');
-    setLocalLoading(true);
-    setIsSignUpSuccess(false);
-    setAuthStatus('loading');
-    setShowSlowServerMessage(false);
-
-    // Start 15-second timeout for slow server message
-    const timeout = setTimeout(() => {
-      if (localLoading) {
-        setShowSlowServerMessage(true);
-      }
-    }, 15000);
-    setTimeoutId(timeout);
-
-    // Ultra-smooth button press animation
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(buttonScaleAnim, {
-          toValue: 0.92,
-          duration: 40,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.parallel([
-        Animated.timing(buttonScaleAnim, {
-          toValue: 1.05,
-          duration: 60,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.parallel([
-        Animated.timing(buttonScaleAnim, {
-          toValue: 1,
-          duration: 90,
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
-
-    try {
-      const response = await AuthAPI.signup(email.trim(), password, `${firstName.trim()} ${lastName.trim()}`, username.trim());
-
-      if (response) { // Assuming successful response
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        
-        setIsSignUpSuccess(true);
-        setAuthStatus('success');
-        
-        // Show success animation
-        setIsSuccess(true);
-        
-        // Animate success state
-        Animated.timing(successAnim, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }).start();
-
-        // Auth state will automatically switch to MainStack after token is saved
-        // No manual navigation needed
-      } else {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        
-        // Set user-friendly error message
-        const errorMessage = 'Account creation failed';
-        setError(errorMessage);
-        setIsSignUpSuccess(false);
-        setAuthStatus('error');
-        
-        // Clear error status after showing it
-        setTimeout(() => {
-          setAuthStatus('idle');
-        }, 3000);
-      }
-    } catch (err: any) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    if (isSignUpSuccess) {
+      setIsSuccess(true);
       
-      // Set graceful error message for unexpected errors
-      const errorMessage = err.message || 'Connection failed';
-      setError(errorMessage);
-      setIsSignUpSuccess(false);
-      setAuthStatus('error');
-      
-      // Clear error status after showing it
-      setTimeout(() => {
-        setAuthStatus('idle');
-      }, 3000);
-    } finally {
-      setLocalLoading(false);
-      setShowSlowServerMessage(false);
-      
-      // Clear timeout when request completes
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        setTimeoutId(null);
-      }
+      // Animate success state
+      Animated.timing(successAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }).start();
     }
   };
 
@@ -432,10 +208,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
       <PageBackground theme={theme} variant="auth">
         <SafeAreaView style={styles.container}>
           <Animated.View style={[styles.successContainer, { opacity: successAnim }]}>
-            <Text style={styles.successEmoji}>*</Text>
-            <Text style={[styles.successTitle, { color: themeColors.text }]}>
-              Welcome to Aether
-            </Text>
+            <LottieLoader size={60} style={{ marginBottom: 24 }} />
           </Animated.View>
         </SafeAreaView>
       </PageBackground>
@@ -742,32 +515,13 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                         />
                       </Animated.View>
                       
-                      {/* Username Status Indicator */}
-                      {username.length >= 3 && (
-                        <View style={styles.usernameStatus}>
-                          {checkingUsername ? (
-                            <View style={styles.usernameStatusRow}>
-                              <Text style={[styles.usernameStatusText, { color: theme === 'dark' ? '#888' : '#666' }]}>
-                                Checking...
-                              </Text>
-                            </View>
-                          ) : usernameAvailable === true ? (
-                            <View style={styles.usernameStatusRow}>
-                              <Feather name="check-circle" size={14} color="#22c55e" />
-                              <Text style={[styles.usernameStatusText, { color: '#22c55e' }]}>
-                                Available
-                              </Text>
-                            </View>
-                          ) : usernameAvailable === false ? (
-                            <View style={styles.usernameStatusRow}>
-                              <Feather name="x-circle" size={14} color="#ef4444" />
-                              <Text style={[styles.usernameStatusText, { color: '#ef4444' }]}>
-                                {usernameError}
-                              </Text>
-                            </View>
-                          ) : null}
-                        </View>
-                      )}
+                      <UsernameStatusIndicator
+                        username={username}
+                        checking={checkingUsername}
+                        available={usernameAvailable}
+                        error={usernameError}
+                        theme={theme}
+                      />
                       
                       {/* Email Input */}
                       <Animated.View style={{ transform: [{ scale: emailInputScaleAnim }] }}>
@@ -926,31 +680,10 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                           />
                         </Animated.View>
                         
-                        {password.length > 0 && (
-                          <View style={styles.strengthContainer}>
-                            <View style={styles.strengthBar}>
-                              {[1, 2, 3, 4, 5].map((level) => (
-                                <View
-                                  key={level}
-                                  style={[
-                                    styles.strengthSegment,
-                                    {
-                                      backgroundColor: level <= passwordStrength.score 
-                                        ? passwordStrength.color 
-                                        : (theme === 'light' ? '#e5e7eb' : '#333333'),
-                                    },
-                                  ]}
-                                />
-                              ))}
-                            </View>
-                            <Text style={[
-                              styles.strengthLabel,
-                              { color: passwordStrength.color }
-                            ]}>
-                              {passwordStrength.label}
-                            </Text>
-                          </View>
-                        )}
+                        <PasswordStrengthIndicator
+                          password={password}
+                          theme={theme}
+                        />
                       </View>
                       
                       <Animated.View style={{ transform: [{ scale: confirmPasswordInputScaleAnim }] }}>
@@ -1035,87 +768,22 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                     </View>
 
                     {/* Sign Up Button with Animation */}
-                    <Animated.View style={[styles.buttonContainer, { opacity: buttonOpacity }]}>
-                      <Animated.View style={{ transform: [{ scale: buttonScaleAnim }] }}>
-                        <Animated.View 
-                          style={{ 
-                            opacity: buttonGlowAnim,
-                            shadowColor: getMinimalGlowColor(),
-                            shadowOffset: { width: 2, height: 2 },
-                            shadowOpacity: 1,
-                            shadowRadius: 6,
-                            borderRadius: 12,
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                          }}
-                        />
-                        <TouchableOpacity
-                          style={[
-                            styles.primaryButton,
-                            {
-                              backgroundColor: theme === 'dark' ? '#0d0d0d' : designTokens.brand.primary,
-                              opacity: (loading || isSignUpSuccess) ? 0.9 : 1,
-                              borderColor: theme === 'dark' ? '#262626' : 'transparent',
-                              borderWidth: theme === 'dark' ? 1 : 0,
-                              shadowColor: '#ffffff',
-                              shadowOffset: { width: 2, height: 2 },
-                              shadowOpacity: theme === 'dark' ? 0.15 : 0.1,
-                              shadowRadius: 4,
-                              elevation: theme === 'dark' ? 3 : 2,
-                            }
-                          ]}
-                          onPress={handleSubmit}
-                          disabled={loading || isSignUpSuccess}
-                          activeOpacity={0.9}
-                        >
-                          <View style={styles.buttonContent}>
-                            <View style={styles.buttonTextContainer}>
-                              {loading ? (
-                                <Text style={[
-                                  styles.primaryButtonText, 
-                                  { color: theme === 'dark' ? '#ffffff' : '#1a1a1a' }
-                                ]}>
-                                  Creating Account
-                                </Text>
-                              ) : isSignUpSuccess ? (
-                                <Text style={[
-                                  styles.primaryButtonText, 
-                                  { color: theme === 'dark' ? '#ffffff' : '#1a1a1a' }
-                                ]}>
-                                  Success!
-                                </Text>
-                              ) : (
-                                <RainbowShimmerText
-                                  style={StyleSheet.flatten([styles.primaryButtonText, { color: theme === 'dark' ? '#ffffff' : '#1a1a1a' }])}
-                                  intensity="vibrant"
-                                  duration={4000}
-                                  waveWidth="wide"
-                                  colorMode="rainbow-cycle"
-                                >
-                                  Create Account
-                                </RainbowShimmerText>
-                              )}
-                            </View>
-                            {authStatus !== 'idle' && (
-                              <View style={styles.spinnerContainer}>
-                                <AnimatedAuthStatus
-                                  status={authStatus}
-                                  color={theme === 'dark' ? '#ffffff' : '#1a1a1a'}
-                                  size={16}
-                                  onAnimationComplete={() => {
-                                    if (authStatus === 'error') {
-                                      setAuthStatus('idle');
-                                    }
-                                  }}
-                                />
-                              </View>
-                            )}
-                          </View>
-                        </TouchableOpacity>
-                      </Animated.View>
+                    <Animated.View style={{ opacity: buttonOpacity }}>
+                      <AuthButton
+                        onPress={handleSubmit}
+                        loading={loading}
+                        success={isSignUpSuccess}
+                        theme={theme}
+                        authStatus={authStatus}
+                        onAnimationComplete={() => {
+                          if (authStatus === 'error') {
+                            setAuthStatus('idle');
+                          }
+                        }}
+                        title="Create Account"
+                        loadingTitle="Creating Account"
+                        successTitle="Success!"
+                      />
                     </Animated.View>
 
                     {/* Sign In Link */}
@@ -1290,45 +958,7 @@ const styles = StyleSheet.create({
   passwordContainer: {
     gap: 16,
   },
-  strengthContainer: {
-    marginTop: 8,
-    gap: 4,
-  },
-  strengthBar: {
-    flexDirection: 'row',
-    height: 4,
-    gap: 4,
-  },
-  strengthSegment: {
-    flex: 1,
-    borderRadius: 2,
-  },
-  strengthLabel: {
-    ...typography.textStyles.bodyMedium,
-    fontSize: 12,
-    fontWeight: '500',
-    textAlign: 'right',
-  },
   
-  primaryButton: {
-    width: '100%',
-    height: 37,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  primaryButtonText: {
-    ...typography.textStyles.bodyMedium,
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: -0.3,
-  },
   linkButton: {
     paddingVertical: 12,
     alignItems: 'center',
@@ -1362,28 +992,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 14,
   },
-  buttonContainer: {
-    minHeight: 38,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  buttonTextContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  spinnerContainer: {
-    width: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
   // Success Screen
   successContainer: {
     alignItems: 'center',
@@ -1391,51 +999,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     flex: 1,
     justifyContent: 'center',
-  },
-  successEmoji: {
-    fontSize: 51,
-    marginBottom: 24,
-  },
-  successTitle: {
-    ...typography.textStyles.displayMedium,
-    fontSize: 28,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  successSubtitle: {
-    ...typography.textStyles.bodyMedium,
-    fontSize: 18,
-    textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 24,
-  },
-  successFeature: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  successFeatureIcon: {
-    fontSize: 19,
-  },
-  successFeatureText: {
-    ...typography.textStyles.bodyMedium,
-    fontSize: 16,
-  },
-  
-  // Username status styles
-  usernameStatus: {
-    marginTop: 8,
-    alignItems: 'flex-start',
-  },
-  usernameStatusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  usernameStatusText: {
-    fontSize: 12,
-    fontWeight: '500',
   },
 });
 

@@ -13,15 +13,15 @@ import {
   Linking,
   Image,
   StyleSheet,
-  RefreshControl,
-  ScrollView
+  // RefreshControl,
+  // ScrollView
 } from 'react-native';
-import * as AuthSession from 'expo-auth-session';
-import Icon from 'react-native-vector-icons/Ionicons';
+// import * as AuthSession from 'expo-auth-session';
+import { Ionicons } from '@expo/vector-icons';
 
 // Design System
 import { useTheme } from '../../../contexts/ThemeContext';
-import { typography } from '../../tokens/typography';
+// import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
 
 // API
@@ -313,7 +313,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Icon name="musical-notes" size={24} color="#1DB954" />
+          <Ionicons name="musical-notes" size={24} color="#1DB954" />
           <Text style={styles.title}> Spotify</Text>
         </View>
       </View>
@@ -328,7 +328,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
             <>
-              <Icon name="logo-spotify" size={20} color="#FFFFFF" />
+              <Ionicons name="musical-notes" size={20} color="#FFFFFF" />
               <Text style={styles.connectButtonText}>Connect Spotify</Text>
             </>
           )}
@@ -359,7 +359,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
                 </Text>
                 {spotify.currentTrack.isPlaying && (
                   <View style={styles.playingIndicator}>
-                    <Icon name="play-circle" size={14} color="#1DB954" />
+                    <Ionicons name="play-circle" size={14} color="#1DB954" />
                     <Text style={styles.playingText}>Now Playing</Text>
                   </View>
                 )}
@@ -379,7 +379,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
                 <ActivityIndicator size="small" color={colors.primary || '#1DB954'} />
               ) : (
                 <>
-                  <Icon name="refresh" size={18} color={colors.text} />
+                  <Ionicons name="refresh" size={18} color={colors.text} />
                   <Text style={styles.actionButtonText}>Refresh</Text>
                 </>
               )}
@@ -389,7 +389,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
               style={styles.actionButton}
               onPress={handleDisconnect}
             >
-              <Icon name="unlink" size={18} color={colors.text} />
+              <Ionicons name="unlink" size={18} color={colors.text} />
               <Text style={styles.actionButtonText}>Disconnect</Text>
             </TouchableOpacity>
           </View>

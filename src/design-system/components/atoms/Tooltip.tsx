@@ -16,7 +16,7 @@ import {
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 
 // Design System
-import { designTokens, getThemeColors } from '../../tokens/colors';
+import { getThemeColors } from '../../tokens/colors';
 import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
 import { getGlassmorphicStyle } from '../../tokens/glassmorphism';
@@ -63,7 +63,7 @@ const Tooltip: React.FC<TooltipProps> = ({
   const translateY = React.useRef(new Animated.Value(-10)).current;
   const panY = React.useRef(new Animated.Value(0)).current;
   const scale = React.useRef(new Animated.Value(1)).current;
-  const [isPressed, setIsPressed] = React.useState(false);
+  // Removed unused _isPressed state
   const [isAnimating, setIsAnimating] = React.useState(false);
   const currentAnimations = React.useRef<Animated.CompositeAnimation[]>([]);
 
@@ -103,7 +103,6 @@ const Tooltip: React.FC<TooltipProps> = ({
       
       if (isTap) {
         // Tap to change appearance - make less transparent and narrower, then restore
-        setIsPressed(true);
         setIsAnimating(true);
         
         const tapInAnimation = Animated.parallel([
@@ -141,14 +140,12 @@ const Tooltip: React.FC<TooltipProps> = ({
           
           currentAnimations.current.push(tapOutAnimation);
           tapOutAnimation.start(() => {
-            setIsPressed(false);
             setIsAnimating(false);
           });
         });
         
       } else {
-        // Reset pressed state immediately for swipes
-        setIsPressed(false);
+        // Reset state for swipe
         setIsAnimating(true);
         
         // Calculate dismiss probability based on distance and velocity
@@ -186,7 +183,6 @@ const Tooltip: React.FC<TooltipProps> = ({
             translateY.setValue(-10);
             scale.setValue(1);
             opacity.setValue(0);
-            setIsPressed(false);
             setIsAnimating(false);
             onHide?.();
           });
@@ -228,7 +224,6 @@ const Tooltip: React.FC<TooltipProps> = ({
     if (visible) {
       // Use setTimeout to avoid state updates during render
       setTimeout(() => {
-        setIsPressed(false);
         setIsAnimating(true);
       }, 0);
       
@@ -286,7 +281,6 @@ const Tooltip: React.FC<TooltipProps> = ({
         // Reset all values when hidden to ensure clean state
         panY.setValue(0);
         scale.setValue(1); // Force scale back to 1
-        setIsPressed(false);
         setIsAnimating(false);
       });
     }

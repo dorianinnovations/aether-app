@@ -401,8 +401,8 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         errorTitle = 'Empty Conversation';
         errorMessage = 'This conversation has no messages yet.';
       } else if (error.message?.includes('timeout')) {
-        errorTitle = 'Connection Timeout';
-        errorMessage = 'The request timed out. Please check your internet connection and try again.';
+        errorTitle = 'Network Error';
+        errorMessage = 'Network error, try again in a few minutes';
       } else if (error.status >= 500) {
         errorTitle = 'Server Error';
         errorMessage = 'The server is experiencing issues. Please try again later.';

@@ -30,6 +30,11 @@ export const TokenManager = {
 
   async setToken(token: string): Promise<void> {
     try {
+      if (!token || token === 'undefined' || token === 'null') {
+        console.warn('Attempted to set undefined/null token, removing instead:', token);
+        await this.removeToken();
+        return;
+      }
       await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
     } catch (error) {
       console.error('Error setting token:', error);
@@ -82,16 +87,23 @@ export const TokenManager = {
   async setUserData(userData: User): Promise<void> {
     try {
       const userId = userData?.id;
+      
+      if (!userId) {
+        console.warn('User data missing ID, storing in temp location:', userData);
+        // Store in temp location if no user ID
+        const tempKeys = getStorageKeys();
+        await AsyncStorage.setItem(tempKeys.USER_DATA, JSON.stringify(userData));
+        return;
+      }
+      
       const keys = getStorageKeys(userId);
       
       // Store in user-specific location
       await AsyncStorage.setItem(keys.USER_DATA, JSON.stringify(userData));
       
       // Clean up any temp storage
-      if (userId) {
-        const tempKeys = getStorageKeys();
-        await AsyncStorage.removeItem(tempKeys.USER_DATA);
-      }
+      const tempKeys = getStorageKeys();
+      await AsyncStorage.removeItem(tempKeys.USER_DATA);
     } catch (error) {
       console.error('Error setting user data:', error);
     }

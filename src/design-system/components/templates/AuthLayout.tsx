@@ -15,7 +15,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { designTokens, getThemeColors } from '../../tokens/colors';
+import { designTokens } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 import { createNeumorphicContainer } from '../../tokens/shadows';
 import { createStaggeredEntrance, getInitialAnimatedValues } from '../../animations/entrance';
@@ -27,15 +27,15 @@ interface AuthLayoutProps {
   variant?: 'signin' | 'signup';
 }
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { height: screenHeight } = Dimensions.get('window');
 
 const AuthLayout: React.FC<AuthLayoutProps> = ({
   theme = 'light',
   children,
   showCard = true,
-  variant = 'signin',
+  variant: _variant = 'signin',
 }) => {
-  const themeColors = getThemeColors(theme);
+  // Removed unused themeColors
   
   // Animation setup
   const animatedValues = React.useRef(getInitialAnimatedValues(3)).current;

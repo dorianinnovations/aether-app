@@ -3,7 +3,7 @@
  * Clean implementation with three labeled categories: Aether, Friends, Custom
  */
 
-import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -21,7 +21,6 @@ import * as Haptics from 'expo-haptics';
 import { designTokens, getThemeColors } from '../design-system/tokens/colors';
 import { spacing } from '../design-system/tokens/spacing';
 import { typography } from '../design-system/tokens/typography';
-import { getGlassmorphicStyle } from '../design-system/tokens/glassmorphism';
 import { useConversationEvents } from '../hooks/useConversationEvents';
 import { log } from '../utils/logger';
 import { ConversationAPI, FriendsAPI } from '../services/api';
@@ -57,10 +56,8 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const [currentTab, setCurrentTab] = useState(0); // Start on Aether tab
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [pressedIndex, setPressedIndex] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [longPressedId, setLongPressedId] = useState<string | null>(null);
-  const [shouldRender, setShouldRender] = useState(false);
   
   // Cache conversations per tab to avoid unnecessary API calls
   const [conversationCache, setConversationCache] = useState<{
@@ -71,6 +68,13 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   // Simplified animations
   const slideAnim = useRef(new Animated.Value(-screenWidth * 0.85)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
+  
+  // Tab fold-out animations
+  const tabAnimations = useRef([
+    new Animated.Value(1), // Aether
+    new Animated.Value(1), // Friends  
+    new Animated.Value(1), // Custom
+  ]).current;
   
   const themeColors = getThemeColors(theme);
 
@@ -118,7 +122,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   });
 
   // Real-time conversation events with stable handlers - only when drawer is visible
-  const { isConnected: isSSEConnected, eventCount } = useConversationEvents({
+  const { } = useConversationEvents({
     ...eventHandlers.current,
     autoRefresh: isVisible // Only connect SSE when drawer is visible
   });
@@ -174,7 +178,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
               }));
               log.debug('Loaded friend conversations:', newConversations.length);
             }
-          } catch (friendsError) {
+          } catch {
             log.debug('Friends API not available yet, showing empty state');
             newConversations = [];
           }
@@ -238,29 +242,36 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
 
   
   
+  // Simple opacity animation handler
+  const animateTabPress = useCallback((tabIndex: number) => {
+    const tabAnim = tabAnimations[tabIndex];
+    
+    // Simple opacity fade: quick fade out then back in
+    Animated.sequence([
+      Animated.timing(tabAnim, {
+        toValue: 0.3,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(tabAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [tabAnimations]);
+
   // Simple tab transition handler
   const handleTabTransition = useCallback((targetTab: number) => {
     if (isAnimating || targetTab === currentTab) return;
     
+    // Trigger fold-out animation
+    animateTabPress(targetTab);
+    
     setCurrentTab(targetTab);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, [isAnimating, currentTab]);
+  }, [isAnimating, currentTab, animateTabPress]);
 
-  // Debug function to test conversation creation
-  const handleDebugCreateConversation = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      log.debug('Creating test conversation...');
-      const result = await ConversationAPI.debugCreateTestConversation();
-      log.debug('Test conversation result:', result);
-      // Refresh conversations after creation
-      await loadConversations(true);
-    } catch (error) {
-      log.error('Failed to create test conversation:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [loadConversations]);
 
   const tabs = [
     { 
@@ -287,16 +298,15 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const resetAnimations = useCallback(() => {
     slideAnim.setValue(-screenWidth * 0.85);
     overlayOpacity.setValue(0);
-    setIsAnimating(false);
-    setPressedIndex(null);
-  }, []);
+    // Reset tab animations
+    tabAnimations.forEach(anim => anim.setValue(1));
+  }, [tabAnimations]);
 
   // Simple show animation
   const showDrawer = useCallback(() => {
     if (isAnimating) return;
     
     setIsAnimating(true);
-    resetAnimations();
     
     Animated.parallel([
       Animated.timing(slideAnim, {
@@ -314,7 +324,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     ]).start(() => {
       setIsAnimating(false);
     });
-  }, []);
+  }, [slideAnim, overlayOpacity]);
 
   // Simple hide animation
   const hideDrawer = useCallback(() => {
@@ -336,25 +346,17 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
         useNativeDriver: true,
       }),
     ]).start(() => {
+      setIsAnimating(false);
       resetAnimations();
     });
-  }, []);
+  }, [slideAnim, overlayOpacity, resetAnimations]);
 
-  // Effect to handle visibility changes
-  useLayoutEffect(() => {
+  // Effect to handle visibility changes - simplified to prevent useInsertionEffect warnings
+  useEffect(() => {
     if (isVisible) {
-      setShouldRender(true);
-      // Delay animation start to avoid insertion effect warning
-      requestAnimationFrame(() => {
-        showDrawer();
-      });
+      showDrawer();
     } else {
       hideDrawer();
-      // Delay unmounting to allow slide-out animation
-      const timer = setTimeout(() => {
-        setShouldRender(false);
-      }, 300); // Match 0.3-second slide duration
-      return () => clearTimeout(timer);
     }
   }, [isVisible]);
 
@@ -380,8 +382,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     }
   }, [onStartNewChat, isAnimating, onClose]);
   
-  const renderConversationItem = ({ item, index }: { item: Conversation; index: number }) => {
-    const animIndex = index + 3; // Offset for tabs
+  const renderConversationItem = ({ item }: { item: Conversation; index: number }) => {
     const tabConfig = tabs[currentTab];
     const isSelected = item._id === currentConversationId;
     
@@ -567,11 +568,11 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     );
   };
   
-  if (!shouldRender) return null;
+  if (!isVisible) return null;
 
   return (
     <Modal
-      visible={shouldRender}
+      visible={isVisible}
       transparent={true}
       animationType="none"
       onRequestClose={handleClose}
@@ -635,39 +636,51 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                     return (
                       <View
                         key={tab.label}
-                        style={styles.specialTab}
+                        style={[styles.specialTab, { flex: isActive ? 1 : 0 }]}
                       >
-                        <TouchableOpacity
-                          style={[
-                            styles.neumorphicTab,
-                            {
-                              backgroundColor: isActive 
-                                ? (theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)')
-                                : 'transparent',
-                              borderWidth: 1,
-                              borderColor: theme === 'light' ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.1)',
-                            }
-                          ]}
-                          onPress={() => handleTabTransition(index)}
-                          activeOpacity={0.9}
-                          disabled={isAnimating}
+                        <Animated.View
+                          style={{
+                            opacity: tabAnimations[index]
+                          }}
                         >
-                          <Feather 
-                            name={tab.icon as any} 
-                            size={16} 
-                            color={isActive ? tab.iconColor : themeColors.textSecondary} 
-                          />
-                          
-                          <Text style={[
-                            styles.specialTabText,
-                            {
-                              color: isActive ? tab.color : themeColors.textSecondary,
-                              fontWeight: isActive ? '600' : '500',
-                            }
-                          ]}>
-                            {tab.label}
-                          </Text>
-                        </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.neumorphicTab,
+                              {
+                                backgroundColor: isActive 
+                                  ? (theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)')
+                                  : 'transparent',
+                                borderWidth: 1,
+                                borderColor: isActive 
+                                  ? (theme === 'light' ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.15)')
+                                  : 'transparent',
+                                minWidth: isActive ? 'auto' : 40,
+                                paddingHorizontal: isActive ? spacing[3] : spacing[2],
+                              }
+                            ]}
+                            onPress={() => handleTabTransition(index)}
+                            activeOpacity={0.9}
+                            disabled={isAnimating}
+                          >
+                            <Feather 
+                              name={tab.icon as any} 
+                              size={16} 
+                              color={isActive ? tab.iconColor : themeColors.textSecondary} 
+                            />
+                            
+                            {isActive && (
+                              <Text style={[
+                                styles.specialTabText,
+                                {
+                                  color: tab.color,
+                                  fontWeight: '600',
+                                }
+                              ]}>
+                                {tab.label}
+                              </Text>
+                            )}
+                          </TouchableOpacity>
+                        </Animated.View>
                       </View>
                     );
                   })}
@@ -790,28 +803,28 @@ const styles = StyleSheet.create({
   },
   tabs: {
     flexDirection: 'row',
-    alignItems: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
     width: '100%',
-    gap: 10,
+    gap: 8,
   },
   specialTab: {
-    flex: 1,
+    // Dynamic flex handled inline
   },
   neumorphicTab: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing[2],
     paddingVertical: spacing[2],
-    borderRadius: 8,
-    minHeight: 14,
+    borderRadius: 10,
+    minHeight: 36,
     gap: spacing[2],
   },
   specialTabText: {
     fontSize: 12,
     fontWeight: '400',
     letterSpacing: -0.3,
-    fontFamily: 'Nunito',
+    fontFamily: 'Poppins-Regular',
     textAlign: 'center',
   },
   bottomActionBar: {
@@ -848,7 +861,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 22,
-    fontFamily: 'Nunito',
+    fontFamily: 'Poppins-Medium',
     letterSpacing: -0.3,
   },
   content: {
@@ -890,11 +903,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     lineHeight: 18,
+    fontFamily: 'Poppins-SemiBold',
   },
   conversationMeta: {
     fontSize: 12,
     fontWeight: '400',
     lineHeight: 14,
+    fontFamily: 'Poppins-Regular',
   },
   conversationBadge: {
     paddingHorizontal: 8,
@@ -907,6 +922,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 11,
     fontWeight: '500',
+    fontFamily: 'Poppins-Medium',
   },
   emptyState: {
     flex: 1,
@@ -930,7 +946,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 12,
     fontWeight: '600',
-    fontFamily: 'Nunito',
+    fontFamily: 'Poppins-SemiBold',
     letterSpacing: -0.3,
     marginBottom: 4,
     textAlign: 'center',
@@ -939,7 +955,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 11,
     fontWeight: '400',
-    fontFamily: 'Nunito',
+    fontFamily: 'Poppins-Regular',
     letterSpacing: -0.3,
     textAlign: 'center',
     lineHeight: 20,

@@ -24,10 +24,10 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { designTokens, getThemeColors } from '../../tokens/colors';
 import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
-import { getGlassmorphicStyle } from '../../tokens/glassmorphism';
+// import { getGlassmorphicStyle } from '../../tokens/glassmorphism';
 import { getNeumorphicStyle } from '../../tokens/shadows';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 interface MetricDetail {
   title: string;
@@ -171,27 +171,24 @@ export const MetricDetailModal: React.FC<MetricDetailModalProps> = ({
     });
   }, [isAnimating, resetAnimations]);
 
-  // Effect to handle render state timing
+  // Effect to handle render state timing - fixed to prevent useInsertionEffect warnings
   useEffect(() => {
-    if (visible) {
+    if (visible && !shouldRender) {
       setShouldRender(true);
-    } else {
+      // Start show animation after render
+      requestAnimationFrame(() => {
+        showModal();
+      });
+    } else if (!visible && shouldRender) {
+      hideModal();
       // Delay unmounting to allow exit animation to complete
       const timer = setTimeout(() => {
         setShouldRender(false);
       }, 200); // Match animation duration
       return () => clearTimeout(timer);
     }
-  }, [visible]);
+  }, [visible, shouldRender, showModal, hideModal]);
 
-  // Effect to handle visibility changes
-  useEffect(() => {
-    if (visible) {
-      showModal();
-    } else {
-      hideModal();
-    }
-  }, [visible, showModal, hideModal]);
 
   // Handle Android back button
   useEffect(() => {

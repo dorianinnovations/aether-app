@@ -3,7 +3,7 @@
  * Sophisticated menu with intricate animations from aether-mobile
  */
 
-import React, { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -11,16 +11,14 @@ import {
   StyleSheet, 
   Animated, 
   Dimensions, 
-  Easing,
   Modal 
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Feather, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
-import { designTokens, getThemeColors, getIconColor } from '../../tokens/colors';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { designTokens, getIconColor } from '../../tokens/colors';
 import { getHeaderMenuShadow } from '../../tokens/shadows';
 import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
-import { getGlassmorphicStyle } from '../../tokens/glassmorphism';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { ThemeSelector } from '../molecules/ThemeSelector';
 import { NotificationDot } from '../atoms/NotificationDot';
@@ -119,13 +117,12 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
   showBackButton = false,
   potentialMatches = 0,
 }) => {
-  const { theme, colors, toggleTheme } = useTheme();
+  const { theme, colors } = useTheme();
   const menuActions = getMenuActions(theme, showAuthOptions, showBackButton);
   
   // State to prevent multiple rapid presses
   const [isAnimating, setIsAnimating] = useState(false);
   const [pressedIndex, setPressedIndex] = useState<number | null>(null);
-  const [shouldRender, setShouldRender] = useState(false);
   
   // Main menu animations
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -163,71 +160,44 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
     setPressedIndex(null);
   }, []);
 
-  // Show animation
+  // Simplified show animation
   const showMenu = useCallback(() => {
     if (isAnimating) return;
     
     setIsAnimating(true);
     resetAnimations();
     
-    // Instant container
+    // Simple, instant show
     scaleAnim.setValue(1);
     opacityAnim.setValue(1);
     translateYAnim.setValue(0);
     
-    // Single haptic
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    // Staggered opacity fade-in for items only
-    itemAnims.slice(0, totalItems).forEach((anim, index) => {
-      Animated.timing(anim.opacity, {
-        toValue: 1,
-        duration: 150,
-        delay: index * 30,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }).start();
+    // Set all items visible instantly
+    itemAnims.forEach(anim => {
+      anim.opacity.setValue(1);
     });
     
-    // Set not animating after last item starts
-    setTimeout(() => setIsAnimating(false), (totalItems - 1) * 30);
-  }, [totalItems]);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setIsAnimating(false);
+  }, []);
 
-  // Hide animation
+  // Simplified hide animation
   const hideMenu = useCallback(() => {
     if (isAnimating) return;
     
     setIsAnimating(true);
     
-    // Simple 0.3-second fade out
-    Animated.timing(opacityAnim, {
-      toValue: 0,
-      duration: 300,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: true,
-    }).start(() => {
-      resetAnimations();
-    });
+    // Instant hide
+    opacityAnim.setValue(0);
+    resetAnimations();
   }, []);
 
-  // Effect to handle visibility changes
-  useLayoutEffect(() => {
+  // Ultra-simplified visibility handling
+  useEffect(() => {
     if (visible) {
-      setShouldRender(true);
-      // Defer animation to avoid useInsertionEffect warning
-      requestAnimationFrame(() => {
-        showMenu();
-      });
+      showMenu();
     } else {
-      // Defer hide animation to avoid scheduling during insertion
-      requestAnimationFrame(() => {
-        hideMenu();
-      });
-      // Delay unmounting to allow exit animation
-      const timer = setTimeout(() => {
-        setShouldRender(false);
-      }, 300); // Match 0.3-second fade duration
-      return () => clearTimeout(timer);
+      hideMenu();  
     }
   }, [visible]);
 
@@ -238,7 +208,7 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
     };
   }, []);
 
-  // Button press handler
+  // Simplified button press handler
   const handleMenuButtonPress = useCallback((actionKey: string, index: number) => {
     if (isAnimating || pressedIndex !== null) return;
     
@@ -247,52 +217,12 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
     // Haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // Use the passed index directly (it's already the correct index)
-    if (index >= buttonAnims.length || !buttonAnims[index]) return;
-    
-    const scaleAnim = buttonAnims[index].scale;
-    const opacityAnim = buttonAnims[index].opacity;
-    
-    // Fast press animation
-    Animated.sequence([
-      // Press down
-      Animated.parallel([
-        Animated.timing(scaleAnim, {
-          toValue: 0.96,
-          duration: 60,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 0.8,
-          duration: 60,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]),
-      // Release
-      Animated.parallel([
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 80,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 80,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start(() => {
-      setPressedIndex(null);
-      
-      onAction(actionKey);
-    });
+    // Call action immediately without animations
+    setPressedIndex(null);
+    onAction(actionKey);
   }, [onAction]);
 
-  if (!shouldRender) return null;
+  // Always render, use visible prop to control Modal visibility
 
   // Calculate position based on menu button and header layout
   const menuWidth = 280;
@@ -312,7 +242,7 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
 
   return (
     <Modal
-      visible={shouldRender}
+      visible={visible}
       transparent={true}
       animationType="none"
       onRequestClose={onClose}

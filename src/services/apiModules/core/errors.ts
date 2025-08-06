@@ -9,17 +9,18 @@ import { errorHandler, handleError } from '../../../utils/errorHandler';
 /**
  * Response transformer to ensure consistent API response format
  */
-export const transformResponse = <T = any>(response: any): StandardAPIResponse<T> => {
+export const transformResponse = <T = unknown>(response: unknown): StandardAPIResponse<T> => {
   // If already in standard format, return as-is
   if (response.hasOwnProperty('success') && response.hasOwnProperty('status')) {
     return response;
   }
   
   // Transform legacy formats to standard format
+  // Don't double-wrap the data - if response already has data, use it directly
   return {
     success: true,
     status: 'success' as const,
-    data: response.data || response,
+    data: response,
     message: response.message,
     timestamp: new Date().toISOString()
   };
@@ -28,7 +29,7 @@ export const transformResponse = <T = any>(response: any): StandardAPIResponse<T
 /**
  * Error transformer to ensure consistent error format
  */
-export const transformError = (error: any): APIError => {
+export const transformError = (error: unknown): APIError => {
   const statusCode = error.response?.status || error.status || 500;
   const message = error.response?.data?.message || error.message || 'An unexpected error occurred';
   const code = error.response?.data?.code || error.code || 'UNKNOWN_ERROR';
@@ -50,7 +51,7 @@ export const transformError = (error: any): APIError => {
 /**
  * Enhanced error creation for better error handling
  */
-export const createEnhancedError = (error: any, originalRequest: any): EnhancedApiError => {
+export const createEnhancedError = (error: unknown, originalRequest: { url: string; method: string; _retry?: boolean }): EnhancedApiError => {
   const standardizedError = errorHandler.standardizeError(error, {
     endpoint: originalRequest.url,
     method: originalRequest.method,
@@ -70,7 +71,7 @@ export const createEnhancedError = (error: any, originalRequest: any): EnhancedA
 /**
  * Helper function for better error messages
  */
-export function getErrorMessage(error: any): string {
+export function getErrorMessage(error: unknown): string {
   if (error.response?.data?.message) {
     return error.response.data.message;
   }

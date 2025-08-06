@@ -87,7 +87,7 @@ export const assertHelpers = {
     expect(element).toBeTruthy();
   },
 
-  expectToContainText: (element: any, text: string) => {
+  expectToContainText: (element: any, _text: string) => {
     expect(element).toBeTruthy();
   },
 

@@ -27,10 +27,13 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useHeaderMenu } from '../design-system/hooks';
 import { typography } from '../design-system/tokens/typography';
 import { spacing } from '../design-system/tokens/spacing';
-import { getButtonColors } from '../design-system/tokens/colors';
+// import { getButtonColors } from '../design-system/tokens/colors';
 
 // Services
 import { UserAPI, TokenManager, AuthAPI, FriendsAPI } from '../services/api';
+
+// Hooks
+import { useSocialProxy } from '../hooks/useSocialProxy';
 
 interface UserProfile {
   profilePicture?: string;
@@ -68,9 +71,8 @@ export const ProfileScreen: React.FC = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   const qualiaViewRef = useRef<View>(null);
 
-  // Matching hook for profile analysis data
-  // TODO: Replace with social proxy profile management
-  const analysisProfile: any = null; // Temporary fallback until social proxy is implemented
+  // Social proxy hook for living profile data
+  const { profile: socialProfile } = useSocialProxy();
 
   // Header menu hook
   const { showHeaderMenu, setShowHeaderMenu, handleMenuAction, toggleHeaderMenu } = useHeaderMenu({
@@ -79,11 +81,11 @@ export const ProfileScreen: React.FC = () => {
     onSignOut: () => setShowSignOutModal(true)
   });
 
-  // Manage SignOutModal lifecycle with shouldRender pattern
+  // Manage SignOutModal lifecycle - fixed to prevent useInsertionEffect warnings
   useEffect(() => {
-    if (showSignOutModal) {
+    if (showSignOutModal && !shouldRenderSignOutModal) {
       setShouldRenderSignOutModal(true);
-    } else if (shouldRenderSignOutModal) {
+    } else if (!showSignOutModal && shouldRenderSignOutModal) {
       // Only set timeout if modal was actually rendered
       const timer = setTimeout(() => {
         setShouldRenderSignOutModal(false);
@@ -140,8 +142,8 @@ export const ProfileScreen: React.FC = () => {
         FriendsAPI.getUserUsername().catch(() => ({ username: null }))
       ]);
       
-      if (profileResponse.status === 'success') {
-        const userData = profileResponse.data.user;
+      if (profileResponse.status === 'success' && (profileResponse.data?.user || profileResponse.data?.data?.user)) {
+        const userData = profileResponse.data?.user || profileResponse.data?.data?.user;
         setProfile({
           id: userData.id,
           email: userData.email,
@@ -153,6 +155,9 @@ export const ProfileScreen: React.FC = () => {
           bannerImage: profileResponse.data.bannerImage,
           username: usernameResponse.username || userData.username,
         });
+      } else {
+        console.error('Profile response missing user data:', profileResponse);
+        throw new Error('Profile data is incomplete');
       }
     } catch (error: any) {
       console.error('Error loading profile:', error);
@@ -592,6 +597,64 @@ export const ProfileScreen: React.FC = () => {
               </View>
             )}
 
+            {/* Social Proxy Information */}
+            {socialProfile && (
+              <>
+                {/* Current Status */}
+                {socialProfile.currentStatus && (
+                  <View style={styles.fieldContainer}>
+                    <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Current Status</Text>
+                    <Text style={[styles.fieldValue, { color: colors.text, fontStyle: 'italic' }]}>
+                      "{socialProfile.currentStatus}"
+                    </Text>
+                  </View>
+                )}
+
+                {/* Mood & Plans Row */}
+                <View style={styles.socialProxyRow}>
+                  {socialProfile.mood && (
+                    <View style={[styles.moodContainer, { backgroundColor: colors.surface }]}>
+                      <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Mood</Text>
+                      <Text style={[styles.moodText, { color: colors.text }]}>
+                        {socialProfile.mood}
+                      </Text>
+                    </View>
+                  )}
+                  
+                  {socialProfile.currentPlans && (
+                    <View style={[styles.plansContainer, { backgroundColor: colors.surface, flex: 1 }]}>
+                      <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Plans</Text>
+                      <Text style={[styles.fieldValue, { color: colors.text, fontSize: 14 }]}>
+                        {socialProfile.currentPlans}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Spotify Integration */}
+                {socialProfile.spotify?.connected && (
+                  <View style={[styles.spotifyContainer, { backgroundColor: colors.surface }]}>
+                    <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
+                      🎵 Recently Played
+                    </Text>
+                    {socialProfile.spotify.currentTrack ? (
+                      <Text style={[styles.fieldValue, { color: colors.text }]}>
+                        {socialProfile.spotify.currentTrack.name} - {socialProfile.spotify.currentTrack.artist}
+                      </Text>
+                    ) : socialProfile.spotify.recentTracks?.length > 0 ? (
+                      <Text style={[styles.fieldValue, { color: colors.text }]}>
+                        {socialProfile.spotify.recentTracks[0].name} - {socialProfile.spotify.recentTracks[0].artist}
+                      </Text>
+                    ) : (
+                      <Text style={[styles.fieldValue, { color: colors.textSecondary }]}>
+                        No recent activity
+                      </Text>
+                    )}
+                  </View>
+                )}
+              </>
+            )}
+
             {/* Always show email */}
             <View style={styles.fieldContainer}>
               <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Email</Text>
@@ -687,8 +750,8 @@ export const ProfileScreen: React.FC = () => {
               </View>
             )}
 
-            {/* TODO: Social Proxy Analysis Section */}
-            {false && (
+            {/* AI-Learned Personality Insights */}
+            {socialProfile?.personality && (
               <View ref={qualiaViewRef} style={styles.analysisSection}>
                 <TouchableOpacity
                   style={styles.analysisSectionHeader}
@@ -696,7 +759,7 @@ export const ProfileScreen: React.FC = () => {
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.analysisSectionTitle, { color: colors.text }]}>
-                    Qualia
+                    AI Insights
                   </Text>
                   <Feather
                     name={showAnalysisData ? 'chevron-up' : 'chevron-down'}
@@ -708,13 +771,13 @@ export const ProfileScreen: React.FC = () => {
                 {showAnalysisData && (
                   <View style={styles.analysisContent}>
                     {/* Interests */}
-                    {analysisProfile?.interests && analysisProfile.interests.length > 0 && (
+                    {socialProfile?.personality?.interests && socialProfile.personality.interests.length > 0 && (
                       <Animated.View style={[styles.analysisSubsection, { opacity: interestsOpacity }]}>
                         <Text style={[styles.analysisSubtitle, { color: colors.textSecondary }]}>
                           Detected Interests
                         </Text>
                         <View style={styles.interestsContainer}>
-                          {analysisProfile?.interests?.slice(0, 6).map((interest: any, index: number) => (
+                          {socialProfile?.personality?.interests?.slice(0, 6).map((interest: any, index: number) => (
                             <View
                               key={index}
                               style={[styles.interestTag, { 
@@ -735,13 +798,13 @@ export const ProfileScreen: React.FC = () => {
                     )}
 
                     {/* Communication Style */}
-                    {analysisProfile?.communicationStyle && (
+                    {socialProfile?.personality?.communicationStyle && (
                       <Animated.View style={[styles.analysisSubsection, { opacity: communicationOpacity }]}>
                         <Text style={[styles.analysisSubtitle, { color: colors.textSecondary }]}>
                           Communication Style
                         </Text>
                         <View style={styles.communicationGrid}>
-                          {Object.entries(analysisProfile?.communicationStyle || {}).map(([key, value]: [string, any]) => (
+                          {Object.entries(socialProfile?.personality?.communicationStyle || {}).map(([key, value]: [string, any]) => (
                             <View key={key} style={styles.styleItem}>
                               <Text style={[styles.styleLabel, { color: colors.text }]}>
                                 {key.charAt(0).toUpperCase() + key.slice(1)}
@@ -776,7 +839,7 @@ export const ProfileScreen: React.FC = () => {
                       <View style={styles.statsGrid}>
                         <View style={styles.statItem}>
                           <Text style={[styles.statValue, { color: colors.text }]}>
-                            {analysisProfile?.totalMessages || 0}
+                            {socialProfile?.personality?.totalMessages || 0}
                           </Text>
                           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
                             Messages Analyzed
@@ -784,7 +847,7 @@ export const ProfileScreen: React.FC = () => {
                         </View>
                         <View style={styles.statItem}>
                           <Text style={[styles.statValue, { color: colors.text }]}>
-                            {analysisProfile?.interests?.length || 0}
+                            {socialProfile?.personality?.interests?.length || 0}
                           </Text>
                           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
                             Interests Found
@@ -792,20 +855,20 @@ export const ProfileScreen: React.FC = () => {
                         </View>
                         <View style={styles.statItem}>
                           <Text style={[styles.statValue, { color: colors.text }]}>
-                            {analysisProfile?.compatibilityTags?.length || 0}
+                            {socialProfile?.personality?.lastAnalyzed ? 'Active' : 'Learning'}
                           </Text>
                           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                            Compatibility Tags
+                            AI Status
                           </Text>
                         </View>
                       </View>
                     </Animated.View>
 
                     {/* Last Analyzed */}
-                    {analysisProfile?.lastAnalyzed && (
+                    {socialProfile?.personality?.lastAnalyzed && (
                       <Animated.View style={[styles.lastAnalyzedContainer, { opacity: lastAnalyzedOpacity }]}>
                         <Text style={[styles.lastAnalyzedText, { color: colors.textSecondary }]}>
-                          Last analyzed: {analysisProfile?.lastAnalyzed ? new Date(analysisProfile.lastAnalyzed).toLocaleDateString() : 'Never'}
+                          Last analyzed: {socialProfile?.personality?.lastAnalyzed ? new Date(socialProfile.personality.lastAnalyzed).toLocaleDateString() : 'Never'}
                         </Text>
                       </Animated.View>
                     )}
@@ -1244,6 +1307,37 @@ const styles = StyleSheet.create({
   lastAnalyzedText: {
     ...typography.textStyles.caption,
     fontStyle: 'italic',
+  },
+
+  // Social Proxy Styles
+  socialProxyRow: {
+    flexDirection: 'row',
+    gap: spacing[3],
+    marginBottom: spacing[3],
+  },
+  moodContainer: {
+    padding: spacing[3],
+    borderRadius: 12,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  moodText: {
+    ...typography.textStyles.bodyMedium,
+    fontWeight: '600',
+    textTransform: 'capitalize',
+    marginTop: spacing[1],
+  },
+  plansContainer: {
+    padding: spacing[3],
+    borderRadius: 12,
+    marginLeft: spacing[2],
+  },
+  spotifyContainer: {
+    padding: spacing[3],
+    borderRadius: 12,
+    marginBottom: spacing[3],
+    borderLeftWidth: 3,
+    borderLeftColor: '#1DB954', // Spotify green
   },
 });
 

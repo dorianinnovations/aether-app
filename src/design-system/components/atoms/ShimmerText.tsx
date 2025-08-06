@@ -23,13 +23,13 @@ interface ShimmerTextProps {
 export const ShimmerText: React.FC<ShimmerTextProps> = ({
   children,
   style,
-  duration = 2000,
+  _duration = 2000,
   enabled = true,
   delay = 0,
-  intensity = 'normal',
-  customShimmerColor,
+  _intensity = 'normal',
+  _customShimmerColor,
   waveWidth = 'normal',
-  colorMode = 'static',
+  _colorMode = 'static',
   animationMode = 'loop'
 }) => {
   const { theme } = useTheme();
@@ -117,7 +117,7 @@ export const ShimmerText: React.FC<ShimmerTextProps> = ({
       if (timeoutId) clearTimeout(timeoutId);
       if (animationRef) animationRef.stop();
     };
-  }, [animatedValue, duration, enabled, delay, animationMode]);
+  }, [animatedValue, enabled, delay, animationMode]);
 
   if (!enabled) {
     return <Text style={style}>{children}</Text>;

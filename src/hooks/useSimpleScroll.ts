@@ -4,7 +4,7 @@ import { FlatList, Animated } from 'react-native';
 export const useSimpleScroll = () => {
   const flatListRef = useRef<FlatList>(null);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
-  const [showScrollButton, setShowScrollButton] = useState(false);
+  // Removed unused showScrollButton
   const [isAtBottom, setIsAtBottom] = useState(true);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const buttonOpacity = useRef(new Animated.Value(0)).current;

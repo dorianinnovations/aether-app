@@ -10,12 +10,9 @@ export class StorageCleanup {
   /**
    * Clean up contaminated storage and migrate to user-specific keys
    */
-  static async cleanupUserStorage(userId: string): Promise<void> {
+  static async cleanupUserStorage(_userId: string): Promise<void> {
     try {
       
-      // Get all storage keys
-      const allKeys = await AsyncStorage.getAllKeys();
-      const userKeys = getUserStorageKeys(userId);
       
       // Remove any temp storage that might be contaminated
       const tempKeys = getUserStorageKeys();

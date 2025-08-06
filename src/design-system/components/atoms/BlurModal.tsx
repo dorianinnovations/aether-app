@@ -74,7 +74,7 @@ export const BlurModal: React.FC<BlurModalProps> = ({
   // Icon
   icon = 'info-circle',
   iconColor,
-  iconLibrary = 'FontAwesome5',
+  iconLibrary: _iconLibrary = 'FontAwesome5',
   showIcon = true,
   
   // Button
@@ -210,28 +210,23 @@ export const BlurModal: React.FC<BlurModalProps> = ({
     });
   }, [isAnimating, resetAnimations]);
 
-  // Effect to handle render state timing
+  // Effect to handle render state timing - fixed to prevent useInsertionEffect warnings
   useEffect(() => {
-    if (visible) {
+    if (visible && !shouldRender) {
       setShouldRender(true);
-    } else {
+      // Start show animation after render
+      requestAnimationFrame(() => {
+        showModal();
+      });
+    } else if (!visible && shouldRender) {
+      hideModal();
       // Delay unmounting to allow exit animation to complete
       const timer = setTimeout(() => {
         setShouldRender(false);
       }, 200); // Match animation duration
       return () => clearTimeout(timer);
     }
-  }, [visible]);
-
-  // Effect to handle visibility changes - use setTimeout to avoid insertion effect warnings
-  useEffect(() => {
-    if (visible) {
-      const timer = setTimeout(() => showModal(), 0);
-      return () => clearTimeout(timer);
-    } else {
-      hideModal();
-    }
-  }, [visible, showModal, hideModal]);
+  }, [visible, shouldRender, showModal, hideModal]);
 
   // Handle Android back button
   useEffect(() => {

@@ -13,8 +13,7 @@ import {
 import * as Haptics from 'expo-haptics';
 
 // Design System
-import { designTokens, getThemeColors } from '../../tokens/colors';
-import { spacing } from '../../tokens/spacing';
+import { getThemeColors } from '../../tokens/colors';
 import { getGlassmorphicStyle } from '../../tokens/glassmorphism';
 import Icon from './Icon';
 

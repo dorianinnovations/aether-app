@@ -15,7 +15,7 @@ interface LottieLoaderProps {
 
 export const LottieLoader: React.FC<LottieLoaderProps> = ({
   size = 'medium',
-  color, // Kept for compatibility but not used since Lottie colors are baked in
+  color: _color, // Kept for compatibility but not used since Lottie colors are baked in
   style,
 }) => {
   const getSize = () => {

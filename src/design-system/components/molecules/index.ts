@@ -35,3 +35,8 @@ export { default as ConversationTabBar } from './ConversationTabBar';
 export { default as ConversationItem } from './ConversationItem';
 export { default as ConversationEmptyState } from './ConversationEmptyState';
 export { default as ConversationActionBar } from './ConversationActionBar';
+
+// Auth components
+export { PasswordStrengthIndicator } from './PasswordStrengthIndicator';
+export { UsernameStatusIndicator } from './UsernameStatusIndicator';
+export { AuthButton } from './AuthButton';

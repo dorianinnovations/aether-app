@@ -20,7 +20,7 @@ export class StreamEngine {
    */
   static async *streamChat(
     prompt: string,
-    endpoint: string = '/ai/adaptive-chat',
+    endpoint: string = '/social-chat',
     attachments?: any[]
   ): AsyncGenerator<string | StreamChunk, void, unknown> {
     

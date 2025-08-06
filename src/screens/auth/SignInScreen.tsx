@@ -23,27 +23,30 @@ import {
 import * as Haptics from 'expo-haptics';
 import { PageBackground } from '../../design-system/components/atoms/PageBackground';
 import { AnimatedAuthStatus } from '../../design-system/components/atoms/AnimatedAuthStatus';
-import { ShimmerText } from '../../design-system/components/atoms/ShimmerText';
 import { Header, HeaderMenu } from '../../design-system/components/organisms';
 import { designTokens, getThemeColors } from '../../design-system/tokens/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { typography } from '../../design-system/tokens/typography';
-import { spacing } from '../../design-system/tokens/spacing';
-import { AuthAPI, ApiUtils } from '../../services/api';
-import { goBack } from '../../utils/navigation';
+import { AuthAPI } from '../../services/api';
+import type { NavigationProp } from '@react-navigation/native';
+
+type RootStackParamList = {
+  SignUp: undefined;
+  Chat: undefined;
+};
 
 const { height } = Dimensions.get('window');
 
 interface SignInScreenProps {
-  navigation: any;
-  route: any;
+  navigation: NavigationProp<RootStackParamList>;
+  route?: { params?: Record<string, unknown> };
 }
 
 const SignInScreen: React.FC<SignInScreenProps> = ({
   navigation,
-  route,
+  _route,
 }) => {
-  const { theme, colors, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   
   // Form state
   const [emailOrUsername, setEmailOrUsername] = useState('');
@@ -58,12 +61,12 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
   
   // Rainbow pastel colors for success shimmer text
   const rainbowPastels = ['#FF8FA3', '#FFB84D', '#FFD23F', '#4ECDC4', '#C77DFF', '#FF6B9D'];
-  const [currentColorIndex, setCurrentColorIndex] = useState(0);
+  const [currentColorIndex] = useState(0);
   
   // Use either auth loading or local loading
   const loading = localLoading;
 
-  const themeColors = getThemeColors(theme);
+  const _themeColors = getThemeColors(theme);
 
   // Animation refs - Staggered load-in animations
   const titleOpacity = useRef(new Animated.Value(0)).current;
@@ -234,7 +237,8 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
     try {
       const response = await AuthAPI.login(emailOrUsername.trim(), password);
 
-      if (response) { // Assuming successful response
+
+      if (response && response.success) { 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         
         setIsSignInSuccess(true);
@@ -246,7 +250,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         
         // Set user-friendly error message
-        const errorMessage = 'Invalid email or password';
+        const errorMessage = response?.message || 'Invalid email or password';
         setError(errorMessage);
         setIsSignInSuccess(false);
         setAuthStatus('error');
@@ -256,11 +260,23 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
           setAuthStatus('idle');
         }, 3000);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       
+      console.error('SignIn error:', err);
+      
       // Set graceful error message for unexpected errors
-      const errorMessage = err.message || 'Connection failed';
+      let errorMessage = 'Network error, try again in a few minutes';
+      if (err.message) {
+        if (err.message.includes('token')) {
+          errorMessage = 'Authentication failed. Please try again.';
+        } else if (err.message.includes('password') || err.message.includes('credentials')) {
+          errorMessage = 'Invalid email or password';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       setError(errorMessage);
       setIsSignInSuccess(false);
       setAuthStatus('error');

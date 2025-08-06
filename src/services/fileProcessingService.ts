@@ -42,7 +42,7 @@ export const FILE_PROCESSING_CONFIG = {
   
   // Backend endpoints
   processingEndpoints: {
-    uploadWithFiles: '/social-chat-with-files',
+    uploadWithFiles: '/social-chat',
   },
   
   // File extensions mapping

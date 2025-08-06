@@ -48,7 +48,7 @@ export interface EnhancedApiError extends Error {
   statusCode?: number;
   response?: {
     status: number;
-    data: any;
+    data: unknown;
   };
 }
 

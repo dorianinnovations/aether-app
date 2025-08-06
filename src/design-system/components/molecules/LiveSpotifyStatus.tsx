@@ -73,9 +73,9 @@ export const LiveSpotifyStatus: React.FC<LiveSpotifyStatusProps> = ({
   username,
   showHeader = true,
   compact = false,
-  onStatusChange
+  onStatusChange: _onStatusChange
 }) => {
-  const { theme, colors } = useTheme();
+  const { colors } = useTheme();
   const [status, setStatus] = useState<LiveStatusData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -16,7 +16,7 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Header, HeaderMenu } from '../design-system/components/organisms';
 import { PageBackground } from '../design-system/components/atoms/PageBackground';
 import { LottieLoader } from '../design-system/components/atoms/LottieLoader';
-import { getGlassmorphicStyle } from '../design-system/tokens/glassmorphism';
+// import { getGlassmorphicStyle } from '../design-system/tokens/glassmorphism';
 import { getHeaderMenuShadow } from '../design-system/tokens/shadows';
 import { designTokens, getThemeColors } from '../design-system/tokens/colors';
 import { spacing } from '../design-system/tokens/spacing';
@@ -27,7 +27,7 @@ import SettingsModal from './chat/SettingsModal';
 import * as Haptics from 'expo-haptics';
 import { FriendsAPI } from '../services/api';
 
-const { width: screenWidth } = Dimensions.get('window');
+// Removed unused screenWidth
 
 interface Friend {
   username: string;
@@ -110,92 +110,7 @@ const FriendCard: React.FC<FriendCardProps> = ({ friend, theme }) => {
   );
 };
 
-interface RequestCardProps {
-  request: FriendRequest;
-  theme: 'light' | 'dark';
-  onAccept: (username: string) => void;
-  onDecline: (username: string) => void;
-}
-
-const RequestCard: React.FC<RequestCardProps> = ({ request, theme, onAccept, onDecline }) => {
-  const themeColors = getThemeColors(theme);
-
-  return (
-    <View style={[
-      styles.requestCard,
-      {
-        backgroundColor: theme === 'dark' 
-          ? designTokens.surfaces.dark.elevated 
-          : designTokens.surfaces.light.elevated,
-        borderColor: theme === 'dark' 
-          ? designTokens.borders.dark.subtle 
-          : designTokens.borders.light.subtle,
-      }
-    ]}>
-      <View style={[
-        styles.avatar,
-        {
-          backgroundColor: theme === 'dark' 
-            ? designTokens.borders.dark.default 
-            : designTokens.borders.light.default,
-        }
-      ]} />
-      
-      <View style={styles.requestInfo}>
-        <Text style={[
-          styles.friendName,
-          { color: themeColors.text }
-        ]}>
-          {request.username}
-        </Text>
-        
-        {request.message && (
-          <Text style={[
-            styles.requestMessage,
-            { color: themeColors.textSecondary }
-          ]}>
-            {request.message}
-          </Text>
-        )}
-      </View>
-      
-      <View style={styles.requestActions}>
-        <TouchableOpacity
-          style={[
-            styles.actionButton,
-            styles.declineButton,
-            {
-              backgroundColor: theme === 'dark' ? '#1a1a1a' : '#f5f5f5',
-              borderColor: theme === 'dark' ? '#333' : '#ddd',
-            }
-          ]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onDecline(request.username);
-          }}
-        >
-          <Feather name="x" size={16} color={themeColors.textSecondary} />
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[
-            styles.actionButton,
-            styles.acceptButton,
-            {
-              backgroundColor: designTokens.semantic.success,
-            }
-          ]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            onAccept(request.username);
-          }}
-        >
-          <Feather name="check" size={16} color="white" />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-};
+// RequestCard component and interface removed (unused)
 
 interface FriendsScreenProps {
   navigation: any;
@@ -203,21 +118,21 @@ interface FriendsScreenProps {
 
 export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
   const { theme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'friends' | 'requests'>('friends');
+  // Removed unused activeTab
   const [showAddFriendModal, setShowAddFriendModal] = useState(false);
   const [friendUsername, setFriendUsername] = useState('');
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'success' | 'error' | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
-  const [requests, setRequests] = useState<FriendRequest[]>([]);
+  // Removed unused requests
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
-  const { ghostText, isDismissing } = useGhostTyping({
+  const { ghostText } = useGhostTyping({
     isInputFocused,
     inputText: friendUsername,
   });
@@ -283,9 +198,10 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
         setFriends(friendsResponse.friends);
       }
       
-      if (requestsResponse.success && requestsResponse.requests) {
-        setRequests(requestsResponse.requests);
-      }
+      // Friend requests functionality removed for now
+      // if (requestsResponse.success && requestsResponse.requests) {
+      //   setRequests(requestsResponse.requests);
+      // }
     } catch (error: any) {
       console.error('Error fetching friends:', error);
       // Don't show error for auth failures
@@ -403,7 +319,7 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
       } else if (error.response?.status >= 500) {
         errorMsg = 'Server busy, try again';
       } else if (!error.response) {
-        errorMsg = 'Check your connection';
+        errorMsg = 'Network error, try again in a few minutes';
       }
       
       setStatusMessage(errorMsg);
@@ -915,14 +831,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing[6],
-    paddingVertical: spacing[3],
-    borderRadius: 12,
-    minWidth: 180,
+    paddingHorizontal: 8,
+    height: 37,
+    borderRadius: 8,
+    minWidth: 140,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   emptyActionText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
+    letterSpacing: -0.5,
   },
 });
 

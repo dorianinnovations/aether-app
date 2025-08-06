@@ -34,7 +34,7 @@ interface MetricCardProps {
 const MetricCard: React.FC<MetricCardProps> = ({
   title,
   value,
-  subtitle,
+  subtitle: _subtitle,
   trend,
   trendValue,
   color = 'info',

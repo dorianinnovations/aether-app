@@ -9,7 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { designTokens } from '../../tokens/colors';
-import { typography } from '../../tokens/typography';
+// import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
 
 type ThemeMode = 'light' | 'system' | 'dark';
@@ -19,7 +19,7 @@ interface ThemeSelectorProps {
   onThemeChange?: (mode: ThemeMode) => void;
 }
 
-export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ style, onThemeChange }) => {
+export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ style: _style, onThemeChange }) => {
   const { theme, toggleTheme } = useTheme();
   
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
@@ -87,7 +87,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ style, onThemeChan
         ]}
       />
       
-      {options.map((option, index) => {
+      {options.map((option, _index) => {
         const isSelected = themeMode === option.mode;
         
         return (

@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { SocialCard, HangoutRequest, Activity, Plan, SpotifyData } from '../types/social';
+import type { SocialCard, Activity, Plan, SpotifyData } from '../types/social';
 import { SocialProxyAPI, FriendsAPI } from '../services/api';
 
 export interface UseSocialCardsReturn {

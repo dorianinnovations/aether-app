@@ -3,7 +3,7 @@
  * Sophisticated aether-style landing with elegant animations and premium typography
  */
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -17,28 +17,34 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import { Header, HeaderMenu } from "../design-system/components/organisms";
+// import { Header, HeaderMenu } from "../design-system/components/organisms";
 import { ShimmerText } from "../design-system/components/atoms";
-import { designTokens, getThemeColors, getPageBackground } from "../design-system/tokens/colors";
+import { designTokens } from "../design-system/tokens/colors";
 import { useTheme } from "../contexts/ThemeContext";
 import { useSettings } from "../contexts/SettingsContext";
-import { typography } from "../design-system/tokens/typography";
-import { spacing } from "../design-system/tokens/spacing";
+// import { typography } from "../design-system/tokens/typography";
+// import { spacing } from "../design-system/tokens/spacing";
+import type { NavigationProp } from '@react-navigation/native';
 
-const { width, height } = Dimensions.get("window");
+type RootStackParamList = {
+  SignUp: undefined;
+  SignIn: undefined;
+};
+
+const { width } = Dimensions.get("window");
 
 interface HeroLandingScreenProps {
-  navigation: any;
-  route: any;
+  navigation: NavigationProp<RootStackParamList>;
+  route?: { params?: Record<string, unknown> };
 }
 
 const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
   navigation,
-  route,
+  _route,
 }) => {
   const { theme, colors } = useTheme();
   const { settings } = useSettings();
-  const themeColors = getThemeColors(theme);
+  // Removed unused themeColors
 
   // Staggered load-in animations - start from slightly visible to prevent flashing
   const titleOpacity = useRef(new Animated.Value(0.1)).current;
@@ -371,7 +377,7 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                           },
                         ]}
                       >
-                        Try First
+                        About
                       </Text>
                     </View>
                   </TouchableOpacity>

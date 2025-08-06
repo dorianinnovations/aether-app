@@ -21,8 +21,6 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { designTokens, getThemeColors, getStandardBorder } from '../../tokens/colors';
 import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
-import { getGlassmorphicStyle } from '../../tokens/glassmorphism';
-import { getNeumorphicStyle } from '../../tokens/shadows';
 import { AnimatedHamburger } from '../atoms/AnimatedHamburger';
 
 interface HeaderProps {
@@ -75,7 +73,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchPress,
   onDynamicOptionsPress,
   theme = 'light',
-  isVisible = true,
+  _isVisible = true,
   isMenuOpen = false,
   showSearch = false,
   searchQuery = '',
@@ -86,137 +84,27 @@ export const Header: React.FC<HeaderProps> = ({
   onLeftPress,
   rightIcon,
   onRightPress,
-  scrollY,
-  isScrolled = false,
+  _scrollY,
+  _isScrolled = false,
 }) => {
   const themeColors = getThemeColors(theme as 'light' | 'dark');
   const navigation = useNavigation<any>();
-  const [backPressed, setBackPressed] = useState(false);
-  const [menuPressed, setMenuPressed] = useState(false);
-  const [conversationsPressed, setConversationsPressed] = useState(false);
-  const [analyticsPressed, setAnalyticsPressed] = useState(false);
+  const [backPressed] = useState(false);
+  // Removed unused _menuPressed
+  const [conversationsPressed] = useState(false);
+  const [analyticsPressed] = useState(false);
 
-  // Scroll-responsive animations
-  const headerOpacity = useRef(new Animated.Value(isScrolled ? 0.95 : 1)).current;
-  const titleScale = useRef(new Animated.Value(isScrolled ? 0.9 : 1)).current;
-  const subtitleOpacity = useRef(new Animated.Value(isScrolled ? 0 : 1)).current;
-
-  // Logo animation values
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const [logoAnimationComplete, setLogoAnimationComplete] = useState(false);
-
-  // Logo animation sequence on component mount (only for Aether title)
-  useEffect(() => {
-    if (title === 'Aether' && !logoAnimationComplete) {
-      // Reset animation values
-      logoOpacity.setValue(0);
-
-      // Start the animation sequence
-      Animated.sequence([
-        // Fade in (0-1.5s)
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        // Hold visible (1.5-3.5s) - 2 second pause
-        Animated.delay(2000),
-        // Fade out to 20% (3.5-4.5s)
-        Animated.timing(logoOpacity, {
-          toValue: 0.2,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setLogoAnimationComplete(true);
-      });
-    }
-  }, [title, logoAnimationComplete]);
-
-  // Animate header when scroll state changes
-  useEffect(() => {
-    const duration = 300;
-    const config = {
-      duration,
-      useNativeDriver: false,
-    };
-
-    Animated.parallel([
-      Animated.timing(headerOpacity, {
-        toValue: isScrolled ? 0.95 : 1,
-        ...config,
-        useNativeDriver: true,
-      }),
-      Animated.timing(titleScale, {
-        toValue: isScrolled ? 0.9 : 1,
-        ...config,
-        useNativeDriver: true,
-      }),
-      Animated.timing(subtitleOpacity, {
-        toValue: isScrolled ? 0 : 1,
-        ...config,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [isScrolled]);
-  const [searchPressed, setSearchPressed] = useState(false);
-  const [dynamicOptionsPressed, setDynamicOptionsPressed] = useState(false);
-
-  // Animations
-  const visibilityAnim = useRef(new Animated.Value(isVisible ? 1 : 0)).current;
-  const backButtonScale = useRef(new Animated.Value(1)).current;
-  const menuButtonScale = useRef(new Animated.Value(1)).current;
-  const conversationsButtonScale = useRef(new Animated.Value(1)).current;
-  const analyticsButtonScale = useRef(new Animated.Value(1)).current;
-  const searchButtonScale = useRef(new Animated.Value(1)).current;
-  const dynamicOptionsButtonScale = useRef(new Animated.Value(1)).current;
-  const searchFadeAnim = useRef(new Animated.Value(0)).current;
-  const titleFadeAnim = useRef(new Animated.Value(1)).current;
+  // All animations removed to prevent useInsertionEffect warnings
+  const [searchPressed] = useState(false);
+  const [dynamicOptionsPressed] = useState(false);
 
   // Timeout refs for cleanup
   const buttonTimeoutRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const menuTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  useEffect(() => {
-    Animated.timing(visibilityAnim, {
-      toValue: isVisible ? 1 : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [isVisible]);
+  // Removed visibility animation
 
-  // Animate search/title transition
-  useEffect(() => {
-    if (showSearch) {
-      // Fade out title, then fade in search
-      Animated.sequence([
-        Animated.timing(titleFadeAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(searchFadeAnim, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      // Fade out search, then fade in title
-      Animated.sequence([
-        Animated.timing(searchFadeAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(titleFadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [showSearch]);
+  // All header animations removed
 
   // Cleanup all timeouts on unmount
   useEffect(() => {
@@ -234,94 +122,32 @@ export const Header: React.FC<HeaderProps> = ({
     };
   }, []);
 
-  const createButtonPressHandler = (
-    scaleAnim: Animated.Value,
-    setPressed: (pressed: boolean) => void,
-    buttonId: string,
-    onPress?: () => void
-  ) => () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
-    Animated.sequence([
-      Animated.timing(scaleAnim, {
-        toValue: 0.95,
-        duration: 80,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 120,
-        useNativeDriver: true,
-      }),
-    ]).start();
 
-    // Use requestAnimationFrame to avoid scheduling updates during render
-    requestAnimationFrame(() => {
-      setPressed(true);
-      
-      // Clear any existing timeout for this button
-      const existingTimeout = buttonTimeoutRefs.current.get(buttonId);
-      if (existingTimeout) {
-        clearTimeout(existingTimeout);
-      }
-      
-      // Set new timeout with cleanup tracking
-      const timeoutId = setTimeout(() => {
-        requestAnimationFrame(() => {
-          setPressed(false);
-          onPress?.();
-        });
-        buttonTimeoutRefs.current.delete(buttonId);
-      }, 150);
-      
-      buttonTimeoutRefs.current.set(buttonId, timeoutId);
-    });
+  const handleBackPress = () => {
+    onBackPress?.();
   };
-
-  const handleBackPress = createButtonPressHandler(backButtonScale, setBackPressed, 'back', onBackPress);
   
   // Subtle anticipatory hamburger press handler
   const handleMenuPress = () => {
-    // Quick, subtle haptic for immediate responsiveness
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    Animated.sequence([
-      Animated.timing(menuButtonScale, {
-        toValue: 0.95,
-        duration: 40,
-        useNativeDriver: true,
-      }),
-      Animated.spring(menuButtonScale, {
-        toValue: 1,
-        friction: 6,
-        tension: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Use requestAnimationFrame to avoid scheduling updates during render
-    requestAnimationFrame(() => {
-      setMenuPressed(true);
-      
-      // Clear any existing menu timeout
-      if (menuTimeoutRef.current) {
-        clearTimeout(menuTimeoutRef.current);
-      }
-      
-      // Set new timeout with cleanup tracking
-      menuTimeoutRef.current = setTimeout(() => {
-        requestAnimationFrame(() => {
-          setMenuPressed(false);
-          onMenuPress?.();
-        });
-      }, 80);
-    });
+    onMenuPress?.();
   };
   
-  const handleConversationsPress = createButtonPressHandler(conversationsButtonScale, setConversationsPressed, 'conversations', onConversationsPress);
-  const handleAnalyticsPress = createButtonPressHandler(analyticsButtonScale, setAnalyticsPressed, 'analytics', onQuickAnalyticsPress);
-  const handleSearchPress = createButtonPressHandler(searchButtonScale, setSearchPressed, 'search', onSearchPress);
-  const handleDynamicOptionsPress = createButtonPressHandler(dynamicOptionsButtonScale, setDynamicOptionsPressed, 'dynamicOptions', onDynamicOptionsPress);
+  const handleConversationsPress = () => {
+    onConversationsPress?.();
+  };
+  
+  const handleAnalyticsPress = () => {
+    onQuickAnalyticsPress?.();
+  };
+  
+  const handleSearchPress = () => {
+    onSearchPress?.();
+  };
+  
+  const handleDynamicOptionsPress = () => {
+    onDynamicOptionsPress?.();
+  };
 
   // Logo press handler - navigate to main chat screen
   const handleLogoPress = () => {
@@ -329,8 +155,8 @@ export const Header: React.FC<HeaderProps> = ({
     try {
       // Navigate to Chat screen (main screen for authenticated users)
       navigation.navigate('Chat');
-    } catch (error) {
-      console.log('Navigation to Chat failed:', error);
+    } catch {
+      // Navigation to Chat failed silently
       // Fallback: use onTitlePress if provided
       onTitlePress?.();
     }
@@ -340,14 +166,13 @@ export const Header: React.FC<HeaderProps> = ({
     iconName: string,
     iconLibrary: 'Feather' | 'MaterialCommunityIcons',
     color: string,
-    scale: Animated.Value,
     onPress: () => void,
     isPressed: boolean
   ) => {
     const IconComponent = iconLibrary === 'Feather' ? Feather : MaterialCommunityIcons;
     
     return (
-      <Animated.View style={{ transform: [{ scale }] }}>
+      <View>
         <TouchableOpacity
           style={styles.iconButton}
           onPress={onPress}
@@ -360,7 +185,7 @@ export const Header: React.FC<HeaderProps> = ({
             style={{ opacity: isPressed ? 0.7 : 1 }}
           />
         </TouchableOpacity>
-      </Animated.View>
+      </View>
     );
   };
 
@@ -376,7 +201,6 @@ export const Header: React.FC<HeaderProps> = ({
         'arrow-left',
         'Feather',
         theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary,
-        backButtonScale,
         handleBackPress,
         backPressed
       )}
@@ -384,7 +208,6 @@ export const Header: React.FC<HeaderProps> = ({
         'message-square',
         'Feather',
         theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary,
-        conversationsButtonScale,
         handleConversationsPress,
         conversationsPressed
       )}
@@ -409,7 +232,6 @@ export const Header: React.FC<HeaderProps> = ({
         'layers',
         'Feather',
         theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary,
-        dynamicOptionsButtonScale,
         handleDynamicOptionsPress,
         dynamicOptionsPressed
       )}
@@ -417,7 +239,6 @@ export const Header: React.FC<HeaderProps> = ({
         'search',
         'Feather',
         theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary,
-        searchButtonScale,
         handleSearchPress,
         searchPressed
       )}
@@ -433,7 +254,6 @@ export const Header: React.FC<HeaderProps> = ({
         'message-square',
         'Feather',
         theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary,
-        conversationsButtonScale,
         handleConversationsPress,
         conversationsPressed
       )}
@@ -442,7 +262,6 @@ export const Header: React.FC<HeaderProps> = ({
         'layers',
         'Feather',
         theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary,
-        dynamicOptionsButtonScale,
         handleDynamicOptionsPress,
         dynamicOptionsPressed
       )}
@@ -451,7 +270,6 @@ export const Header: React.FC<HeaderProps> = ({
         'search',
         'Feather',
         theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary,
-        searchButtonScale,
         handleSearchPress,
         searchPressed
       )}
@@ -460,7 +278,6 @@ export const Header: React.FC<HeaderProps> = ({
         'lightning-bolt',
         'MaterialCommunityIcons',
         theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary,
-        analyticsButtonScale,
         handleAnalyticsPress,
         analyticsPressed
       )}
@@ -484,7 +301,7 @@ export const Header: React.FC<HeaderProps> = ({
       )}
 
       {showMenuButton && (
-        <Animated.View style={{ transform: [{ scale: menuButtonScale }] }}>
+        <View>
           <TouchableOpacity
             style={styles.iconButton}
             onPress={handleMenuPress}
@@ -496,26 +313,18 @@ export const Header: React.FC<HeaderProps> = ({
               size={23}
             />
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       )}
     </View>
   );
 
   return (
-    <Animated.View
+    <View
       style={[
         styles.header,
         {
           ...getStandardBorder(theme),
-          opacity: Animated.multiply(visibilityAnim, headerOpacity),
-          height: isScrolled ? 50 : 58,
           backgroundColor: theme === 'dark' ? designTokens.brand.surfaceDark : designTokens.brand.surface,
-          transform: [{
-            translateY: visibilityAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [-20, 0],
-            }),
-          }],
         },
         style,
       ]}
@@ -527,14 +336,12 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Center Section - Logo or Search */}
         <View style={styles.centerSection}>
           {/* Search Container - Always rendered but animated */}
-          <Animated.View style={[
+          <View style={[
             styles.searchContainer,
             {
               backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
               borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
-              opacity: searchFadeAnim,
-              position: showSearch ? 'relative' : 'absolute',
-              zIndex: showSearch ? 1 : 0,
+              display: showSearch ? 'flex' : 'none',
             }
           ]}>
             <TextInput
@@ -549,26 +356,13 @@ export const Header: React.FC<HeaderProps> = ({
                 onSearchPress?.();
               }}
             />
-          </Animated.View>
+          </View>
 
           {/* Title Container - Always rendered but animated */}
-          <Animated.View style={[
+          <View style={[
             styles.titleContainer,
             {
-              opacity: titleFadeAnim,
-              transform: [
-                {
-                  scale: Animated.multiply(
-                    titleFadeAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.8, 1],
-                    }),
-                    titleScale
-                  )
-                }
-              ],
-              position: !showSearch ? 'relative' : 'absolute',
-              zIndex: !showSearch ? 1 : 0,
+              display: !showSearch ? 'flex' : 'none',
             }
           ]}>
             <TouchableOpacity
@@ -578,13 +372,8 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <View style={styles.titleRow}>
                 {title === 'Aether' ? (
-                  <Animated.View style={[
-                    styles.logoContainer,
-                    {
-                      opacity: logoOpacity
-                    }
-                  ]}>
-                    <Animated.Image
+                  <View style={styles.logoContainer}>
+                    <Image
                       source={theme === 'dark' 
                         ? require('../../../../assets/images/aether-logo-dark-mode.webp')
                         : require('../../../../assets/images/aether-logo-light-mode.webp')
@@ -595,7 +384,7 @@ export const Header: React.FC<HeaderProps> = ({
                       }]}
                       resizeMode="contain"
                     />
-                    <Animated.Image
+                    <Image
                       source={theme === 'dark' 
                         ? require('../../../../assets/images/aether-brand-logo-dark.webp')
                         : require('../../../../assets/images/aether-brand-logo-light.webp')
@@ -603,7 +392,7 @@ export const Header: React.FC<HeaderProps> = ({
                       style={styles.brandLogoOverlay}
                       resizeMode="contain"
                     />
-                  </Animated.View>
+                  </View>
                 ) : (
                   <Text style={[
                     styles.title,
@@ -615,25 +404,24 @@ export const Header: React.FC<HeaderProps> = ({
                 )}
               </View>
               {subtitle && (
-                <Animated.Text style={[
+                <Text style={[
                   styles.subtitle,
                   typography.textStyles.caption,
                   { 
                     color: themeColors.textSecondary,
-                    opacity: subtitleOpacity,
                   }
                 ]}>
                   {subtitle}
-                </Animated.Text>
+                </Text>
               )}
             </TouchableOpacity>
-          </Animated.View>
+          </View>
         </View>
 
         {/* Right Section */}
         {rightButtonsRender}
       </View>
-    </Animated.View>
+    </View>
   );
 };
 
@@ -641,17 +429,18 @@ const styles = StyleSheet.create({
   header: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 20,
-    left: spacing[6],
-    right: spacing[6],
+    left: spacing[5], // Reduced from spacing[6] to increase width by ~15%
+    right: spacing[5], // Reduced from spacing[6] to increase width by ~15%
     zIndex: 100,
     borderRadius: 10,
     paddingHorizontal: spacing[2],
-    paddingVertical: spacing[3],
+    paddingVertical: spacing[2], // Reduced from spacing[3] to decrease height by ~30%
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: spacing[2], // Reduced to maintain proportions with reduced header padding
   },
   leftSpacer: {
     flex: 1,
@@ -686,19 +475,19 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     position: 'relative',
-    height: 50,
+    height: 35, // Reduced from 50 to maintain proportions with smaller header
     width: 150,
     overflow: 'visible',
   },
   logo: {
-    height: 50,
+    height: 35, // Reduced to match logoContainer height
     width: 150,
   },
   brandLogoOverlay: {
     position: 'absolute',
     height: 150,
     width: 150,
-    top: -50,
+    top: -57, // Adjusted for new logo height (was -50, now -57 to maintain centering)
     left: 0,
     zIndex: 2,
     opacity: 0.9,

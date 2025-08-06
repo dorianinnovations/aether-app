@@ -36,25 +36,48 @@ export const AuthAPI = {
   },
 
   async login(emailOrUsername: string, password: string): Promise<AuthResponse> {
-    // Determine if it's an email or username based on presence of @ symbol
-    const isEmail = emailOrUsername.includes('@');
-    
+    // Always send as 'email' field to satisfy backend validation
+    // Backend should handle both email and username on the server side
     const response = await makeRequest<AuthResponse['data']>('POST', '/auth/login', {
-      ...(isEmail ? { email: emailOrUsername } : { username: emailOrUsername }),
+      email: emailOrUsername,
       password,
     });
     
     if (response.success && response.data) {
+      // Handle nested response structure from backend
+      const token = response.data.token;
+      const user = response.data.user;
+      
+      console.log('Login response structure:', { 
+        hasToken: !!token, 
+        hasUser: !!user, 
+        userHasId: !!(user?.id),
+        responseKeys: Object.keys(response.data),
+        dataKeys: null,
+        userData: user,
+        fullResponse: response
+      });
+      
+      if (!token) {
+        console.error('Backend login endpoint is not returning a token', response.data);
+        throw new Error('Authentication failed: Backend did not return authentication token');
+      }
+      
+      if (!user || !user.id) {
+        console.error('Backend login endpoint is not returning valid user data', response.data);
+        throw new Error('Authentication failed: Backend did not return valid user data');
+      }
+      
       // Store tokens and user data with cleanup
-      await TokenManager.setToken(response.data.token);
+      await TokenManager.setToken(token);
       if (response.data.refreshToken) {
         await AsyncStorage.setItem('@aether_refresh_token', response.data.refreshToken);
       }
-      await TokenManager.setUserData(response.data.user);
+      await TokenManager.setUserData(user);
       
       // Clean up any contaminated storage for this user
-      if (response.data.user?.id) {
-        await StorageCleanup.cleanupUserStorage(response.data.user.id);
+      if (user?.id) {
+        await StorageCleanup.cleanupUserStorage(user.id);
       }
     }
     
@@ -99,7 +122,7 @@ export const AuthAPI = {
   async checkUsernameAvailability(username: string): Promise<StandardAPIResponse<{ available: boolean; message?: string }>> {
     try {
       return await makeRequest<{ available: boolean; message?: string }>('GET', `/auth/check-username/${username}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.status === 409 || error.statusCode === 409) {
         return {
           success: false,

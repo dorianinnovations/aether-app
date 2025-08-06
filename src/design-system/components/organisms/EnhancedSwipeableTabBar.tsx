@@ -3,7 +3,7 @@
  * Integrates with header menu system for seamless navigation
  */
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import {
 import {
   PanGestureHandler,
   State,
-  GestureHandlerRootView,
+  // GestureHandlerRootView,
 } from 'react-native-gesture-handler';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
@@ -27,7 +27,7 @@ import { getGlassmorphicStyle } from '../../tokens/glassmorphism';
 import { getNeumorphicStyle } from '../../tokens/shadows';
 import Icon from '../atoms/Icon';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { height: screenHeight } = Dimensions.get('window');
 
 interface EnhancedSwipeableTabBarProps extends BottomTabBarProps {
   theme?: 'light' | 'dark';
@@ -48,8 +48,8 @@ export const EnhancedSwipeableTabBar: React.FC<EnhancedSwipeableTabBarProps> = (
   swipeToRevealThreshold = 0.3, // 30% of screen height
 }) => {
   const themeColors = getThemeColors(theme);
-  const [isSwipeInProgress, setIsSwipeInProgress] = useState(false);
-  const [lastSwipeY, setLastSwipeY] = useState(0);
+  // Removed unused isSwipeInProgress
+  // Removed unused lastSwipeY
   
   // Animations
   const translateY = useRef(new Animated.Value(isHidden ? 100 : 0)).current;

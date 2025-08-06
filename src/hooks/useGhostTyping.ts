@@ -50,9 +50,7 @@ const FAKE_USERNAMES = [
   "spark.builds"
 ];
 
-const getRandomStartIndex = () => {
-  return Math.floor(Math.random() * FAKE_USERNAMES.length);
-};
+// Removed unused getRandomStartIndex
 
 interface UseGhostTypingProps {
   isInputFocused: boolean;

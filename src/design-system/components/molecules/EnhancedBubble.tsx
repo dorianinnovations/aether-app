@@ -13,10 +13,6 @@ import {
   Easing,
   StyleSheet,
   Dimensions,
-  Vibration,
-  Platform,
-  Image,
-  ScrollView,
   PanResponder,
   Modal,
 } from 'react-native';
@@ -24,11 +20,9 @@ import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 import LottieView from 'lottie-react-native';
-import { designTokens, getThemeColors, getUserMessageColor, getStandardBorder, getCyclingPastelColor } from '../../tokens/colors';
+import { designTokens, getThemeColors } from '../../tokens/colors';
 import { typography } from '../../tokens/typography';
 import { spacing, borderRadius } from '../../tokens/spacing';
-import { getNeumorphicStyle } from '../../tokens/shadows';
-import { getGlassmorphicStyle } from '../../tokens/glassmorphism';
 import { ToolCall, Message, MessageAttachment } from '../../../types';
 import BasicMarkdown from '../atoms/BasicMarkdown';
 import { PhotoPreview } from './PhotoPreview';
@@ -120,7 +114,7 @@ const StreamContent: React.FC<{
   if (isTypingMessage || (isStreaming && !safeText.trim())) {
     return (
       <LottieView
-        source={require('../../../../assets/AetherCloudBubble.json')}
+        source={require('../../../../assets/AetherSpinner.json')}
         autoPlay
         loop
         style={styles.lottieAnimation}
@@ -216,10 +210,10 @@ const StreamContent: React.FC<{
 
 const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
   message,
-  index,
-  onSpeakMessage,
+  _index,
+  _onSpeakMessage,
   theme = 'light',
-  messageIndex = 0,
+  _messageIndex = 0,
 }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -231,7 +225,7 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   
   const isUser = message.sender === 'user';
-  const isSystem = message.isSystem || message.sender === 'system';
+  // const _isSystem = message.isSystem || message.sender === 'system';
   const isStreaming = message.variant === 'streaming';
 
   // Action handlers
@@ -269,6 +263,101 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
       </View>
     );
   }, [message.attachments, message.sender]);
+
+  // Render document attachments 
+  const renderDocumentAttachments = useCallback(() => {
+    if (!message.attachments || message.attachments.length === 0) return null;
+
+    const documentAttachments = message.attachments.filter(att => att.type === 'document');
+    if (documentAttachments.length === 0) return null;
+
+    const isUser = message.sender === 'user';
+    const themeColors = getThemeColors(theme);
+
+    const getFileIcon = (mimeType?: string): string => {
+      if (!mimeType) return 'file';
+      if (mimeType.includes('pdf')) return 'file-pdf';
+      if (mimeType.includes('word') || mimeType.includes('document')) return 'file-word';
+      if (mimeType.includes('text')) return 'file-alt';
+      if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'file-excel';
+      if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'file-powerpoint';
+      return 'file';
+    };
+
+    const formatFileSize = (bytes: number): string => {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+    };
+
+    return (
+      <View style={[
+        styles.documentAttachmentsContainer,
+        { marginTop: spacing[2] }
+      ]}>
+        {documentAttachments.map((attachment) => (
+          <View
+            key={attachment.id}
+            style={[
+              styles.documentAttachmentBubble,
+              {
+                backgroundColor: isUser 
+                  ? 'rgba(255, 255, 255, 0.1)' 
+                  : themeColors.surface,
+                borderColor: isUser 
+                  ? 'rgba(255, 255, 255, 0.2)' 
+                  : themeColors.borders.subtle,
+              }
+            ]}
+          >
+            <View style={[
+              styles.documentIcon,
+              {
+                backgroundColor: attachment.mimeType?.includes('pdf') 
+                  ? 'rgba(239, 68, 68, 0.1)'
+                  : 'rgba(59, 130, 246, 0.1)'
+              }
+            ]}>
+              <FontAwesome5
+                name={getFileIcon(attachment.mimeType)}
+                size={16}
+                color={attachment.mimeType?.includes('pdf') 
+                  ? designTokens.semantic.error
+                  : designTokens.semantic.info
+                }
+              />
+            </View>
+            <View style={styles.documentInfo}>
+              <Text
+                style={[
+                  styles.documentName,
+                  typography.textStyles.caption,
+                  { color: isUser ? 'rgba(255, 255, 255, 0.9)' : themeColors.text }
+                ]}
+                numberOfLines={1}
+              >
+                {attachment.name}
+              </Text>
+              <Text
+                style={[
+                  styles.documentSize,
+                  typography.textStyles.caption,
+                  { 
+                    color: isUser ? 'rgba(255, 255, 255, 0.7)' : themeColors.textMuted,
+                    fontSize: 10
+                  }
+                ]}
+              >
+                {formatFileSize(attachment.size)}
+              </Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  }, [message.attachments, message.sender, theme]);
 
   const handleReport = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -334,9 +423,8 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
     onPanResponderMove: (event) => {
       if (!showActionModal) return;
       
-      const { locationX, locationY } = event.nativeEvent;
+      const { locationX } = event.nativeEvent;
       const optionWidth = 80;
-      const optionHeight = 60;
       
       // Calculate which option is being hovered
       const optionIndex = Math.floor(locationX / optionWidth);
@@ -398,7 +486,7 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
     ]).start();
   }, [fadeAnim, slideAnim]);
 
-  const themeColors = getThemeColors(theme as 'light' | 'dark');
+  // const themeColors = getThemeColors(theme as 'light' | 'dark');
 
   if (!isVisible) return null;
 
@@ -435,6 +523,8 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
                 ]}>
                   {/* Render photo attachments within the bubble */}
                   {renderPhotoAttachments()}
+                  {/* Render document attachments within the bubble */}
+                  {renderDocumentAttachments()}
                   {/* Only render text if there is actual text content */}
                   {((message.text && message.text.trim().length > 0) || (message.message && message.message.trim().length > 0)) && (
                     <Text 
@@ -518,7 +608,7 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
             ]}
             {...panResponder.panHandlers}
           >
-            {actionOptions.map((option, index) => (
+            {actionOptions.map((option, _index) => (
               <TouchableOpacity
                 key={option.id}
                 style={[
@@ -725,6 +815,38 @@ const styles = StyleSheet.create({
     gap: 6,
     alignItems: 'flex-start',
     marginBottom: spacing[2],
+  },
+
+  // Document Attachment Styles
+  documentAttachmentsContainer: {
+    gap: spacing[2],
+  },
+  documentAttachmentBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing[2],
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    gap: spacing[2],
+  },
+  documentIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: borderRadius.xs,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  documentInfo: {
+    flex: 1,
+  },
+  documentName: {
+    fontWeight: '600',
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  documentSize: {
+    fontSize: 10,
+    opacity: 0.8,
   },
   
   // Action Modal Styles

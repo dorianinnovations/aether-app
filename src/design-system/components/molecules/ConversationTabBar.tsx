@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { TabButton } from '../atoms';
-import { spacing } from '../../tokens/spacing';
 
 interface Tab {
   label: string;

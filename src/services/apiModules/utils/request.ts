@@ -11,10 +11,10 @@ import { handleError } from '../../../utils/errorHandler';
 /**
  * Base API request method with standardized error handling
  */
-export const makeRequest = async <T = any>(
+export const makeRequest = async <T = unknown>(
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
   endpoint: string,
-  data?: any,
+  data?: unknown,
   config?: AxiosRequestConfig
 ): Promise<StandardAPIResponse<T>> => {
   try {
@@ -26,7 +26,7 @@ export const makeRequest = async <T = any>(
     });
     
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Use unified error handler for consistent error responses
     const standardResponse = handleError(error, {
       endpoint,
@@ -42,19 +42,19 @@ export const makeRequest = async <T = any>(
 
 // Utility functions for API interactions
 export const ApiUtils = {
-  isNetworkError: (error: any): boolean => {
+  isNetworkError: (error: unknown): boolean => {
     return !error.response && error.request;
   },
 
-  isServerError: (error: any): boolean => {
+  isServerError: (error: unknown): boolean => {
     return error.response && error.response.status >= 500;
   },
 
-  isClientError: (error: any): boolean => {
+  isClientError: (error: unknown): boolean => {
     return error.response && error.response.status >= 400 && error.response.status < 500;
   },
 
-  getErrorMessage: (error: any): string => {
+  getErrorMessage: (error: unknown): string => {
     if (error.message) return error.message;
     if (error.response?.data?.message) return error.response.data.message;
     if (error.request) return 'Network error - please check your connection';
@@ -62,7 +62,7 @@ export const ApiUtils = {
   },
 
   // Conversation API utility functions (moved from original api.ts)
-  async getRecentConversations(limit: number = 20, page: number = 1): Promise<any> {
+  async getRecentConversations(limit: number = 20, page: number = 1): Promise<unknown> {
     try {
       const response = await api.get('/conversation/conversations/recent', {
         params: { limit, page }
@@ -74,7 +74,7 @@ export const ApiUtils = {
     }
   },
 
-  async deleteConversation(conversationId: string): Promise<any> {
+  async deleteConversation(conversationId: string): Promise<unknown> {
     try {
       const response = await api.delete(`/conversation/conversations/${conversationId}`);
       return response.data;
@@ -84,7 +84,7 @@ export const ApiUtils = {
     }
   },
 
-  async deleteAllConversations(): Promise<any> {
+  async deleteAllConversations(): Promise<unknown> {
     try {
       const response = await api.delete('/conversation/conversations/all');
       return response.data;
@@ -94,7 +94,7 @@ export const ApiUtils = {
     }
   },
 
-  async getConversation(conversationId: string, messageLimit: number = 500): Promise<any> {
+  async getConversation(conversationId: string, messageLimit: number = 500): Promise<unknown> {
     try {
       const response = await api.get(`/conversation/conversations/${conversationId}`, {
         params: { messageLimit }

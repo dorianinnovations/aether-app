@@ -10,7 +10,6 @@ import {
   ViewStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { designTokens, getThemeColors } from '../../tokens/colors';
 import { useSettings } from '../../../hooks/useSettings';
 
 interface PageBackgroundProps {
@@ -26,7 +25,6 @@ export const PageBackground: React.FC<PageBackgroundProps> = ({
   variant = 'default',
   style,
 }) => {
-  const themeColors = getThemeColors(theme);
   const { settings } = useSettings();
 
   // The dreamy baby blue gradient colors - brighter (closer to white)!

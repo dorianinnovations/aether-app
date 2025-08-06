@@ -13,7 +13,6 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { useTheme } from '../../../contexts/ThemeContext';
-import { designTokens } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 
 interface ConversationSkeletonProps {

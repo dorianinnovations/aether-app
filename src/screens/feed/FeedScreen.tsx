@@ -159,22 +159,22 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       
-      // Create post using the server API
-      const response = await SocialProxyAPI.createPost(newStatus, 'friends');
-      console.log('Post created successfully:', response);
+      // Update social proxy status instead of creating a post
+      const response = await SocialProxyAPI.updateStatus(newStatus);
+      console.log('Social proxy status updated successfully:', response);
       
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setStatusModalVisible(false);
       setNewStatus('');
       
-      // Refresh feed to show new post
+      // Refresh feed to show updated social proxy status
       await loadPosts();
       refreshCards();
       
     } catch (error) {
-      console.error('Error creating post:', error);
+      console.error('Error updating social proxy status:', error);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', 'Failed to create post');
+      Alert.alert('Error', 'Failed to update status');
     }
   };
 
@@ -521,7 +521,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
             {/* Header */}
             <View style={[styles.postModalHeader, { borderBottomColor: themeColors.borders.default }]}>
               <Text style={[styles.postModalTitle, { color: themeColors.text }]}>
-                New Post
+                Update Status
               </Text>
               <View style={styles.headerButtons}>
                 <TouchableOpacity 
@@ -568,7 +568,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
                   style={[styles.postInput, { 
                     color: themeColors.text,
                   }]}
-                  placeholder="Craft a new post"
+                  placeholder="What's happening with you?"
                   placeholderTextColor={themeColors.textMuted}
                   selectionColor={theme === 'dark' ? 'white' : '#64748b'}
                   cursorColor={theme === 'dark' ? 'white' : '#64748b'}
