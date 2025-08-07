@@ -700,9 +700,10 @@ const styles = StyleSheet.create({
     ...typography.textStyles.body,
   },
   lottieAnimation: {
-    width: 120, // Enlarged for better visibility
-    height: 120, // Make it square for the twister animation
+    width: 160, // Increased size for better visibility
+    height: 160, // Make it square for the twister animation
     alignSelf: 'flex-start',
+    marginLeft: -60, // Pull it much further left
   },
   searchResultsContainer: {
     marginTop: spacing[2],

@@ -23,6 +23,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 
 // Enhanced Components
 import { EnhancedChatInput } from '../../design-system/components/molecules';
@@ -96,6 +97,19 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
 
   const flatListRef = useRef<FlatList>(null);
 
+  const scrollToBottom = (instant = false) => {
+    if (flatListRef.current) {
+      try {
+        flatListRef.current.scrollToOffset({ 
+          offset: 99999,
+          animated: !instant // Instant when requested, animated otherwise
+        });
+      } catch (error) {
+        // Silently handle errors
+      }
+    }
+  };
+
   // Web search hook  
   const {
     searchResults,
@@ -117,6 +131,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   const [isChatInputFocused, setIsChatInputFocused] = useState(false);
   const [, setIsKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isNearBottom, setIsNearBottom] = useState(true);
   const inputContainerAnim = useRef(new Animated.Value(0)).current;
   
   // Animation refs
@@ -317,6 +332,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       keyboardDidHideListener?.remove();
     };
   }, [isChatInputFocused]);
+
+  // Scroll to bottom when input is focused and keyboard appears
+  useEffect(() => {
+    if (isChatInputFocused && keyboardHeight > 0) {
+      // Wait for paddingBottom to update, then scroll
+      setTimeout(() => {
+        scrollToBottom();
+      }, 300);
+    }
+  }, [isChatInputFocused, keyboardHeight]);
 
   // Cleanup effect for rotation stability
   useEffect(() => {
@@ -541,6 +566,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       // Send the message with the current input text
       handleMessageSend(currentText);
     }
+    
+    // Auto-scroll to bottom after sending message
+    setTimeout(() => scrollToBottom(), 100);
   };
 
   // Handle input focus/blur for tooltip fade
@@ -704,18 +732,28 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
           contentContainerStyle={[
             styles.messagesContainer,
             {
-              // Dynamic padding bottom when keyboard/input is focused
               paddingBottom: isChatInputFocused 
-                ? keyboardHeight + 120 // Keyboard height + input container height + buffer
-                : 12, // Default padding when not focused
+                ? keyboardHeight + 80 // Reasonable padding when focused
+                : 80, // Default padding when not focused
             }
           ]}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="never"
+          onScrollBeginDrag={() => {
+            // Dismiss keyboard when user starts scrolling
+            Keyboard.dismiss();
+          }}
           ItemSeparatorComponent={() => <View style={{ height: 0 }} />}
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: headerAnim } } }],
-            { useNativeDriver: false }
+            { 
+              useNativeDriver: false,
+              listener: (event) => {
+                const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+                const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+                setIsNearBottom(distanceFromBottom <= 50);
+              }
+            }
           )}
           ListFooterComponent={() => {
             // Show typing indicator for friend conversations
@@ -731,6 +769,35 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         />
 
       </View>
+
+      {/* Scroll to bottom button - hidden when near bottom */}
+      {!isNearBottom && (
+        <TouchableOpacity
+          style={[
+            styles.scrollToBottomButton,
+            {
+              backgroundColor: theme === 'dark' 
+                ? 'rgba(255, 255, 255, 0.1)' 
+                : 'rgba(0, 0, 0, 0.05)',
+              borderColor: theme === 'dark' 
+                ? 'rgba(255, 255, 255, 0.15)' 
+                : 'rgba(0, 0, 0, 0.1)',
+            }
+          ]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            scrollToBottom(false); // Keep animated for button press (smooth UX)
+            // Try scrollToBottom(true) for instant teleport!
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons 
+            name="chevron-down" 
+            size={20} 
+            color={theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.6)'} 
+          />
+        </TouchableOpacity>
+      )}
 
       <Animated.View 
         style={[
@@ -1446,6 +1513,26 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 15,
     fontWeight: '600',
+  },
+
+  // Scroll to bottom button
+  scrollToBottomButton: {
+    position: 'absolute',
+    bottom: 120, // Position above input area
+    left: '50%', // Center horizontally
+    marginLeft: -22, // Offset by half width (44/2)
+    width: 44,
+    height: 44,
+    borderRadius: 22, // Perfectly circular
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    zIndex: 1000,
   },
 });
 
