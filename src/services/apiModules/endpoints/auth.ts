@@ -19,11 +19,11 @@ export const AuthAPI = {
     });
     
     
-    if (response.success && (response.data || response.token)) {
+    if (response.success && (response.data || (response as any).token)) {
       // Store tokens and user data with cleanup - Backend returns token at root level
-      const token = response.token || response.data?.token;
+      const token = (response as any).token || response.data?.token;
       const user = response.data?.user;
-      const refreshToken = response.refreshToken || response.data?.refreshToken;
+      const refreshToken = (response as any).refreshToken || response.data?.refreshToken;
       
       if (token) {
         await TokenManager.setToken(token);
@@ -53,7 +53,7 @@ export const AuthAPI = {
     });
     
     
-    const token = response.token || response.data?.token;  // Backend returns token at root level
+    const token = (response as any).token || response.data?.token;  // Backend returns token at root level
     const user = response.data?.user;
     
     if (response.status === 'success') {
@@ -67,7 +67,7 @@ export const AuthAPI = {
       
       // Store tokens and user data with cleanup
       await TokenManager.setToken(token);
-      const refreshToken = response.refreshToken || response.data?.refreshToken;
+      const refreshToken = (response as any).refreshToken || response.data?.refreshToken;
       if (refreshToken) {
         await AsyncStorage.setItem('@aether_refresh_token', refreshToken);
       }

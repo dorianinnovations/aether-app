@@ -109,7 +109,7 @@ export const ChatAPI = {
   },
 
   // Streaming social chat for real-time responses - React Native compatible with XMLHttpRequest  
-  streamSocialChat(message: string, attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>): AsyncGenerator<string, void, unknown> {
+  streamSocialChat(message: string, attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>): AsyncGenerator<string | { metadata: unknown }, void, unknown> {
     
     return (async function* () {
       try {
@@ -150,11 +150,11 @@ export const ChatAPI = {
         }
 
         // Use Promise to handle XMLHttpRequest with async generator
-        const chunks = await new Promise<string[]>((resolve, reject) => {
+        const chunks = await new Promise<Array<string | { metadata: unknown }>>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
           let lastProcessedLength = 0;
           let buffer = '';
-          const allChunks: string[] = [];
+          const allChunks: Array<string | { metadata: unknown }> = [];
 
           xhr.open('POST', `${API_BASE_URL}/social-chat`, true);
           xhr.setRequestHeader('Content-Type', 'application/json');
@@ -185,11 +185,28 @@ export const ChatAPI = {
 
                       try {
                         const parsed = JSON.parse(data);
+                        
+                        // Handle content chunks
                         if (parsed.content) {
                           allChunks.push(parsed.content);
                         }
-                      } catch {
-                        // Skip invalid JSON
+                        
+                        // Handle metadata (tool results, search results, etc.)
+                        if (parsed.metadata || parsed.toolResults || parsed.sources || parsed.searchResults) {
+                          const metadata = {
+                            ...parsed.metadata,
+                            ...(parsed.toolResults && { toolResults: parsed.toolResults }),
+                            ...(parsed.sources && { sources: parsed.sources }),
+                            ...(parsed.searchResults && { searchResults: parsed.searchResults }),
+                            ...(parsed.query && { query: parsed.query }),
+                            ...(parsed.thinking && { thinking: parsed.thinking }),
+                          };
+                          allChunks.push({ metadata });
+                        }
+                        
+                      } catch (parseError) {
+                        logger.debug('Failed to parse streaming data:', parseError, 'Data:', data);
+                        // Skip invalid JSON but continue processing
                         continue;
                       }
                     }
@@ -235,7 +252,7 @@ export const ChatAPI = {
   },
 
   // Main streaming method - unified interface for all streaming needs
-  streamMessage(message: string, attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>): AsyncGenerator<string, void, unknown> {
+  streamMessage(message: string, attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>): AsyncGenerator<string | { metadata: unknown }, void, unknown> {
     return this.streamSocialChat(message, attachments);
   },
 
