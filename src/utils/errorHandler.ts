@@ -243,36 +243,36 @@ class ErrorHandler {
     let retryAfter: number | undefined;
 
     // Handle different error types
-    if (error.response) {
+    if (error && typeof error === 'object' && 'response' in error) {
       // Axios error with response
-      statusCode = error.response.status;
+      statusCode = (error as any).response.status;
       code = STATUS_CODE_MAPPINGS[statusCode] || 'UNKNOWN_ERROR';
-      message = error.response.data?.message || error.message || message;
+      message = (error as any).response.data?.message || (error as any).message || message;
       
       // Check for rate limiting
       if (statusCode === 429) {
-        retryAfter = parseInt(error.response.headers?.['retry-after'] || '60');
+        retryAfter = parseInt((error as any).response.headers?.['retry-after'] || '60');
       }
-    } else if (error.request) {
+    } else if (error && typeof error === 'object' && 'request' in error) {
       // Network error
       code = 'NETWORK_ERROR';
       statusCode = 0;
       message = 'Network connection failed';
-    } else if (error.code) {
+    } else if (error && typeof error === 'object' && 'code' in error) {
       // Handle specific error codes
-      if (error.code === 'ECONNABORTED') {
+      if ((error as any).code === 'ECONNABORTED') {
         code = 'TIMEOUT_ERROR';
         statusCode = 408;
-      } else if (error.code === 'ECONNREFUSED') {
+      } else if ((error as any).code === 'ECONNREFUSED') {
         code = 'CONNECTION_REFUSED';
         statusCode = 503;
       } else {
-        code = error.code;
+        code = (error as any).code;
       }
     } else if (typeof error === 'string') {
       message = error;
-    } else if (error.message) {
-      message = error.message;
+    } else if (error && typeof error === 'object' && 'message' in error) {
+      message = (error as any).message;
     }
 
     // Get error mapping or use defaults
@@ -293,7 +293,7 @@ class ErrorHandler {
       statusCode,
       timestamp,
       context,
-      stack: error.stack,
+      stack: error && typeof error === 'object' && 'stack' in error ? (error as any).stack : undefined,
       retryable: mapping.retryable,
       retryAfter
     };

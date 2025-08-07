@@ -95,9 +95,9 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({
       logger.debug('Heatmap API response:', heatmapResponse);
       logger.debug('Stats API response:', statsResponse);
 
-      if (heatmapResponse.success && heatmapResponse.heatMap) {
+      if (heatmapResponse.success && heatmapResponse.data?.heatMap) {
         // Transform backend data to frontend format
-        const transformedData = heatmapResponse.heatMap.map((item: any) => ({
+        const transformedData = heatmapResponse.data.heatMap.map((item: any) => ({
           date: item.date,
           messageCount: item.count || 0,
           intensity: item.level || 0,
@@ -109,11 +109,11 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({
         setHeatmapData([]);
       }
 
-      if (statsResponse.success && statsResponse.stats) {
+      if (statsResponse.success && statsResponse.data?.stats) {
         const statsData = {
-          totalMessages: statsResponse.stats.totalMessages || 0,
-          averageDaily: statsResponse.stats.averageDaily || 0,
-          streakDays: statsResponse.streak?.streakDays || 0,
+          totalMessages: statsResponse.data.stats.totalMessages || 0,
+          averageDaily: statsResponse.data.stats.averageDaily || 0,
+          streakDays: statsResponse.data.streak?.streakDays || 0,
         };
         logger.debug('Processed stats:', statsData);
         setStats(statsData);

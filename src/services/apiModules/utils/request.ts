@@ -44,21 +44,21 @@ export const makeRequest = async <T = unknown>(
 // Utility functions for API interactions
 export const ApiUtils = {
   isNetworkError: (error: unknown): boolean => {
-    return !error.response && error.request;
+    return !(error as any).response && (error as any).request;
   },
 
   isServerError: (error: unknown): boolean => {
-    return error.response && error.response.status >= 500;
+    return (error as any).response && (error as any).response.status >= 500;
   },
 
   isClientError: (error: unknown): boolean => {
-    return error.response && error.response.status >= 400 && error.response.status < 500;
+    return (error as any).response && (error as any).response.status >= 400 && (error as any).response.status < 500;
   },
 
   getErrorMessage: (error: unknown): string => {
-    if (error.message) return error.message;
-    if (error.response?.data?.message) return error.response.data.message;
-    if (error.request) return 'Network error - please check your connection';
+    if ((error as any).message) return (error as any).message;
+    if ((error as any).response?.data?.message) return (error as any).response.data.message;
+    if ((error as any).request) return 'Network error - please check your connection';
     return 'An unexpected error occurred';
   },
 

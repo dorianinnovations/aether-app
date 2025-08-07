@@ -17,6 +17,9 @@ interface RainbowShimmerTextProps {
   customShimmerColor?: string;
   waveWidth?: 'narrow' | 'normal' | 'wide';
   colorMode?: 'static' | 'rainbow-cycle';
+  _intensity?: 'subtle' | 'normal' | 'vibrant';
+  _customShimmerColor?: string;
+  _colorMode?: 'static' | 'rainbow-cycle';
 }
 
 export const RainbowShimmerText: React.FC<RainbowShimmerTextProps> = ({

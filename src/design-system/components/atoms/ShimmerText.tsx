@@ -20,6 +20,10 @@ interface ShimmerTextProps {
   colorMode?: 'static' | 'pastel-cycle';
   animationMode?: 'loop' | 'greeting-sequence' | 'greeting-once';
   onAnimationComplete?: () => void;
+  _duration?: number;
+  _intensity?: 'subtle' | 'normal' | 'vibrant';
+  _customShimmerColor?: string;
+  _colorMode?: 'static' | 'pastel-cycle';
 }
 
 export const ShimmerText: React.FC<ShimmerTextProps> = ({

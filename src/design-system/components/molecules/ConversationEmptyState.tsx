@@ -1,12 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { ConversationIcon } from '../atoms';
 import { spacing } from '../../tokens/spacing';
 import { designTokens } from '../../tokens/colors';
 
+type FeatherIconNames = keyof typeof Feather.glyphMap;
+
 interface Tab {
   label: string;
-  icon: string;
+  icon: FeatherIconNames;
 }
 
 interface ConversationEmptyStateProps {

@@ -115,32 +115,25 @@ export const useGreeting = (): UseGreetingReturn => {
         
         const timeGreeting = getTimeBasedGreeting();
         
-        // 60% chance to include name, 40% chance to just use greeting
-        const includeNameChance = Math.random() > 0.4;
-        
-        if (includeNameChance) {
-          // Check if this greeting works well with names
-          if (isNameFriendly(timeGreeting)) {
-            // Sometimes add the name at the start, sometimes at the end
-            const nameAtStart = Math.random() > 0.5;
-            if (nameAtStart) {
-              setGreetingText(`Hey ${firstName}! ${timeGreeting}`);
-            } else {
-              setGreetingText(`${timeGreeting}, ${firstName}!`);
-            }
-          } else {
-            // For name-unfriendly greetings, only add name at the start
+        // Always include the name in some form
+        // Check if this greeting works well with names
+        if (isNameFriendly(timeGreeting)) {
+          // Sometimes add the name at the start, sometimes at the end
+          const nameAtStart = Math.random() > 0.5;
+          if (nameAtStart) {
             setGreetingText(`Hey ${firstName}! ${timeGreeting}`);
+          } else {
+            setGreetingText(`${timeGreeting}, ${firstName}!`);
           }
         } else {
-          // Just use the greeting without the name
-          setGreetingText(timeGreeting);
+          // For name-unfriendly greetings, only add name at the start
+          setGreetingText(`Hey ${firstName}! ${timeGreeting}`);
         }
       } catch (error) {
         logger.error('Error loading user data for greeting:', error);
-        // Fallback with current time-based greeting (no "User" needed)
+        // Fallback with current time-based greeting, always include a name
         const timeGreeting = getTimeBasedGreeting();
-        setGreetingText(timeGreeting);
+        setGreetingText(`Hey there! ${timeGreeting}`);
       }
     };
     

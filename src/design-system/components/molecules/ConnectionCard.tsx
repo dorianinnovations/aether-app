@@ -40,6 +40,11 @@ interface ConnectionCardProps {
   theme?: 'light' | 'dark';
   onPress?: () => void;
   onConnect?: () => void;
+  _id?: string;
+  _connectionType?: string;
+  _distance?: string;
+  _lastSeen?: string;
+  _bio?: string;
 }
 
 const ConnectionCard: React.FC<ConnectionCardProps> = ({
