@@ -813,6 +813,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         onConversationSelect={(conversation) => {
           if (conversation.type === 'friend' && conversation.friendUsername) {
             // Handle friend conversation - clear messages immediately to prevent bleed-through
+            logger.debug('Selecting friend conversation:', conversation.friendUsername);
             setMessages([]);
             setCurrentFriendUsername(conversation.friendUsername);
             setCurrentConversationId(undefined);

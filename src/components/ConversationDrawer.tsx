@@ -84,6 +84,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [longPressedId, setLongPressedId] = useState<string | null>(null);
+  const [isTabSwitching, setIsTabSwitching] = useState(false);
   
   // Heatmap modal state
   const [showHeatmapModal, setShowHeatmapModal] = useState(false);
@@ -248,6 +249,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                   streak: conversation.streak || 0,
                   lastMessage: conversation.lastMessage
                 }));
+                log.debug('Mapped friend conversations:', newConversations);
               } else {
                 throw new Error('No conversations data in response');
               }
@@ -282,7 +284,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                   friendUsername: friend.username,
                   streak: 0
                 }));
-                log.debug('Loaded friends as conversations (fallback):', newConversations.length);
+                log.debug('Loaded friends as conversations (fallback):', newConversations);
               } else {
                 throw new Error('Friends list is empty');
               }
@@ -455,16 +457,23 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     ]).start();
   }, [tabAnimations]);
 
-  // Simple tab transition handler
+  // Simple tab transition handler with skeleton loading
   const handleTabTransition = useCallback((targetTab: number) => {
-    if (isAnimating || targetTab === currentTab) return;
+    if (isAnimating || targetTab === currentTab || isTabSwitching) return;
     
     // Trigger fold-out animation
     animateTabPress(targetTab);
     
-    setCurrentTab(targetTab);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, [isAnimating, currentTab, animateTabPress]);
+    // Show skeleton loader
+    setIsTabSwitching(true);
+    
+    // Delay for 250ms to show skeleton
+    setTimeout(() => {
+      setCurrentTab(targetTab);
+      setIsTabSwitching(false);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }, 250);
+  }, [isAnimating, currentTab, isTabSwitching, animateTabPress]);
 
 
   const tabs = [
@@ -592,10 +601,13 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
           };
         case 1: // Friends - People
           const friendItem = item as Conversation & { streak?: number; lastMessage?: string | any };
-          // Safely extract the last message text
-          const lastMessageText = typeof friendItem.lastMessage === 'string' 
-            ? friendItem.lastMessage 
-            : (friendItem.lastMessage?.content || friendItem.lastMessage?.message || '');
+          // Safely extract the last message text - handle object format
+          let lastMessageText = '';
+          if (typeof friendItem.lastMessage === 'string') {
+            lastMessageText = friendItem.lastMessage;
+          } else if (friendItem.lastMessage && typeof friendItem.lastMessage === 'object') {
+            lastMessageText = friendItem.lastMessage.content || friendItem.lastMessage.message || '';
+          }
           return {
             accentColor: tabConfig.color,
             icon: 'user',
@@ -747,6 +759,42 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   
   const getTabContent = () => {
     return conversations;
+  };
+
+  // Skeleton loader for tab switching
+  const renderSkeletonLoader = () => {
+    return (
+      <View style={styles.skeletonContainer}>
+        {[...Array(4)].map((_, index) => (
+          <View key={index} style={styles.skeletonItem}>
+            <View style={[
+              styles.skeletonIcon,
+              { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }
+            ]} />
+            <View style={styles.skeletonTextContainer}>
+              <View style={[
+                styles.skeletonTitle,
+                { 
+                  backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                  width: `${60 + Math.random() * 30}%` // Random width between 60-90%
+                }
+              ]} />
+              <View style={[
+                styles.skeletonSubtitle,
+                { 
+                  backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                  width: `${40 + Math.random() * 40}%` // Random width between 40-80%
+                }
+              ]} />
+            </View>
+            <View style={[
+              styles.skeletonBadge,
+              { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }
+            ]} />
+          </View>
+        ))}
+      </View>
+    );
   };
   
   const renderEmptyState = () => {
@@ -936,29 +984,33 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                   </View>
                 )}
                 
-                <FlatList
-                  data={getTabContent()}
-                  renderItem={renderConversationItem}
-                  keyExtractor={(item) => item._id}
-                  style={styles.list}
-                  contentContainerStyle={[
-                    styles.listContent,
-                    isRefreshing && { paddingTop: 60 } // Add padding when refreshing to account for Lottie
-                  ]}
-                  showsVerticalScrollIndicator={false}
-                  ListEmptyComponent={renderEmptyState}
-                  scrollEnabled={!isAnimating}
-                  refreshControl={
-                    <RefreshControl
-                      refreshing={isRefreshing}
-                      onRefresh={handleRefresh}
-                      tintColor="transparent"
-                      title=""
-                      colors={['transparent']}
-                      progressBackgroundColor="transparent"
-                    />
-                  }
-                />
+                {isTabSwitching ? (
+                  renderSkeletonLoader()
+                ) : (
+                  <FlatList
+                    data={getTabContent()}
+                    renderItem={renderConversationItem}
+                    keyExtractor={(item) => item._id}
+                    style={styles.list}
+                    contentContainerStyle={[
+                      styles.listContent,
+                      isRefreshing && { paddingTop: 60 } // Add padding when refreshing to account for Lottie
+                    ]}
+                    showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={renderEmptyState}
+                    scrollEnabled={!isAnimating}
+                    refreshControl={
+                      <RefreshControl
+                        refreshing={isRefreshing}
+                        onRefresh={handleRefresh}
+                        tintColor="transparent"
+                        title=""
+                        colors={['transparent']}
+                        progressBackgroundColor="transparent"
+                      />
+                    }
+                  />
+                )}
               </View>
               
               {/* Bottom Action Bar */}
@@ -1255,6 +1307,42 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     alignSelf: 'center',
     maxWidth: 200,
+  },
+  
+  // Skeleton loader styles
+  skeletonContainer: {
+    flex: 1,
+    paddingVertical: spacing[2],
+  },
+  skeletonItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[3],
+    marginVertical: spacing[1],
+    gap: spacing[3],
+  },
+  skeletonIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+  },
+  skeletonTextContainer: {
+    flex: 1,
+    gap: 6,
+  },
+  skeletonTitle: {
+    height: 14,
+    borderRadius: 7,
+  },
+  skeletonSubtitle: {
+    height: 10,
+    borderRadius: 5,
+  },
+  skeletonBadge: {
+    width: 32,
+    height: 20,
+    borderRadius: 10,
   },
 });
 

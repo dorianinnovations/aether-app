@@ -13,9 +13,11 @@ import {
   Linking,
   Image,
   StyleSheet,
+  Modal,
   // RefreshControl,
   // ScrollView
 } from 'react-native';
+import { WebView } from 'react-native-webview';
 // import * as AuthSession from 'expo-auth-session';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { logger } from '../../../utils/logger';
@@ -63,6 +65,8 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
   const [loading, setLoading] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showWebView, setShowWebView] = useState(false);
+  const [authUrl, setAuthUrl] = useState('');
 
   // Use prop data if provided, otherwise use state data
   const spotify = spotifyData || spotifyStatus;
@@ -133,41 +137,17 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       
       // Get the auth URL from server
       const authResponse = await SpotifyAPI.getAuthUrl();
-      const authUrl = authResponse.authUrl || authResponse.data?.authUrl;
+      const authUrlFromServer = authResponse.authUrl || authResponse.data?.authUrl;
       
-      if (!authUrl) {
+      if (!authUrlFromServer) {
         throw new Error('Failed to get authentication URL');
       }
 
-      console.log('🎵 Opening Spotify auth URL');
-
-      // Open in browser for OAuth flow
-      const supported = await Linking.canOpenURL(authUrl);
-      if (!supported) {
-        throw new Error('Cannot open Spotify authentication page');
-      }
+      console.log('🎵 Opening Spotify auth in WebView');
       
-      await Linking.openURL(authUrl);
-      console.log('🎵 Opened auth URL, waiting for user...');
-      
-      // Show instructions to user
-      Alert.alert(
-        'Complete Authentication',
-        'Please complete the Spotify login in your browser. Once done, return to the app.',
-        [
-          {
-            text: 'OK',
-            onPress: async () => {
-              console.log('🎵 User returned, checking status...');
-              // Check status after user returns
-              setTimeout(async () => {
-                await loadSpotifyStatus();
-                onStatusChange?.();
-              }, 2000);
-            }
-          }
-        ]
-      );
+      // Open in WebView instead of browser
+      setAuthUrl(authUrlFromServer);
+      setShowWebView(true);
       
     } catch (err: unknown) {
       logger.error('Spotify connection error:', err);
@@ -343,6 +323,33 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
     loader: {
       marginVertical: spacing.lg,
     },
+    webViewHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      paddingTop: 60, // Account for status bar
+    },
+    closeButton: {
+      padding: spacing.xs,
+    },
+    webViewTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    webViewLoading: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    loadingText: {
+      fontSize: 16,
+      opacity: 0.7,
+    },
   });
 
   if (loading && !spotify) {
@@ -353,14 +360,51 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
     );
   }
 
+  const handleWebViewMessage = (event: any) => {
+    const { data } = event.nativeEvent;
+    console.log('🎵 WebView message received:', data);
+    
+    if (data === 'spotify-connected') {
+      console.log('🎵 Spotify connection successful!');
+      setShowWebView(false);
+      setConnecting(false);
+      
+      // Refresh status after successful connection
+      setTimeout(async () => {
+        await loadSpotifyStatus();
+        onStatusChange?.();
+        Alert.alert('Success!', 'Spotify account connected successfully');
+      }, 1000);
+    }
+  };
+
+  const handleWebViewNavigationStateChange = (navState: any) => {
+    // Close WebView if we detect the success page
+    if (navState.url.includes('spotify/callback') && navState.title?.includes('Spotify Connected')) {
+      console.log('🎵 Detected success page, closing WebView...');
+      setTimeout(() => {
+        setShowWebView(false);
+        setConnecting(false);
+        
+        // Refresh status
+        setTimeout(async () => {
+          await loadSpotifyStatus();
+          onStatusChange?.();
+          Alert.alert('Success!', 'Spotify account connected successfully');
+        }, 1000);
+      }, 2000); // Give user time to see success page
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <FontAwesome name="spotify" size={24} color="#1DB954" />
-          <Text style={styles.title}> Spotify</Text>
+    <>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <FontAwesome name="spotify" size={24} color="#1DB954" />
+            <Text style={styles.title}> Spotify</Text>
+          </View>
         </View>
-      </View>
 
       {!hasConnectedProperty(spotify) || !spotify.connected ? (
         <TouchableOpacity
@@ -440,5 +484,49 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         </View>
       )}
     </View>
+
+    {/* Spotify OAuth WebView Modal */}
+    <Modal
+      visible={showWebView}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={() => {
+        setShowWebView(false);
+        setConnecting(false);
+      }}
+    >
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <View style={[styles.webViewHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => {
+              setShowWebView(false);
+              setConnecting(false);
+            }}
+          >
+            <Ionicons name="close" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.webViewTitle, { color: colors.text }]}>Connect Spotify</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        {authUrl ? (
+          <WebView
+            source={{ uri: authUrl }}
+            onMessage={handleWebViewMessage}
+            onNavigationStateChange={handleWebViewNavigationStateChange}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+            startInLoadingState={true}
+            renderLoading={() => (
+              <View style={[styles.webViewLoading, { backgroundColor: colors.background }]}>
+                <ActivityIndicator size="large" color="#1DB954" />
+                <Text style={[styles.loadingText, { color: colors.text }]}>Loading Spotify...</Text>
+              </View>
+            )}
+          />
+        ) : null}
+      </View>
+    </Modal>
+  </>
   );
 };
