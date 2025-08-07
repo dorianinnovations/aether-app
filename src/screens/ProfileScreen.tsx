@@ -68,6 +68,8 @@ export const ProfileScreen: React.FC = () => {
   const [showAnalysisData, setShowAnalysisData] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
   // Animation refs for sequential fade-in
@@ -176,46 +178,108 @@ export const ProfileScreen: React.FC = () => {
       setEditMode(false);
     } catch (error: any) {
       logger.error('Error saving profile:', error);
-      const errorMessage = error.message || 'Failed to save profile. Please try again.';
-      Alert.alert('Error', errorMessage);
+      const errorMsg = error.message || 'Failed to save profile. Please try again.';
+      setErrorMessage(errorMsg);
+      setShowErrorModal(true);
     }
   };
 
   const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Please grant photo library permissions.');
+    // Request both media library and camera permissions
+    const [mediaLibraryResult, cameraResult] = await Promise.all([
+      ImagePicker.requestMediaLibraryPermissionsAsync(),
+      ImagePicker.requestCameraPermissionsAsync()
+    ]);
+    
+    if (mediaLibraryResult.status !== 'granted') {
+      Alert.alert(
+        'Permission needed', 
+        'Please grant photo library permissions to upload images.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => ImagePicker.requestMediaLibraryPermissionsAsync() }
+        ]
+      );
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      try {
-        setUploading(true);
-        const response = await UserAPI.uploadProfilePicture(result.assets[0].uri);
-        
-        if (response.status === 'success') {
-          // Update local profile state with new picture
-          setProfile(prev => prev ? {
-            ...prev,
-            profilePicture: response.data.profilePicture
-          } : null);
-          // Refresh all data to ensure consistency
-          await refreshAllData();
-          setShowSuccessModal(true);
+    // Show action sheet to choose image source
+    Alert.alert(
+      'Select Image Source',
+      'Choose how you want to select your profile picture',
+      [
+        {
+          text: 'Photo Library',
+          onPress: () => launchImagePicker(false)
+        },
+        {
+          text: 'Camera',
+          onPress: () => launchImagePicker(true)
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
         }
-      } catch (error) {
-        logger.error('Error uploading profile picture:', error);
-        Alert.alert('Error', 'Failed to upload profile picture. Please try again.');
-      } finally {
-        setUploading(false);
+      ]
+    );
+  };
+
+  const launchImagePicker = async (useCamera: boolean) => {
+    let result;
+    try {
+      if (useCamera) {
+        result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.8,
+        });
+      } else {
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.8,
+        });
       }
+      
+      if (result.canceled) {
+        return;
+      }
+
+      if (result.assets[0]) {
+        try {
+          setUploading(true);
+          const imageUri = result.assets[0].uri;
+          const response = await UserAPI.uploadProfilePicture(imageUri);
+          console.log('🔍 Raw upload response:', JSON.stringify(response, null, 2));
+          
+          // Server returns: {success: true, data: {profilePhoto: ...}}
+          if (response.data?.success && response.data?.data?.profilePhoto) {
+            // Update local profile state with new picture
+            setProfile(prev => prev ? {
+              ...prev,
+              profilePicture: response.data.data.profilePhoto.url
+            } : null);
+            setShowSuccessModal(true);
+          } else {
+            setErrorMessage('Failed to upload profile picture. Please try again.');
+            setShowErrorModal(true);
+          }
+        } catch (error: any) {
+          console.error('❌ Profile picture upload failed:', error);
+          console.error('❌ Error response:', error.response?.data);
+          console.error('❌ Upload response that failed validation:', response?.data);
+          const errorMsg = error.message || 'Failed to upload profile picture. Please try again.';
+          setErrorMessage(errorMsg);
+          setShowErrorModal(true);
+        } finally {
+          setUploading(false);
+        }
+      }
+    } catch (pickerError) {
+      Alert.alert('Error', 'Failed to open image picker. Please try again.');
+      return;
     }
   };
 
@@ -232,25 +296,33 @@ export const ProfileScreen: React.FC = () => {
       aspect: [16, 9],
       quality: 0.8,
     });
+    
+    if (result.canceled) {
+      return;
+    }
 
-    if (!result.canceled && result.assets[0]) {
+    if (result.assets[0]) {
       try {
         setUploading(true);
-        const response = await UserAPI.uploadBannerImage(result.assets[0].uri);
+        const imageUri = result.assets[0].uri;
+        const response = await UserAPI.uploadBannerImage(imageUri);
         
-        if (response.status === 'success') {
+        // Server returns: {success: true, data: {bannerImage: ...}}
+        if (response.data?.success && response.data?.data?.bannerImage) {
           // Update local profile state with new banner
           setProfile(prev => prev ? {
             ...prev,
-            bannerImage: response.data.bannerImage
+            bannerImage: response.data.data.bannerImage.url
           } : null);
-          // Refresh all data to ensure consistency  
-          await refreshAllData();
           setShowSuccessModal(true);
+        } else {
+          setErrorMessage('Failed to upload banner image. Please try again.');
+          setShowErrorModal(true);
         }
-      } catch (error) {
-        logger.error('Error uploading banner image:', error);
-        Alert.alert('Error', 'Failed to upload banner image. Please try again.');
+      } catch (error: any) {
+        const errorMsg = error.message || 'Failed to upload banner image. Please try again.';
+        setErrorMessage(errorMsg);
+        setShowErrorModal(true);
       } finally {
         setUploading(false);
       }
@@ -279,9 +351,11 @@ export const ProfileScreen: React.FC = () => {
               // Refresh all data to ensure consistency
               await refreshAllData();
               setShowSuccessModal(true);
-            } catch (error) {
+            } catch (error: any) {
               logger.error('Error deleting profile picture:', error);
-              Alert.alert('Error', 'Failed to delete profile picture. Please try again.');
+              const errorMsg = error.message || 'Failed to delete profile picture. Please try again.';
+              setErrorMessage(errorMsg);
+              setShowErrorModal(true);
             } finally {
               setUploading(false);
             }
@@ -313,9 +387,11 @@ export const ProfileScreen: React.FC = () => {
               // Refresh all data to ensure consistency
               await refreshAllData();
               setShowSuccessModal(true);
-            } catch (error) {
+            } catch (error: any) {
               logger.error('Error deleting banner image:', error);
-              Alert.alert('Error', 'Failed to delete banner image. Please try again.');
+              const errorMsg = error.message || 'Failed to delete banner image. Please try again.';
+              setErrorMessage(errorMsg);
+              setShowErrorModal(true);
             } finally {
               setUploading(false);
             }
@@ -577,8 +653,8 @@ export const ProfileScreen: React.FC = () => {
                     <ActivityIndicator size={16} color="white" />
                   </View>
                 ) : (
-                  <View style={[styles.editImageOverlay, { backgroundColor: '#87CEEB' }]}>
-                    <Feather name="camera" size={16} color="white" />
+                  <View style={[styles.editImageOverlay, { backgroundColor: 'transparent' }]}>
+                    <Feather name="camera" size={16} color={colors.text} />
                   </View>
                 ))}
                 {/* Delete Profile Picture Button - only show in edit mode */}
@@ -959,6 +1035,15 @@ export const ProfileScreen: React.FC = () => {
           visible={showSuccessModal}
           onClose={() => setShowSuccessModal(false)}
           theme={theme}
+        />
+
+        {/* Profile Error Modal */}
+        <ProfileSuccessModal
+          visible={showErrorModal}
+          onClose={() => setShowErrorModal(false)}
+          theme={theme}
+          isError={true}
+          errorMessage={errorMessage}
         />
       </SafeAreaView>
 

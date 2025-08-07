@@ -74,6 +74,7 @@ export const UserAPI = {
           'Content-Type': 'multipart/form-data',
         },
       });
+      
       return response.data;
     } catch (error: unknown) {
       throw error;
@@ -107,6 +108,7 @@ export const UserAPI = {
           'Content-Type': 'multipart/form-data',
         },
       });
+      
       return response.data;
     } catch (error: unknown) {
       throw error;

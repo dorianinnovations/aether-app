@@ -30,6 +30,8 @@ interface ProfileSuccessModalProps {
   onClose: () => void;
   theme?: 'light' | 'dark';
   showIcon?: boolean;
+  isError?: boolean;
+  errorMessage?: string;
 }
 
 export const ProfileSuccessModal: React.FC<ProfileSuccessModalProps> = ({
@@ -37,9 +39,11 @@ export const ProfileSuccessModal: React.FC<ProfileSuccessModalProps> = ({
   onClose,
   theme = 'light',
   showIcon = true,
+  isError = false,
+  errorMessage,
 }) => {
   const themeColors = getThemeColors(theme);
-  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [showAnimation, setShowAnimation] = useState(false);
 
   // Handle Android back button
   useEffect(() => {
@@ -52,19 +56,19 @@ export const ProfileSuccessModal: React.FC<ProfileSuccessModalProps> = ({
     }
   }, [visible]);
 
-  // Show success animation when modal becomes visible
+  // Show animation when modal becomes visible
   useEffect(() => {
     if (visible) {
-      setShowSuccessAnimation(true);
-      // Auto-dismiss after animation completes (AetherSuccess.json is ~2 seconds)
+      setShowAnimation(true);
+      // Auto-dismiss after animation completes (2 seconds for success, 3 seconds for error)
       const timer = setTimeout(() => {
         handleClose();
-      }, 2000);
+      }, isError ? 3000 : 2000);
       return () => clearTimeout(timer);
     } else {
-      setShowSuccessAnimation(false);
+      setShowAnimation(false);
     }
-  }, [visible]);
+  }, [visible, isError]);
 
   const handleClose = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -79,21 +83,32 @@ export const ProfileSuccessModal: React.FC<ProfileSuccessModalProps> = ({
   const renderContent = () => {
     return (
       <View style={styles.contentContainer}>
-        {/* Success Animation */}
-        {showIcon && showSuccessAnimation && (
+        {/* Animation */}
+        {showIcon && showAnimation && (
           <>
             <LottieView
-              source={require('../../../../assets/AetherSuccess.json')}
+              source={isError 
+                ? require('../../../../assets/AetherFailure.json')
+                : require('../../../../assets/AetherSuccess.json')
+              }
               autoPlay
               loop={false}
-              style={styles.successAnimation}
+              style={styles.animation}
             />
             <Text style={[
-              styles.successText,
-              { color: themeColors.text }
+              styles.messageText,
+              { color: isError ? '#FF6B6B' : themeColors.text }
             ]}>
-              Success
+              {isError ? 'Failed' : 'Success'}
             </Text>
+            {isError && errorMessage && (
+              <Text style={[
+                styles.errorMessage,
+                { color: themeColors.textSecondary }
+              ]}>
+                {errorMessage}
+              </Text>
+            )}
           </>
         )}
       </View>
@@ -124,6 +139,7 @@ export const ProfileSuccessModal: React.FC<ProfileSuccessModalProps> = ({
             style={[
               styles.modal,
               getGlassmorphicStyle('overlay', theme),
+              isError && styles.errorModal
             ]}
           >
             {renderContent()}
@@ -160,6 +176,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  errorModal: {
+    height: 180,
+  },
   contentContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -173,15 +192,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  successAnimation: {
+  animation: {
     width: 60,
     height: 60,
     marginBottom: spacing[2],
   },
-  successText: {
+  messageText: {
     ...typography.textStyles.bodyMedium,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  errorMessage: {
+    ...typography.textStyles.caption,
+    textAlign: 'center',
+    marginTop: spacing[2],
+    maxWidth: 120,
   },
 });
 

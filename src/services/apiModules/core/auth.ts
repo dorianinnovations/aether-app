@@ -17,8 +17,6 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Request logging can be enabled for debugging if needed
-    
     return config;
   },
   (error) => {
