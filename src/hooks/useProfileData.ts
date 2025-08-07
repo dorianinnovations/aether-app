@@ -85,16 +85,6 @@ export const useProfileData = (): UseProfileDataReturn => {
         // Handle both id and _id fields from backend
         const userId = userData.id || userData._id;
         
-        // Debug log the user data structure
-        logger.info('User data structure:', {
-          userData: userData,
-          hasId: !!userData.id,
-          has_id: !!userData._id,
-          resolvedUserId: userId,
-          hasEmail: !!userData.email,
-          hasName: !!userData.name,
-          usernameFromAPI: usernameResponse.username
-        });
         
         // Fetch user badges
         const userBadges = await userBadgesService.getUserBadges(
@@ -195,24 +185,12 @@ export const useProfileData = (): UseProfileDataReturn => {
       if (token) {
         // Load basic profile first, then social proxy will load automatically
         await loadProfile();
-        logger.info('Profile data initialization complete');
       }
     };
     
     initializeData();
   }, [loadProfile]);
   
-  // Log social profile updates for debugging
-  useEffect(() => {
-    if (socialProfile) {
-      logger.info('Social proxy data updated:', {
-        hasPersonality: !!socialProfile.personality,
-        hasSpotify: !!socialProfile.spotify?.connected,
-        hasMood: !!socialProfile.mood,
-        hasStatus: !!socialProfile.currentStatus
-      });
-    }
-  }, [socialProfile]);
   
   return {
     // Data

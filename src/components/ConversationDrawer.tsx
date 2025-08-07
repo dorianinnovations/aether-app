@@ -193,13 +193,10 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
               newConversations = aetherResponse.data.data;
             } else if (aetherResponse.data && Array.isArray(aetherResponse.data)) {
               newConversations = aetherResponse.data;
-              log.debug('Found conversations in data array:', newConversations.length);
             } else if (Array.isArray(aetherResponse)) {
               newConversations = aetherResponse;
-              log.debug('Found conversations array directly:', newConversations.length);
             } else if (aetherResponse.conversations) {
               newConversations = aetherResponse.conversations;
-              log.debug('Found conversations in conversations key:', newConversations.length);
             } else {
               log.debug('Could not find conversations in response, keys:', Object.keys(aetherResponse));
               log.debug('Response data keys:', aetherResponse.data ? Object.keys(aetherResponse.data) : 'no data');
@@ -217,7 +214,6 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                 log.debug('Test conversation creation response:', testConversationResponse);
                 if (testConversationResponse && testConversationResponse.conversations) {
                   newConversations = testConversationResponse.conversations;
-                  log.debug('Found conversations after test creation:', newConversations.length);
                 }
               } catch (testError) {
                 log.debug('Test conversation creation failed:', testError);
@@ -252,7 +248,6 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                   streak: conversation.streak || 0,
                   lastMessage: conversation.lastMessage
                 }));
-                log.debug('Loaded friend conversations:', newConversations.length);
               } else {
                 throw new Error('No conversations data in response');
               }

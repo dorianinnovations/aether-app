@@ -91,7 +91,9 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
           if (friendUsername) {
             // Load friend conversation
             try {
-              const friendConversation = await FriendsAPI.getDirectMessages(friendUsername);
+              logger.debug(`Loading friend messages for: ${friendUsername}`);
+              const friendConversation = await FriendsAPI.getDirectMessages(friendUsername, 1, 25);
+              logger.debug('Friend conversation response:', friendConversation);
               
               if (friendConversation.success && friendConversation.conversation?.messages && Array.isArray(friendConversation.conversation.messages)) {
                 const convertedMessages: Message[] = friendConversation.conversation.messages.map((msg: any, index: number) => ({
@@ -112,6 +114,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
                 // Cache the loaded messages
                 messageCache.current.set(cacheKey, convertedMessages);
                 setMessages(convertedMessages);
+                logger.debug(`Successfully loaded ${convertedMessages.length} friend messages`);
                 
                 // Hide greeting when conversation is loaded
                 if (onHideGreeting) {
@@ -126,7 +129,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
                 }
               }
             } catch (messagingError) {
-              logger.debug('Friend messages API not available:', (messagingError as Error).message);
+              logger.error('Friend messages API error:', messagingError);
               // Start with empty conversation
               setMessages([]);
               if (onHideGreeting) {

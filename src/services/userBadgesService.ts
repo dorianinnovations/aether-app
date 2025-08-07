@@ -142,7 +142,6 @@ class UserBadgesService {
     const safeUserEmail = userEmail || '';
     const safeUserName = userName || '';
     
-    logger.info('Checking badges for user:', { userId: safeUserId, userEmail: safeUserEmail, userName: safeUserName });
     
     // Check if this is Isaiah (check multiple identifiers)
     const isIsaiah = safeUserId.toLowerCase().includes('isaiah') || 
@@ -167,9 +166,7 @@ class UserBadgesService {
         isVisible: true,
       });
       
-      logger.info('Isaiah badges awarded:', { userId: safeUserId, userEmail: safeUserEmail, userName: safeUserName });
     } else {
-      logger.info('No badges awarded for user:', { userId: safeUserId, userEmail: safeUserEmail, userName: safeUserName });
     }
 
     return badges;

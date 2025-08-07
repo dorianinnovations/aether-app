@@ -93,6 +93,25 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
     loadSpotifyStatus();
   }, []);
 
+  // Handle deep link return from Spotify
+  useEffect(() => {
+    const handleUrl = (url: string) => {
+      console.log('🎵 Received deep link:', url);
+      if (url.includes('aether://spotify-auth')) {
+        console.log('🎵 Spotify auth callback received');
+        // Refresh status after auth
+        setTimeout(async () => {
+          await loadSpotifyStatus();
+          onStatusChange?.();
+        }, 1000);
+      }
+    };
+
+    const subscription = Linking.addEventListener('url', ({ url }) => handleUrl(url));
+    
+    return () => subscription?.remove();
+  }, []);
+
   const loadSpotifyStatus = async () => {
     try {
       setLoading(true);
@@ -110,6 +129,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
   const handleConnect = async () => {
     try {
       setConnecting(true);
+      console.log('🎵 Starting Spotify connection...');
       
       // Get the auth URL from server
       const authResponse = await SpotifyAPI.getAuthUrl();
@@ -119,7 +139,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         throw new Error('Failed to get authentication URL');
       }
 
-      logger.debug('Opening Spotify auth URL:', authUrl);
+      console.log('🎵 Opening Spotify auth URL');
 
       // Open in browser for OAuth flow
       const supported = await Linking.canOpenURL(authUrl);
@@ -128,6 +148,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       }
       
       await Linking.openURL(authUrl);
+      console.log('🎵 Opened auth URL, waiting for user...');
       
       // Show instructions to user
       Alert.alert(
@@ -137,6 +158,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
           {
             text: 'OK',
             onPress: async () => {
+              console.log('🎵 User returned, checking status...');
               // Check status after user returns
               setTimeout(async () => {
                 await loadSpotifyStatus();

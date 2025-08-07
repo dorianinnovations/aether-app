@@ -134,12 +134,6 @@ export const ProfileScreen: React.FC = () => {
   // Log data sync status for debugging
   useEffect(() => {
     if (baseProfile && socialProfile) {
-      logger.info('Profile data fusion complete', {
-        basicProfile: !!baseProfile,
-        socialProfile: !!socialProfile,
-        hasPersonality: !!socialProfile.personality,
-        hasSpotify: !!socialProfile.spotify?.connected
-      });
     }
   }, [baseProfile, socialProfile]);
 
