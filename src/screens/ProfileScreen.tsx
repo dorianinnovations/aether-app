@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
+  RefreshControl,
   TouchableOpacity,
   TextInput,
   Image,
@@ -21,6 +22,7 @@ import * as ImagePicker from 'expo-image-picker';
 // Design System
 import { PageBackground } from '../design-system/components/atoms/PageBackground';
 import { LottieLoader } from '../design-system/components/atoms/LottieLoader';
+import { UserBadge, UserBadgeType } from '../design-system/components/atoms/UserBadge';
 import { Header, HeaderMenu, SignOutModal } from '../design-system/components/organisms';
 import { SpotifyIntegration } from '../design-system/components/molecules';
 import SettingsModal from './chat/SettingsModal';
@@ -32,10 +34,13 @@ import { logger } from '../utils/logger';
 // import { getButtonColors } from '../design-system/tokens/colors';
 
 // Services
-import { UserAPI, TokenManager, AuthAPI, FriendsAPI } from '../services/api';
+import { AuthAPI, UserAPI } from '../services/api';
 
 // Hooks
-import { useSocialProxy } from '../hooks/useSocialProxy';
+import { useProfileData } from '../hooks/useProfileData';
+
+// Services
+import { UserBadge as UserBadgeData } from '../services/userBadgesService';
 
 interface UserProfile {
   profilePicture?: string;
@@ -47,6 +52,8 @@ interface UserProfile {
   location?: string;
   website?: string;
   username?: string;
+  createdAt?: string;
+  badges?: UserBadgeData[];
 }
 
 export const ProfileScreen: React.FC = () => {
@@ -55,13 +62,12 @@ export const ProfileScreen: React.FC = () => {
   
   const [editMode, setEditMode] = useState(false);
   const [viewMode, setViewMode] = useState<'basic' | 'busy'>('basic');
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [shouldRenderSignOutModal, setShouldRenderSignOutModal] = useState(false);
   const [showAnalysisData, setShowAnalysisData] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Animation refs for sequential fade-in
   const interestsOpacity = useRef(new Animated.Value(0)).current;
@@ -73,8 +79,38 @@ export const ProfileScreen: React.FC = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   const qualiaViewRef = useRef<View>(null);
 
-  // Social proxy hook for living profile data
-  const { profile: socialProfile } = useSocialProxy();
+  // Unified profile data hook
+  const {
+    profile: baseProfile,
+    socialProfile,
+    loading,
+    socialLoading,
+    error,
+    saveProfile: saveProfileData,
+    refreshAllData
+  } = useProfileData();
+  
+  // Local editable profile state
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  
+  // Sync local profile with base profile from hook
+  useEffect(() => {
+    if (baseProfile && (!profile || !editMode)) {
+      setProfile(baseProfile);
+    }
+  }, [baseProfile, editMode]);
+
+  // Handle pull to refresh
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshAllData();
+    } catch (error) {
+      logger.error('Error refreshing profile data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Header menu hook
   const { showHeaderMenu, setShowHeaderMenu, handleMenuAction, toggleHeaderMenu } = useHeaderMenu({
@@ -96,19 +132,17 @@ export const ProfileScreen: React.FC = () => {
     }
   }, [showSignOutModal, shouldRenderSignOutModal]);
 
+  // Log data sync status for debugging
   useEffect(() => {
-    const initializeProfile = async () => {
-      // Check if authenticated before making API calls
-      const token = await TokenManager.getToken();
-      if (token) {
-        loadProfile();
-        // TODO: Load social proxy profile data
-        // fetchSocialProxyProfile();
-      }
-    };
-    
-    initializeProfile();
-  }, []);
+    if (baseProfile && socialProfile) {
+      logger.info('Profile data fusion complete', {
+        basicProfile: !!baseProfile,
+        socialProfile: !!socialProfile,
+        hasPersonality: !!socialProfile.personality,
+        hasSpotify: !!socialProfile.spotify?.connected
+      });
+    }
+  }, [baseProfile, socialProfile]);
 
   const handleNavigateBack = () => {
     navigation.goBack();
@@ -129,55 +163,12 @@ export const ProfileScreen: React.FC = () => {
     }
   };
 
-  const loadProfile = async () => {
-    // Check authentication first
-    const token = await TokenManager.getToken();
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const [profileResponse, usernameResponse] = await Promise.all([
-        UserAPI.getProfile(),
-        FriendsAPI.getUserUsername().catch(() => ({ username: null }))
-      ]);
-      
-      if (profileResponse.status === 'success' && (profileResponse.data?.user || profileResponse.data?.data?.user)) {
-        const userData = profileResponse.data?.user || profileResponse.data?.data?.user;
-        setProfile({
-          id: userData.id,
-          email: userData.email,
-          name: userData.name,
-          bio: userData.bio,
-          location: userData.location,
-          website: userData.website,
-          profilePicture: profileResponse.data.profilePicture,
-          bannerImage: profileResponse.data.bannerImage,
-          username: usernameResponse.username || userData.username,
-        });
-      } else {
-        logger.error('Profile response missing user data:', profileResponse);
-        throw new Error('Profile data is incomplete');
-      }
-    } catch (error: any) {
-      logger.error('Error loading profile:', error);
-      // Don't show error for auth failures
-      if (error.status !== 401) {
-        Alert.alert('Error', 'Failed to load profile. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Profile loading and saving now handled by useProfileData hook
 
   const saveProfile = async () => {
     if (!profile) return;
     
     try {
-      setLoading(true);
-      
       // Prepare profile data for server
       const profileData = {
         name: profile.name,
@@ -186,22 +177,13 @@ export const ProfileScreen: React.FC = () => {
         website: profile.website,
       };
       
-      const response = await UserAPI.updateProfile(profileData);
-      
-      if (response.status === 'success' || response.success) {
-        Alert.alert('Success', 'Profile updated successfully!');
-        setEditMode(false);
-        // Optionally refresh profile data
-        await loadProfile();
-      } else {
-        Alert.alert('Error', response.message || 'Failed to save profile changes.');
-      }
+      await saveProfileData(profileData);
+      Alert.alert('Success', 'Profile updated successfully!');
+      setEditMode(false);
     } catch (error: any) {
       logger.error('Error saving profile:', error);
       const errorMessage = error.message || 'Failed to save profile. Please try again.';
       Alert.alert('Error', errorMessage);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -230,6 +212,8 @@ export const ProfileScreen: React.FC = () => {
             ...prev,
             profilePicture: response.data.profilePicture
           } : null);
+          // Refresh all data to ensure consistency
+          await refreshAllData();
           Alert.alert('Success', 'Profile picture updated successfully!');
         }
       } catch (error) {
@@ -266,6 +250,8 @@ export const ProfileScreen: React.FC = () => {
             ...prev,
             bannerImage: response.data.bannerImage
           } : null);
+          // Refresh all data to ensure consistency  
+          await refreshAllData();
           Alert.alert('Success', 'Banner image updated successfully!');
         }
       } catch (error) {
@@ -296,6 +282,8 @@ export const ProfileScreen: React.FC = () => {
                 ...prev,
                 profilePicture: undefined
               } : null);
+              // Refresh all data to ensure consistency
+              await refreshAllData();
               Alert.alert('Success', 'Profile picture deleted successfully!');
             } catch (error) {
               logger.error('Error deleting profile picture:', error);
@@ -328,6 +316,8 @@ export const ProfileScreen: React.FC = () => {
                 ...prev,
                 bannerImage: undefined
               } : null);
+              // Refresh all data to ensure consistency
+              await refreshAllData();
               Alert.alert('Success', 'Banner image deleted successfully!');
             } catch (error) {
               logger.error('Error deleting banner image:', error);
@@ -420,6 +410,16 @@ export const ProfileScreen: React.FC = () => {
     setViewMode(prev => prev === 'basic' ? 'busy' : 'basic');
   };
 
+  // Check if user is OG (created before 2026)
+  const isOGUser = (createdAt?: string): boolean => {
+    if (!createdAt) return false;
+    const createdDate = new Date(createdAt);
+    const cutoffDate = new Date('2026-01-01');
+    return createdDate < cutoffDate;
+  };
+
+
+
   if (loading) {
     return (
       <PageBackground theme={theme} variant="profile">
@@ -466,9 +466,12 @@ export const ProfileScreen: React.FC = () => {
           />
           <View style={styles.errorContainer}>
             <Text style={[styles.errorText, { color: colors.text }]}>Failed to load profile</Text>
+            {error && (
+              <Text style={[styles.errorSubtext, { color: colors.textSecondary }]}>{error}</Text>
+            )}
             <TouchableOpacity 
               style={[styles.retryButton, { backgroundColor: colors.primary }]}
-              onPress={loadProfile}
+              onPress={refreshAllData}
             >
               <Text style={styles.retryButtonText}>Retry</Text>
             </TouchableOpacity>
@@ -515,7 +518,22 @@ export const ProfileScreen: React.FC = () => {
             ref={scrollViewRef}
             style={styles.scrollView} 
             contentContainerStyle={styles.scrollContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor="transparent"
+                colors={['transparent']}
+                style={{ backgroundColor: 'transparent' }}
+              />
+            }
           >
+            {/* Custom Lottie Refresh Indicator */}
+            {refreshing && (
+              <View style={styles.refreshIndicator}>
+                <LottieLoader size="small" />
+              </View>
+            )}
           {/* Profile Banner */}
           <TouchableOpacity 
             style={[styles.profileBanner, { backgroundColor: colors.surface }]}
@@ -541,11 +559,14 @@ export const ProfileScreen: React.FC = () => {
                 <Feather name="x" size={16} color="#2D5A3D" />
               </TouchableOpacity>
             )}
-            {/* Online Status Indicator - more detailed in busy view */}
+            {/* Online Status Indicator - enhanced with social proxy data */}
             <View style={[styles.onlineIndicator, { backgroundColor: 'rgba(76, 175, 80, 0.1)' }]}>
               <View style={[styles.onlineDot, { backgroundColor: '#4CAF50' }]} />
               <Text style={[styles.onlineText, { color: '#4CAF50' }]}>
-                {viewMode === 'basic' ? 'online' : 'online • active now'}
+                {socialProfile?.currentStatus 
+                  ? (viewMode === 'basic' ? 'online' : `online • ${socialProfile.currentStatus}`) 
+                  : (viewMode === 'basic' ? 'online' : 'online • active now')
+                }
               </Text>
             </View>
             
@@ -582,6 +603,7 @@ export const ProfileScreen: React.FC = () => {
                     <Feather name="x" size={14} color="#2D5A3D" />
                   </TouchableOpacity>
                 )}
+                
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -592,9 +614,21 @@ export const ProfileScreen: React.FC = () => {
             {profile.username && (
               <View style={styles.fieldContainer}>
                 <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Username</Text>
-                <Text style={[styles.fieldValue, { color: colors.text, fontFamily: 'monospace' }]}>
-                  @{profile.username}
-                </Text>
+                <View style={styles.usernameRow}>
+                  <Text style={[styles.fieldValue, { color: colors.text, fontFamily: 'monospace' }]}>
+                    @{profile.username}
+                  </Text>
+                  {/* User Badges - show all visible badges */}
+                  {profile.badges?.filter(badge => badge.isVisible).map((badge) => (
+                    <UserBadge
+                      key={badge.id}
+                      type={badge.badgeType as UserBadgeType}
+                      style={styles.usernameBadge}
+                      glowIntensity="medium"
+                      theme={theme}
+                    />
+                  ))}
+                </View>
               </View>
             )}
 
@@ -883,8 +917,8 @@ export const ProfileScreen: React.FC = () => {
           {/* Spotify Integration */}
           <SpotifyIntegration 
             onStatusChange={() => {
-              // Refresh profile data when Spotify status changes
-              loadProfile();
+              // Refresh all profile data when Spotify status changes
+              refreshAllData();
             }}
           />
 
@@ -956,6 +990,16 @@ const styles = StyleSheet.create({
     paddingTop: 120,
     paddingBottom: 40,
   },
+  refreshIndicator: {
+    position: 'absolute',
+    top: -60,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing[3],
+    zIndex: 1000,
+  },
   profileBanner: {
     width: '100%',
     marginBottom: spacing[4],
@@ -976,7 +1020,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: '#B0B0B0',
   },
   bannerOverlay: {
     position: 'absolute',
@@ -1127,6 +1171,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 100,
+    gap: spacing[3],
+  },
+  loadingText: {
+    ...typography.textStyles.bodyMedium,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   errorContainer: {
     flex: 1,
@@ -1138,7 +1188,13 @@ const styles = StyleSheet.create({
   errorText: {
     ...typography.textStyles.bodyLarge,
     textAlign: 'center',
+    marginBottom: spacing[2],
+  },
+  errorSubtext: {
+    ...typography.textStyles.bodySmall,
+    textAlign: 'center',
     marginBottom: spacing[4],
+    fontStyle: 'italic',
   },
   retryButton: {
     paddingHorizontal: spacing[6],
@@ -1178,18 +1234,19 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'white',
   },
-  deleteImageText: {
-    fontSize: 14,
-    fontWeight: '500',
+  
+  // Username row with badge
+  usernameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
   },
   
-  // Field hint text
-  fieldHint: {
-    fontSize: 12,
-    marginTop: spacing[1],
-    fontStyle: 'italic',
+  // User badge next to username
+  usernameBadge: {
+    // No additional styling needed, inherits from UserBadge component
   },
-
+  
   // AI Analysis Section Styles
   analysisSection: {
     marginTop: spacing[6],

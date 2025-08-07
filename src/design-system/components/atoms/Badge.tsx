@@ -20,7 +20,9 @@ const Badge: React.FC<BadgeProps> = ({
       {
         backgroundColor: theme === 'dark' 
           ? 'rgba(255,255,255,0.1)' 
-          : 'rgba(0,0,0,0.08)'
+          : designTokens.surfaces.light.sunken,
+        borderWidth: theme === 'light' ? 1 : 0,
+        borderColor: theme === 'light' ? designTokens.borders.light.subtle : 'transparent'
       }
     ]}>
       <Text style={[
@@ -29,7 +31,7 @@ const Badge: React.FC<BadgeProps> = ({
         {
           color: theme === 'dark'
             ? designTokens.text.secondaryDark
-            : designTokens.text.secondary
+            : designTokens.text.primary
         }
       ]}>
         {children}

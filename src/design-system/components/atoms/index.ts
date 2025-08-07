@@ -24,8 +24,11 @@ export { default as AnimatedHamburger } from './AnimatedHamburger';
 export { NotificationDot } from './NotificationDot';
 export { default as ActionButton } from './ActionButton';
 export { default as Badge } from './Badge';
+export { UserBadge } from './UserBadge';
+export { MiniTooltip } from './MiniTooltip';
 export { default as ConversationIcon } from './ConversationIcon';
 export { default as TabButton } from './TabButton';
 
 // Re-export types
 export type { IconName, IconSize } from './Icon';
+export type { UserBadgeType } from './UserBadge';
