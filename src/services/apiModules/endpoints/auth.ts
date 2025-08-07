@@ -114,7 +114,7 @@ export const AuthAPI = {
     try {
       return await makeRequest<{ available: boolean; message?: string }>('GET', `/auth/check-username/${username}`);
     } catch (error: unknown) {
-      if (error.status === 409 || error.statusCode === 409) {
+      if ((error as any).status === 409 || (error as any).statusCode === 409) {
         return {
           success: false,
           status: 'error',

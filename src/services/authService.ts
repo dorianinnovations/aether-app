@@ -136,7 +136,7 @@ class AuthenticationService {
       throw new Error('Signup failed: Invalid response format');
 
     } catch (error: unknown) {
-      const errorMessage = error.message || 'Signup failed';
+      const errorMessage = (error as any).message || 'Signup failed';
       this.setState({
         isAuthenticated: false,
         user: null,
@@ -149,9 +149,9 @@ class AuthenticationService {
         success: false,
         status: 'error',
         error: {
-          code: error.code || 'SIGNUP_FAILED',
+          code: (error as any).code || 'SIGNUP_FAILED',
           message: errorMessage,
-          statusCode: error.statusCode || error.status || 400
+          statusCode: (error as any).statusCode || (error as any).status || 400
         }
       };
     }
@@ -186,7 +186,7 @@ class AuthenticationService {
       throw new Error('Login failed: Invalid response format');
 
     } catch (error: unknown) {
-      const errorMessage = error.message || 'Login failed';
+      const errorMessage = (error as any).message || 'Login failed';
       this.setState({
         isAuthenticated: false,
         user: null,
@@ -199,9 +199,9 @@ class AuthenticationService {
         success: false,
         status: 'error',
         error: {
-          code: error.code || 'LOGIN_FAILED',
+          code: (error as any).code || 'LOGIN_FAILED',
           message: errorMessage,
-          statusCode: error.statusCode || error.status || 401
+          statusCode: (error as any).statusCode || (error as any).status || 401
         }
       };
     }
@@ -272,8 +272,8 @@ class AuthenticationService {
         status: 'error',
         error: {
           code: 'USERNAME_CHECK_FAILED',
-          message: error.message || 'Could not check username availability',
-          statusCode: error.statusCode || error.status || 500
+          message: (error as any).message || 'Could not check username availability',
+          statusCode: (error as any).statusCode || (error as any).status || 500
         }
       };
     }
@@ -293,8 +293,8 @@ class AuthenticationService {
         status: 'error',
         error: {
           code: 'SPOTIFY_CONNECT_FAILED',
-          message: error.message || 'Failed to connect Spotify account',
-          statusCode: error.statusCode || error.status || 500
+          message: (error as any).message || 'Failed to connect Spotify account',
+          statusCode: (error as any).statusCode || (error as any).status || 500
         }
       };
     }
@@ -310,8 +310,8 @@ class AuthenticationService {
         status: 'error',
         error: {
           code: 'SPOTIFY_DISCONNECT_FAILED',
-          message: error.message || 'Failed to disconnect Spotify account',
-          statusCode: error.statusCode || error.status || 500
+          message: (error as any).message || 'Failed to disconnect Spotify account',
+          statusCode: (error as any).statusCode || (error as any).status || 500
         }
       };
     }

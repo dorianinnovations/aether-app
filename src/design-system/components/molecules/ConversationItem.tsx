@@ -1,9 +1,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { ConversationIcon, Badge } from '../atoms';
 import { spacing } from '../../tokens/spacing';
 import { typography } from '../../tokens/typography';
 import { designTokens } from '../../tokens/colors';
+
+type FeatherIconNames = keyof typeof Feather.glyphMap;
 
 interface Conversation {
   _id: string;
@@ -40,29 +43,29 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     secondary: theme === 'dark' ? designTokens.text.secondaryDark : designTokens.text.secondary
   };
 
-  const getTabSpecificData = () => {
+  const getTabSpecificData = (): { icon: FeatherIconNames; badge: string; subtitle: string } => {
     switch (currentTab) {
       case 0: // Aether - AI conversations
         return {
-          icon: 'message-circle',
+          icon: 'message-circle' as FeatherIconNames,
           badge: `${conversation.messageCount}`,
           subtitle: conversation.summary || `${conversation.messageCount} messages`
         };
       case 1: // Friends - People
         return {
-          icon: 'user',
+          icon: 'user' as FeatherIconNames,
           badge: conversation.lastActivity.includes('now') ? '•' : '•',
           subtitle: conversation.summary || conversation.lastActivity
         };
       case 2: // Custom - Custom conversations
         return {
-          icon: 'settings',
+          icon: 'settings' as FeatherIconNames,
           badge: '•',
           subtitle: conversation.summary || 'Custom conversation'
         };
       default:
         return {
-          icon: 'file',
+          icon: 'file' as FeatherIconNames,
           badge: `${conversation.messageCount}`,
           subtitle: `${conversation.messageCount} messages`
         };

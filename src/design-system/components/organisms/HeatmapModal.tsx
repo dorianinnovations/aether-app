@@ -92,9 +92,6 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({
         FriendsAPI.getMessagingStats(friendUsername)
       ]);
 
-      logger.debug('Heatmap API response:', heatmapResponse);
-      logger.debug('Stats API response:', statsResponse);
-
       if (heatmapResponse.success && heatmapResponse.data?.heatMap) {
         // Transform backend data to frontend format
         const transformedData = heatmapResponse.data.heatMap.map((item: any) => ({
@@ -102,10 +99,8 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({
           messageCount: item.count || 0,
           intensity: item.level || 0,
         }));
-        logger.debug('Transformed heatmap data:', transformedData.slice(0, 5));
         setHeatmapData(transformedData);
       } else {
-        logger.warn('No heatmap data received or invalid response');
         setHeatmapData([]);
       }
 
@@ -115,10 +110,8 @@ export const HeatmapModal: React.FC<HeatmapModalProps> = ({
           averageDaily: statsResponse.data.stats.averageDaily || 0,
           streakDays: statsResponse.data.streak?.streakDays || 0,
         };
-        logger.debug('Processed stats:', statsData);
         setStats(statsData);
       } else {
-        logger.warn('No stats data received or invalid response');
         setStats({ totalMessages: 0, averageDaily: 0, streakDays: 0 });
       }
     } catch (error) {

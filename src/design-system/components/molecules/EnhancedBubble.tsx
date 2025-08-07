@@ -62,6 +62,9 @@ interface AnimatedMessageBubbleProps {
   onCopyMessage?: (text: string) => void;
   onReportMessage?: (message: Message) => void;
   onShareMessage?: (message: Message) => void;
+  _index?: number;
+  _onSpeakMessage?: (text: string) => void;
+  _messageIndex?: number;
 }
 
 // Streaming text with live markdown support
@@ -168,12 +171,12 @@ const StreamContent: React.FC<{
               {toolCall.status === 'completed' && toolCall.result && (
                 <View>
                   {/* Handle web search results specifically */}
-                  {toolCall.name === 'webSearchTool' && toolCall.result.data?.structure?.results ? (
+                  {toolCall.name === 'webSearchTool' && (toolCall.result as any)?.data?.structure?.results ? (
                     <View>
                       <Text style={[styles.searchQuery, { color: theme === 'dark' ? '#515151ff' : '#333333' }]}>
-                        Query: "{toolCall.result.data.structure.query}"
+                        Query: "{(toolCall.result as any)?.data?.structure?.query}"
                       </Text>
-                      {toolCall.result.data.structure.results.map((result: { title: string; url: string; snippet: string }, resultIndex: number) => (
+                      {((toolCall.result as any)?.data?.structure?.results || []).map((result: { title: string; url: string; snippet: string; link?: string }, resultIndex: number) => (
                         <View key={resultIndex} style={[
                           styles.searchResultItem,
                           {
@@ -198,7 +201,7 @@ const StreamContent: React.FC<{
                     </View>
                   ) : (
                     <Text style={[styles.toolCallResult, { color: theme === 'dark' ? '#cccccc' : '#323232' }]}>
-                      {typeof toolCall.result === 'string' ? toolCall.result : JSON.stringify(toolCall.result, null, 2)}
+                      {typeof toolCall.result === 'string' ? toolCall.result : JSON.stringify(toolCall.result, null, 2) as React.ReactNode}
                     </Text>
                   )}
                 </View>

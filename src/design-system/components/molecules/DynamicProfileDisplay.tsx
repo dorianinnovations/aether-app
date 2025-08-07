@@ -64,6 +64,7 @@ interface DynamicProfileDisplayProps {
   personality?: PersonalityData;
   loading?: boolean;
   onRefresh?: () => void;
+  _loading?: boolean;
 }
 
 export const DynamicProfileDisplay: React.FC<DynamicProfileDisplayProps> = ({

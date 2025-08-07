@@ -11,8 +11,8 @@ import { errorHandler } from '../../../utils/errorHandler';
  */
 export const transformResponse = <T = unknown>(response: unknown): StandardAPIResponse<T> => {
   // If already in standard format, return as-is
-  if (response.hasOwnProperty('success') && response.hasOwnProperty('status')) {
-    return response;
+  if (response && typeof response === 'object' && response.hasOwnProperty('success') && response.hasOwnProperty('status')) {
+    return response as StandardAPIResponse<T>;
   }
   
   // Transform legacy formats to standard format
@@ -20,8 +20,8 @@ export const transformResponse = <T = unknown>(response: unknown): StandardAPIRe
   return {
     success: true,
     status: 'success' as const,
-    data: response,
-    message: response.message,
+    data: response as T,
+    message: (response as any)?.message,
     timestamp: new Date().toISOString()
   };
 };
@@ -30,9 +30,9 @@ export const transformResponse = <T = unknown>(response: unknown): StandardAPIRe
  * Error transformer to ensure consistent error format
  */
 export const transformError = (error: unknown): APIError => {
-  const statusCode = error.response?.status || error.status || 500;
-  const message = error.response?.data?.message || error.message || 'An unexpected error occurred';
-  const code = error.response?.data?.code || error.code || 'UNKNOWN_ERROR';
+  const statusCode = (error as any).response?.status || (error as any).status || 500;
+  const message = (error as any).response?.data?.message || (error as any).message || 'An unexpected error occurred';
+  const code = (error as any).response?.data?.code || (error as any).code || 'UNKNOWN_ERROR';
   
   return {
     success: false,
@@ -41,10 +41,10 @@ export const transformError = (error: unknown): APIError => {
       code,
       message,
       statusCode,
-      details: error.response?.data || error.details
+      details: (error as any).response?.data || (error as any).details
     },
     timestamp: new Date().toISOString(),
-    requestId: error.response?.headers?.['x-request-id']
+    requestId: (error as any).response?.headers?.['x-request-id']
   };
 };
 
@@ -64,7 +64,7 @@ export const createEnhancedError = (error: unknown, originalRequest: { url: stri
     code: standardizedError.code,
     isRateLimit: standardizedError.category === 'rate_limit',
     retryAfter: standardizedError.retryAfter,
-    response: error.response
+    response: (error as any).response
   });
 };
 
@@ -72,19 +72,19 @@ export const createEnhancedError = (error: unknown, originalRequest: { url: stri
  * Helper function for better error messages
  */
 export function getErrorMessage(error: unknown): string {
-  if (error.response?.data?.message) {
-    return error.response.data.message;
+  if ((error as any).response?.data?.message) {
+    return (error as any).response.data.message;
   }
   
-  if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+  if ((error as any).code === 'ECONNABORTED' || (error as any).message?.includes('timeout')) {
     return 'Request timed out. Please check your internet connection and try again.';
   }
   
-  if (error.code === 'NETWORK_ERROR' || !error.response) {
+  if ((error as any).code === 'NETWORK_ERROR' || !(error as any).response) {
     return 'Network error. Please check your internet connection.';
   }
   
-  switch (error.response?.status) {
+  switch ((error as any).response?.status) {
     case 400:
       return 'Invalid request. Please try again.';
     case 401:
@@ -94,7 +94,7 @@ export function getErrorMessage(error: unknown): string {
     case 404:
       return 'Resource not found.';
     case 429:
-      const retryAfter = error.response?.headers?.['retry-after'];
+      const retryAfter = (error as any).response?.headers?.['retry-after'];
       const waitTime = retryAfter ? parseInt(retryAfter) : 60;
       return `Rate limit reached. Please wait ${waitTime} seconds before trying again.`;
     case 500:
@@ -104,6 +104,6 @@ export function getErrorMessage(error: unknown): string {
     case 504:
       return 'Service temporarily unavailable. Please try again.';
     default:
-      return error.message || 'An unexpected error occurred.';
+      return (error as any).message || 'An unexpected error occurred.';
   }
 }

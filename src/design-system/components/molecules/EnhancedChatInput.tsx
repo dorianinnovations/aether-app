@@ -82,7 +82,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
   maxAttachments = 5,
   attachments = [],
   onAttachmentsChange,
-  _colorfulBubblesEnabled = false,
+  colorfulBubblesEnabled = false,
   onFocus,
   onBlur,
   onSwipeUp,
@@ -359,12 +359,12 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
 
     const newAttachment: MessageAttachment = {
       id: Date.now().toString(),
-      type: asset.type?.includes('image') || asset.mediaType?.includes('image') ? 'image' : 'document',
-      name: asset.name || asset.fileName || `attachment_${Date.now()}`,
+      type: (asset as any).type?.includes('image') || (asset as any).mediaType?.includes('image') ? 'image' : 'document',
+      name: (asset as any).name || (asset as any).fileName || `attachment_${Date.now()}`,
       uri: asset.uri,
-      size: asset.fileSize || asset.size || 0,
+      size: (asset as any).fileSize || (asset as any).size || 0,
       uploadStatus: 'uploaded', // Files are ready to send immediately 
-      mimeType: asset.mimeType || asset.type || 'application/octet-stream',
+      mimeType: (asset as any).mimeType || (asset as any).type || 'application/octet-stream',
     };
 
     if (onAttachmentsChange) {
@@ -569,7 +569,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
             typography.textStyles.caption,
             {
               color: value.length >= maxLength 
-                ? designTokens.semantic.error
+                ? (designTokens as any).semantic.error
                 : themeColors.textMuted,
             }
           ]}>
@@ -689,7 +689,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
                     <FontAwesome5
                       name="microphone"
                       size={16}
-                      color={isVoiceActive ? designTokens.semantic.error : themeColors.textSecondary}
+                      color={isVoiceActive ? (designTokens as any).semantic.error : themeColors.textSecondary}
                     />
                   </Animated.View>
                 </TouchableOpacity>
