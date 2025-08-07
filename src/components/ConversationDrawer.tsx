@@ -18,7 +18,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { LottieLoader } from '../design-system/components/atoms';
+import { LottieLoader, ConversationSkeleton } from '../design-system/components/atoms';
 import { HeatmapModal } from '../design-system/components/organisms';
 
 // Type definitions
@@ -606,8 +606,10 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
           if (typeof friendItem.lastMessage === 'string') {
             lastMessageText = friendItem.lastMessage;
           } else if (friendItem.lastMessage && typeof friendItem.lastMessage === 'object') {
-            lastMessageText = friendItem.lastMessage.content || friendItem.lastMessage.message || '';
+            lastMessageText = friendItem.lastMessage.content || friendItem.lastMessage.message || friendItem.lastMessage.text || '';
           }
+          // Ensure we have a valid string
+          lastMessageText = String(lastMessageText || '').trim();
           return {
             accentColor: tabConfig.color,
             icon: 'user',
@@ -709,14 +711,14 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                 typography.textStyles.bodyMedium,
                 { color: themeColors.text }
               ]}>
-                {item.title || 'Untitled Conversation'}
+                {String(item.title || 'Untitled Conversation')}
               </Text>
               <Text style={[
                 styles.conversationMeta,
                 typography.textStyles.bodySmall,
                 { color: themeColors.textSecondary }
               ]}>
-                {styling.subtitle}
+                {String(styling.subtitle || '')}
               </Text>
             </View>
             
@@ -730,7 +732,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                   styles.badgeText,
                   { color: themeColors.textSecondary }
                 ]}>
-                  {styling.badge}
+                  {String(styling.badge || '')}
                 </Text>
               </View>
               
@@ -766,32 +768,10 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     return (
       <View style={styles.skeletonContainer}>
         {[...Array(4)].map((_, index) => (
-          <View key={index} style={styles.skeletonItem}>
-            <View style={[
-              styles.skeletonIcon,
-              { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }
-            ]} />
-            <View style={styles.skeletonTextContainer}>
-              <View style={[
-                styles.skeletonTitle,
-                { 
-                  backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-                  width: `${60 + Math.random() * 30}%` // Random width between 60-90%
-                }
-              ]} />
-              <View style={[
-                styles.skeletonSubtitle,
-                { 
-                  backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-                  width: `${40 + Math.random() * 40}%` // Random width between 40-80%
-                }
-              ]} />
-            </View>
-            <View style={[
-              styles.skeletonBadge,
-              { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }
-            ]} />
-          </View>
+          <ConversationSkeleton 
+            key={index} 
+            delay={index * 100} // Stagger the animation slightly
+          />
         ))}
       </View>
     );
@@ -1313,36 +1293,6 @@ const styles = StyleSheet.create({
   skeletonContainer: {
     flex: 1,
     paddingVertical: spacing[2],
-  },
-  skeletonItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[3],
-    marginVertical: spacing[1],
-    gap: spacing[3],
-  },
-  skeletonIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-  },
-  skeletonTextContainer: {
-    flex: 1,
-    gap: 6,
-  },
-  skeletonTitle: {
-    height: 14,
-    borderRadius: 7,
-  },
-  skeletonSubtitle: {
-    height: 10,
-    borderRadius: 5,
-  },
-  skeletonBadge: {
-    width: 32,
-    height: 20,
-    borderRadius: 10,
   },
 });
 

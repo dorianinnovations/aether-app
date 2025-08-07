@@ -27,7 +27,7 @@ const ConversationSkeleton: React.FC<ConversationSkeletonProps> = ({ delay = 0 }
     // Delay the start of the animation
     const timeoutId = setTimeout(() => {
       shimmerValue.value = withRepeat(
-        withTiming(1, { duration: 1200 }),
+        withTiming(1, { duration: 2000 }),
         -1,
         true
       );
@@ -42,7 +42,7 @@ const ConversationSkeleton: React.FC<ConversationSkeletonProps> = ({ delay = 0 }
     const opacity = interpolate(
       shimmerValue.value,
       [0, 1],
-      [0.4, 0.8]
+      [0.5, 0.7]
     );
     
     return {
