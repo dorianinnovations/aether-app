@@ -6,6 +6,7 @@
 export { Header } from './Header';
 export { HeaderMenu } from './HeaderMenu';
 export { SignOutModal } from './SignOutModal';
+export { ProfileSuccessModal } from './ProfileSuccessModal';
 export { MetricDetailModal } from './MetricDetailModal';
 export { HeatmapTooltip } from './HeatmapTooltip';
 export { HeatmapModal } from './HeatmapModal';

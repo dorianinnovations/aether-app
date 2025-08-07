@@ -23,7 +23,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { PageBackground } from '../design-system/components/atoms/PageBackground';
 import { LottieLoader } from '../design-system/components/atoms/LottieLoader';
 import { UserBadge, UserBadgeType } from '../design-system/components/atoms/UserBadge';
-import { Header, HeaderMenu, SignOutModal } from '../design-system/components/organisms';
+import { Header, HeaderMenu, SignOutModal, ProfileSuccessModal } from '../design-system/components/organisms';
 import { SpotifyIntegration } from '../design-system/components/molecules';
 import SettingsModal from './chat/SettingsModal';
 import { useTheme } from '../contexts/ThemeContext';
@@ -67,6 +67,7 @@ export const ProfileScreen: React.FC = () => {
   const [shouldRenderSignOutModal, setShouldRenderSignOutModal] = useState(false);
   const [showAnalysisData, setShowAnalysisData] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   // Animation refs for sequential fade-in
@@ -171,7 +172,7 @@ export const ProfileScreen: React.FC = () => {
       };
       
       await saveProfileData(profileData);
-      Alert.alert('Success', 'Profile updated successfully!');
+      setShowSuccessModal(true);
       setEditMode(false);
     } catch (error: any) {
       logger.error('Error saving profile:', error);
@@ -207,7 +208,7 @@ export const ProfileScreen: React.FC = () => {
           } : null);
           // Refresh all data to ensure consistency
           await refreshAllData();
-          Alert.alert('Success', 'Profile picture updated successfully!');
+          setShowSuccessModal(true);
         }
       } catch (error) {
         logger.error('Error uploading profile picture:', error);
@@ -245,7 +246,7 @@ export const ProfileScreen: React.FC = () => {
           } : null);
           // Refresh all data to ensure consistency  
           await refreshAllData();
-          Alert.alert('Success', 'Banner image updated successfully!');
+          setShowSuccessModal(true);
         }
       } catch (error) {
         logger.error('Error uploading banner image:', error);
@@ -277,7 +278,7 @@ export const ProfileScreen: React.FC = () => {
               } : null);
               // Refresh all data to ensure consistency
               await refreshAllData();
-              Alert.alert('Success', 'Profile picture deleted successfully!');
+              setShowSuccessModal(true);
             } catch (error) {
               logger.error('Error deleting profile picture:', error);
               Alert.alert('Error', 'Failed to delete profile picture. Please try again.');
@@ -311,7 +312,7 @@ export const ProfileScreen: React.FC = () => {
               } : null);
               // Refresh all data to ensure consistency
               await refreshAllData();
-              Alert.alert('Success', 'Banner image deleted successfully!');
+              setShowSuccessModal(true);
             } catch (error) {
               logger.error('Error deleting banner image:', error);
               Alert.alert('Error', 'Failed to delete banner image. Please try again.');
@@ -491,7 +492,7 @@ export const ProfileScreen: React.FC = () => {
                 style={styles.headerIcon}
               >
                 <Feather 
-                  name={editMode ? 'save' : 'edit'} 
+                  name={editMode ? 'check' : 'edit'} 
                   size={18} 
                   color={colors.text}
                 />
@@ -951,6 +952,13 @@ export const ProfileScreen: React.FC = () => {
           visible={showSettingsModal}
           onClose={() => setShowSettingsModal(false)}
           navigation={navigation}
+        />
+
+        {/* Profile Success Modal */}
+        <ProfileSuccessModal
+          visible={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          theme={theme}
         />
       </SafeAreaView>
 

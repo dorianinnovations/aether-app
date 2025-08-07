@@ -290,15 +290,8 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         
         // Use the ChatAPI streaming method directly
         for await (const chunk of ChatAPI.streamSocialChat(apiPrompt, attachments)) {
-          // Temporary debug logging
-          if (typeof chunk === 'object' || (typeof chunk === 'string' && (chunk.includes('sources') || chunk.includes('toolResults')))) {
-            console.log('🐞 DEBUG: Processing chunk type:', typeof chunk);
-            console.log('🐞 DEBUG: Chunk content:', chunk);
-          }
-          
           // Check if chunk is metadata object
           if (typeof chunk === 'object' && chunk !== null && 'metadata' in chunk) {
-            console.log('🐞 DEBUG: Found wrapped metadata:', chunk);
             messageMetadata = (chunk as { metadata: Record<string, unknown> }).metadata;
             continue;
           }
@@ -370,6 +363,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
           });
         }
         
+
         // Mark as complete with metadata if available
         setMessages(prev => {
           const finalMessages = prev.map(msg => 
@@ -380,25 +374,6 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
                   metadata: messageMetadata ? {
                     ...msg.metadata,
                     ...messageMetadata,
-                    // Convert tool results format if needed
-                    toolCalls: messageMetadata.toolResults ? 
-                      messageMetadata.toolResults.map((toolResult: any, index: number) => ({
-                        id: `tool-${index}-${Date.now()}`,
-                        name: toolResult.tool || toolResult.name,
-                        parameters: { query: toolResult.query || toolResult.parameters },
-                        result: toolResult.data || toolResult.result,
-                        status: toolResult.success ? 'completed' : 'failed'
-                      })) : ((messageMetadata as any).searchResults && (messageMetadata as any).sources ? 
-                      [{
-                        id: 'search-' + Date.now(),
-                        name: 'insane_web_search',
-                        parameters: { query: (messageMetadata as any).query },
-                        result: {
-                          sources: (messageMetadata as any).sources,
-                          query: (messageMetadata as any).query
-                        },
-                        status: 'completed'
-                      }] : (messageMetadata as any).toolCalls)
                   } : msg.metadata
                 }
               : msg

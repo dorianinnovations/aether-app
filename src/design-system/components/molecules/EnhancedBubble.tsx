@@ -155,7 +155,62 @@ const StreamContent: React.FC<{
           ))}
         </View>
       )}
-      {/* Show tool call results if available */}
+      {/* Show raw tool results from backend (new format) */}
+      {metadata?.toolResults && metadata.toolResults.length > 0 && (
+        <View style={styles.toolCallsContainer}>
+          <Text style={[styles.toolCallsHeader, { color: theme === 'dark' ? '#a8d8ff' : '#8fc7ffff' }]}>
+            🔍 Tool Results ({metadata.toolsUsed || metadata.toolResults.length})
+          </Text>
+          {metadata.toolResults.map((toolResult: any, index: number) => (
+            <View key={index} style={[
+              styles.toolCallCard,
+              {
+                backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 102, 204, 0.1)',
+                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 102, 204, 0.2)',
+              }
+            ]}>
+              <Text style={[styles.toolCallName, { color: theme === 'dark' ? '#a8d8ff' : '#add6ffff' }]}>
+                {toolResult.tool || toolResult.name || 'Tool Result'}
+              </Text>
+              
+              {/* Show search results if available */}
+              {toolResult.data?.results && (
+                <View style={styles.searchResultsContainer}>
+                  <Text style={[styles.searchQuery, { color: theme === 'dark' ? '#515151ff' : '#333333' }]}>
+                    Query: "{toolResult.data.query || toolResult.query}"
+                  </Text>
+                  {toolResult.data.results.map((result: any, resultIndex: number) => (
+                    <View key={resultIndex} style={styles.sourceCard}>
+                      <Text style={[styles.sourceTitle, { color: theme === 'dark' ? '#ffffff' : '#333333' }]}>
+                        {result.title}
+                      </Text>
+                      <Text style={[styles.sourceDomain, { color: theme === 'dark' ? '#3b3b3bff' : '#202020ff' }]}>
+                        {result.domain || result.url}
+                      </Text>
+                      {result.snippet && (
+                        <Text style={[styles.sourceSnippet, { color: theme === 'dark' ? '#cccccc' : '#666666' }]}>
+                          {result.snippet}
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
+              
+              {/* Fallback for other tool result formats */}
+              {!toolResult.data?.results && toolResult.data && (
+                <View style={styles.toolResultContent}>
+                  <Text style={[styles.toolResultText, { color: theme === 'dark' ? '#cccccc' : '#666666' }]}>
+                    {typeof toolResult.data === 'string' ? toolResult.data : JSON.stringify(toolResult.data, null, 2)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Show tool call results if available (existing format) */}
       {metadata?.toolCalls && metadata.toolCalls.length > 0 && (
         <View style={styles.toolCallsContainer}>
           {metadata.toolCalls.map((toolCall: ToolCall, index: number) => (
@@ -898,6 +953,31 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito-Medium',
     marginTop: 4,
     textAlign: 'center',
+  },
+  // New styles for raw tool results
+  toolCallsHeader: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Nunito-SemiBold',
+    marginBottom: spacing[2],
+  },
+  toolResultContent: {
+    marginTop: spacing[1],
+    padding: spacing[1],
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: borderRadius.xs,
+  },
+  toolResultText: {
+    fontSize: 12,
+    fontFamily: 'JetBrainsMono-Regular',
+    lineHeight: 16,
+  },
+  sourceSnippet: {
+    fontSize: 12,
+    fontFamily: 'Nunito-Regular',
+    marginTop: spacing[1],
+    lineHeight: 16,
+    opacity: 0.8,
   },
 });
 

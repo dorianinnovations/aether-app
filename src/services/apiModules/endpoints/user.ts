@@ -67,30 +67,24 @@ export const UserAPI = {
         name: 'profile-picture.jpg',
       } as any;
       
-      formData.append('profilePicture', imageFile);
+      formData.append('profilePhoto', imageFile);
 
-      const response = await api.post('/user/profile/picture', formData, {
+      const response = await api.post('/user/profile-photo', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
       return response.data;
     } catch (error: unknown) {
-      if ((error as any).status === 404) {
-        throw new Error('Profile picture upload endpoint not available yet on server');
-      }
       throw error;
     }
   },
 
   async deleteProfilePicture(): Promise<any> {
     try {
-      const response = await api.delete('/user/profile/picture');
+      const response = await api.delete('/user/profile-photo');
       return response.data;
     } catch (error: unknown) {
-      if ((error as any).status === 404) {
-        throw new Error('Profile picture delete endpoint not available yet on server');
-      }
       throw error;
     }
   },
@@ -108,28 +102,31 @@ export const UserAPI = {
       
       formData.append('bannerImage', imageFile);
 
-      const response = await api.post('/user/profile/banner', formData, {
+      const response = await api.post('/user/banner-image', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
       return response.data;
     } catch (error: unknown) {
-      if ((error as any).status === 404) {
-        throw new Error('Banner image upload endpoint not available yet on server');
-      }
       throw error;
     }
   },
 
   async deleteBannerImage(): Promise<any> {
     try {
-      const response = await api.delete('/user/profile/banner');
+      const response = await api.delete('/user/banner-image');
       return response.data;
     } catch (error: unknown) {
-      if ((error as any).status === 404) {
-        throw new Error('Banner image delete endpoint not available yet on server');
-      }
+      throw error;
+    }
+  },
+
+  async getProfileImages(): Promise<any> {
+    try {
+      const response = await api.get('/user/images');
+      return response.data;
+    } catch (error: unknown) {
       throw error;
     }
   },
