@@ -29,8 +29,8 @@ api.interceptors.request.use(
 // Setup response interceptor - Standardized error handling and token refresh
 api.interceptors.response.use(
   (response: AxiosResponse) => {
-    // Transform response to standard format if needed
-    response.data = transformResponse(response.data);
+    // Don't auto-transform responses - let endpoints handle their own response format
+    // The automatic transformation was causing data corruption
     return response;
   },
   async (error) => {

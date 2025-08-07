@@ -596,12 +596,16 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
             subtitle: item.summary || `${item.messageCount} messages`
           };
         case 1: // Friends - People
-          const friendItem = item as Conversation & { streak?: number; lastMessage?: string };
+          const friendItem = item as Conversation & { streak?: number; lastMessage?: string | any };
+          // Safely extract the last message text
+          const lastMessageText = typeof friendItem.lastMessage === 'string' 
+            ? friendItem.lastMessage 
+            : (friendItem.lastMessage?.content || friendItem.lastMessage?.message || '');
           return {
             accentColor: tabConfig.color,
             icon: 'user',
             badge: friendItem.streak && friendItem.streak > 0 ? `🔥${friendItem.streak}` : '•',
-            subtitle: friendItem.lastMessage || (friendItem.messageCount > 0 ? `${friendItem.messageCount} messages` : 'Tap to start chatting')
+            subtitle: lastMessageText || (friendItem.messageCount > 0 ? `${friendItem.messageCount} messages` : 'Tap to start chatting')
           };
         case 2: // Orbit - Heatmap conversations
           return {

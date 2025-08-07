@@ -15,8 +15,14 @@ export const transformResponse = <T = unknown>(response: unknown): StandardAPIRe
     return response as StandardAPIResponse<T>;
   }
   
-  // Transform legacy formats to standard format
-  // Don't double-wrap the data - if response already has data, use it directly
+  // If response has expected API fields (like conversations, messages, etc.), return as-is
+  // This prevents corruption of valid API responses that don't follow the "standard" format
+  if (response && typeof response === 'object' && 
+      ((response as any).conversations || (response as any).messages || (response as any).data || (response as any).friends)) {
+    return response as StandardAPIResponse<T>;
+  }
+  
+  // Only transform simple responses that clearly need wrapping
   return {
     success: true,
     status: 'success' as const,

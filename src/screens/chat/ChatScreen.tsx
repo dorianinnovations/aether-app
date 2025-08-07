@@ -163,7 +163,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     isLoading,
     isStreaming,
     handleSend: handleMessageSend,
-    handleMessagePress: _handleMessagePress, // Intentionally unused - kept for compatibility
+    handleMessagePress: _handleMessagePress, // eslint-disable-line @typescript-eslint/no-unused-vars
     // handleMessageLongPress,
     handleConversationSelect,
     handleHaltStreaming,
@@ -177,8 +177,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     typingUsers,
     startTyping: startRealTimeTyping,
     stopTyping: stopRealTimeTyping,
-    markMessageAsRead: _markMessageAsRead, // Intentionally unused - kept for future use
-    markAllMessagesAsRead: _markAllMessagesAsRead, // Intentionally unused - kept for future use
+    markMessageAsRead: _markMessageAsRead, // eslint-disable-line @typescript-eslint/no-unused-vars
+    markAllMessagesAsRead: _markAllMessagesAsRead, // eslint-disable-line @typescript-eslint/no-unused-vars
   } = useRealTimeMessaging({
     friendUsername: currentFriendUsername,
     onNewMessage: (data) => {
@@ -186,7 +186,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       if (data.from === currentFriendUsername) {
         const newMessage: Message = {
           id: data.message.messageId,
-          sender: data.from,
+          sender: 'user',
           message: data.message.content,
           timestamp: data.message.timestamp.toString(),
           messageId: data.message.messageId,
@@ -770,7 +770,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             maxAttachments={5}
             attachments={attachments}
             onAttachmentsChange={setAttachments}
-            colorfulBubblesEnabled={settings.colorfulBubblesEnabled}
             onFocus={handleInputFocus}
             onBlur={handleInputBlur}
             onSwipeUp={() => setShowTestTooltip(true)}
@@ -817,13 +816,24 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             setMessages([]);
             setCurrentFriendUsername(conversation.friendUsername);
             setCurrentConversationId(undefined);
+            setShowConversationDrawer(false);
           } else {
             // Handle AI conversation - clear messages immediately to prevent bleed-through
             setMessages([]);
             const conversationId = conversation._id;
-            setCurrentConversationId(conversationId);
-            setCurrentFriendUsername(undefined);
-            handleConversationSelect(conversation as any);
+            
+            // Only handle valid conversation IDs (not friend- prefixed ones)
+            if (conversationId && !conversationId.startsWith('friend-')) {
+              setCurrentConversationId(conversationId);
+              setCurrentFriendUsername(undefined);
+              handleConversationSelect(conversation as any);
+              setShowConversationDrawer(false);
+            } else {
+              // Invalid conversation ID, just clear state
+              setCurrentConversationId(undefined);
+              setCurrentFriendUsername(undefined);
+              setShowConversationDrawer(false);
+            }
           }
         }}
         onStartNewChat={handleStartNewChat}

@@ -24,20 +24,20 @@ import { Feather } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 
 // Design System
-import { getBorderStyle } from '../../design-system/tokens/colors';
+// Removed unused getBorderStyle import
 // Removed unused colorPatterns import
 import { typography } from '../../design-system/tokens/typography';
 import { spacing } from '../../design-system/tokens/spacing';
 import { logger } from '../../utils/logger';
-import { getGlassmorphicStyle, getBrickButtonStyle } from '../../design-system/tokens/glassmorphism';
-import Icon from '../../design-system/components/atoms/Icon';
+// Removed unused glassmorphic imports
+// Removed unused Icon import
 
 // Contexts
 import { useTheme } from '../../contexts/ThemeContext';
 import { useSettings } from '../../hooks/useSettings';
 
 // Services
-import { AuthAPI, TokenManager, UserAPI, ConversationAPI } from '../../services/api';
+import { AuthAPI, TokenManager, ConversationAPI } from '../../services/api';
 import SettingsStorage from '../../services/settingsStorage';
 
 // Components
@@ -194,9 +194,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   };
   
   
-  const glassmorphicOverlay = getGlassmorphicStyle('overlay', theme);
-  const brickStyle = getBrickButtonStyle(theme);
-  const borderStyle = getBorderStyle(theme, 'default');
+  // Removed unused style variables
 
   // Load settings and auth state on mount
   useEffect(() => {

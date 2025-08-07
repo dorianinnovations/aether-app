@@ -57,12 +57,12 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         messageCache.current.set(previousConversation, [...messages]);
       }
       
-      // Update current conversation reference
-      const newConversationKey = friendUsername ? `friend-${friendUsername}` : conversationId;
+      // Update current conversation reference - only if we have valid values
+      const newConversationKey = (friendUsername && friendUsername !== 'undefined') ? `friend-${friendUsername}` : conversationId;
       currentConversationRef.current = newConversationKey;
       
       // Clear messages immediately when switching between conversation types to prevent bleed-through
-      const nowHasFriendUsername = !!friendUsername;
+      const nowHasFriendUsername = !!(friendUsername && friendUsername !== 'undefined');
       const nowHasConversationId = !!conversationId;
       
       if ((previouslyHadFriendUsername && nowHasConversationId) || 
@@ -71,8 +71,8 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         setMessages([]);
       }
       
-      if (conversationId || friendUsername) {
-        const cacheKey = friendUsername ? `friend-${friendUsername}` : conversationId!;
+      if (conversationId || (friendUsername && friendUsername !== 'undefined')) {
+        const cacheKey = (friendUsername && friendUsername !== 'undefined') ? `friend-${friendUsername}` : conversationId!;
         
         // Check cache first
         const cachedMessages = messageCache.current.get(cacheKey);
@@ -93,11 +93,11 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
             try {
               const friendConversation = await FriendsAPI.getDirectMessages(friendUsername);
               
-              if (friendConversation.success && friendConversation.messages && Array.isArray(friendConversation.messages)) {
-                const convertedMessages: Message[] = friendConversation.messages.map((msg: any, index: number) => ({
-                  id: msg._id || `${friendUsername}-${index}`,
-                  sender: msg.sender === 'user' ? 'user' : friendUsername,
-                  message: msg.message || msg.content,
+              if (friendConversation.success && friendConversation.conversation?.messages && Array.isArray(friendConversation.conversation.messages)) {
+                const convertedMessages: Message[] = friendConversation.conversation.messages.map((msg: any, index: number) => ({
+                  id: msg.messageId || `${friendUsername}-${index}`,
+                  sender: msg.fromMe ? 'user' : msg.from,
+                  message: msg.content,
                   timestamp: msg.timestamp,
                   variant: 'default',
                   // Friend messaging specific fields
@@ -192,7 +192,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
       timestamp: new Date().toISOString(),
       attachments: attachments.length > 0 ? attachments : undefined,
       // Friend messaging fields
-      ...(friendUsername && {
+      ...((friendUsername && friendUsername !== 'undefined') && {
         fromMe: true,
         from: 'user',
         status: 'sent' as const,
@@ -200,8 +200,8 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
       }),
     };
 
-    // Determine cache key
-    const cacheKey = friendUsername ? `friend-${friendUsername}` : conversationId;
+    // Determine cache key - validate friendUsername is not undefined
+    const cacheKey = (friendUsername && friendUsername !== 'undefined') ? `friend-${friendUsername}` : conversationId;
 
     // Add user message with optimistic update
     setMessages(prev => {
@@ -218,7 +218,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
     await new Promise(resolve => setTimeout(resolve, 0));
 
     try {
-      if (friendUsername) {
+      if (friendUsername && friendUsername !== 'undefined') {
         // Handle friend messaging - direct message, no streaming
         try {
           const response = await FriendsAPI.sendDirectMessage(friendUsername, displayText);

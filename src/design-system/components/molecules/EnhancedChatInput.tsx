@@ -57,7 +57,6 @@ interface ChatInputProps {
   attachments?: MessageAttachment[];
   onAttachmentsChange?: (attachments: MessageAttachment[]) => void;
   isTabBarHidden?: boolean;
-  colorfulBubblesEnabled?: boolean;
   onFocus?: () => void;
   onBlur?: () => void;
   onSwipeUp?: () => void;
@@ -82,7 +81,6 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
   maxAttachments = 5,
   attachments = [],
   onAttachmentsChange,
-  _colorfulBubblesEnabled = false,
   onFocus,
   onBlur,
   onSwipeUp,
