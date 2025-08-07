@@ -107,10 +107,7 @@ export const useProfileData = (): UseProfileDataReturn => {
           badges: userBadges,
         });
         
-        logger.info('Basic profile data loaded successfully', { 
-          userId: userId, 
-          badgeCount: userBadges.length 
-        });
+        // Profile data loaded
       } else {
         logger.error('Profile response missing user data:', profileResponse);
         throw new Error('Profile data is incomplete');

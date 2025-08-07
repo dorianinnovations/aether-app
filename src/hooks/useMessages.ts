@@ -173,7 +173,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
     // Allow sending if there's text OR attachments
     if ((!inputText.trim() && attachments.length === 0) || isLoading) return;
 
-    logger.debug('📨 Sending message:', { inputText, attachments: attachments.length, conversationId, friendUsername });
+    // Sending message
 
     // Hide greeting on first message
     if (onHideGreeting) {
@@ -247,12 +247,12 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         // Handle AI chat with streaming
         let activeConversationId = conversationId;
         if (!activeConversationId) {
-          logger.debug('🆕 No conversation ID, creating new conversation...');
+          // Creating new conversation
           try {
             const newConversationResponse = await ConversationAPI.createConversation('New Chat');
             if (newConversationResponse.success && newConversationResponse.data) {
               activeConversationId = newConversationResponse.data._id;
-              logger.debug('✅ Created new conversation:', activeConversationId);
+              // New conversation created
             }
           } catch (error) {
             logger.error('❌ Error creating conversation:', error);
@@ -375,6 +375,25 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
                   metadata: messageMetadata ? {
                     ...msg.metadata,
                     ...messageMetadata,
+                    // Convert tool results format if needed
+                    toolCalls: messageMetadata.toolResults ? 
+                      messageMetadata.toolResults.map((toolResult: any, index: number) => ({
+                        id: `tool-${index}-${Date.now()}`,
+                        name: toolResult.tool || toolResult.name || 'webSearchTool',
+                        parameters: { query: toolResult.query || toolResult.parameters },
+                        result: toolResult.data || toolResult.result,
+                        status: toolResult.success ? 'completed' : 'failed'
+                      })) : ((messageMetadata as any).searchResults && (messageMetadata as any).sources ? 
+                      [{
+                        id: 'search-' + Date.now(),
+                        name: 'insane_web_search',
+                        parameters: { query: (messageMetadata as any).query },
+                        result: {
+                          sources: (messageMetadata as any).sources,
+                          query: (messageMetadata as any).query
+                        },
+                        status: 'completed'
+                      }] : (messageMetadata as any).toolCalls)
                   } : msg.metadata
                 }
               : msg
@@ -386,11 +405,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
           return finalMessages;
         });
         
-        logger.debug('✅ AI message sent successfully!', { 
-          wordCount, 
-          conversationId,
-          hasMetadata: !!messageMetadata 
-        });
+        // AI message completed
         
         // Refined haptic timing - trigger earlier for better UX
         const refinedHapticDelay = Math.min(300, Math.max(100, wordCount * 8));

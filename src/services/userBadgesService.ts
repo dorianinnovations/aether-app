@@ -59,7 +59,7 @@ class UserBadgesService {
       // Cache the result
       this.badgesCache.set(userId, badges);
       
-      logger.info('User badges retrieved (fallback):', { userId, badgeCount: badges.length });
+      // User badges retrieved
       return badges;
     } catch (error) {
       logger.error('Error getting user badges:', error);
