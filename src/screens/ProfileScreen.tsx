@@ -1165,11 +1165,6 @@ const styles = StyleSheet.create({
     paddingTop: 100,
     gap: spacing[3],
   },
-  loadingText: {
-    ...typography.textStyles.bodyMedium,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',

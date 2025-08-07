@@ -47,13 +47,29 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
   // Handle conversation switching with caching
   useEffect(() => {
     const handleConversationSwitch = async () => {
+      // Store previous conversation info before updating
+      const previousConversation = currentConversationRef.current;
+      const previouslyHadFriendUsername = previousConversation && previousConversation.startsWith('friend-');
+      const previouslyHadConversationId = previousConversation && !previousConversation.startsWith('friend-');
+      
       // Save current messages to cache before switching
-      if (currentConversationRef.current && messages.length > 0) {
-        messageCache.current.set(currentConversationRef.current, [...messages]);
+      if (previousConversation && messages.length > 0) {
+        messageCache.current.set(previousConversation, [...messages]);
       }
       
       // Update current conversation reference
-      currentConversationRef.current = conversationId;
+      const newConversationKey = friendUsername ? `friend-${friendUsername}` : conversationId;
+      currentConversationRef.current = newConversationKey;
+      
+      // Clear messages immediately when switching between conversation types to prevent bleed-through
+      const nowHasFriendUsername = !!friendUsername;
+      const nowHasConversationId = !!conversationId;
+      
+      if ((previouslyHadFriendUsername && nowHasConversationId) || 
+          (previouslyHadConversationId && nowHasFriendUsername) ||
+          (!previousConversation && (nowHasFriendUsername || nowHasConversationId))) {
+        setMessages([]);
+      }
       
       if (conversationId || friendUsername) {
         const cacheKey = friendUsername ? `friend-${friendUsername}` : conversationId!;
@@ -81,9 +97,16 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
                 const convertedMessages: Message[] = friendConversation.messages.map((msg: any, index: number) => ({
                   id: msg._id || `${friendUsername}-${index}`,
                   sender: msg.sender === 'user' ? 'user' : friendUsername,
-                  message: msg.message,
+                  message: msg.message || msg.content,
                   timestamp: msg.timestamp,
                   variant: 'default',
+                  // Friend messaging specific fields
+                  messageId: msg.messageId,
+                  fromMe: msg.fromMe,
+                  from: msg.from,
+                  readAt: msg.readAt,
+                  deliveredAt: msg.deliveredAt,
+                  status: msg.status,
                 }));
                 
                 // Cache the loaded messages
@@ -168,6 +191,13 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
       message: displayText,
       timestamp: new Date().toISOString(),
       attachments: attachments.length > 0 ? attachments : undefined,
+      // Friend messaging fields
+      ...(friendUsername && {
+        fromMe: true,
+        from: 'user',
+        status: 'sent' as const,
+        deliveredAt: new Date().toISOString(),
+      }),
     };
 
     // Determine cache key
@@ -195,6 +225,16 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
           
           if (response && response.success) {
             logger.debug('✅ Friend message sent successfully!');
+            
+            // Update message status to delivered with messageId from server
+            if (response.data?.messageId) {
+              setMessages(prev => prev.map(msg => 
+                msg.id === userMessage.id 
+                  ? { ...msg, messageId: response.data.messageId, status: 'delivered' as const }
+                  : msg
+              ));
+            }
+            
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           } else {
             throw new Error(response?.error || 'Failed to send message to friend');

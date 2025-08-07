@@ -45,6 +45,14 @@ export interface Message {
   variant?: 'default' | 'streaming' | 'error' | 'tool' | 'search-results';
   metadata?: MessageMetadata;
   attachments?: MessageAttachment[];
+  
+  // Friend messaging fields
+  messageId?: string; // Backend message ID for friend messages
+  fromMe?: boolean; // True if message was sent by current user
+  from?: string; // Username of sender (for friend messages)
+  readAt?: string; // When message was read
+  deliveredAt?: string; // When message was delivered
+  status?: 'sent' | 'delivered' | 'read'; // Message status for UI
 }
 
 export interface Conversation {

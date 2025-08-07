@@ -25,7 +25,7 @@ import * as DocumentPicker from 'expo-document-picker';
 type ImagePickerAsset = ImagePicker.ImagePickerAsset;
 type DocumentPickerAsset = DocumentPicker.DocumentPickerAsset;
 type PickerAsset = ImagePickerAsset | DocumentPickerAsset;
-import { designTokens, getThemeColors, getUserMessageColor } from '../../tokens/colors';
+import { getThemeColors, getUserMessageColor } from '../../tokens/colors';
 import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
 import { getNeumorphicStyle } from '../../tokens/shadows';
@@ -82,7 +82,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
   maxAttachments = 5,
   attachments = [],
   onAttachmentsChange,
-  colorfulBubblesEnabled = false,
+  _colorfulBubblesEnabled = false,
   onFocus,
   onBlur,
   onSwipeUp,

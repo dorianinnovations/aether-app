@@ -15,7 +15,7 @@ import {
   Dimensions,
   Alert,
   Share,
-  Linking,
+  // Removed unused Linking,
   Animated,
   Easing,
 } from 'react-native';
@@ -24,8 +24,8 @@ import { Feather } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 
 // Design System
-import { designTokens, getThemeColors, getBorderStyle, getIconColor } from '../../design-system/tokens/colors';
-import { colorPatterns } from '../../design-system/tokens/color-patterns';
+import { getBorderStyle } from '../../design-system/tokens/colors';
+// Removed unused colorPatterns import
 import { typography } from '../../design-system/tokens/typography';
 import { spacing } from '../../design-system/tokens/spacing';
 import { logger } from '../../utils/logger';

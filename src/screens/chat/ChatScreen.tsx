@@ -11,7 +11,7 @@ import {
   Animated,
   Alert,
   Text,
-  Dimensions,
+  // Removed unused Dimensions
   SafeAreaView,
   StatusBar,
   TouchableOpacity,
@@ -33,6 +33,8 @@ import SettingsModal from './SettingsModal';
 import ConversationDrawer from '../../components/ConversationDrawer';
 import { ShimmerText } from '../../design-system/components/atoms/ShimmerText';
 import { WebSearchIndicator } from '../../design-system/components/atoms';
+// Removed unused MessageStatus import
+import TypingIndicator from '../../design-system/components/atoms/TypingIndicator';
 
 // Design System
 import { designTokens } from '../../design-system/tokens/colors';
@@ -54,6 +56,7 @@ import { useMessages } from '../../hooks/useMessages';
 import { useDynamicPrompts } from '../../hooks/useDynamicPrompts';
 import { useWebSearch } from '../../hooks/useWebSearch';
 import { useGhostTyping } from '../../hooks/useGhostTyping';
+import { useRealTimeMessaging } from '../../hooks/useRealTimeMessaging';
 
 // Types
 import type { Message } from '../../types/chat';
@@ -64,9 +67,8 @@ import { AuthAPI, FriendsAPI, ConversationAPI } from '../../services/api';
 // Utils
 import { 
   createModalAnimationRefs, 
-  showModalAnimation, 
-  hideModalAnimation, 
-  createTooltipPressAnimation,
+  // Removed unused animation utilities
+  hideModalAnimation,
   type ModalAnimationRefs 
 } from '../../utils/animations';
 
@@ -80,26 +82,13 @@ interface ChatScreenProps {
   };
 }
 
-// Dynamic dimensions hook to handle rotation
-const useDimensions = () => {
-  const [dimensions, setDimensions] = useState(() => Dimensions.get('window'));
-  
-  useEffect(() => {
-    const subscription = Dimensions.addEventListener('change', ({ window }) => {
-      setDimensions(window);
-    });
-    
-    return () => subscription?.remove();
-  }, []);
-  
-  return dimensions;
-};
+// Removed unused useDimensions hook
 
 const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   const navigation = useNavigation();
   const { theme, colors } = useTheme();
   const { settings } = useSettings();
-  const { width: SCREEN_WIDTH } = useDimensions();
+  // Removed unused screen width
   
   // Custom hooks
   const { greetingText, showGreeting, setShowGreeting } = useGreeting();
@@ -119,20 +108,20 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   
   // UI State
   const [inputText, setInputText] = useState('');
-  const [, setShowCopyTooltip] = useState(false);
+  // Removed unused copy tooltip state
   const [, setShowTestTooltip] = useState(true);
   const [showDynamicOptionsModal, setShowDynamicOptionsModal] = useState(false);
   const [headerVisible] = useState(true);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [, setIsVoiceRecording] = useState(false);
   const [isChatInputFocused, setIsChatInputFocused] = useState(false);
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [, setIsKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const inputContainerAnim = useRef(new Animated.Value(0)).current;
   
   // Animation refs
   const tooltipOpacity = useRef(new Animated.Value(1)).current;
-  const tooltipScale = useRef(new Animated.Value(1)).current;
+  // Removed unused tooltipScale
   const modalAnimationRefs = useRef<ModalAnimationRefs>(createModalAnimationRefs()).current;
   const headerAnim = useRef(new Animated.Value(1)).current;
 
@@ -158,7 +147,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   const shakeAnim = useRef<Animated.Value>(new Animated.Value(0)).current;
   const addFriendModalOpacity = useRef<Animated.Value>(new Animated.Value(1)).current;
   
-  const { ghostText, isDismissing } = useGhostTyping({
+  const { ghostText } = useGhostTyping({
     isInputFocused,
     inputText: friendUsername,
   });
@@ -174,13 +163,53 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     isLoading,
     isStreaming,
     handleSend: handleMessageSend,
-    handleMessagePress,
+    handleMessagePress: _handleMessagePress, // Intentionally unused - kept for compatibility
     // handleMessageLongPress,
     handleConversationSelect,
     handleHaltStreaming,
     setMessages,
     // flatListRef: messagesRef,
   } = useMessages(() => setShowGreeting(false), currentConversationId, currentFriendUsername);
+
+  // Real-time messaging for friend conversations
+  const {
+    isConnected: isRealTimeConnected,
+    typingUsers,
+    startTyping: startRealTimeTyping,
+    stopTyping: stopRealTimeTyping,
+    markMessageAsRead: _markMessageAsRead, // Intentionally unused - kept for future use
+    markAllMessagesAsRead: _markAllMessagesAsRead, // Intentionally unused - kept for future use
+  } = useRealTimeMessaging({
+    friendUsername: currentFriendUsername,
+    onNewMessage: (data) => {
+      // Handle incoming friend messages
+      if (data.from === currentFriendUsername) {
+        const newMessage: Message = {
+          id: data.message.messageId,
+          sender: data.from,
+          message: data.message.content,
+          timestamp: data.message.timestamp.toString(),
+          messageId: data.message.messageId,
+          fromMe: false,
+          from: data.from,
+          deliveredAt: data.message.timestamp.toString(),
+          status: 'delivered'
+        };
+        
+        setMessages(prev => [...prev, newMessage]);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    },
+    onReadReceipt: (receipt) => {
+      // Update message status when read receipt is received
+      setMessages(prev => prev.map(msg => 
+        msg.messageId === receipt.messageId 
+          ? { ...msg, readAt: receipt.readAt.toString(), status: 'read' as const }
+          : msg
+      ));
+    },
+    autoConnect: !!currentFriendUsername  // Enable auto-connect for friend conversations
+  });
 
   // Dynamic prompts hook for intelligent contextual options (after useMessages)
   const {
@@ -217,11 +246,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   // Handle route parameter changes for friend username
   useEffect(() => {
     if (route?.params?.friendUsername && route.params.friendUsername !== currentFriendUsername) {
+      // Clear messages immediately when switching to friend to prevent bleed-through
+      setMessages([]);
       setCurrentFriendUsername(route.params.friendUsername);
       setCurrentConversationId(undefined);
-      setMessages([]); // Clear messages when switching to friend
     }
-  }, [route?.params?.friendUsername, currentFriendUsername]);
+  }, [route?.params?.friendUsername, currentFriendUsername, setMessages]);
 
   // Add Friend modal visibility effect - fixed to prevent useInsertionEffect warnings
   useEffect(() => {
@@ -298,49 +328,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     };
   }, []);
 
-  // Smart suggestions based on context
-  const [_suggestions] = useState([
-    "How are you feeling today?",
-    "Help me understand my patterns",
-    "What can you tell me about myself?",
-    "Show me my behavioral insights",
-    "Find me connections with similar interests",
-  ]);
-
-
-
-  // Handle sending message - simplified wrapper
-  const _handleSend = async () => {
-    if ((!inputText.trim() && attachments.length === 0) || isLoading) return;
-    
-    // Store current values before clearing to prevent race conditions
-    const currentText = inputText;
-    const currentAttachments = [...attachments];
-    
-    // Clear input immediately without requestAnimationFrame to prevent keyboard avoiding view issues
-    setInputText('');
-    setAttachments([]);
-    
-    // Send with stored values to ensure message content integrity
-    await handleMessageSend(currentText, currentAttachments);
-  };
-
-  // Handle suggestion press
-  const _handleSuggestionPress = (_suggestion: string) => {
-    setInputText(_suggestion);
-  };
-
-  // Handle settings press
-  const _handleSettingsPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setShowSettings(true);
-  };
-
-  // Handle conversation history press
-  const _handleConversationHistoryPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setShowConversationDrawer(true);
-  };
+  // Removed unused handlers and suggestions
 
   // Handle Add Friend press
   const handleAddFriendPress = () => {
@@ -509,11 +497,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   };
 
 
-  // Enhanced message press handler with tooltip
-  const _handleMessagePressWithTooltip = async (_message: Message) => {
-    await handleMessagePress(_message);
-    setShowCopyTooltip(true);
-  };
+  // Removed unused message press handler
 
 
   // Enhanced handlers for new components
@@ -536,6 +520,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     // Store current values before clearing
     const currentText = inputText;
     const currentAttachments = [...attachments];
+    
+    // Stop typing indicator when sending
+    if (currentFriendUsername) {
+      stopRealTimeTyping();
+    }
     
     // Dismiss keyboard immediately to prevent KeyboardAvoidingView positioning issues
     Keyboard.dismiss();
@@ -565,11 +554,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-    
   };
 
   const handleInputBlur = () => {
     setIsChatInputFocused(false);
+    
+    // Stop typing when input loses focus
+    if (currentFriendUsername) {
+      stopRealTimeTyping();
+    }
     
     // Smooth fade in with delay and gentle easing
     setTimeout(() => {
@@ -582,16 +575,19 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     }, 100);
   };
 
-  // Handle dynamic options tooltip press
-  const _handleDynamicOptionsPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    createTooltipPressAnimation(tooltipScale);
-
-    setTimeout(() => {
-      setShowDynamicOptionsModal(true);
-      showModalAnimation(modalAnimationRefs);
-    }, 50);
+  // Handle text input changes for typing indicators
+  const handleInputTextChange = (text: string) => {
+    setInputText(text);
+    
+    // Send typing indicators for friend conversations
+    if (currentFriendUsername && text.trim() && isRealTimeConnected) {
+      startRealTimeTyping();
+    } else if (currentFriendUsername && !text.trim()) {
+      stopRealTimeTyping();
+    }
   };
+
+  // Removed unused dynamic options handler
 
   // Modal hide handler
   const handleHideModal = () => {
@@ -721,6 +717,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             [{ nativeEvent: { contentOffset: { y: headerAnim } } }],
             { useNativeDriver: false }
           )}
+          ListFooterComponent={() => {
+            // Show typing indicator for friend conversations
+            const isTyping = currentFriendUsername && typingUsers[currentFriendUsername];
+            return isTyping ? (
+              <TypingIndicator
+                username={currentFriendUsername!}
+                theme={theme}
+                visible={true}
+              />
+            ) : null;
+          }}
         />
 
       </View>
@@ -748,7 +755,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         ]}>
           <EnhancedChatInput
             value={inputText}
-            onChangeText={setInputText}
+            onChangeText={handleInputTextChange}
             onSend={handleEnhancedSend}
             onVoiceStart={handleVoiceStart}
             onVoiceEnd={handleVoiceEnd}
@@ -806,13 +813,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         onClose={() => setShowConversationDrawer(false)}
         onConversationSelect={(conversation) => {
           if (conversation.type === 'friend' && conversation.friendUsername) {
-            // Handle friend conversation
+            // Handle friend conversation - clear messages immediately to prevent bleed-through
+            setMessages([]);
             setCurrentFriendUsername(conversation.friendUsername);
             setCurrentConversationId(undefined);
-            // Clear messages for new friend conversation
-            setMessages([]);
           } else {
-            // Handle AI conversation
+            // Handle AI conversation - clear messages immediately to prevent bleed-through
+            setMessages([]);
             const conversationId = conversation._id;
             setCurrentConversationId(conversationId);
             setCurrentFriendUsername(undefined);
@@ -1245,77 +1252,11 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   
-  userContainer: {
-    alignItems: 'flex-end',
-    width: '100%',
-  },
-  
-  userBubble: {
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    maxWidth: '75%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  
-  userText: {
-    fontSize: 16,
-    lineHeight: 22,
-    fontFamily: 'Nunito-Regular',
-    fontWeight: '400',
-  },
-  
-  botContainer: {
-    alignItems: 'flex-start',
-    width: '100%',
-    paddingHorizontal: 2,
-    paddingRight: 6,
-  },
-  
-  botText: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontFamily: 'Nunito-Regular',
-    fontWeight: '400',
-    maxWidth: '98%',
-    flexShrink: 1,
-  },
+  // Removed unused style definitions
 
-  lottieAnimation: {
-    width: 76,
-    height: 46,
-    alignSelf: 'flex-start',
-  },
-
-  // Scroll to Bottom Button
-  scrollToBottomButton: {
-    position: 'absolute',
-    bottom: 180,
-    alignSelf: 'center',
-    zIndex: 1000,
-  },
+  // Removed more unused styles
   
-  scrollButtonCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  
-  scrollButtonArrow: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
+  // Removed unused scroll button styles
 
   // Dynamic Greeting Banner
   greetingBanner: {
@@ -1442,20 +1383,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   
-  // Search Results Styles
-  searchContainer: {
-    marginTop: 12,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 8,
-  },
-  
-  searchTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-    fontFamily: 'Nunito-SemiBold',
-  },
+  // Removed unused search styles
   
   // Add Friend Dropdown Styles
   overlay: {

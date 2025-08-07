@@ -27,7 +27,7 @@ import { Header, HeaderMenu } from '../../design-system/components/organisms';
 import { PasswordStrengthIndicator } from '../../design-system/components/molecules/PasswordStrengthIndicator';
 import { UsernameStatusIndicator } from '../../design-system/components/molecules/UsernameStatusIndicator';
 import { AuthButton } from '../../design-system/components/molecules/AuthButton';
-import { getThemeColors } from '../../design-system/tokens/colors';
+// Removed unused getThemeColors import
 import { useTheme } from '../../contexts/ThemeContext';
 import { typography } from '../../design-system/tokens/typography';
 import { useSignUpForm } from '../../hooks/useSignUpForm';
@@ -81,7 +81,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
   // Use either auth loading or local loading
   const loading = localLoading;
 
-  const themeColors = getThemeColors(theme);
+  // Removed unused themeColors
 
   // Animation refs - Staggered load-in animations
   const titleOpacity = useRef(new Animated.Value(0)).current;
@@ -91,7 +91,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
-  const buttonScaleAnim = useRef(new Animated.Value(1)).current;
+  // Removed unused buttonScaleAnim
   const buttonGlowAnim = useRef(new Animated.Value(0)).current;
   const firstNameInputScaleAnim = useRef(new Animated.Value(1)).current;
   const lastNameInputScaleAnim = useRef(new Animated.Value(1)).current;
@@ -917,10 +917,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     lineHeight: 26,
-  },
-  subtitleBold: {
-    fontWeight: '700',
-    fontSize: 16,
   },
   formContent: {
     gap: 24,

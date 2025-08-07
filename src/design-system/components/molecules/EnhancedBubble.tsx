@@ -30,6 +30,7 @@ import { ToolCall, Message, MessageAttachment } from '../../../types';
 import BasicMarkdown from '../atoms/BasicMarkdown';
 import { PhotoPreview } from './PhotoPreview';
 import { ImagePreviewModal } from '../organisms/ImagePreviewModal';
+import MessageStatus from '../atoms/MessageStatus';
 
 const { width } = Dimensions.get('window');
 
@@ -553,6 +554,18 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
                   )}
                 </Animated.View>
               </TouchableOpacity>
+            )}
+            
+            {/* Message status indicators for friend messages */}
+            {isUser && (message.fromMe || message.status || message.readAt || message.deliveredAt) && (
+              <MessageStatus
+                status={message.status}
+                readAt={message.readAt}
+                deliveredAt={message.deliveredAt}
+                timestamp={message.timestamp}
+                theme={theme}
+                showTimestamp={true}
+              />
             )}
           </View>
         ) : (

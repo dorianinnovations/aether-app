@@ -79,4 +79,12 @@ export const FriendsAPI = {
     const response = await api.get('/friend-messaging/streaks');
     return response.data;
   },
+
+  async markMessagesAsRead(friendUsername: string, messageIds?: string[]): Promise<any> {
+    const response = await api.post('/friend-messaging/mark-read', { 
+      friendUsername, 
+      messageIds 
+    });
+    return response.data;
+  },
 };
