@@ -1,6 +1,7 @@
 /**
  * ConversationSkeleton - Skeleton loader for conversation list items
  * Matches the exact layout of conversation cards while loading
+ * Updated with 750ms timing and reduced widths
  */
 
 import React from 'react';
@@ -11,6 +12,8 @@ import Animated, {
   withRepeat,
   withTiming,
   interpolate,
+  withSequence,
+  Easing,
 } from 'react-native-reanimated';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { spacing } from '../../tokens/spacing';
@@ -22,14 +25,26 @@ interface ConversationSkeletonProps {
 const ConversationSkeleton: React.FC<ConversationSkeletonProps> = ({ delay = 0 }) => {
   const { theme } = useTheme();
   const shimmerValue = useSharedValue(0);
+  const shineValue = useSharedValue(-1);
 
   React.useEffect(() => {
     // Delay the start of the animation
     const timeoutId = setTimeout(() => {
+      // Base shimmer animation - runs indefinitely
       shimmerValue.value = withRepeat(
-        withTiming(1, { duration: 2000 }),
+        withTiming(1, { duration: 1500 }),
         -1,
         true
+      );
+      
+      // Subtle shine effect that sweeps across - runs indefinitely
+      shineValue.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.quad) }),
+          withTiming(-1, { duration: 0 }) // Reset instantly
+        ),
+        -1,
+        false
       );
     }, delay);
 
@@ -46,6 +61,25 @@ const ConversationSkeleton: React.FC<ConversationSkeletonProps> = ({ delay = 0 }
     );
     
     return {
+      opacity,
+    };
+  });
+
+  const shineStyle = useAnimatedStyle(() => {
+    const translateX = interpolate(
+      shineValue.value,
+      [-1, 1],
+      [-100, 100]
+    );
+    
+    const opacity = interpolate(
+      shineValue.value,
+      [-1, -0.5, 0, 0.5, 1],
+      [0, 0.3, 0.6, 0.3, 0]
+    );
+    
+    return {
+      transform: [{ translateX }],
       opacity,
     };
   });
@@ -68,6 +102,17 @@ const ConversationSkeleton: React.FC<ConversationSkeletonProps> = ({ delay = 0 }
           : 'rgba(0, 0, 0, 0.08)',
       }
     ]}>
+      {/* Shine overlay */}
+      <Animated.View style={[
+        styles.shineOverlay,
+        {
+          backgroundColor: theme === 'dark' 
+            ? 'rgba(255, 255, 255, 0.1)' 
+            : 'rgba(255, 255, 255, 0.8)',
+        },
+        shineStyle,
+      ]} />
+      
       {/* Pastel dot skeleton */}
       <Animated.View style={[
         styles.pastelDotSkeleton,
@@ -121,25 +166,36 @@ const ConversationSkeleton: React.FC<ConversationSkeletonProps> = ({ delay = 0 }
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[1], // Further reduced from spacing[2] to spacing[1]
+    borderRadius: 9, // 25% smaller: 12 -> 9
+    paddingHorizontal: spacing[3], // 25% smaller: spacing[4] -> spacing[3]
+    paddingVertical: 6, // 25% smaller: 8 -> 6 (spacing[1] is 8)
     marginHorizontal: spacing[1],
-    marginVertical: 2,
-    marginBottom: 12,
-    borderWidth: 1,
+    marginVertical: 1.5, // 25% smaller: 2 -> 1.5
+    marginBottom: 9, // 25% smaller: 12 -> 9
+    borderWidth: 0.75, // 25% smaller: 1 -> 0.75
     position: 'relative',
+    overflow: 'hidden', // Important for shine effect
+  },
+  shineOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: -50,
+    right: -50,
+    bottom: 0,
+    width: 50,
+    height: '100%',
+    borderRadius: 9,
   },
   pastelDotSkeleton: {
     position: 'absolute',
-    top: 8, // Adjusted for smaller card height
-    right: 12,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    top: 6, // 25% smaller: 8 -> 6
+    right: 9, // 25% smaller: 12 -> 9
+    width: 6, // 25% smaller: 8 -> 6
+    height: 6, // 25% smaller: 8 -> 6
+    borderRadius: 3, // 25% smaller: 4 -> 3
   },
   content: {
-    gap: spacing[1], // Reduced gap between elements
+    gap: 6, // 25% smaller: 8 -> 6 (spacing[1] is 8)
   },
   header: {
     flexDirection: 'row',
@@ -147,24 +203,24 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   titleSkeleton: {
-    height: 20,
-    width: '60%',
-    borderRadius: 4,
+    height: 15, // 25% smaller: 20 -> 15
+    width: '45%',
+    borderRadius: 3, // 25% smaller: 4 -> 3
   },
   timeSkeleton: {
-    height: 14,
-    width: '20%',
-    borderRadius: 3,
+    height: 10.5, // 25% smaller: 14 -> 10.5
+    width: '15%',
+    borderRadius: 2.25, // 25% smaller: 3 -> 2.25
   },
   summarySkeleton: {
-    height: 16,
-    width: '90%',
-    borderRadius: 3,
+    height: 12, // 25% smaller: 16 -> 12
+    width: '70%',
+    borderRadius: 2.25, // 25% smaller: 3 -> 2.25
   },
   summarySkeletonShort: {
-    height: 16,
-    width: '65%',
-    borderRadius: 3,
+    height: 12, // 25% smaller: 16 -> 12
+    width: '50%',
+    borderRadius: 2.25, // 25% smaller: 3 -> 2.25
   },
   meta: {
     flexDirection: 'row',
@@ -172,14 +228,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   messageCountSkeleton: {
-    height: 12,
-    width: '30%',
-    borderRadius: 3,
+    height: 9, // 25% smaller: 12 -> 9
+    width: '20%',
+    borderRadius: 2.25, // 25% smaller: 3 -> 2.25
   },
   dotsSkeleton: {
-    height: 16,
-    width: 16,
-    borderRadius: 8,
+    height: 12, // 25% smaller: 16 -> 12
+    width: 12, // 25% smaller: 16 -> 12
+    borderRadius: 6, // 25% smaller: 8 -> 6
   },
 });
 

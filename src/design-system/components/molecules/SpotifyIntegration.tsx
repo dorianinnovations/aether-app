@@ -99,15 +99,44 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
 
   // Handle deep link return from Spotify
   useEffect(() => {
-    const handleUrl = (url: string) => {
+    const handleUrl = async (url: string) => {
       console.log('🎵 Received deep link:', url);
       if (url.includes('aether://spotify-auth')) {
         console.log('🎵 Spotify auth callback received');
-        // Refresh status after auth
-        setTimeout(async () => {
-          await loadSpotifyStatus();
-          onStatusChange?.();
-        }, 1000);
+        
+        // Parse query parameters from the URL
+        const urlObj = new URL(url);
+        const code = urlObj.searchParams.get('code');
+        const state = urlObj.searchParams.get('state');
+        
+        if (code && state) {
+          console.log('🎵 Processing OAuth callback with code and state');
+          try {
+            setConnecting(true);
+            // Call the mobile callback endpoint
+            await SpotifyAPI.handleMobileCallback(code, state);
+            console.log('🎵 OAuth callback processed successfully');
+            
+            // Refresh status after successful auth
+            setTimeout(async () => {
+              await loadSpotifyStatus();
+              onStatusChange?.();
+              Alert.alert('Success!', 'Spotify account connected successfully');
+            }, 1000);
+          } catch (error) {
+            console.error('🎵 OAuth callback error:', error);
+            Alert.alert('Connection Failed', 'Failed to complete Spotify authentication');
+          } finally {
+            setConnecting(false);
+          }
+        } else {
+          console.log('🎵 Missing code or state in callback URL');
+          // Still refresh status in case it worked
+          setTimeout(async () => {
+            await loadSpotifyStatus();
+            onStatusChange?.();
+          }, 1000);
+        }
       }
     };
 
@@ -496,7 +525,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       }}
     >
       <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <View style={[styles.webViewHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <View style={[styles.webViewHeader, { backgroundColor: colors.background, borderBottomColor: colors.borders.default }]}>
           <TouchableOpacity
             style={styles.closeButton}
             onPress={() => {

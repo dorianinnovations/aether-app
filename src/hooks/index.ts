@@ -6,6 +6,9 @@
 // Chat and messaging hooks
 export { useChatScrollManager } from './useChatScrollManager';
 export { useConversationEvents } from './useConversationEvents';
+export { useConversationTabs } from './useConversationTabs';
+export { useConversationData } from './useConversationData';
+export { useDrawerAnimation } from './useDrawerAnimation';
 export { useDynamicPrompts } from './useDynamicPrompts';
 export { useGhostTyping } from './useGhostTyping';
 export { useGreeting } from './useGreeting';
