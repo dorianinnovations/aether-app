@@ -7,6 +7,7 @@
     "icon": "./assets/icon.webp",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "scheme": "aether",
     "splash": {
       "image": "./assets/splash-icon.webp",
       "resizeMode": "contain",
