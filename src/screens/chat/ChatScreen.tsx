@@ -72,7 +72,13 @@ import {
 
 
 
-interface ChatScreenProps {}
+interface ChatScreenProps {
+  route?: {
+    params?: {
+      friendUsername?: string;
+    };
+  };
+}
 
 // Dynamic dimensions hook to handle rotation
 const useDimensions = () => {
@@ -89,7 +95,7 @@ const useDimensions = () => {
   return dimensions;
 };
 
-const ChatScreen: React.FC<ChatScreenProps> = () => {
+const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   const navigation = useNavigation();
   const { theme, colors } = useTheme();
   const { settings } = useSettings();
@@ -158,6 +164,9 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
   });
   
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(undefined);
+  const [currentFriendUsername, setCurrentFriendUsername] = useState<string | undefined>(
+    route?.params?.friendUsername
+  );
 
   // Message handling with streaming (must be after currentConversationId declaration)
   const {
@@ -171,7 +180,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     handleHaltStreaming,
     setMessages,
     // flatListRef: messagesRef,
-  } = useMessages(() => setShowGreeting(false), currentConversationId);
+  } = useMessages(() => setShowGreeting(false), currentConversationId, currentFriendUsername);
 
   // Dynamic prompts hook for intelligent contextual options (after useMessages)
   const {
@@ -204,6 +213,15 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
     },
     onSignOut: () => setShowSignOutModal(true)
   });
+
+  // Handle route parameter changes for friend username
+  useEffect(() => {
+    if (route?.params?.friendUsername && route.params.friendUsername !== currentFriendUsername) {
+      setCurrentFriendUsername(route.params.friendUsername);
+      setCurrentConversationId(undefined);
+      setMessages([]); // Clear messages when switching to friend
+    }
+  }, [route?.params?.friendUsername, currentFriendUsername]);
 
   // Add Friend modal visibility effect - fixed to prevent useInsertionEffect warnings
   useEffect(() => {
@@ -593,6 +611,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
         // Clear current messages and set new conversation ID
         setMessages([]);
         setCurrentConversationId(response.data._id);
+        setCurrentFriendUsername(undefined); // Clear friend context
         setShowConversationDrawer(false);
         
         // Show success feedback
@@ -606,6 +625,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
       // Fallback to clearing current state
       setMessages([]);
       setCurrentConversationId(undefined);
+      setCurrentFriendUsername(undefined); // Clear friend context
       setShowConversationDrawer(false);
       
       // Show error feedback
@@ -736,7 +756,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
             isStreaming={isStreaming}
             onHaltStreaming={handleHaltStreaming}
             theme={theme}
-            placeholder="What up?"
+            placeholder={currentFriendUsername ? `Chatting with ${currentFriendUsername} •` : "What up?"}
             nextMessageIndex={messages.length}
             voiceEnabled={false}
             enableFileUpload={true}
@@ -767,8 +787,15 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
           try {
             await AuthAPI.logout();
             // Auth check in App.tsx will handle navigation automatically
+            // Wait a bit for the auth state to propagate and navigation to occur
+            // before closing the modal
+            setTimeout(() => {
+              setShowSignOutModal(false);
+            }, 1000);
           } catch (error) {
             logger.error('Sign out error:', error);
+            // Close immediately on error since the sign out failed
+            setShowSignOutModal(false);
           }
         }}
         theme={theme}
@@ -778,9 +805,19 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
         isVisible={showConversationDrawer}
         onClose={() => setShowConversationDrawer(false)}
         onConversationSelect={(conversation) => {
-          const conversationId = conversation._id;
-          setCurrentConversationId(conversationId);
-          handleConversationSelect(conversation);
+          if (conversation.type === 'friend' && conversation.friendUsername) {
+            // Handle friend conversation
+            setCurrentFriendUsername(conversation.friendUsername);
+            setCurrentConversationId(undefined);
+            // Clear messages for new friend conversation
+            setMessages([]);
+          } else {
+            // Handle AI conversation
+            const conversationId = conversation._id;
+            setCurrentConversationId(conversationId);
+            setCurrentFriendUsername(undefined);
+            handleConversationSelect(conversation);
+          }
         }}
         onStartNewChat={handleStartNewChat}
         currentConversationId={currentConversationId}
@@ -789,7 +826,7 @@ const ChatScreen: React.FC<ChatScreenProps> = () => {
       
       {/* Enhanced Header */}
       <Header
-        title="Aether"
+        title={currentFriendUsername ? currentFriendUsername : "Aether"}
         showMenuButton={true}
         showConversationsButton={true}
         leftIcon="user-plus"

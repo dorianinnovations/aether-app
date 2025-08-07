@@ -17,7 +17,7 @@ import {
   // ScrollView
 } from 'react-native';
 // import * as AuthSession from 'expo-auth-session';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { logger } from '../../../utils/logger';
 
 // Design System
@@ -199,6 +199,8 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       marginTop: spacing.md,
       borderWidth: 1,
       borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+      width: '95%',
+      alignSelf: 'center',
     },
     header: {
       flexDirection: 'row',
@@ -312,7 +314,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Ionicons name="musical-notes" size={24} color="#1DB954" />
+          <FontAwesome name="spotify" size={24} color="#1DB954" />
           <Text style={styles.title}> Spotify</Text>
         </View>
       </View>
@@ -327,7 +329,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
             <>
-              <Ionicons name="musical-notes" size={20} color="#FFFFFF" />
+              <FontAwesome name="spotify" size={20} color="#FFFFFF" />
               <Text style={styles.connectButtonText}>Connect Spotify</Text>
             </>
           )}

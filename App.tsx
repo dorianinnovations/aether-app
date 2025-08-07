@@ -10,7 +10,7 @@ import * as Font from 'expo-font';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 // Removed bottom tabs - using stack navigation only
-import { View, Text, StyleSheet, Dimensions, Image } from 'react-native';
+import { View, StyleSheet, Dimensions, Image } from 'react-native';
 
 // Enhanced Components
 import { LottieLoader } from './src/design-system/components/atoms';
@@ -47,7 +47,7 @@ import { colorFadeTransition } from './src/design-system/transitions/colorFadeTr
 SplashScreen.preventAutoHideAsync();
 
 
-const { width } = Dimensions.get('window');
+Dimensions.get('window');
 
 // Navigation Types
 export type RootStackParamList = {
@@ -130,30 +130,29 @@ const MainStackNavigator = () => {
   );
 };
 
-// Loading Screen
+// Loading Screen  
 const LoadingScreen = () => {
-  const theme = 'light';
+  const theme = 'light' as const;
   const themeColors = getThemeColors(theme);
+  
+  // Explicit conditional logic to avoid type overlap issues
+  const logoSource = require('./assets/images/aether-logo-light-mode.webp');
+  const brandLogoSource = require('./assets/images/aether-brand-logo-light.webp');
+  const logoOpacity = 0.2;
 
   return (
     <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
       <View style={styles.logoContainer}>
         <Image
-          source={theme === 'dark' 
-            ? require('./assets/images/aether-logo-dark-mode.webp')
-            : require('./assets/images/aether-logo-light-mode.webp')
-          }
+          source={logoSource}
           style={[styles.logo, { 
-            opacity: theme === 'dark' ? 0.5 : 0.2, 
+            opacity: logoOpacity, 
             transform: [{ rotate: '25deg' }, { scaleX: 2.0 }] 
           }]}
           resizeMode="contain"
         />
         <Image
-          source={theme === 'dark' 
-            ? require('./assets/images/aether-brand-logo-dark.webp')
-            : require('./assets/images/aether-brand-logo-light.webp')
-          }
+          source={brandLogoSource}
           style={styles.brandLogoOverlay}
           resizeMode="contain"
         />

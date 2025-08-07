@@ -36,7 +36,6 @@ class SSEService {
       this.connectionState = true;
       this.isConnecting = false;
       
-      console.log('SSE: Simulated connection established (EventSource not available in React Native)');
 
     } catch (error) {
       console.error('SSE: Failed to connect:', error);

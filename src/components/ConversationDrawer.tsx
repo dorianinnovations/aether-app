@@ -15,8 +15,11 @@ import {
   Animated,
   Modal,
   Easing,
+  RefreshControl,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { LottieLoader } from '../design-system/components/atoms';
+import { HeatmapModal } from '../design-system/components/organisms';
 
 // Type definitions
 type FeatherIconNames = keyof typeof Feather.glyphMap;
@@ -25,6 +28,15 @@ interface Friend {
   displayName?: string;
   lastSeen?: string;
   [key: string]: unknown;
+}
+
+interface FriendConversationData {
+  friendUsername: string;
+  friendDisplayName?: string;
+  lastMessageTime?: string;
+  messageCount?: number;
+  lastMessage?: string;
+  streak?: number;
 }
 import * as Haptics from 'expo-haptics';
 import { designTokens, getThemeColors } from '../design-system/tokens/colors';
@@ -43,6 +55,10 @@ interface Conversation {
   messageCount: number;
   summary?: string;
   type?: 'aether' | 'friend' | 'custom';
+  friendUsername?: string; // For friend conversations
+  streak?: number; // For friend conversation streaks
+  lastMessage?: string; // Last message preview
+  displayName?: string; // Friend display name for heatmap modal
 }
 
 interface ConversationDrawerProps {
@@ -66,7 +82,15 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [longPressedId, setLongPressedId] = useState<string | null>(null);
+  
+  // Heatmap modal state
+  const [showHeatmapModal, setShowHeatmapModal] = useState(false);
+  const [selectedFriend, setSelectedFriend] = useState<{
+    username: string;
+    displayName?: string;
+  } | null>(null);
   
   // Cache conversations per tab to avoid unnecessary API calls
   const [conversationCache, setConversationCache] = useState<{
@@ -75,7 +99,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const CACHE_DURATION = 30000; // 30 seconds
   
   // Simplified animations
-  const slideAnim = useRef(new Animated.Value(-screenWidth * 0.85)).current;
+  const slideAnim = useRef(new Animated.Value(-screenWidth * 0.9)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   
   // Tab fold-out animations
@@ -155,12 +179,48 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
       switch (currentTab) {
         case 0: // Aether - AI conversations
           try {
+            // First, try the debug method to see raw API response
+            try {
+              await ConversationAPI.getRecentConversations();
+            } catch (debugError) {
+              log.debug('Debug API call failed:', debugError);
+            }
+            
             const aetherResponse = await ConversationAPI.getRecentConversations(20);
-            if (aetherResponse.conversations) {
+            
+            // Parse the actual response format: response.data.data contains the conversations array
+            if (aetherResponse.data && aetherResponse.data.data && Array.isArray(aetherResponse.data.data)) {
+              newConversations = aetherResponse.data.data;
+            } else if (aetherResponse.data && Array.isArray(aetherResponse.data)) {
+              newConversations = aetherResponse.data;
+              log.debug('Found conversations in data array:', newConversations.length);
+            } else if (Array.isArray(aetherResponse)) {
+              newConversations = aetherResponse;
+              log.debug('Found conversations array directly:', newConversations.length);
+            } else if (aetherResponse.conversations) {
               newConversations = aetherResponse.conversations;
-              log.debug('Loaded Aether conversations:', newConversations.length);
-              if (newConversations.length > 0) {
-                log.debug('First conversation structure:', newConversations[0]);
+              log.debug('Found conversations in conversations key:', newConversations.length);
+            } else {
+              log.debug('Could not find conversations in response, keys:', Object.keys(aetherResponse));
+              log.debug('Response data keys:', aetherResponse.data ? Object.keys(aetherResponse.data) : 'no data');
+              newConversations = [];
+            }
+            
+            if (newConversations.length > 0) {
+            }
+            
+            // If still no conversations, try to create a test one
+            if (newConversations.length === 0) {
+              log.debug('No existing conversations found, trying to create a test conversation...');
+              try {
+                const testConversationResponse = await ConversationAPI.createConversation('New Chat');
+                log.debug('Test conversation creation response:', testConversationResponse);
+                if (testConversationResponse && testConversationResponse.conversations) {
+                  newConversations = testConversationResponse.conversations;
+                  log.debug('Found conversations after test creation:', newConversations.length);
+                }
+              } catch (testError) {
+                log.debug('Test conversation creation failed:', testError);
               }
             }
           } catch (error: unknown) {
@@ -174,29 +234,130 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
           }
           break;
           
-        case 1: // Friends - Convert friends list to conversation format
+        case 1: // Friends - Load friend conversations with fallback to friends list
           try {
-            const friendsResponse = await FriendsAPI.getFriendsList();
-            if (friendsResponse.friends && Array.isArray(friendsResponse.friends)) {
-              newConversations = friendsResponse.friends.map((friend: Friend) => ({
-                _id: `friend-${friend.username}`,
-                title: friend.displayName || friend.username,
-                lastActivity: friend.lastSeen || 'Recently active',
-                messageCount: 0,
-                summary: `Chat with ${friend.displayName || friend.username}`,
-                type: 'friend'
-              }));
-              log.debug('Loaded friend conversations:', newConversations.length);
+            // Try to load messaging conversations first
+            try {
+              const conversationsResponse = await FriendsAPI.getDirectMessageConversations();
+              if (conversationsResponse.success && conversationsResponse.conversations) {
+                newConversations = conversationsResponse.conversations.map((conversation: FriendConversationData) => ({
+                  _id: `friend-${conversation.friendUsername}`,
+                  title: conversation.friendDisplayName || conversation.friendUsername,
+                  lastActivity: conversation.lastMessageTime ? 
+                    new Date(conversation.lastMessageTime).toLocaleDateString() : 'No messages yet',
+                  messageCount: conversation.messageCount || 0,
+                  summary: conversation.lastMessage || `Start chatting with ${conversation.friendDisplayName || conversation.friendUsername}`,
+                  type: 'friend',
+                  friendUsername: conversation.friendUsername,
+                  streak: conversation.streak || 0,
+                  lastMessage: conversation.lastMessage
+                }));
+                log.debug('Loaded friend conversations:', newConversations.length);
+              } else {
+                throw new Error('No conversations data in response');
+              }
+            } catch (messagingError) {
+              log.debug('Friend messaging endpoints not available, falling back to friends list:', (messagingError as Error).message);
+              
+              // Fallback to basic friends list
+              const friendsResponse = await FriendsAPI.getFriendsList();
+              log.debug('ConversationDrawer friends API response:', friendsResponse);
+              
+              let friendsList: Friend[] = [];
+              
+              if (friendsResponse.success && friendsResponse.friends && Array.isArray(friendsResponse.friends)) {
+                friendsList = friendsResponse.friends;
+              } else if (friendsResponse.success && friendsResponse.data && friendsResponse.data.friends && Array.isArray(friendsResponse.data.friends)) {
+                friendsList = friendsResponse.data.friends;
+              } else if (Array.isArray(friendsResponse)) {
+                friendsList = friendsResponse;
+              } else {
+                log.debug('No friends found in ConversationDrawer. Response keys:', Object.keys(friendsResponse));
+                throw new Error('Friends list also unavailable');
+              }
+              
+              if (friendsList.length > 0) {
+                newConversations = friendsList.map((friend: Friend) => ({
+                  _id: `friend-${friend.username}`,
+                  title: friend.displayName || friend.username,
+                  lastActivity: friend.lastSeen || 'Recently active',
+                  messageCount: 0,
+                  summary: `Start chatting with ${friend.displayName || friend.username}`,
+                  type: 'friend',
+                  friendUsername: friend.username,
+                  streak: 0
+                }));
+                log.debug('Loaded friends as conversations (fallback):', newConversations.length);
+              } else {
+                throw new Error('Friends list is empty');
+              }
             }
-          } catch {
-            log.debug('Friends API not available yet, showing empty state');
-            newConversations = [];
+          } catch (error) {
+            log.debug('All friend APIs failed:', error);
+            
+            // Last resort - try basic friends API one more time with different handling
+            try {
+              const basicFriendsResponse = await FriendsAPI.getFriendsList();
+              log.debug('Last resort friends API call:', basicFriendsResponse);
+              
+              if (basicFriendsResponse && basicFriendsResponse.friends) {
+                newConversations = basicFriendsResponse.friends.map((friend: Friend) => ({
+                  _id: `friend-${friend.username}`,
+                  title: friend.displayName || friend.username,
+                  lastActivity: 'Available for chat',
+                  messageCount: 0,
+                  summary: `Start chatting with ${friend.displayName || friend.username}`,
+                  type: 'friend',
+                  friendUsername: friend.username,
+                  streak: 0
+                }));
+                log.debug('Last resort friends loaded:', newConversations.length);
+              } else {
+                newConversations = [];
+              }
+            } catch (finalError) {
+              log.debug('Even last resort failed:', finalError);
+              newConversations = [];
+            }
           }
           break;
           
-        case 2: // Custom - Placeholder for future implementation
-          newConversations = [];
-          log.debug('Custom tab - feature coming soon');
+        case 2: // Orbit - Heatmap functionality
+          try {
+            // Load friends list for heatmap selection
+            const friendsResponse = await FriendsAPI.getFriendsList();
+            log.debug('Orbit friends API response:', friendsResponse);
+            
+            let friendsList: Friend[] = [];
+            
+            if (friendsResponse.success && friendsResponse.friends && Array.isArray(friendsResponse.friends)) {
+              friendsList = friendsResponse.friends;
+            } else if (friendsResponse.success && friendsResponse.data && friendsResponse.data.friends && Array.isArray(friendsResponse.data.friends)) {
+              friendsList = friendsResponse.data.friends;
+            } else if (Array.isArray(friendsResponse)) {
+              friendsList = friendsResponse;
+            } else {
+              log.debug('No friends found for Orbit. Response keys:', Object.keys(friendsResponse));
+              friendsList = [];
+            }
+            
+            if (friendsList.length > 0) {
+              newConversations = friendsList.map((friend: Friend) => ({
+                _id: `orbit-${friend.username}`,
+                title: friend.displayName || friend.username,
+                lastActivity: 'Tap to view heatmap',
+                messageCount: 0,
+                summary: `View messaging heatmap with ${friend.displayName || friend.username}`,
+                type: 'custom',
+                friendUsername: friend.username,
+                displayName: friend.displayName
+              }));
+              log.debug('Loaded friends for Orbit heatmaps:', newConversations.length);
+            }
+          } catch (error) {
+            log.debug('Orbit friends API failed:', error);
+            newConversations = [];
+          }
           break;
           
         default:
@@ -250,6 +411,34 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     }
   }, []);
 
+  // Pull-to-refresh handler
+  const handleRefresh = useCallback(async () => {
+    if (isRefreshing || isLoading) return;
+    
+    setIsRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    try {
+      // Clear cache for current tab to force refresh
+      setConversationCache(prev => {
+        const newCache = { ...prev };
+        delete newCache[currentTab];
+        return newCache;
+      });
+      
+      // Force reload conversations
+      await loadConversations(true);
+      
+      // Success haptic feedback
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      log.error('Failed to refresh conversations:', error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [isRefreshing, isLoading, currentTab, loadConversations]);
+
   
   
   // Simple opacity animation handler
@@ -297,8 +486,8 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
       iconColor: themeColors.textSecondary,
     },
     { 
-      label: 'Custom', 
-      icon: 'settings', 
+      label: 'Orbit', 
+      icon: 'activity', 
       color: themeColors.textSecondary,
       iconColor: themeColors.textSecondary,
     }
@@ -306,7 +495,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   
   // Cleanup function to reset all animations
   const resetAnimations = useCallback(() => {
-    slideAnim.setValue(-screenWidth * 0.85);
+    slideAnim.setValue(-screenWidth * 0.9);
     overlayOpacity.setValue(0);
     // Reset tab animations
     tabAnimations.forEach(anim => anim.setValue(1));
@@ -326,7 +515,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
         useNativeDriver: true,
       }),
       Animated.timing(overlayOpacity, {
-        toValue: 0.5,
+        toValue: 0.7,
         duration: 250,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
@@ -344,7 +533,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     
     Animated.parallel([
       Animated.timing(slideAnim, {
-        toValue: -screenWidth * 0.85,
+        toValue: -screenWidth * 0.9,
         duration: 300,
         easing: Easing.in(Easing.quad),
         useNativeDriver: true,
@@ -407,18 +596,19 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
             subtitle: item.summary || `${item.messageCount} messages`
           };
         case 1: // Friends - People
+          const friendItem = item as Conversation & { streak?: number; lastMessage?: string };
           return {
             accentColor: tabConfig.color,
             icon: 'user',
-            badge: item.lastActivity.includes('now') ? '•' : '•',
-            subtitle: item.summary || item.lastActivity
+            badge: friendItem.streak && friendItem.streak > 0 ? `🔥${friendItem.streak}` : '•',
+            subtitle: friendItem.lastMessage || (friendItem.messageCount > 0 ? `${friendItem.messageCount} messages` : 'Tap to start chatting')
           };
-        case 2: // Custom - Custom conversations
+        case 2: // Orbit - Heatmap conversations
           return {
             accentColor: tabConfig.color,
-            icon: 'settings',
+            icon: 'activity',
             badge: '•',
-            subtitle: item.summary || 'Custom conversation'
+            subtitle: item.summary || 'Heatmap visualization'
           };
         default:
           return {
@@ -455,8 +645,18 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
           onPress={() => {
             if (isAnimating) return;
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            onConversationSelect(item);
-            onClose();
+            
+            // For Orbit tab (heatmap), show modal instead of selecting conversation
+            if (currentTab === 2 && item.friendUsername) {
+              setSelectedFriend({
+                username: item.friendUsername,
+                displayName: item.displayName || item.title
+              });
+              setShowHeatmapModal(true);
+            } else {
+              onConversationSelect(item);
+              onClose();
+            }
           }}
           onLongPress={() => {
             if (isAnimating || currentTab !== 0) return; // Only allow delete for Aether tab
@@ -509,17 +709,36 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
               </Text>
             </View>
             
-            {/* Badge */}
-            <View style={[
-              styles.conversationBadge,
-              { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }
-            ]}>
-              <Text style={[
-                styles.badgeText,
-                { color: themeColors.textSecondary }
+            {/* Badge and Chat Icon for Friends */}
+            <View style={styles.conversationActions}>
+              <View style={[
+                styles.conversationBadge,
+                { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }
               ]}>
-                {styling.badge}
-              </Text>
+                <Text style={[
+                  styles.badgeText,
+                  { color: themeColors.textSecondary }
+                ]}>
+                  {styling.badge}
+                </Text>
+              </View>
+              
+              {/* Add chat icon for friend conversations */}
+              {currentTab === 1 && (
+                <View style={[
+                  styles.chatIcon,
+                  { 
+                    backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                    borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                  }
+                ]}>
+                  <Feather 
+                    name="message-circle" 
+                    size={12}
+                    color={themeColors.textSecondary} 
+                  />
+                </View>
+              )}
             </View>
           </View>
         </TouchableOpacity>
@@ -534,12 +753,12 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const renderEmptyState = () => {
     const tabConfig = tabs[currentTab];
     const getEmptyMessage = () => {
-      if (isLoading) return 'Loading...';
+      if (isLoading) return 'Loading conversations...';
       
       switch (currentTab) {
         case 0: return 'Start your first conversation with Aether';
-        case 1: return 'Add friends to start chatting';
-        case 2: return 'Custom conversations coming soon';
+        case 1: return 'Add friends from the chat screen to start messaging';
+        case 2: return 'View messaging heatmaps with friends';
         default: return 'No conversations yet';
       }
     };
@@ -548,32 +767,41 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     
     return (
       <View style={styles.emptyState}>
-        <View style={[
-          styles.emptyIcon,
-          { 
-            backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.15)',
-            borderWidth: 1,
-            borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-          }
-        ]}>
-          <Feather 
-            name={tabConfig.icon as FeatherIconNames} 
-            size={28} 
-            color={themeColors.text} 
+        {isLoading ? (
+          <LottieLoader
+            size={60}
+            style={{ width: 60, height: 60 }}
           />
-        </View>
-        <Text style={[
-          styles.emptyTitle,
-          { color: themeColors.text }
-        ]}>
-          {tabConfig.label}
-        </Text>
-        <Text style={[
-          styles.emptyText,
-          { color: themeColors.textSecondary }
-        ]}>
-          {emptyMessage}
-        </Text>
+        ) : (
+          <>
+            <View style={[
+              styles.emptyIcon,
+              { 
+                backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.15)',
+                borderWidth: 1,
+                borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+              }
+            ]}>
+              <Feather 
+                name={tabConfig.icon as FeatherIconNames} 
+                size={28} 
+                color={themeColors.text} 
+              />
+            </View>
+            <Text style={[
+              styles.emptyTitle,
+              { color: themeColors.text }
+            ]}>
+              {tabConfig.label}
+            </Text>
+            <Text style={[
+              styles.emptyText,
+              { color: themeColors.textSecondary }
+            ]}>
+              {emptyMessage}
+            </Text>
+          </>
+        )}
       </View>
     );
   };
@@ -617,10 +845,10 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
               borderRightWidth: 0.5,
               borderRightColor: theme === 'light' ? designTokens.borders.light.default : designTokens.borders.dark.default,
               shadowColor: theme === 'light' ? '#000' : '#fff',
-              shadowOffset: theme === 'light' ? { width: 4, height: 0 } : { width: 0, height: 0 },
-              shadowOpacity: theme === 'light' ? 0.15 : 0.3,
-              shadowRadius: theme === 'light' ? 12 : 8,
-              elevation: theme === 'light' ? 8 : 0,
+              shadowOffset: theme === 'light' ? { width: 2, height: 0 } : { width: 0, height: 0 },
+              shadowOpacity: theme === 'light' ? 0.08 : 0.15,
+              shadowRadius: theme === 'light' ? 6 : 4,
+              elevation: theme === 'light' ? 4 : 0,
             }
           ]}
         >
@@ -699,15 +927,38 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
           
               {/* Enhanced Content */}
               <View style={styles.content}>
+                {/* Custom Lottie Refresh Indicator */}
+                {isRefreshing && (
+                  <View style={styles.refreshIndicator}>
+                    <LottieLoader
+                      size={40}
+                      style={{ width: 40, height: 40 }}
+                    />
+                  </View>
+                )}
+                
                 <FlatList
                   data={getTabContent()}
                   renderItem={renderConversationItem}
                   keyExtractor={(item) => item._id}
                   style={styles.list}
-                  contentContainerStyle={styles.listContent}
+                  contentContainerStyle={[
+                    styles.listContent,
+                    isRefreshing && { paddingTop: 60 } // Add padding when refreshing to account for Lottie
+                  ]}
                   showsVerticalScrollIndicator={false}
                   ListEmptyComponent={renderEmptyState}
                   scrollEnabled={!isAnimating}
+                  refreshControl={
+                    <RefreshControl
+                      refreshing={isRefreshing}
+                      onRefresh={handleRefresh}
+                      tintColor="transparent"
+                      title=""
+                      colors={['transparent']}
+                      progressBackgroundColor="transparent"
+                    />
+                  }
                 />
               </View>
               
@@ -769,6 +1020,18 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
             </View>
           </SafeAreaView>
         </Animated.View>
+
+        {/* Heatmap Modal */}
+        <HeatmapModal
+          visible={showHeatmapModal}
+          onClose={() => {
+            setShowHeatmapModal(false);
+            setSelectedFriend(null);
+          }}
+          theme={theme}
+          friendUsername={selectedFriend?.username}
+          friendDisplayName={selectedFriend?.displayName}
+        />
       </View>
     </Modal>
   );
@@ -791,7 +1054,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     bottom: 0,
-    width: screenWidth * 0.77,
+    width: screenWidth * 0.85,
     borderTopRightRadius: 22,
     borderBottomRightRadius: 22,
     overflow: 'visible',
@@ -877,6 +1140,15 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  refreshIndicator: {
+    position: 'absolute',
+    top: 20,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   list: {
     flex: 1,
   },
@@ -921,6 +1193,11 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     fontFamily: 'Poppins-Regular',
   },
+  conversationActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   conversationBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -933,6 +1210,14 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     fontFamily: 'Poppins-Medium',
+  },
+  chatIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
   emptyState: {
     flex: 1,

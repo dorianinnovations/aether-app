@@ -59,6 +59,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
   const [showSlowServerMessage, setShowSlowServerMessage] = useState(false);
   const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
+  const [currentColorIndex, setCurrentColorIndex] = useState(0);
   
   // Rainbow pastel colors for success shimmer text
   const rainbowPastels = ['#FF8FA3', '#FFB84D', '#FFD23F', '#4ECDC4', '#C77DFF', '#FF6B9D'];

@@ -12,6 +12,8 @@ import {
   ViewStyle,
   TextStyle,
   TextInputProps,
+  NativeSyntheticEvent,
+  TextInputFocusEventData,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { designTokens, getThemeColors } from '../../tokens/colors';
@@ -53,7 +55,7 @@ const Input: React.FC<InputProps> = ({
   const themeColors = getThemeColors(theme);
 
   // Focus animations
-  const handleFocus = (e: { nativeEvent: { target: number } }) => {
+  const handleFocus = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
     setIsFocused(true);
     
     if (hasAnimation) {
@@ -81,7 +83,7 @@ const Input: React.FC<InputProps> = ({
     onFocus?.(e);
   };
 
-  const handleBlur = (e: { nativeEvent: { target: number } }) => {
+  const handleBlur = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
     setIsFocused(false);
     
     if (hasAnimation) {

@@ -44,9 +44,10 @@ interface Friend {
 interface FriendCardProps {
   friend: Friend;
   theme: 'light' | 'dark';
+  onMessagePress?: (friendUsername: string) => void;
 }
 
-const FriendCard: React.FC<FriendCardProps> = ({ friend, theme }) => {
+const FriendCard: React.FC<FriendCardProps> = ({ friend, theme, onMessagePress }) => {
   const themeColors = getThemeColors(theme);
 
   return (
@@ -99,6 +100,35 @@ const FriendCard: React.FC<FriendCardProps> = ({ friend, theme }) => {
           </Text>
         </View>
       </View>
+
+      {/* Message Button */}
+      {onMessagePress && (
+        <TouchableOpacity
+          style={[
+            styles.messageButton,
+            {
+              backgroundColor: theme === 'dark' 
+                ? designTokens.brand.surfaceDark 
+                : designTokens.brand.primary,
+              borderColor: theme === 'dark' 
+                ? designTokens.borders.dark.default 
+                : 'transparent',
+              borderWidth: theme === 'dark' ? 1 : 0,
+            }
+          ]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onMessagePress(friend.username);
+          }}
+          activeOpacity={0.8}
+        >
+          <Feather
+            name="message-circle"
+            size={16}
+            color={theme === 'dark' ? '#ffffff' : '#1a1a1a'}
+          />
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -183,13 +213,27 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
         setLoading(true);
       }
       
-      const [friendsResponse, _requestsResponse] = await Promise.all([
+      const [friendsResponse] = await Promise.all([
         FriendsAPI.getFriendsList(),
         FriendsAPI.getFriendRequests().catch(() => ({ success: false, requests: [] }))
       ]);
       
+      logger.debug('Friends API Response:', friendsResponse);
+      
       if (friendsResponse.success && friendsResponse.friends) {
+        logger.debug('Found friends:', friendsResponse.friends.length, friendsResponse.friends);
         setFriends(friendsResponse.friends);
+      } else if (friendsResponse.success && friendsResponse.data && friendsResponse.data.friends) {
+        // Alternative response format
+        logger.debug('Found friends in data.friends:', friendsResponse.data.friends.length, friendsResponse.data.friends);
+        setFriends(friendsResponse.data.friends);
+      } else if (Array.isArray(friendsResponse)) {
+        // Direct array response
+        logger.debug('Friends response is array:', friendsResponse.length, friendsResponse);
+        setFriends(friendsResponse);
+      } else {
+        logger.debug('No friends found in response. Response keys:', Object.keys(friendsResponse));
+        setFriends([]);
       }
       
       // Friend requests functionality removed for now
@@ -333,8 +377,20 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
     }
   };
 
+  // Handle message button press - navigate to chat with friend
+  const handleMessageFriend = (friendUsername: string) => {
+    // Navigate to chat screen with friend context
+    navigation.navigate('Chat' as never, { 
+      friendUsername 
+    } as never);
+  };
+
   const renderFriend = ({ item }: { item: Friend }) => (
-    <FriendCard friend={item} theme={theme} />
+    <FriendCard 
+      friend={item} 
+      theme={theme} 
+      onMessagePress={handleMessageFriend}
+    />
   );
 
   const keyExtractor = (item: Friend) => item.username;
@@ -603,12 +659,12 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
                     backgroundColor: theme === 'dark' ? '#0d0d0d' : designTokens.brand.primary,
                     borderColor: theme === 'dark' ? '#262626' : 'transparent',
                     borderWidth: theme === 'dark' ? 1 : 0,
-                    // Strong tight glow for dark mode, shadow for light mode
+                    // Reduced shadow for dark mode, minimal shadow for light mode
                     shadowColor: theme === 'dark' ? '#ffffff' : '#000000',
-                    shadowOffset: { width: 0, height: theme === 'dark' ? 0 : 2 },
-                    shadowOpacity: theme === 'dark' ? 0.4 : 0.15,
-                    shadowRadius: theme === 'dark' ? 2 : 4,
-                    elevation: theme === 'dark' ? 8 : 3,
+                    shadowOffset: { width: 0, height: theme === 'dark' ? 0 : 1 },
+                    shadowOpacity: theme === 'dark' ? 0.15 : 0.08,
+                    shadowRadius: theme === 'dark' ? 1 : 2,
+                    elevation: theme === 'dark' ? 3 : 2,
                   }
                 ]}
                 onPress={handleAddFriend}
@@ -649,7 +705,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: 113, // Account for header height
+    paddingTop: 95, // Reduced padding top
     paddingHorizontal: spacing[4],
   },
   friendsList: {
@@ -662,10 +718,10 @@ const styles = StyleSheet.create({
   friendCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 48, // Increased from 36 to 48px for more height
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    borderRadius: 8,
+    height: 68, // Much larger height
+    paddingHorizontal: spacing[6], // Even more horizontal padding
+    paddingVertical: spacing[5], // Even more vertical padding
+    borderRadius: 16, // More rounded corners
     borderWidth: 1,
   },
   avatar: {
@@ -808,6 +864,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  messageButton: {
+    width: 84, // Much wider button
+    height: 36, // Taller button
+    borderRadius: 8, // Less rounded
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: spacing[3],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });
 

@@ -84,7 +84,6 @@ export const ProfileScreen: React.FC = () => {
     profile: baseProfile,
     socialProfile,
     loading,
-    socialLoading,
     error,
     saveProfile: saveProfileData,
     refreshAllData
@@ -410,13 +409,6 @@ export const ProfileScreen: React.FC = () => {
     setViewMode(prev => prev === 'basic' ? 'busy' : 'basic');
   };
 
-  // Check if user is OG (created before 2026)
-  const isOGUser = (createdAt?: string): boolean => {
-    if (!createdAt) return false;
-    const createdDate = new Date(createdAt);
-    const cutoffDate = new Date('2026-01-01');
-    return createdDate < cutoffDate;
-  };
 
 
 

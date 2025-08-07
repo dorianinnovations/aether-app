@@ -45,4 +45,38 @@ export const FriendsAPI = {
     const response = await api.post('/friends/requests/decline', { username });
     return response.data;
   },
+
+  // Friend Messaging Endpoints
+  async sendDirectMessage(friendUsername: string, message: string): Promise<any> {
+    const response = await api.post('/friend-messaging/send', { 
+      toUsername: friendUsername, 
+      content: message 
+    });
+    return response.data;
+  },
+
+  async getDirectMessages(friendUsername: string, page: number = 1, limit: number = 50): Promise<any> {
+    const response = await api.get(`/friend-messaging/conversation/${friendUsername}?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+
+  async getDirectMessageConversations(): Promise<any> {
+    const response = await api.get('/friend-messaging/conversations');
+    return response.data;
+  },
+
+  async getMessagingHeatMap(friendUsername: string): Promise<any> {
+    const response = await api.get(`/friend-messaging/heat-map/${friendUsername}`);
+    return response.data;
+  },
+
+  async getMessagingStats(friendUsername: string): Promise<any> {
+    const response = await api.get(`/friend-messaging/stats/${friendUsername}`);
+    return response.data;
+  },
+
+  async getAllActiveStreaks(): Promise<any> {
+    const response = await api.get('/friend-messaging/streaks');
+    return response.data;
+  },
 };

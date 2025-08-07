@@ -80,6 +80,13 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
     onClose();
   };
 
+  // Reset confirming state when modal is closed
+  useEffect(() => {
+    if (!visible) {
+      setIsConfirming(false);
+    }
+  }, [visible]);
+
   const handleConfirm = async () => {
     if (isConfirming) return;
     
@@ -88,13 +95,15 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
     
     try {
       await onConfirm();
-      onClose();
+      // Don't automatically close - let the parent control when to close
+      // The parent should call onClose() when the full sign out process is complete
     } catch (error) {
       logger.error('SignOut error in modal:', error);
-      onClose();
-    } finally {
+      // Only close on error
       setIsConfirming(false);
+      onClose();
     }
+    // Don't reset isConfirming on success - keep the spinner showing until parent closes modal
   };
 
   const getVariantColor = () => {

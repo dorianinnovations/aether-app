@@ -23,7 +23,6 @@ export const ChatAPI = {
         processedAttachments = await Promise.all(attachments.map(async (attachment) => {
           if (attachment.uri && attachment.uri.startsWith('file://')) {
             try {
-              logger.debug('🔄 Converting local file to base64:', attachment.name);
               const response = await fetch(attachment.uri);
               const blob = await response.blob();
               const reader = new FileReader();
@@ -36,8 +35,6 @@ export const ChatAPI = {
                 reader.onerror = reject;
                 reader.readAsDataURL(blob);
               });
-              
-              logger.debug('✅ Successfully converted to base64, size:', base64.length);
               return {
                 ...attachment,
                 uri: base64
@@ -104,16 +101,11 @@ export const ChatAPI = {
     }
   },
 
-  // Alias for compatibility - now points to main sendMessage
+  // Simple social chat for Aether Server - using original working implementation
   async socialChat(message: string): Promise<{ success: boolean; response: string; thinking?: string; model?: string; usage?: unknown }> {
-    const result = await this.sendMessage(message, false);
-    return {
-      success: result.success,
-      response: result.content || '',
-      thinking: result.metadata?.thinking,
-      model: result.metadata?.model,
-      usage: result.metadata?.usage
-    };
+    const { api } = await import('../core/client');
+    const response = await api.post('/social-chat', { message });
+    return response.data;
   },
 
   // Streaming social chat for real-time responses - React Native compatible with XMLHttpRequest  
@@ -132,8 +124,6 @@ export const ChatAPI = {
           processedAttachments = await Promise.all(attachments.map(async (attachment) => {
             if (attachment.type === 'image' && attachment.uri && attachment.uri.startsWith('file://')) {
               try {
-                logger.debug('🔄 Converting local file to base64:', attachment.name);
-                // Use fetch to read the local file and convert to base64
                 const response = await fetch(attachment.uri);
                 const blob = await response.blob();
                 const reader = new FileReader();
@@ -146,8 +136,6 @@ export const ChatAPI = {
                   reader.onerror = reject;
                   reader.readAsDataURL(blob);
                 });
-                
-                logger.debug('✅ Successfully converted to base64, size:', base64.length);
                 return {
                   ...attachment,
                   uri: base64

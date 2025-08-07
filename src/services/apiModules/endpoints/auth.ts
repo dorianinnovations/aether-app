@@ -48,15 +48,6 @@ export const AuthAPI = {
       const token = response.data.token;
       const user = response.data.data?.user || response.data.user;
       
-      console.log('Login response structure:', { 
-        hasToken: !!token, 
-        hasUser: !!user, 
-        userHasId: !!(user?.id),
-        responseKeys: Object.keys(response.data),
-        dataKeys: response.data.data ? Object.keys(response.data.data) : null,
-        userData: user,
-        fullResponse: response
-      });
       
       if (!token) {
         console.error('Backend login endpoint is not returning a token', response.data);

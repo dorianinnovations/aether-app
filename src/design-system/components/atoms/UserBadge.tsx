@@ -6,7 +6,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ViewStyle, TouchableOpacity } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
-import { designTokens } from '../../tokens/colors';
 import { MiniTooltip } from './MiniTooltip';
 
 export type UserBadgeType = 'founder' | 'og';

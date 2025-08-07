@@ -52,8 +52,8 @@ export const PageBackground: React.FC<PageBackgroundProps> = ({
       
       case 'profile':
         return theme === 'light'
-          ? ['#fdfefe', '#fcfdfc', '#fdfefd'] // Very light sage
-          : [darkGrey, '#1A1A1A', darkGrey]; // Consistent dark
+          ? ['#f8f8f8', '#f5f5f5', '#f7f7f7'] // Contrasting off-white
+          : [darkGrey, '#1A1A1A', darkGrey];
       
       case 'chat':
         return theme === 'light'
@@ -130,7 +130,7 @@ export const PageBackground: React.FC<PageBackgroundProps> = ({
   // Light mode with dreamy gradients
   return (
     <LinearGradient
-      colors={getGradientColors()}
+      colors={getGradientColors() as unknown as readonly [string, string, ...string[]]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={[styles.container, style]}

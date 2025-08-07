@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { FlatList, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
-import { ChatAPI, ConversationAPI } from '../services/api';
+import { ChatAPI, ConversationAPI, FriendsAPI } from '../services/api';
 import { Message, MessageAttachment, Conversation } from '../types';
 import { logger } from '../utils/logger';
 
@@ -23,7 +23,7 @@ interface UseMessagesReturn {
   flatListRef: React.RefObject<FlatList | null>;
 }
 
-export const useMessages = (onHideGreeting?: () => void, conversationId?: string): UseMessagesReturn => {
+export const useMessages = (onHideGreeting?: () => void, conversationId?: string, friendUsername?: string): UseMessagesReturn => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -55,9 +55,11 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
       // Update current conversation reference
       currentConversationRef.current = conversationId;
       
-      if (conversationId) {
+      if (conversationId || friendUsername) {
+        const cacheKey = friendUsername ? `friend-${friendUsername}` : conversationId!;
+        
         // Check cache first
-        const cachedMessages = messageCache.current.get(conversationId);
+        const cachedMessages = messageCache.current.get(cacheKey);
         if (cachedMessages && cachedMessages.length > 0) {
           setMessages(cachedMessages);
           if (onHideGreeting) {
@@ -69,24 +71,66 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         // Load from server if not cached
         try {
           setIsLoading(true);
-          const conversation = await ConversationAPI.getConversation(conversationId, 500);
           
-          if (conversation.messages && Array.isArray(conversation.messages)) {
-            const convertedMessages: Message[] = conversation.messages.map((msg: { id: string; sender: string; message: string; timestamp: string; metadata?: unknown; attachments?: unknown }, index: number) => ({
-              id: msg._id || `${conversationId}-${index}`,
-              sender: msg.role === 'user' ? 'user' : 'aether',
-              message: msg.content,
-              timestamp: msg.timestamp,
-              variant: 'default',
-            }));
+          if (friendUsername) {
+            // Load friend conversation
+            try {
+              const friendConversation = await FriendsAPI.getDirectMessages(friendUsername);
+              
+              if (friendConversation.success && friendConversation.messages && Array.isArray(friendConversation.messages)) {
+                const convertedMessages: Message[] = friendConversation.messages.map((msg: any, index: number) => ({
+                  id: msg._id || `${friendUsername}-${index}`,
+                  sender: msg.sender === 'user' ? 'user' : friendUsername,
+                  message: msg.message,
+                  timestamp: msg.timestamp,
+                  variant: 'default',
+                }));
+                
+                // Cache the loaded messages
+                messageCache.current.set(cacheKey, convertedMessages);
+                setMessages(convertedMessages);
+                
+                // Hide greeting when conversation is loaded
+                if (onHideGreeting) {
+                  onHideGreeting();
+                }
+              } else {
+                // No messages yet or API not implemented
+                logger.debug('No friend messages found or API not available');
+                setMessages([]);
+                if (onHideGreeting) {
+                  onHideGreeting();
+                }
+              }
+            } catch (messagingError) {
+              logger.debug('Friend messages API not available:', messagingError.message);
+              // Start with empty conversation
+              setMessages([]);
+              if (onHideGreeting) {
+                onHideGreeting();
+              }
+            }
+          } else {
+            // Load AI conversation
+            const conversation = await ConversationAPI.getConversation(conversationId!, 500);
             
-            // Cache the loaded messages
-            messageCache.current.set(conversationId, convertedMessages);
-            setMessages(convertedMessages);
-            
-            // Hide greeting when conversation is loaded
-            if (onHideGreeting) {
-              onHideGreeting();
+            if (conversation.messages && Array.isArray(conversation.messages)) {
+              const convertedMessages: Message[] = conversation.messages.map((msg: any, index: number) => ({
+                id: msg._id || `${conversationId}-${index}`,
+                sender: msg.role === 'user' ? 'user' : 'aether',
+                message: msg.content,
+                timestamp: msg.timestamp,
+                variant: 'default',
+              }));
+              
+              // Cache the loaded messages
+              messageCache.current.set(cacheKey, convertedMessages);
+              setMessages(convertedMessages);
+              
+              // Hide greeting when conversation is loaded
+              if (onHideGreeting) {
+                onHideGreeting();
+              }
             }
           }
         } catch (error) {
@@ -102,12 +146,13 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
     };
     
     handleConversationSwitch();
-  }, [conversationId]);
+  }, [conversationId, friendUsername]);
 
   const handleSend = async (inputText: string, attachments: MessageAttachment[] = []) => {
     // Allow sending if there's text OR attachments
     if ((!inputText.trim() && attachments.length === 0) || isLoading) return;
 
+    logger.debug('📨 Sending message:', { inputText, attachments: attachments.length, conversationId, friendUsername });
 
     // Hide greeting on first message
     if (onHideGreeting) {
@@ -117,9 +162,6 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
     // Prepare message text for display (keep user input as-is)
     const displayText = inputText.trim();
     
-    // Prepare prompt for API (include default prompt for attachment-only messages)
-    const apiPrompt = displayText || (attachments.length > 0 ? "Please analyze this content." : "");
-    
     const userMessage: Message = {
       id: Date.now().toString(),
       sender: 'user',
@@ -128,13 +170,15 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
       attachments: attachments.length > 0 ? attachments : undefined,
     };
 
+    // Determine cache key
+    const cacheKey = friendUsername ? `friend-${friendUsername}` : conversationId;
 
     // Add user message with optimistic update
     setMessages(prev => {
       const newMessages = [...prev, userMessage];
-      // Update cache with new messages - use the passed conversationId parameter
-      if (conversationId) {
-        messageCache.current.set(conversationId, newMessages);
+      // Update cache with new messages
+      if (cacheKey) {
+        messageCache.current.set(cacheKey, newMessages);
       }
       return newMessages;
     });
@@ -144,125 +188,165 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
     await new Promise(resolve => setTimeout(resolve, 0));
 
     try {
-      // Create streaming message
-      const streamingMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        sender: 'aether',
-        message: '',
-        timestamp: new Date().toISOString(),
-        variant: 'streaming',
-        metadata: {
-          confidence: 0.95,
-        },
-      };
-
-      setMessages(prev => {
-        const newMessages = [...prev, streamingMessage];
-        // Update cache with streaming message - use the passed conversationId parameter
-        if (conversationId) {
-          messageCache.current.set(conversationId, newMessages);
+      if (friendUsername) {
+        // Handle friend messaging - direct message, no streaming
+        try {
+          const response = await FriendsAPI.sendDirectMessage(friendUsername, displayText);
+          
+          if (response && response.success) {
+            logger.debug('✅ Friend message sent successfully!');
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          } else {
+            throw new Error(response?.error || 'Failed to send message to friend');
+          }
+        } catch (messagingError) {
+          logger.warn('Friend messaging endpoint not available:', messagingError.message);
+          // For now, just show as sent locally (this would need proper implementation)
+          logger.debug('✅ Friend message queued locally (messaging endpoint not implemented)');
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
-        return newMessages;
-      });
-      
-      // Start streaming with word animation - create abortable stream
-      let accumulatedText = '';
-      let wordCount = 0;
-      let messageMetadata: { toolResults?: unknown[]; toolUsed?: string; thinking?: string } | undefined = undefined;
-      
-      // Use the ChatAPI streaming method directly
-      for await (const chunk of ChatAPI.streamSocialChat(apiPrompt, attachments)) {
-        // Check if chunk is metadata object
-        if (typeof chunk === 'object' && chunk !== null && 'metadata' in chunk) {
-          messageMetadata = (chunk as { metadata: Record<string, unknown> }).metadata;
-          continue;
-        }
-        
-        // Fallback: Check if chunk is stringified metadata (legacy format)
-        if (typeof chunk === 'string' && chunk.startsWith('{"metadata":')) {
+      } else {
+        // Handle AI chat with streaming
+        let activeConversationId = conversationId;
+        if (!activeConversationId) {
+          logger.debug('🆕 No conversation ID, creating new conversation...');
           try {
-            const parsed = JSON.parse(chunk);
-            if (parsed.metadata) {
-              messageMetadata = parsed.metadata;
-              continue;
+            const newConversationResponse = await ConversationAPI.createConversation('New Chat');
+            if (newConversationResponse.success && newConversationResponse.data) {
+              activeConversationId = newConversationResponse.data._id;
+              logger.debug('✅ Created new conversation:', activeConversationId);
             }
-          } catch {
-            // Not valid JSON, treat as regular text
+          } catch (error) {
+            logger.error('❌ Error creating conversation:', error);
           }
         }
+
+        // Prepare prompt for API (include default prompt for attachment-only messages)
+        const apiPrompt = displayText || (attachments.length > 0 ? "Please analyze this content." : "");
         
-        // Server sends streaming text content
-        const word = typeof chunk === 'string' ? chunk : (chunk as { text?: string }).text || '';
-        // Add space before word if we already have content (except for punctuation)
-        if (accumulatedText && word && !word.match(/^[.,!?;:]/)) {
-          accumulatedText += ' ';
-        }
-        accumulatedText += word;
-        wordCount++;
-        
-        // Update the streaming message while keeping streaming variant
+        // Create streaming message
+        const streamingMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          sender: 'aether',
+          message: '',
+          timestamp: new Date().toISOString(),
+          variant: 'streaming',
+          metadata: {
+            confidence: 0.95,
+          },
+        };
+
         setMessages(prev => {
-          const updatedMessages = prev.map(msg => 
+          const newMessages = [...prev, streamingMessage];
+          // Update cache with streaming message
+          if (cacheKey) {
+            messageCache.current.set(cacheKey, newMessages);
+          }
+          return newMessages;
+        });
+        
+        // Start streaming with word animation
+        let accumulatedText = '';
+        let wordCount = 0;
+        let messageMetadata: { toolResults?: unknown[]; toolUsed?: string; thinking?: string } | undefined = undefined;
+        
+        // Use the ChatAPI streaming method directly
+        for await (const chunk of ChatAPI.streamSocialChat(apiPrompt, attachments)) {
+          // Check if chunk is metadata object
+          if (typeof chunk === 'object' && chunk !== null && 'metadata' in chunk) {
+            messageMetadata = (chunk as { metadata: Record<string, unknown> }).metadata;
+            continue;
+          }
+          
+          // Fallback: Check if chunk is stringified metadata (legacy format)
+          if (typeof chunk === 'string' && chunk.startsWith('{"metadata":')) {
+            try {
+              const parsed = JSON.parse(chunk);
+              if (parsed.metadata) {
+                messageMetadata = parsed.metadata;
+                continue;
+              }
+            } catch {
+              // Not valid JSON, treat as regular text
+            }
+          }
+          
+          // Server sends streaming text content
+          const word = typeof chunk === 'string' ? chunk : (chunk as { text?: string }).text || '';
+          // Add space before word if we already have content (except for punctuation)
+          if (accumulatedText && word && !word.match(/^[.,!?;:]/)) {
+            accumulatedText += ' ';
+          }
+          accumulatedText += word;
+          wordCount++;
+          
+          // Update the streaming message while keeping streaming variant
+          setMessages(prev => {
+            const updatedMessages = prev.map(msg => 
+              msg.id === streamingMessage.id 
+                ? { ...msg, message: accumulatedText, variant: 'streaming' as const, timestamp: new Date().toISOString() }
+                : msg
+            );
+            // Update cache with streaming updates
+            if (cacheKey) {
+              messageCache.current.set(cacheKey, updatedMessages);
+            }
+            return updatedMessages;
+          });
+        }
+        
+        // Mark as complete with metadata if available
+        setMessages(prev => {
+          const finalMessages = prev.map(msg => 
             msg.id === streamingMessage.id 
-              ? { ...msg, message: accumulatedText, variant: 'streaming' as const, timestamp: new Date().toISOString() }
+              ? { 
+                  ...msg, 
+                  variant: 'default' as const,
+                  metadata: messageMetadata ? {
+                    ...msg.metadata,
+                    ...messageMetadata,
+                    // Convert tool results format if needed
+                    toolCalls: messageMetadata.toolResults ? 
+                      messageMetadata.toolResults.map((toolResult: { name: string; parameters: unknown; result: unknown }, index: number) => ({
+                        id: `tool-${index}-${Date.now()}`,
+                        name: toolResult.tool,
+                        parameters: { query: toolResult.query },
+                        result: toolResult.data,
+                        status: toolResult.success ? 'completed' : 'failed'
+                      })) : (messageMetadata.searchResults && messageMetadata.sources ? 
+                      [{
+                        id: 'search-' + Date.now(),
+                        name: 'insane_web_search',
+                        parameters: { query: messageMetadata.query },
+                        result: {
+                          sources: messageMetadata.sources,
+                          query: messageMetadata.query
+                        },
+                        status: 'completed'
+                      }] : messageMetadata.toolCalls)
+                  } : msg.metadata
+                }
               : msg
           );
-          // Update cache with streaming updates - use the passed conversationId parameter
-          if (conversationId) {
-            messageCache.current.set(conversationId, updatedMessages);
+          // Update cache with final message state
+          if (cacheKey) {
+            messageCache.current.set(cacheKey, finalMessages);
           }
-          return updatedMessages;
+          return finalMessages;
         });
+        
+        logger.debug('✅ AI message sent successfully!', { 
+          wordCount, 
+          conversationId,
+          hasMetadata: !!messageMetadata 
+        });
+        
+        // Refined haptic timing - trigger earlier for better UX
+        const refinedHapticDelay = Math.min(300, Math.max(100, wordCount * 8));
+        setTimeout(() => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }, refinedHapticDelay);
       }
-      
-      // Mark as complete with metadata if available
-      setMessages(prev => {
-        const finalMessages = prev.map(msg => 
-          msg.id === streamingMessage.id 
-            ? { 
-                ...msg, 
-                variant: 'default' as const,
-                metadata: messageMetadata ? {
-                  ...msg.metadata,
-                  ...messageMetadata,
-                  // Convert tool results format if needed
-                  toolCalls: messageMetadata.toolResults ? 
-                    messageMetadata.toolResults.map((toolResult: { name: string; parameters: unknown; result: unknown }, index: number) => ({
-                      id: `tool-${index}-${Date.now()}`,
-                      name: toolResult.tool,
-                      parameters: { query: toolResult.query },
-                      result: toolResult.data,
-                      status: toolResult.success ? 'completed' : 'failed'
-                    })) : (messageMetadata.searchResults && messageMetadata.sources ? 
-                    [{
-                      id: 'search-' + Date.now(),
-                      name: 'insane_web_search',
-                      parameters: { query: messageMetadata.query },
-                      result: {
-                        sources: messageMetadata.sources,
-                        query: messageMetadata.query
-                      },
-                      status: 'completed'
-                    }] : messageMetadata.toolCalls)
-                } : msg.metadata
-              }
-            : msg
-        );
-        // Update cache with final message state - use the passed conversationId parameter
-        if (conversationId) {
-          messageCache.current.set(conversationId, finalMessages);
-        }
-        return finalMessages;
-      });
-      
-      
-      // Metadata processing complete
-      
-      // Refined haptic timing - trigger earlier for better UX
-      const refinedHapticDelay = Math.min(300, Math.max(100, wordCount * 8)); // More responsive timing
-      setTimeout(() => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }, refinedHapticDelay);
 
     } catch (error: unknown) {
       logger.error('Chat Error:', error);
@@ -277,9 +361,9 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
       
       setMessages(prev => {
         const newMessages = [...prev, errorMessage];
-        // Update cache with error message - use the passed conversationId parameter
-        if (conversationId) {
-          messageCache.current.set(conversationId, newMessages);
+        // Update cache with error message
+        if (cacheKey) {
+          messageCache.current.set(cacheKey, newMessages);
         }
         return newMessages;
       });

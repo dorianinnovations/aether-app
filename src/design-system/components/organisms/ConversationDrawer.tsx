@@ -32,6 +32,8 @@ interface Conversation {
   messageCount: number;
   summary?: string;
   type?: 'aether' | 'friend' | 'custom';
+  friendUsername?: string;
+  displayName?: string;
 }
 
 interface ConversationDrawerProps {
@@ -70,7 +72,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const tabs = [
     { label: 'Aether', icon: 'message-circle' },
     { label: 'Friends', icon: 'users' },
-    { label: 'Custom', icon: 'settings' }
+    { label: 'Orbit', icon: 'activity' }
   ];
 
   const eventHandlers = useRef({
@@ -173,8 +175,26 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
           break;
           
         case 2:
-          newConversations = [];
-          log.debug('Custom tab - feature coming soon');
+          try {
+            // Load friends list for heatmap selection
+            const friendsResponse = await FriendsAPI.getFriendsList();
+            if (friendsResponse.friends && Array.isArray(friendsResponse.friends)) {
+              newConversations = friendsResponse.friends.map((friend: { username: string; displayName?: string; lastSeen?: string }) => ({
+                _id: `orbit-${friend.username}`,
+                title: friend.displayName || friend.username,
+                lastActivity: 'Tap to view heatmap',
+                messageCount: 0,
+                summary: `View messaging heatmap with ${friend.displayName || friend.username}`,
+                type: 'custom' as const,
+                friendUsername: friend.username,
+                displayName: friend.displayName
+              }));
+              log.debug('Loaded friends for Orbit heatmaps:', newConversations.length);
+            }
+          } catch {
+            log.debug('Orbit friends API not available, showing empty state');
+            newConversations = [];
+          }
           break;
           
         default:
