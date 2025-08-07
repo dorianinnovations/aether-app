@@ -341,6 +341,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
             continue;
           }
           
+          
           // Add space before word if we already have content (except for punctuation)
           if (accumulatedText && word && !word.match(/^[.,!?;:]/)) {
             accumulatedText += ' ';

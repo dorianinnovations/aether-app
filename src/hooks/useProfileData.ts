@@ -150,7 +150,7 @@ export const useProfileData = (): UseProfileDataReturn => {
           fetchSocialProfile() // Refresh social proxy in case server updated personality analysis
         ]);
         
-        logger.info('Profile updated successfully');
+        // Profile updated
       } else {
         throw new Error((response as any).message || 'Failed to save profile changes');
       }

@@ -29,9 +29,6 @@ interface ProfileSuccessModalProps {
   visible: boolean;
   onClose: () => void;
   theme?: 'light' | 'dark';
-  title?: string;
-  message?: string;
-  buttonText?: string;
   showIcon?: boolean;
 }
 
@@ -39,9 +36,6 @@ export const ProfileSuccessModal: React.FC<ProfileSuccessModalProps> = ({
   visible,
   onClose,
   theme = 'light',
-  title = 'Profile Updated!',
-  message = 'Your profile has been updated successfully.',
-  buttonText = 'Great!',
   showIcon = true,
 }) => {
   const themeColors = getThemeColors(theme);
@@ -62,10 +56,10 @@ export const ProfileSuccessModal: React.FC<ProfileSuccessModalProps> = ({
   useEffect(() => {
     if (visible) {
       setShowSuccessAnimation(true);
-      // Auto-dismiss after 2.5 seconds if user doesn't interact
+      // Auto-dismiss after animation completes (AetherSuccess.json is ~2 seconds)
       const timer = setTimeout(() => {
         handleClose();
-      }, 2500);
+      }, 2000);
       return () => clearTimeout(timer);
     } else {
       setShowSuccessAnimation(false);
@@ -82,30 +76,25 @@ export const ProfileSuccessModal: React.FC<ProfileSuccessModalProps> = ({
     handleClose();
   };
 
-  const renderIcon = () => {
-    if (!showIcon) return null;
-    
+  const renderContent = () => {
     return (
-      <View style={[
-        styles.iconContainer,
-        {
-          backgroundColor: designTokens.semantic.success + '15',
-          borderColor: designTokens.semantic.success + '30',
-        }
-      ]}>
-        {showSuccessAnimation ? (
-          <LottieView
-            source={require('../../../../assets/AetherSuccess.json')}
-            autoPlay
-            loop={false}
-            style={styles.successAnimation}
-          />
-        ) : (
-          <Feather
-            name="check-circle"
-            size={24}
-            color={designTokens.semantic.success}
-          />
+      <View style={styles.contentContainer}>
+        {/* Success Animation */}
+        {showIcon && showSuccessAnimation && (
+          <>
+            <LottieView
+              source={require('../../../../assets/AetherSuccess.json')}
+              autoPlay
+              loop={false}
+              style={styles.successAnimation}
+            />
+            <Text style={[
+              styles.successText,
+              { color: themeColors.text }
+            ]}>
+              Success
+            </Text>
+          </>
         )}
       </View>
     );
@@ -124,16 +113,10 @@ export const ProfileSuccessModal: React.FC<ProfileSuccessModalProps> = ({
           style={[
             styles.background,
             {
-              backgroundColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.5)',
+              backgroundColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.3)',
             }
           ]}
-        >
-          <TouchableOpacity 
-            style={StyleSheet.absoluteFillObject}
-            activeOpacity={1}
-            onPress={handleClose}
-          />
-        </View>
+        />
 
         {/* Modal Content */}
         <View style={styles.modalContainer}>
@@ -143,63 +126,7 @@ export const ProfileSuccessModal: React.FC<ProfileSuccessModalProps> = ({
               getGlassmorphicStyle('overlay', theme),
             ]}
           >
-            {/* Success Icon */}
-            {renderIcon()}
-
-            {/* Title */}
-            <Text style={[
-              styles.title,
-              typography.textStyles.headlineSmall,
-              { color: themeColors.text }
-            ]}>
-              {title}
-            </Text>
-
-            {/* Message */}
-            <Text style={[
-              styles.message,
-              typography.textStyles.bodyMedium,
-              { color: themeColors.textSecondary }
-            ]}>
-              {message}
-            </Text>
-
-            {/* Confirm Button */}
-            <View style={styles.buttonContainer}>
-              <View style={[
-                styles.button,
-                getNeumorphicStyle('elevated', theme),
-                {
-                  backgroundColor: designTokens.semantic.success,
-                  borderWidth: 2,
-                  borderColor: theme === 'dark' ? '#4CAF50' : '#2E7D32',
-                  shadowColor: designTokens.semantic.success,
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 8,
-                  elevation: 8,
-                }
-              ]}>
-                <TouchableOpacity
-                  onPress={handleConfirm}
-                  style={styles.buttonInner}
-                >
-                  <Text style={[
-                    styles.buttonText,
-                    typography.textStyles.bodyMedium,
-                    { 
-                      color: '#ffffff',
-                      fontWeight: '700',
-                      textShadowColor: 'rgba(0,0,0,0.3)',
-                      textShadowOffset: { width: 0, height: 1 },
-                      textShadowRadius: 2,
-                    }
-                  ]}>
-                    {buttonText}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            {renderContent()}
           </View>
         </View>
       </View>
@@ -226,48 +153,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[6],
   },
   modal: {
-    width: Math.min(screenWidth - spacing[8], 280),
-    borderRadius: 16,
-    padding: spacing[4],
+    width: Math.min(screenWidth - spacing[8], 140),
+    height: 140,
+    borderRadius: 20,
+    padding: spacing[3],
     alignItems: 'center',
-  },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
     justifyContent: 'center',
+  },
+  contentContainer: {
     alignItems: 'center',
-    marginBottom: spacing[3],
-    borderWidth: 1,
+    justifyContent: 'center',
+    position: 'relative',
+    width: '100%',
+    height: '100%',
+  },
+  animationContainer: {
+    position: 'absolute',
+    top: spacing[2],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   successAnimation: {
-    width: 48,
-    height: 48,
+    width: 60,
+    height: 60,
+    marginBottom: spacing[2],
   },
-  title: {
-    fontWeight: '700',
+  successText: {
+    ...typography.textStyles.bodyMedium,
+    fontWeight: '600',
     textAlign: 'center',
-    marginBottom: spacing[1],
-  },
-  message: {
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: spacing[4],
-  },
-  buttonContainer: {
-    width: '100%',
-  },
-  button: {
-    borderRadius: 12,
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
-  },
-  buttonInner: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    fontWeight: '700',
   },
 });
 
