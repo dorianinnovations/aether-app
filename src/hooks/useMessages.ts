@@ -290,9 +290,27 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         
         // Use the ChatAPI streaming method directly
         for await (const chunk of ChatAPI.streamSocialChat(apiPrompt, attachments)) {
+          // Temporary debug logging
+          if (typeof chunk === 'object' || (typeof chunk === 'string' && (chunk.includes('sources') || chunk.includes('toolResults')))) {
+            console.log('🐞 DEBUG: Processing chunk type:', typeof chunk);
+            console.log('🐞 DEBUG: Chunk content:', chunk);
+          }
+          
           // Check if chunk is metadata object
           if (typeof chunk === 'object' && chunk !== null && 'metadata' in chunk) {
+            console.log('🐞 DEBUG: Found wrapped metadata:', chunk);
             messageMetadata = (chunk as { metadata: Record<string, unknown> }).metadata;
+            continue;
+          }
+          
+          // Check if chunk is a direct metadata object (not wrapped)
+          if (typeof chunk === 'object' && chunk !== null && (
+            (chunk as any).toolResults || 
+            (chunk as any).sources || 
+            (chunk as any).searchResults ||
+            (chunk as any).query
+          )) {
+            messageMetadata = chunk as Record<string, unknown>;
             continue;
           }
           
@@ -309,8 +327,27 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
             }
           }
           
+          // Check if chunk is stringified object that should be metadata
+          if (typeof chunk === 'string' && (chunk.includes('toolResults') || chunk.includes('searchResults') || chunk.includes('sources'))) {
+            try {
+              const parsed = JSON.parse(chunk);
+              if (parsed.toolResults || parsed.searchResults || parsed.sources) {
+                messageMetadata = parsed;
+                continue;
+              }
+            } catch {
+              // Not valid JSON, treat as regular text
+            }
+          }
+          
           // Server sends streaming text content
           const word = typeof chunk === 'string' ? chunk : (chunk as { text?: string }).text || '';
+          
+          // Skip empty words and don't add metadata objects as text
+          if (!word || word.trim() === '' || typeof chunk === 'object') {
+            continue;
+          }
+          
           // Add space before word if we already have content (except for punctuation)
           if (accumulatedText && word && !word.match(/^[.,!?;:]/)) {
             accumulatedText += ' ';
