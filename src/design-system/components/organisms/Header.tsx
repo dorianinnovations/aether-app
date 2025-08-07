@@ -57,6 +57,9 @@ interface HeaderProps {
   onLeftPress?: () => void;
   rightIcon?: React.ReactNode;
   onRightPress?: () => void;
+  _isVisible?: boolean;
+  _scrollY?: Animated.Value;
+  _isScrolled?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -91,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
   _isScrolled = false,
 }) => {
   const themeColors = getThemeColors(theme as 'light' | 'dark');
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const [backPressed] = useState(false);
   // Removed unused _menuPressed
   const [conversationsPressed] = useState(false);
@@ -182,7 +185,7 @@ export const Header: React.FC<HeaderProps> = ({
           activeOpacity={0.8}
         >
           <IconComponent
-            name={iconName as FeatherIconNames}
+            name={iconName as any}
             size={23}
             color={color}
             style={{ opacity: isPressed ? 0.7 : 1 }}

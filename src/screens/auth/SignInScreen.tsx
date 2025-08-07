@@ -45,9 +45,9 @@ interface SignInScreenProps {
 
 const SignInScreen: React.FC<SignInScreenProps> = ({
   navigation,
-  _route,
+  route,
 }) => {
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   
   // Form state
   const [emailOrUsername, setEmailOrUsername] = useState('');
@@ -267,13 +267,13 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
       
       // Set graceful error message for unexpected errors
       let errorMessage = 'Network error, try again in a few minutes';
-      if (err.message) {
-        if (err.message.includes('token')) {
+      if ((err as any).message) {
+        if ((err as any).message.includes('token')) {
           errorMessage = 'Authentication failed. Please try again.';
-        } else if (err.message.includes('password') || err.message.includes('credentials')) {
+        } else if ((err as any).message.includes('password') || (err as any).message.includes('credentials')) {
           errorMessage = 'Invalid email or password';
         } else {
-          errorMessage = err.message;
+          errorMessage = (err as any).message;
         }
       }
       
@@ -681,7 +681,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                         onPress={() => {
                           // Light haptic for navigation
                           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          navigation.replace('SignUp');
+                          navigation.navigate('SignUp' as any);
                         }}
                         activeOpacity={0.7}
                       >

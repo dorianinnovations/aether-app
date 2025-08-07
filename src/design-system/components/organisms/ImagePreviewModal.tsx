@@ -151,7 +151,7 @@ export const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
 
   // Handle image load
   const handleImageLoad = useCallback(() => {
-    setIsLoading(false);
+    // Image loaded - could add loading state here if needed
   }, []);
 
   if (!attachment) return null;

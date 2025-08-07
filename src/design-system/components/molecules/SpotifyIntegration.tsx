@@ -66,6 +66,27 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
 
   // Use prop data if provided, otherwise use state data
   const spotify = spotifyData || spotifyStatus;
+  
+  // Type guard to check if spotify data has connected property
+  const hasConnectedProperty = (data: any): data is { connected: boolean; currentTrack?: any; topTracks?: any[] } => {
+    return data && typeof data.connected === 'boolean';
+  };
+  
+  // Helper to get current track from either data format
+  const getCurrentTrack = (data: any) => {
+    if (hasConnectedProperty(data)) {
+      return data.currentTrack;
+    } else if (data && data.currentlyPlaying) {
+      // Convert SpotifyData format to expected format
+      return {
+        name: data.currentlyPlaying.name,
+        artist: data.currentlyPlaying.artist,
+        album: '', // SpotifyData doesn't have album in currentlyPlaying
+        isPlaying: data.currentlyPlaying.isPlaying
+      };
+    }
+    return null;
+  };
 
   // Load initial status
   useEffect(() => {
@@ -319,7 +340,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         </View>
       </View>
 
-      {!spotify?.connected ? (
+      {!hasConnectedProperty(spotify) || !spotify.connected ? (
         <TouchableOpacity
           style={styles.connectButton}
           onPress={handleConnect}
@@ -336,29 +357,29 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         </TouchableOpacity>
       ) : (
         <View style={styles.connectedContent}>
-          {spotify.currentTrack ? (
+          {getCurrentTrack(spotify) ? (
             <TouchableOpacity
               style={styles.currentTrack}
-              onPress={() => openTrackInSpotify(spotify.currentTrack.spotifyUrl)}
+              onPress={() => openTrackInSpotify(getCurrentTrack(spotify)?.spotifyUrl)}
               activeOpacity={0.8}
             >
-              {spotify.currentTrack.imageUrl && (
+              {getCurrentTrack(spotify)?.imageUrl && (
                 <Image
-                  source={{ uri: spotify.currentTrack.imageUrl }}
+                  source={{ uri: getCurrentTrack(spotify)?.imageUrl }}
                   style={styles.albumArt}
                 />
               )}
               <View style={styles.trackInfo}>
                 <Text style={styles.trackName} numberOfLines={1}>
-                  {spotify.currentTrack.name}
+                  {getCurrentTrack(spotify)?.name}
                 </Text>
                 <Text style={styles.artistName} numberOfLines={1}>
-                  {spotify.currentTrack.artist}
+                  {getCurrentTrack(spotify)?.artist}
                 </Text>
                 <Text style={styles.albumName} numberOfLines={1}>
-                  {spotify.currentTrack.album}
+                  {getCurrentTrack(spotify)?.album}
                 </Text>
-                {spotify.currentTrack.isPlaying && (
+                {getCurrentTrack(spotify)?.isPlaying && (
                   <View style={styles.playingIndicator}>
                     <Ionicons name="play-circle" size={14} color="#1DB954" />
                     <Text style={styles.playingText}>Now Playing</Text>

@@ -70,7 +70,6 @@ export class StreamingService {
                   chunks.push({ metadata: parsed.metadata });
                 }
               } catch (e) {
-                console.warn('Streaming parse error:', e);
               }
             }
           }

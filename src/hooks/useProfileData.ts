@@ -79,8 +79,8 @@ export const useProfileData = (): UseProfileDataReturn => {
         FriendsAPI.getUserUsername().catch(() => ({ username: null }))
       ]);
       
-      if (profileResponse.status === 'success' && (profileResponse.data?.user || profileResponse.data?.data?.user)) {
-        const userData = profileResponse.data?.user || profileResponse.data?.data?.user;
+      if ((profileResponse as any).status === 'success' && ((profileResponse as any).data?.user || (profileResponse as any).data?.data?.user)) {
+        const userData = (profileResponse as any).data?.user || (profileResponse as any).data?.data?.user;
         
         // Handle both id and _id fields from backend
         const userId = userData.id || userData._id;
@@ -110,8 +110,8 @@ export const useProfileData = (): UseProfileDataReturn => {
           bio: userData.bio,
           location: userData.location,
           website: userData.website,
-          profilePicture: profileResponse.data.profilePicture,
-          bannerImage: profileResponse.data.bannerImage,
+          profilePicture: (profileResponse as any).data.profilePicture,
+          bannerImage: (profileResponse as any).data.bannerImage,
           username: usernameResponse.username || userData.username,
           createdAt: userData.createdAt,
           badges: userBadges,
@@ -150,7 +150,7 @@ export const useProfileData = (): UseProfileDataReturn => {
       
       const response = await UserAPI.updateProfile(profileData);
       
-      if (response.status === 'success' || response.success) {
+      if ((response as any).status === 'success' || (response as any).success) {
         // Update local profile state immediately
         setProfile(prev => prev ? { ...prev, ...profileData } : null);
         
@@ -162,7 +162,7 @@ export const useProfileData = (): UseProfileDataReturn => {
         
         logger.info('Profile updated successfully');
       } else {
-        throw new Error(response.message || 'Failed to save profile changes');
+        throw new Error((response as any).message || 'Failed to save profile changes');
       }
     } catch (error: any) {
       logger.error('Error saving profile:', error);

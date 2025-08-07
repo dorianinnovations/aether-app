@@ -46,16 +46,14 @@ export const AuthAPI = {
     if (response.success && response.data) {
       // Handle nested response structure from backend - the response.data contains token + data.user
       const token = response.data.token;
-      const user = response.data.data?.user || response.data.user;
+      const user = (response.data as any).data?.user || response.data.user;
       
       
       if (!token) {
-        console.error('Backend login endpoint is not returning a token', response.data);
         throw new Error('Authentication failed: Backend did not return authentication token');
       }
       
       if (!user || !user.id) {
-        console.error('Backend login endpoint is not returning valid user data', response.data);
         throw new Error('Authentication failed: Backend did not return valid user data');
       }
       
@@ -97,7 +95,6 @@ export const AuthAPI = {
       
       return response as AuthResponse;
     } catch (error) {
-      console.error('Token refresh failed:', error);
       throw error;
     }
   },

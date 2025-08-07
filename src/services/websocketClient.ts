@@ -32,7 +32,6 @@ class WebSocketClient {
     try {
       const token = await AsyncStorage.getItem('@aether_auth_token');
       if (!token) {
-        console.warn('No authentication token found, skipping WebSocket connection');
         this.isAuthenticatedUser = false;
         return; // Don't throw error, just skip connection
       }
@@ -69,7 +68,6 @@ class WebSocketClient {
         this.ws = new WebSocket(serverUrl);
         this.setupEventHandlers();
       } catch (pollError) {
-        console.error('Failed to establish Socket.IO handshake:', pollError);
         const errorMessage = pollError instanceof Error ? pollError.message : String(pollError);
         throw new Error('Socket.IO handshake failed: ' + errorMessage);
       }
@@ -94,7 +92,6 @@ class WebSocketClient {
 
         const onError = (error: Event) => {
           clearTimeout(timeout);
-          console.error('WebSocket connection error:', error);
           reject(error);
         };
 
@@ -102,7 +99,6 @@ class WebSocketClient {
         this.ws!.addEventListener('error', onError, { once: true });
       });
     } catch (error) {
-      console.error('Failed to connect to WebSocket:', error);
       throw error;
     }
   }
@@ -124,7 +120,6 @@ class WebSocketClient {
     });
 
     this.ws.addEventListener('error', (error) => {
-      console.error('WebSocket error:', error);
     });
 
     this.ws.addEventListener('message', (event) => {
@@ -132,7 +127,6 @@ class WebSocketClient {
         const message = JSON.parse(event.data);
         this.handleMessage(message);
       } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
       }
     });
   }
@@ -212,7 +206,6 @@ class WebSocketClient {
 
   private attemptReconnect(): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached');
       return;
     }
 
@@ -242,7 +235,6 @@ class WebSocketClient {
       try {
         listener(data);
       } catch (error) {
-        console.error(`Error in WebSocket event listener for ${event}:`, error);
       }
     });
   }
@@ -323,7 +315,6 @@ class WebSocketClient {
       } else {
       }
     } catch (error) {
-      console.warn('Safe WebSocket connection failed:', error);
       // Don't throw - app should continue working without WebSocket
     }
   }

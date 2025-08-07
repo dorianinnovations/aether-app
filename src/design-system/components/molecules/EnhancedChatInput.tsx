@@ -25,7 +25,7 @@ import * as DocumentPicker from 'expo-document-picker';
 type ImagePickerAsset = ImagePicker.ImagePickerAsset;
 type DocumentPickerAsset = DocumentPicker.DocumentPickerAsset;
 type PickerAsset = ImagePickerAsset | DocumentPickerAsset;
-import { getThemeColors, getUserMessageColor } from '../../tokens/colors';
+import { designTokens, getThemeColors, getUserMessageColor } from '../../tokens/colors';
 import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
 import { getNeumorphicStyle } from '../../tokens/shadows';
@@ -569,7 +569,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
             typography.textStyles.caption,
             {
               color: value.length >= maxLength 
-                ? (designTokens as any).semantic.error
+                ? '#ff4444'
                 : themeColors.textMuted,
             }
           ]}>
@@ -689,7 +689,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
                     <FontAwesome5
                       name="microphone"
                       size={16}
-                      color={isVoiceActive ? (designTokens as any).semantic.error : themeColors.textSecondary}
+                      color={isVoiceActive ? '#ff4444' : themeColors.textSecondary}
                     />
                   </Animated.View>
                 </TouchableOpacity>

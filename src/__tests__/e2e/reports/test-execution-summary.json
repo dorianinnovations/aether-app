@@ -1,8 +1,0 @@
-{
-  "testSuiteStart": "2025-08-06T03:48:30.846Z",
-  "testSuiteEnd": "2025-08-06T03:48:54.507Z",
-  "serverUrl": "https://aether-server-j5kh.onrender.com",
-  "environment": "test",
-  "nodeVersion": "v22.17.0",
-  "platform": "linux"
-}

@@ -38,7 +38,6 @@ export const usePostActions = ({
       // TODO: Make actual API call
       // await postsApi.likePost(post.id, !isCurrentlyLiked);
       
-      console.log(`${isCurrentlyLiked ? 'Unliked' : 'Liked'} post:`, post.id);
     } catch (error) {
       // Revert optimistic update on error
       onPostUpdate(post.id, {
@@ -46,7 +45,6 @@ export const usePostActions = ({
         likes: post.likes,
       });
       
-      console.error('Error liking post:', error);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   }, [onPostUpdate]);
@@ -63,7 +61,6 @@ export const usePostActions = ({
 
       // TODO: Implement actual sharing functionality
       // This could integrate with React Native Share API
-      console.log('Shared post:', post.id);
       
       // TODO: Make API call to track share
       // await postsApi.sharePost(post.id);
@@ -73,7 +70,6 @@ export const usePostActions = ({
         shares: post.shares,
       });
       
-      console.error('Error sharing post:', error);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   }, [onPostUpdate]);
@@ -91,14 +87,12 @@ export const usePostActions = ({
       // TODO: Make actual API call
       // const newComment = await postsApi.createComment(commentData);
       
-      console.log('Commented on post:', post.id, commentData);
     } catch (error) {
       // Revert optimistic update on error
       onPostUpdate(post.id, {
         comments: post.comments,
       });
       
-      console.error('Error commenting on post:', error);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   }, [onPostUpdate]);
@@ -109,14 +103,12 @@ export const usePostActions = ({
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       
       // TODO: Implement reporting functionality
-      console.log('Reported post:', post.id);
       
       // TODO: Make API call to report post
       // await postsApi.reportPost(post.id);
       
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
-      console.error('Error reporting post:', error);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   }, []);

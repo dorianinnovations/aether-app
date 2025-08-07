@@ -256,8 +256,6 @@ export class FileProcessingService {
         formData.append('message', message.trim());
       }
       
-      console.log('📁 Processing files with backend service');
-      console.log('📋 Files:', attachments.map(a => a.name).join(', '));
       
       // Return processing metadata for streaming integration
       return {

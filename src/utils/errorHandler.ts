@@ -389,9 +389,7 @@ class ErrorHandler {
     // This would be configured based on the specific service being used
     try {
       // Example: Sentry.captureException(error);
-      console.error('CRITICAL ERROR - Should be sent to external logging:', error);
     } catch (loggingError) {
-      console.error('Failed to send error to external logging:', loggingError);
     }
   }
 

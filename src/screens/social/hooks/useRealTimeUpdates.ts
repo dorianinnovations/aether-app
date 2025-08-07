@@ -39,7 +39,6 @@ export const useRealTimeUpdates = ({
       
       source.onopen = () => {
         setConnected(true);
-        console.log('Social SSE connected');
       };
 
       source.onmessage = (event) => {
@@ -58,15 +57,12 @@ export const useRealTimeUpdates = ({
               onPostRemoved(data.postId);
               break;
             default:
-              console.log('Unknown SSE event type:', data.type);
           }
         } catch (error) {
-          console.error('Error parsing SSE message:', error);
         }
       };
 
       source.onerror = (error) => {
-        console.error('Social SSE error:', error);
         setConnected(false);
         
         // Attempt reconnection after 5 seconds
@@ -79,7 +75,6 @@ export const useRealTimeUpdates = ({
 
       setEventSource(source);
     } catch (error) {
-      console.error('Failed to establish SSE connection:', error);
     }
   }, [enabled, connected, onPostAdded, onPostUpdated, onPostRemoved]);
 
@@ -88,7 +83,6 @@ export const useRealTimeUpdates = ({
       eventSource.close();
       setEventSource(null);
       setConnected(false);
-      console.log('Social SSE disconnected');
     }
   }, [eventSource]);
 

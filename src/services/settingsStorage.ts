@@ -96,7 +96,6 @@ export class SettingsStorage {
         return value as T;
       }
     } catch (error) {
-      console.error(`Error getting setting ${key}:`, error);
       return (defaultValue ?? DEFAULT_SETTINGS[key]) as T;
     }
   }
@@ -111,7 +110,6 @@ export class SettingsStorage {
       }
       await AsyncStorage.setItem(storageKey, String(value));
     } catch (error) {
-      console.error(`Error setting ${key}:`, error);
       throw error;
     }
   }
@@ -127,7 +125,6 @@ export class SettingsStorage {
       
       return settings;
     } catch (error) {
-      console.error('Error getting all settings:', error);
       return DEFAULT_SETTINGS;
     }
   }
@@ -141,7 +138,6 @@ export class SettingsStorage {
       
       await Promise.all(promises);
     } catch (error) {
-      console.error('Error updating settings:', error);
       throw error;
     }
   }
@@ -155,7 +151,6 @@ export class SettingsStorage {
       
       await Promise.all(promises);
     } catch (error) {
-      console.error('Error resetting settings:', error);
       throw error;
     }
   }
@@ -166,7 +161,6 @@ export class SettingsStorage {
       const settings = await this.getAllSettings();
       return JSON.stringify(settings, null, 2);
     } catch (error) {
-      console.error('Error exporting settings:', error);
       throw error;
     }
   }
@@ -188,7 +182,6 @@ export class SettingsStorage {
       
       await this.updateSettings(filteredSettings);
     } catch (error) {
-      console.error('Error importing settings:', error);
       throw error;
     }
   }

@@ -76,7 +76,6 @@ export const WebSearchAPI = {
       };
 
     } catch (error: any) {
-      console.error('Web search API error:', error);
       
       return {
         success: false,

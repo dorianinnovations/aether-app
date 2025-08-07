@@ -816,7 +816,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             const conversationId = conversation._id;
             setCurrentConversationId(conversationId);
             setCurrentFriendUsername(undefined);
-            handleConversationSelect(conversation);
+            handleConversationSelect(conversation as any);
           }
         }}
         onStartNewChat={handleStartNewChat}

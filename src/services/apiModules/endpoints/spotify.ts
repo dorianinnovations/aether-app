@@ -12,7 +12,6 @@ export const SpotifyAPI = {
       const response = await api.get('/spotify/auth?platform=mobile');
       return response.data;
     } catch (error) {
-      console.error('Failed to get Spotify auth URL:', error);
       throw error;
     }
   },
@@ -26,7 +25,6 @@ export const SpotifyAPI = {
       });
       return response.data;
     } catch (error) {
-      console.error('Failed to handle mobile callback:', error);
       throw error;
     }
   },
@@ -37,7 +35,6 @@ export const SpotifyAPI = {
       const response = await api.post('/spotify/disconnect');
       return response.data;
     } catch (error) {
-      console.error('Failed to disconnect Spotify:', error);
       throw error;
     }
   },
@@ -48,7 +45,6 @@ export const SpotifyAPI = {
       const response = await api.get('/spotify/status');
       return response.data;
     } catch (error) {
-      console.error('Failed to get Spotify status:', error);
       throw error;
     }
   },
@@ -59,7 +55,6 @@ export const SpotifyAPI = {
       const response = await api.post('/spotify/refresh');
       return response.data;
     } catch (error) {
-      console.error('Failed to refresh Spotify data:', error);
       throw error;
     }
   },
@@ -77,7 +72,6 @@ export const SpotifyAPI = {
       });
       return response.data;
     } catch (error) {
-      console.error('Failed to share track:', error);
       throw error;
     }
   },
@@ -88,7 +82,6 @@ export const SpotifyAPI = {
       const response = await api.get(`/spotify/live-status/${username}`);
       return response.data;
     } catch (error) {
-      console.error('Failed to get live Spotify status:', error);
       throw error;
     }
   }

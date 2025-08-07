@@ -3,7 +3,7 @@
  * Integrates with header menu system for seamless navigation
  */
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -50,8 +50,8 @@ export const EnhancedSwipeableTabBar: React.FC<EnhancedSwipeableTabBarProps> = (
   swipeToRevealThreshold = 0.3, // 30% of screen height
 }) => {
   const themeColors = getThemeColors(theme);
-  // Removed unused isSwipeInProgress
-  // Removed unused lastSwipeY
+  const [isSwipeInProgress, setIsSwipeInProgress] = useState(false);
+  const [lastSwipeY, setLastSwipeY] = useState(0);
   
   // Animations
   const translateY = useRef(new Animated.Value(isHidden ? 100 : 0)).current;
@@ -221,7 +221,7 @@ export const EnhancedSwipeableTabBar: React.FC<EnhancedSwipeableTabBarProps> = (
               },
             ]}
           >
-            {label}
+            {typeof label === 'function' ? label({ focused: isFocused, color: themeColors.text, position: 'beside-icon', children: route.name }) : label}
           </Text>
         </TouchableOpacity>
       </Animated.View>

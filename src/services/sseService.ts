@@ -25,7 +25,6 @@ class SSEService {
 
       const token = await TokenManager.getToken();
       if (!token) {
-        console.warn('SSE: No auth token available, skipping connection');
         this.isConnecting = false;
         return;
       }
@@ -38,7 +37,6 @@ class SSEService {
       
 
     } catch (error) {
-      console.error('SSE: Failed to connect:', error);
       this.isConnecting = false;
       this.connectionState = false;
     }
@@ -59,7 +57,6 @@ class SSEService {
       try {
         handler(event);
       } catch (error) {
-        console.error(`SSE: Error in handler for ${event.type}:`, error);
       }
     });
   }

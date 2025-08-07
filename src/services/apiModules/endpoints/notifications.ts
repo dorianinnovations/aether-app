@@ -19,7 +19,6 @@ export const NotificationsAPI = {
       const response = await api.get('/notifications/stats');
       return response.data;
     } catch (error) {
-      console.error('Failed to get notification stats:', error);
       throw error;
     }
   },
@@ -34,7 +33,6 @@ export const NotificationsAPI = {
       });
       return response.data;
     } catch (error) {
-      console.error('Failed to send test notification:', error);
       throw error;
     }
   }

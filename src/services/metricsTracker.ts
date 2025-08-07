@@ -267,7 +267,6 @@ class MetricsTracker {
   trackChokePointAttempt(chokepointName: string, success: boolean, duration?: number, errorMessage?: string): void {
     const chokepoint = this.chokePoints.get(chokepointName);
     if (!chokepoint) {
-      console.warn(`Unknown chokepoint: ${chokepointName}`);
       return;
     }
 

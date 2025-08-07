@@ -53,19 +53,16 @@ export const useSocialData = (): UseSocialDataReturn => {
           setPosts(transformedPosts);
         } else {
           // Fallback to mock data if API returns empty or invalid data
-          console.log('API returned empty data, using mock posts');
           const mockPosts = generateMockPosts(20);
           setPosts(mockPosts);
         }
       } catch (apiError) {
         // If API fails, fall back to mock data
-        console.log('API failed, using mock posts:', apiError);
         const mockPosts = generateMockPosts(20);
         setPosts(mockPosts);
       }
     } catch (err) {
       setError('Failed to fetch posts');
-      console.error('Error fetching posts:', err);
     } finally {
       setLoading(false);
     }
@@ -98,19 +95,16 @@ export const useSocialData = (): UseSocialDataReturn => {
           setPosts(transformedPosts);
         } else {
           // Fallback to mock data if API returns empty or invalid data
-          console.log('API returned empty data during refresh, using mock posts');
           const mockPosts = generateMockPosts(20);
           setPosts(mockPosts);
         }
       } catch (apiError) {
         // If API fails, fall back to mock data
-        console.log('API failed during refresh, using mock posts:', apiError);
         const mockPosts = generateMockPosts(20);
         setPosts(mockPosts);
       }
     } catch (err) {
       setError('Failed to refresh posts');
-      console.error('Error refreshing posts:', err);
     } finally {
       setRefreshing(false);
     }
@@ -122,9 +116,7 @@ export const useSocialData = (): UseSocialDataReturn => {
       if (post.content && post.content.trim()) {
         try {
           await SocialProxyAPI.updateStatus(post.content.trim(), '', 'excited'); // Default status and mood
-          console.log('Posted status to API successfully');
         } catch (apiError) {
-          console.log('Failed to post to API, adding locally:', apiError);
         }
       }
       
@@ -136,7 +128,6 @@ export const useSocialData = (): UseSocialDataReturn => {
         refreshPosts();
       }, 1000);
     } catch (err) {
-      console.error('Error adding post:', err);
       // Still add locally even if API fails
       setPosts(prevPosts => [post, ...prevPosts]);
     }

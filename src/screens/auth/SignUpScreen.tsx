@@ -481,7 +481,6 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                             const cleanText = text.toLowerCase().replace(/[^a-z0-9_-]/g, '');
                             setUsername(cleanText);
                             clearErrorOnChange();
-                            setUsernameError('');
                           }}
                           autoCapitalize="none"
                           autoCorrect={false}

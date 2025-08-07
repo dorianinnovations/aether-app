@@ -168,7 +168,7 @@ const StreamContent: React.FC<{
               <Text style={[styles.toolCallName, { color: theme === 'dark' ? '#a8d8ff' : '#add6ffff' }]}>
                 🔍 {toolCall.name === 'webSearchTool' ? 'Web Search Results' : toolCall.name.replace(/_/g, ' ')}
               </Text>
-              {toolCall.status === 'completed' && toolCall.result && (
+              {toolCall.status === 'completed' && toolCall.result ? (
                 <View>
                   {/* Handle web search results specifically */}
                   {toolCall.name === 'webSearchTool' && (toolCall.result as any)?.data?.structure?.results ? (
@@ -205,7 +205,7 @@ const StreamContent: React.FC<{
                     </Text>
                   )}
                 </View>
-              )}
+              ) : null}
             </View>
           ))}
         </View>

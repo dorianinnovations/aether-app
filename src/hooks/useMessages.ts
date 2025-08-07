@@ -103,7 +103,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
                 }
               }
             } catch (messagingError) {
-              logger.debug('Friend messages API not available:', messagingError.message);
+              logger.debug('Friend messages API not available:', (messagingError as Error).message);
               // Start with empty conversation
               setMessages([]);
               if (onHideGreeting) {
@@ -200,7 +200,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
             throw new Error(response?.error || 'Failed to send message to friend');
           }
         } catch (messagingError) {
-          logger.warn('Friend messaging endpoint not available:', messagingError.message);
+          logger.warn('Friend messaging endpoint not available:', (messagingError as Error).message);
           // For now, just show as sent locally (this would need proper implementation)
           logger.debug('✅ Friend message queued locally (messaging endpoint not implemented)');
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -307,23 +307,23 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
                     ...messageMetadata,
                     // Convert tool results format if needed
                     toolCalls: messageMetadata.toolResults ? 
-                      messageMetadata.toolResults.map((toolResult: { name: string; parameters: unknown; result: unknown }, index: number) => ({
+                      messageMetadata.toolResults.map((toolResult: any, index: number) => ({
                         id: `tool-${index}-${Date.now()}`,
-                        name: toolResult.tool,
-                        parameters: { query: toolResult.query },
-                        result: toolResult.data,
+                        name: toolResult.tool || toolResult.name,
+                        parameters: { query: toolResult.query || toolResult.parameters },
+                        result: toolResult.data || toolResult.result,
                         status: toolResult.success ? 'completed' : 'failed'
-                      })) : (messageMetadata.searchResults && messageMetadata.sources ? 
+                      })) : ((messageMetadata as any).searchResults && (messageMetadata as any).sources ? 
                       [{
                         id: 'search-' + Date.now(),
                         name: 'insane_web_search',
-                        parameters: { query: messageMetadata.query },
+                        parameters: { query: (messageMetadata as any).query },
                         result: {
-                          sources: messageMetadata.sources,
-                          query: messageMetadata.query
+                          sources: (messageMetadata as any).sources,
+                          query: (messageMetadata as any).query
                         },
                         status: 'completed'
-                      }] : messageMetadata.toolCalls)
+                      }] : (messageMetadata as any).toolCalls)
                   } : msg.metadata
                 }
               : msg
@@ -354,7 +354,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
       const errorMessage: Message = {
         id: Date.now().toString(),
         sender: 'system',
-        message: `Error: ${error.message || 'Failed to send message'}`,
+        message: `Error: ${(error as any)?.message || 'Failed to send message'}`,
         timestamp: new Date().toISOString(),
         variant: 'error',
       };
@@ -410,7 +410,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
   // Handle conversation selection
   const handleConversationSelect = async (conversation: Conversation) => {
     // Check if we have a valid conversation ID first - try multiple potential fields
-    const conversationId = conversation._id || conversation.id || conversation.conversationId || conversation.objectId;
+    const conversationId = (conversation as any)._id || (conversation as any).id || (conversation as any).conversationId || (conversation as any).objectId;
     
     try {
       setIsLoading(true);
@@ -453,7 +453,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
       }
       
       // Convert server messages to app format
-      const convertedMessages: Message[] = fullConversation.messages.map((msg: { id: string; sender: string; message: string; timestamp: string; metadata?: unknown; attachments?: unknown }, index: number) => ({
+      const convertedMessages: Message[] = fullConversation.messages.map((msg: any, index: number) => ({
         id: msg._id || `${conversationId}-${index}`,
         sender: msg.role === 'user' ? 'user' : 'aether',
         message: msg.content,
@@ -476,22 +476,22 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
       let errorTitle = 'Error Loading Conversation';
       let errorMessage = 'Failed to load conversation. Please try again.';
       
-      if (error.status === 401) {
+      if ((error as any).status === 401) {
         errorTitle = 'Authentication Required';
         errorMessage = 'Please sign in to load your conversation history.';
-      } else if (error.status === 404) {
+      } else if ((error as any).status === 404) {
         errorTitle = 'Conversation Not Found';
         errorMessage = 'This conversation may have been deleted or is no longer available.';
-      } else if (error.status === 403) {
+      } else if ((error as any).status === 403) {
         errorTitle = 'Access Denied';
         errorMessage = 'You do not have permission to access this conversation.';
-      } else if (error.message?.includes('No messages found')) {
+      } else if ((error as any).message?.includes('No messages found')) {
         errorTitle = 'Empty Conversation';
         errorMessage = 'This conversation has no messages yet.';
-      } else if (error.message?.includes('timeout')) {
+      } else if ((error as any).message?.includes('timeout')) {
         errorTitle = 'Network Error';
         errorMessage = 'Network error, try again in a few minutes';
-      } else if (error.status >= 500) {
+      } else if ((error as any).status >= 500) {
         errorTitle = 'Server Error';
         errorMessage = 'The server is experiencing issues. Please try again later.';
       }

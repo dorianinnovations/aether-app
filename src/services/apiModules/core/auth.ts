@@ -22,7 +22,6 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -37,7 +36,6 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    console.error('API Error:', error.response?.status, error.response?.data);
     
     // Handle unauthorized - attempt token refresh first
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -58,7 +56,6 @@ api.interceptors.response.use(
           }
         }
       } catch (refreshError) {
-        console.error('Token refresh failed:', refreshError);
         // Only remove token if this is a critical endpoint, not for optional requests
         if (!originalRequest.url?.includes('/conversations') && !originalRequest.url?.includes('/socket.io')) {
           await TokenManager.removeToken();

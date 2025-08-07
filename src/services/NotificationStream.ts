@@ -41,7 +41,6 @@ class NotificationStreamService {
 
     // Prevent multiple simultaneous connections
     if (this.isConnecting || this.eventSource) {
-      console.log('NotificationStream: Already connected or connecting');
       return;
     }
 
@@ -58,7 +57,6 @@ class NotificationStreamService {
       this.createSSEConnection(token);
 
     } catch (error) {
-      console.error('NotificationStream: Failed to connect:', error);
       this.isConnecting = false;
       this.options.onError?.(error as Error);
       this.scheduleReconnect();
@@ -84,7 +82,6 @@ class NotificationStreamService {
           if (this.isConnecting) {
             this.isConnecting = false;
             this.reconnectAttempts = 0;
-            console.log('NotificationStream: Connected');
             this.options.onOpen?.();
           }
 
@@ -105,17 +102,14 @@ class NotificationStreamService {
                 const data = trimmedLine.slice(6).trim();
                 
                 if (data === '[DONE]') {
-                  console.log('NotificationStream: Stream ended');
                   this.handleDisconnect();
                   return;
                 }
 
                 try {
                   const event: NotificationEvent = JSON.parse(data);
-                  console.log('NotificationStream: Received event:', event.type);
                   this.options.onMessage?.(event);
                 } catch (e) {
-                  console.error('NotificationStream: Failed to parse event:', e);
                 }
               }
             }
@@ -127,7 +121,6 @@ class NotificationStreamService {
           }
         } else if (xhr.readyState === 4) {
           // Connection failed
-          console.error(`NotificationStream: HTTP ${xhr.status}`);
           this.isConnecting = false;
           this.options.onError?.(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
           this.handleDisconnect();
@@ -136,14 +129,12 @@ class NotificationStreamService {
     };
 
     xhr.onerror = () => {
-      console.error('NotificationStream: Network error');
       this.isConnecting = false;
       this.options.onError?.(new Error('Network error'));
       this.handleDisconnect();
     };
 
     xhr.ontimeout = () => {
-      console.error('NotificationStream: Request timeout');
       this.isConnecting = false;
       this.options.onError?.(new Error('Request timeout'));
       this.handleDisconnect();
@@ -174,7 +165,6 @@ class NotificationStreamService {
   private scheduleReconnect(): void {
     if (!this.options.reconnectInterval || 
         this.reconnectAttempts >= (this.options.maxReconnectAttempts || 10)) {
-      console.log('NotificationStream: Max reconnection attempts reached');
       return;
     }
 
@@ -185,7 +175,6 @@ class NotificationStreamService {
     this.reconnectAttempts++;
     const delay = this.options.reconnectInterval * Math.min(this.reconnectAttempts, 5);
     
-    console.log(`NotificationStream: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
     
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
@@ -213,13 +202,11 @@ class NotificationStreamService {
           this.eventSource.close();
         }
       } catch (error) {
-        console.error('NotificationStream: Error closing connection:', error);
       }
       this.eventSource = null;
     }
 
     this.isConnecting = false;
-    console.log('NotificationStream: Disconnected');
   }
 
   /**

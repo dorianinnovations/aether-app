@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Feather } from '@expo/vector-icons';
 import { designTokens } from '../../tokens/colors';
 import { spacing } from '../../tokens/spacing';
 import { 
@@ -70,9 +71,9 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   // Removed unused themeColors
 
   const tabs = [
-    { label: 'Aether', icon: 'message-circle' },
-    { label: 'Friends', icon: 'users' },
-    { label: 'Orbit', icon: 'activity' }
+    { label: 'Aether', icon: 'message-circle' as keyof typeof Feather.glyphMap },
+    { label: 'Friends', icon: 'users' as keyof typeof Feather.glyphMap },
+    { label: 'Orbit', icon: 'activity' as keyof typeof Feather.glyphMap }
   ];
 
   const eventHandlers = useRef({

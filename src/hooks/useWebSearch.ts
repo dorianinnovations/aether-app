@@ -48,7 +48,6 @@ export const useWebSearch = (): UseWebSearchReturn => {
         setSearchResults([]);
       }
     } catch (error: any) {
-      console.error('Web search error:', error);
       setSearchError(error.message || 'Search failed');
       setSearchResults([]);
     } finally {
