@@ -249,6 +249,12 @@ class ErrorHandler {
       code = STATUS_CODE_MAPPINGS[statusCode] || 'UNKNOWN_ERROR';
       message = (error as any).response.data?.message || (error as any).message || message;
       
+      // Special handling for authentication endpoints
+      if (statusCode === 401 && context?.endpoint && typeof context.endpoint === 'string' &&
+          (context.endpoint.includes('/auth/login') || context.endpoint.includes('/auth/signup'))) {
+        code = 'INVALID_CREDENTIALS';
+      }
+      
       // Check for rate limiting
       if (statusCode === 429) {
         retryAfter = parseInt((error as any).response.headers?.['retry-after'] || '60');

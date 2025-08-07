@@ -14,7 +14,7 @@ export const useScrollToBottom = (
 ) => {
   const { enabled = true, delay = 100, inputContainerHeight = 100, keyboardHeight = 0 } = options;
   const flatListRef = useRef<FlatList>(null);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const prevKeyboardHeight = useRef(keyboardHeight);
 
   const scrollToBottom = () => {

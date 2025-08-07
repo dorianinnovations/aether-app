@@ -36,9 +36,11 @@ interface ConversationListProps {
   longPressedId: string | null;
   onConversationSelect: (conversation: Conversation) => void;
   onDeleteConversation: (conversationId: string) => void;
-  onHeatmapSelect: (friend: { username: string; displayName?: string }) => void;
+  onHeatmapLongPress: (friend: { username: string }, conversationId: string) => void;
+  onHeatmapPressOut: () => void;
   onRefresh: () => void;
   setLongPressedId: (id: string | null) => void;
+  itemRefs: React.MutableRefObject<{ [key: string]: View }>;
 }
 
 export const ConversationList: React.FC<ConversationListProps> = ({
@@ -54,9 +56,11 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   longPressedId,
   onConversationSelect,
   onDeleteConversation,
-  onHeatmapSelect,
+  onHeatmapLongPress,
+  onHeatmapPressOut,
   onRefresh,
   setLongPressedId,
+  itemRefs,
 }) => {
   const themeColors = getThemeColors(theme);
 
@@ -64,7 +68,6 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     const tabConfig = tabs[currentTab];
     const isSelected = item._id === currentConversationId;
     
-    // Different styling based on tab type
     const getTabSpecificStyling = () => {
       switch (currentTab) {
         case 0: // Aether - AI conversations
@@ -76,7 +79,6 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           };
         case 1: // Friends - People
           const friendItem = item as Conversation & { streak?: number; lastMessage?: string | unknown };
-          // Safely extract the last message text - handle object format
           let lastMessageText = '';
           if (typeof friendItem.lastMessage === 'string') {
             lastMessageText = friendItem.lastMessage;
@@ -84,7 +86,6 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             const msgObj = friendItem.lastMessage as Record<string, unknown>;
             lastMessageText = String(msgObj.content || msgObj.message || msgObj.text || '');
           }
-          // Ensure we have a valid string
           lastMessageText = String(lastMessageText || '').trim();
           return {
             accentColor: tabConfig.color,
@@ -113,6 +114,11 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     
     return (
       <View
+        ref={(ref) => {
+          if (ref) {
+            itemRefs.current[item._id] = ref;
+          }
+        }}
         style={[
           styles.conversationItem,
           {
@@ -134,35 +140,32 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           onPress={() => {
             if (isAnimating) return;
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            
-            // For Orbit tab (heatmap), show modal instead of selecting conversation
-            if (currentTab === 2 && item.friendUsername) {
-              onHeatmapSelect({
-                username: item.friendUsername,
-                displayName: item.displayName || item.title
-              });
-            } else {
-              onConversationSelect(item);
-            }
+            onConversationSelect(item);
           }}
           onLongPress={() => {
-            if (isAnimating || currentTab !== 0) return; // Only allow delete for Aether tab
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            setLongPressedId(item._id);
-            
-            // Show delete confirmation after brief highlight
-            setTimeout(() => {
-              setLongPressedId(null);
-              // Simple confirm dialog simulation with haptic feedback
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-              onDeleteConversation(item._id);
-            }, 200);
+            if (isAnimating) return;
+            if (currentTab === 1 && item.friendUsername) {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              onHeatmapLongPress({ username: item.friendUsername }, item._id);
+            } else if (currentTab === 0) {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              setLongPressedId(item._id);
+              setTimeout(() => {
+                setLongPressedId(null);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                onDeleteConversation(item._id);
+              }, 200);
+            }
+          }}
+          onPressOut={() => {
+            if (currentTab === 1) {
+              onHeatmapPressOut();
+            }
           }}
           delayLongPress={500}
           activeOpacity={0.85}
           disabled={isAnimating}
         >
-          {/* Icon and content */}
           <View style={styles.conversationContent}>
             <View style={[
               styles.conversationIcon,
@@ -196,7 +199,6 @@ export const ConversationList: React.FC<ConversationListProps> = ({
               </Text>
             </View>
             
-            {/* Badge and Chat Icon for Friends */}
             <View style={styles.conversationActions}>
               <View style={[
                 styles.conversationBadge,
@@ -210,7 +212,6 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                 </Text>
               </View>
               
-              {/* Add chat icon for friend conversations */}
               {currentTab === 1 && (
                 <View style={[
                   styles.chatIcon,
@@ -239,7 +240,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
         {[...Array(4)].map((_, index) => (
           <ConversationSkeleton 
             key={index} 
-            delay={index * 100} // Stagger the animation slightly
+            delay={index * 100} 
           />
         ))}
       </View>
@@ -304,7 +305,6 @@ export const ConversationList: React.FC<ConversationListProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Custom Lottie Refresh Indicator */}
       {isRefreshing && (
         <View style={styles.refreshIndicator}>
           <LottieLoader
@@ -324,7 +324,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           style={styles.list}
           contentContainerStyle={[
             styles.listContent,
-            isRefreshing && { paddingTop: 60 } // Add padding when refreshing to account for Lottie
+            isRefreshing && { paddingTop: 60 } 
           ]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={renderEmptyState}
@@ -467,7 +467,6 @@ const styles = StyleSheet.create({
     maxWidth: 200,
   },
   
-  // Skeleton loader styles
   skeletonContainer: {
     flex: 1,
     paddingVertical: spacing[2],

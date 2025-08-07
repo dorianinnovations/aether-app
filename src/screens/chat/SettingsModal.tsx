@@ -42,6 +42,15 @@ import SettingsStorage from '../../services/settingsStorage';
 
 // Components
 import { SignOutModal } from '../../design-system/components/organisms/SignOutModal';
+import { AboutModal } from './components/settings/AboutModal';
+import { SettingItemComponent } from './components/settings/SettingItem';
+import { BackgroundSelector } from './components/settings/BackgroundSelector';
+
+// Configuration
+import { getSettingsIconColor, createSettingsSections, type BackgroundType } from '../../config/settingsConfig';
+
+// Hooks
+import { useSettingsModalAnimations } from '../../hooks/useSettingsModalAnimations';
 
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -76,7 +85,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [keepScreenOn, setKeepScreenOn] = useState(false);
   const [showTimestamps, setShowTimestamps] = useState(true);
   const [autoLock, setAutoLock] = useState(true);
-  const [backgroundType, setBackgroundType] = useState<'blue' | 'white' | 'sage' | 'lavender' | 'cream' | 'mint' | 'pearl'>('blue');
+  const [backgroundType, setBackgroundType] = useState<BackgroundType>('blue');
   const [dynamicOptions, setDynamicOptions] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [userData, setUserData] = useState<any>(null);
@@ -85,113 +94,41 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
   
-  // Animation refs
-  const subDrawerAnim = useRef(new Animated.Value(0)).current;
-  const mainContentAnim = useRef(new Animated.Value(0)).current;
-  
-  // Staggered animation refs for settings modal
-  const headerOpacity = useRef(new Animated.Value(0)).current;
-  const accountSectionOpacity = useRef(new Animated.Value(0)).current;
-  const categoriesSectionOpacity = useRef(new Animated.Value(0)).current;
-  const quickActionsOpacity = useRef(new Animated.Value(0)).current;
-  
-  // Individual button animations
-  const accountButtonOpacity = useRef(new Animated.Value(0)).current;
-  const categoryButtonAnims = useRef([new Animated.Value(0), new Animated.Value(0), new Animated.Value(0), new Animated.Value(0), new Animated.Value(0)]).current;
-  const quickActionAnims = useRef([new Animated.Value(0), new Animated.Value(0)]).current;
-  
-  // Sub-drawer animation refs
-  const subDrawerHeaderOpacity = useRef(new Animated.Value(0)).current;
-  const subDrawerItemsOpacity = useRef(new Animated.Value(0)).current;
-  
-  // Timeout refs for cleanup
-  const animationTimeouts = useRef<NodeJS.Timeout[]>([]).current;
+  // Animation system
+  const animations = useSettingsModalAnimations(visible, activeSubDrawer, setActiveSubDrawer);
+  const {
+    subDrawerAnim,
+    mainContentAnim,
+    headerOpacity,
+    accountSectionOpacity,
+    categoriesSectionOpacity,
+    quickActionsOpacity,
+    accountButtonOpacity,
+    categoryButtonAnims,
+    quickActionAnims,
+    subDrawerHeaderOpacity,
+    subDrawerItemsOpacity,
+    openSubDrawer,
+    closeSubDrawer,
+  } = animations;
 
-  // Rainbow pastel icon colors in proper descending order starting from red
-  const getSettingsIconColor = (index: number): string => {
-    const colors = [
-      '#FF6B6B', // Red (pastel)
-      '#FF8E6B', // Red-Orange (pastel)
-      '#FFB366', // Orange (pastel)
-      '#FFD93D', // Yellow (pastel)
-      '#6BCF7F', // Green (pastel)
-      '#4ECDC4', // Teal (pastel)
-      '#45B7D1', // Sky Blue (pastel)
-      '#667EEA', // Blue (pastel)
-      '#764BA2', // Indigo (pastel)
-      '#A8E6CF', // Mint Green (pastel)
-      '#FFB3BA', // Pink (pastel)
-      '#FFDFBA', // Peach (pastel)
-      '#FFFFBA', // Light Yellow (pastel)
-      '#BAFFC9', // Light Green (pastel)
-      '#BAE1FF', // Light Blue (pastel)
-      '#C7CEEA', // Lavender (pastel)
-      '#F8B2E3', // Hot Pink (pastel)
-      '#FFC0CB', // Classic Pink (pastel)
-      '#E6E6FA', // Lavender Gray (pastel)
-      '#F0E68C', // Khaki (pastel)
-      '#DDA0DD', // Plum (pastel)
-      '#98FB98', // Pale Green (pastel)
-      '#F0F8FF', // Alice Blue (pastel)
-      '#FFEFD5', // Papaya Whip (pastel)
-    ];
-    return colors[index % colors.length];
-  };
-
-  // Sub-drawer sections
-  const subDrawerSections = {
-    appearance: {
-      title: 'Appearance',
-      icon: 'sliders',
-      description: 'Theme and dynamic options',
-      items: [
-        { key: 'theme', label: 'Dark Mode', value: theme === 'dark', type: 'switch' },
-        { key: 'dynamicOptions', label: 'Dynamic Options', value: dynamicOptions, type: 'switch' },
-        { key: 'backgroundType', label: 'Background Style', value: backgroundType, type: 'selector' },
-      ]
-    },
-    accessibility: {
-      title: 'Accessibility',
-      icon: 'eye',
-      description: 'Visual and interaction aids',
-      items: [
-        { key: 'highContrast', label: 'High Contrast', value: highContrast, type: 'switch' },
-        { key: 'largeText', label: 'Large Text', value: largeText, type: 'switch' },
-        { key: 'reduceMotion', label: 'Reduce Motion', value: reduceMotion, type: 'switch' },
-      ]
-    },
-    notifications: {
-      title: 'Notifications',
-      icon: 'bell',
-      description: 'Push alerts, sounds, haptics',
-      items: [
-        { key: 'notifications', label: 'Push Notifications', value: notificationsEnabled, type: 'switch' },
-        { key: 'sound', label: 'Sound Effects', value: soundEnabled, type: 'switch' },
-        { key: 'haptics', label: 'Haptic Feedback', value: hapticsEnabled, type: 'switch' },
-      ]
-    },
-    display: {
-      title: 'Display',
-      icon: 'monitor',
-      description: 'Screen and visual settings',
-      items: [
-        { key: 'keepScreenOn', label: 'Keep Screen On', value: keepScreenOn, type: 'switch' },
-        { key: 'showTimestamps', label: 'Show Timestamps', value: showTimestamps, type: 'switch' },
-      ]
-    },
-    privacy: {
-      title: 'Privacy & Data',
-      icon: 'shield',
-      description: 'Analytics, backups, data control',
-      items: [
-        { key: 'analytics', label: 'Analytics', value: analyticsEnabled, type: 'switch' },
-        { key: 'autoSave', label: 'Auto-Save Chats', value: autoSaveEnabled, type: 'switch' },
-        { key: 'autoLock', label: 'Auto-Lock', value: autoLock, type: 'switch' },
-        { key: 'exportData', label: 'Export Data', type: 'action' },
-        { key: 'clearData', label: 'Clear All Data', type: 'action', destructive: true },
-      ]
-    },
-  };
+  // Create settings sections with current state values
+  const subDrawerSections = createSettingsSections({
+    theme,
+    dynamicOptions,
+    backgroundType,
+    highContrast,
+    largeText,
+    reduceMotion,
+    notificationsEnabled,
+    soundEnabled,
+    hapticsEnabled,
+    keepScreenOn,
+    showTimestamps,
+    analyticsEnabled,
+    autoSaveEnabled,
+    autoLock,
+  });
   
   
   // Removed unused style variables
@@ -207,134 +144,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     setBackgroundType(globalSettings.backgroundType);
   }, [globalSettings.backgroundType]);
 
-  // Cleanup animation timeouts on unmount
-  useEffect(() => {
-    return () => {
-      animationTimeouts.forEach(timeout => clearTimeout(timeout));
-    };
-  }, []);
 
-  // Animate modal content in when visible
-  useEffect(() => {
-    if (visible) {
-      // Haptic feedback when modal opens
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      animateModalSequence();
-    } else {
-      // Reset all animations when modal is hidden
-      headerOpacity.setValue(0);
-      accountSectionOpacity.setValue(0);
-      categoriesSectionOpacity.setValue(0);
-      quickActionsOpacity.setValue(0);
-      
-      // Reset individual button animations
-      accountButtonOpacity.setValue(0);
-      categoryButtonAnims.forEach(anim => anim.setValue(0));
-      quickActionAnims.forEach(anim => anim.setValue(0));
-    }
-  }, [visible]);
 
-  // Animate sub-drawer content when opened
-  useEffect(() => {
-    if (activeSubDrawer) {
-      animateSubDrawerSequence();
-    } else {
-      // Reset sub-drawer animations
-      subDrawerHeaderOpacity.setValue(0);
-      subDrawerItemsOpacity.setValue(0);
-    }
-  }, [activeSubDrawer]);
 
-  // Staggered animation sequence for main modal
-  const animateModalSequence = () => {
-    // Header first (100ms delay)
-    setTimeout(() => {
-      Animated.timing(headerOpacity, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }).start();
-    }, 100);
-
-    // Account section (200ms delay)
-    setTimeout(() => {
-      Animated.timing(accountSectionOpacity, {
-        toValue: 1,
-        duration: 450,
-        useNativeDriver: true,
-      }).start();
-      
-      // Account button animation
-      setTimeout(() => {
-        Animated.timing(accountButtonOpacity, {
-          toValue: 1,
-          duration: 120,
-          useNativeDriver: true,
-        }).start();
-      }, 40);
-    }, 200);
-
-    // Categories section (300ms delay)
-    setTimeout(() => {
-      Animated.timing(categoriesSectionOpacity, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }).start();
-      
-      // Sequential category button animations
-      categoryButtonAnims.forEach((anim, index) => {
-        setTimeout(() => {
-          Animated.timing(anim, {
-            toValue: 1,
-            duration: 120,
-            useNativeDriver: true,
-          }).start();
-        }, 60 + (index * 40));
-      });
-    }, 300);
-
-    // Quick actions (450ms delay)
-    setTimeout(() => {
-      Animated.timing(quickActionsOpacity, {
-        toValue: 1,
-        duration: 450,
-        useNativeDriver: true,
-      }).start();
-      
-      // Sequential quick action animations
-      quickActionAnims.forEach((anim, index) => {
-        setTimeout(() => {
-          Animated.timing(anim, {
-            toValue: 1,
-            duration: 120,
-            useNativeDriver: true,
-          }).start();
-        }, 60 + (index * 40));
-      });
-    }, 450);
-  };
-
-  // Staggered animation sequence for sub-drawer
-  const animateSubDrawerSequence = () => {
-    // Header first (50ms delay)
-    setTimeout(() => {
-      Animated.timing(subDrawerHeaderOpacity, {
-        toValue: 1,
-        duration: 350,
-        useNativeDriver: true,
-      }).start();
-    }, 50);
-
-    // Items second (150ms delay)
-    setTimeout(() => {
-      Animated.timing(subDrawerItemsOpacity, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }).start();
-    }, 150);
-  };
 
   const loadSettings = async () => {
     try {
@@ -383,45 +195,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     onClose();
   };
 
-  // Sub-drawer animations
-  const openSubDrawer = (section: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setActiveSubDrawer(section);
-    Animated.parallel([
-      Animated.timing(mainContentAnim, {
-        toValue: -screenWidth * 0.2,
-        duration: 300,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(subDrawerAnim, {
-        toValue: 1,
-        duration: 300,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  const closeSubDrawer = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Animated.parallel([
-      Animated.timing(mainContentAnim, {
-        toValue: 0,
-        duration: 250,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(subDrawerAnim, {
-        toValue: 0,
-        duration: 250,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setActiveSubDrawer(null);
-    });
-  };
 
   const handleAdvancedSetting = async (setting: string, value: boolean) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -487,7 +260,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
-  const handleBackgroundTypeSetting = async (backgroundType: 'blue' | 'white' | 'sage' | 'lavender' | 'cream' | 'mint' | 'pearl') => {
+  const handleBackgroundTypeSetting = async (backgroundType: BackgroundType) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     try {
@@ -693,114 +466,40 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         >
           {sectionData.items.map((item, index) => {
             const itemColor = getSettingsIconColor(index + 12); // Offset to get different colors
+            
+            const handleSwitchPress = (key: string, value: boolean) => {
+              if (key === 'theme') {
+                handleThemeToggle();
+              } else {
+                handleAdvancedSetting(key, value);
+              }
+            };
+            
+            const handleActionPress = (key: string) => {
+              handleSubDrawerItem(activeSubDrawer, item);
+            };
+            
             return (
-              <TouchableOpacity 
-                key={item.key} 
-                style={[
-                  item.key === 'backgroundType' ? styles.backgroundSelectorItem : styles.subDrawerItem, 
-                  { 
-                    backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0, 0, 0, 0.03)',
-                    borderColor: theme === 'dark' 
-                      ? 'rgba(255,255,255,0.1)' 
-                      : 'rgba(0, 0, 0, 0.08)',
-                  }
-                ]}
-                activeOpacity={0.8}
-                onPress={item.type === 'switch' ? () => handleSubDrawerItem(activeSubDrawer, item) : item.type === 'selector' ? undefined : undefined}
+              <SettingItemComponent
+                key={item.key}
+                item={item}
+                itemColor={itemColor}
+                theme={theme}
+                colors={colors}
+                onSwitchPress={handleSwitchPress}
+                onActionPress={handleActionPress}
               >
-                <View style={styles.iconContainer}>
-                  {item.type === 'switch' && <Feather name="toggle-left" size={16} color={itemColor} />}
-                  {item.type === 'action' && <Feather name={(item as any).destructive ? "trash-2" : "download"} size={16} color={itemColor} />}
-                  {item.type === 'selector' && <Feather name="layers" size={16} color={itemColor} />}
-                </View>
-                
-                <View style={item.key === 'backgroundType' ? styles.backgroundSelectorContent : styles.subDrawerItemContent}>
-                  <Text style={[styles.subDrawerItemLabel, { color: colors.text }]}>
-                    {item.label}
-                  </Text>
-                  {item.type === 'switch' && (
-                    <Switch
-                      value={item.value as boolean}
-                      onValueChange={(value) => {
-                        if (item.key === 'theme') {
-                          handleThemeToggle();
-                        } else {
-                          handleAdvancedSetting(item.key, value);
-                        }
-                      }}
-                      trackColor={{ false: colors.surfaces.sunken, true: itemColor }}
-                      thumbColor={colors.surface}
-                    />
-                  )}
-                  {item.type === 'action' && (
-                    <TouchableOpacity
-                      style={[
-                        styles.actionButton,
-                        (item as any).destructive 
-                          ? { backgroundColor: 'rgba(255, 71, 87, 0.15)', borderWidth: 1, borderColor: 'rgba(255, 71, 87, 0.3)' }
-                          : { backgroundColor: `${itemColor}15`, borderWidth: 1, borderColor: `${itemColor}30` }
-                      ]}
-                      onPress={() => handleSubDrawerItem(activeSubDrawer, item)}
-                    >
-                      <Text style={[
-                        styles.actionButtonText,
-                        { color: (item as any).destructive ? '#ff4757' : itemColor }
-                      ]}>
-                        {item.label}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  {item.type === 'selector' && item.key === 'backgroundType' && (
-                    <View style={styles.backgroundSelector}>
-                      <TouchableOpacity
-                        style={[
-                          styles.backgroundOption,
-                          {
-                            backgroundColor: backgroundType === 'blue' 
-                              ? `${itemColor}20` 
-                              : theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                            borderColor: backgroundType === 'blue' 
-                              ? itemColor 
-                              : theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-                            borderWidth: backgroundType === 'blue' ? 2 : 1,
-                          }
-                        ]}
-                        onPress={() => handleBackgroundTypeSetting('blue')}
-                      >
-                        <View style={[styles.gradientPreview, { backgroundColor: '#f2f8ff' }]} />
-                        <Text style={[styles.backgroundOptionText, { 
-                          color: backgroundType === 'blue' ? itemColor : colors.text,
-                          fontWeight: backgroundType === 'blue' ? '600' : '400',
-                          marginLeft: spacing[2]
-                        }]}>Colors</Text>
-                      </TouchableOpacity>
-                      
-                      <TouchableOpacity
-                        style={[
-                          styles.backgroundOption,
-                          {
-                            backgroundColor: backgroundType === 'white' 
-                              ? `${itemColor}20` 
-                              : theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                            borderColor: backgroundType === 'white' 
-                              ? itemColor 
-                              : theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-                            borderWidth: backgroundType === 'white' ? 2 : 1,
-                          }
-                        ]}
-                        onPress={() => handleBackgroundTypeSetting('white')}
-                      >
-                        <View style={[styles.whitePreview, { backgroundColor: '#ffffff' }]} />
-                        <Text style={[styles.backgroundOptionText, { 
-                          color: backgroundType === 'white' ? itemColor : colors.text,
-                          fontWeight: backgroundType === 'white' ? '600' : '400',
-                          marginLeft: spacing[2]
-                        }]}>White</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
+                {/* Background selector - preserving critical background logic */}
+                {item.type === 'selector' && item.key === 'backgroundType' && (
+                  <BackgroundSelector
+                    backgroundType={backgroundType}
+                    onBackgroundChange={handleBackgroundTypeSetting}
+                    itemColor={itemColor}
+                    theme={theme}
+                    colors={colors}
+                  />
+                )}
+              </SettingItemComponent>
             );
           })}
         </Animated.ScrollView>
@@ -973,52 +672,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       </View>
 
       {/* About Modal */}
-      <Modal
+      <AboutModal
         visible={showAboutModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowAboutModal(false)}
-      >
-        <View style={styles.aboutModalBackdrop}>
-          <TouchableOpacity 
-            style={styles.aboutModalBackdropTouchable}
-            onPress={() => setShowAboutModal(false)}
-            activeOpacity={1}
-          />
-          
-          <View style={[
-            styles.aboutModalContainer,
-            { 
-              backgroundColor: theme === 'dark' ? '#1a1a1a' : colors.surface,
-              borderColor: colors.borders.default,
-            }
-          ]}>
-            {/* Close button */}
-            <TouchableOpacity
-              style={styles.aboutCloseButton}
-              onPress={() => setShowAboutModal(false)}
-            >
-              <Feather name="x" size={14} color={colors.textMuted} />
-            </TouchableOpacity>
-
-            {/* Content */}
-            <View style={styles.aboutContent}>
-              <Text style={[styles.aboutTitle, { color: colors.text }]}>
-                About Aether
-              </Text>
-              <Text style={[styles.aboutVersion, { color: colors.textMuted }]}>
-                Version {Constants.expoConfig?.version || '1.0.0'}
-              </Text>
-              <Text style={[styles.aboutPlatform, { color: colors.textMuted }]}>
-                {Constants.platform?.ios ? 'iOS' : 'Android'} Platform
-              </Text>
-              <Text style={[styles.aboutCredits, { color: colors.textMuted }]}>
-                By Dorian Innovations
-              </Text>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setShowAboutModal(false)}
+        theme={theme}
+        colors={colors}
+      />
 
       {/* Sign Out Modal */}
       <SignOutModal
@@ -1202,63 +861,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: spacing[4],
   },
-  subDrawerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 80,
-    borderRadius: 12,
-    marginHorizontal: spacing[1],
-    marginVertical: 2,
-    paddingHorizontal: spacing[4],
-    borderWidth: 1,
-  },
-  backgroundSelectorItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    minHeight: 120,
-    borderRadius: 12,
-    marginHorizontal: spacing[1],
-    marginVertical: 2,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[4],
-    borderWidth: 1,
-  },
-  subDrawerItemContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flex: 1,
-    minHeight: 80,
-  },
-  backgroundSelectorContent: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    flex: 1,
-    marginLeft: spacing[3],
-  },
-  subDrawerItemLabel: {
-    fontFamily: typography.fonts.body,
-    fontSize: 15,
-    fontWeight: '500',
-    letterSpacing: -0.1,
-    flex: 1,
-  },
   
-  // Action Button
-  actionButton: {
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  actionButtonText: {
-    fontFamily: typography.fonts.body,
-    fontSize: 13,
-    fontWeight: '500',
-    letterSpacing: -0.1,
-  },
   
   // Quick Actions
   quickActionsSection: {
@@ -1305,99 +908,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     letterSpacing: -0.1,
   },
-  // About Modal
-  aboutModalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  aboutModalBackdropTouchable: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  aboutModalContainer: {
-    width: 240,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: spacing[4],
-    paddingTop: spacing[3],
-    position: 'relative',
-  },
-  aboutCloseButton: {
-    position: 'absolute',
-    top: spacing[2],
-    right: spacing[2],
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1,
-  },
-  aboutContent: {
-    alignItems: 'flex-start',
-  },
-  aboutTitle: {
-    fontFamily: typography.fonts.headingSemiBold,
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: spacing[2],
-  },
-  aboutVersion: {
-    fontFamily: typography.fonts.body,
-    fontSize: 13,
-    marginBottom: 4,
-  },
-  aboutPlatform: {
-    fontFamily: typography.fonts.body,
-    fontSize: 13,
-    marginBottom: spacing[3],
-  },
-  aboutCredits: {
-    fontFamily: typography.fonts.body,
-    fontSize: 12,
-    fontStyle: 'italic',
-  },
   
-  // Background Selector
-  backgroundSelector: {
-    flexDirection: 'column',
-    gap: spacing[2],
-    marginTop: spacing[2],
-    flex: 1,
-  },
-  backgroundOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[3],
-    borderRadius: 8,
-    borderWidth: 1,
-    minHeight: 44,
-  },
-  backgroundOptionText: {
-    fontFamily: typography.fonts.body,
-    fontSize: 13,
-    letterSpacing: -0.1,
-  },
-  gradientPreview: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#f2f8ff',
-  },
-  whitePreview: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
-  },
 });
 
 export default SettingsModal;

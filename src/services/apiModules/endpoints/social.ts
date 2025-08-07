@@ -88,5 +88,16 @@ export const SocialProxyAPI = {
       logger.error('Failed to create post:', error);
       throw error;
     }
+  },
+
+  // Delete a post
+  async deletePost(postId: string): Promise<any> {
+    try {
+      const response = await api.delete(`/social-proxy/posts/${postId}`);
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to delete post:', error);
+      throw error;
+    }
   }
 };

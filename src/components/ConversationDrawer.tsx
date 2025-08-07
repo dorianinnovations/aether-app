@@ -4,7 +4,7 @@
  * Refactored for modularity and maintainability
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import {
   Modal,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { HeatmapModal } from '../design-system/components/organisms';
+import { HeatmapTooltip } from '../design-system/components/organisms/HeatmapTooltip';
 import { ConversationList } from './ConversationList';
 import {
   useConversationTabs,
@@ -55,16 +55,11 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [longPressedId, setLongPressedId] = useState<string | null>(null);
   
-  // Heatmap modal state
-  const [showHeatmapModal, setShowHeatmapModal] = useState(false);
-  const [selectedFriend, setSelectedFriend] = useState<{
-    username: string;
-    displayName?: string;
-  } | null>(null);
-  
+  const [tooltip, setTooltip] = useState<{ visible: boolean; username: string; x: number; y: number } | null>(null);
+  const itemRefs = useRef<{ [key: string]: View }>({});
+
   const themeColors = getThemeColors(theme);
   
-  // Use modular hooks
   const {
     currentTab,
     isTabSwitching,
@@ -92,33 +87,28 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     resetAnimations,
   } = useDrawerAnimation();
 
-  // Real-time conversation events with stable handlers - only when drawer is visible
   useConversationEvents({
     onConversationCreated: (conversation) => {
       log.debug('Real-time: Conversation created', conversation);
       setConversations(prev => [conversation, ...prev]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     },
-    
     onConversationUpdated: (conversation) => {
       log.debug('Real-time: Conversation updated', conversation);
       setConversations(prev => prev.map(conv => 
         conv._id === conversation._id ? { ...conv, ...conversation } : conv
       ));
     },
-    
     onConversationDeleted: ({ conversationId }: { conversationId: string }) => {
       log.debug('Real-time: Conversation deleted', conversationId);
       setConversations(prev => prev.filter(conv => conv._id !== conversationId));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     },
-    
     onAllConversationsDeleted: ({ deletedCount }: { deletedCount: number }) => {
       log.debug('Real-time: All conversations deleted', deletedCount);
       setConversations([]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     },
-    
     onMessageAdded: ({ conversationId, conversation }: { conversationId: string; conversation?: any }) => {
       log.debug('Real-time: Message added to conversation', conversationId);
       if (conversation) {
@@ -133,21 +123,17 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
         });
       }
     },
-    autoRefresh: isVisible // Only connect SSE when drawer is visible
+    autoRefresh: isVisible
   });
 
-
-  // Load conversations when drawer opens or tab changes
   useEffect(() => {
     if (isVisible) {
       loadConversations(currentTab);
     }
   }, [isVisible, currentTab, loadConversations]);
   
-  // Clear cache when drawer closes to save memory
   useEffect(() => {
     if (!isVisible) {
-      // Clear old cache entries after 5 minutes of drawer being closed
       const clearCacheTimer = setTimeout(() => {
         clearCache();
       }, 300000);
@@ -155,7 +141,6 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     }
   }, [isVisible, clearCache]);
 
-  // Delete conversation with haptic feedback
   const handleDeleteConversationWithFeedback = useCallback(async (conversationId: string) => {
     const success = await handleDeleteConversation(conversationId);
     if (success) {
@@ -165,7 +150,6 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     }
   }, [handleDeleteConversation]);
 
-  // Pull-to-refresh handler
   const handleRefresh = useCallback(async () => {
     if (isRefreshing || isLoading) return;
     
@@ -173,13 +157,8 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     try {
-      // Clear cache for current tab to force refresh
       clearTabCache(currentTab);
-      
-      // Force reload conversations
       await loadConversations(currentTab, true);
-      
-      // Success haptic feedback
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       log.error('Failed to refresh conversations:', error);
@@ -189,13 +168,10 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     }
   }, [isRefreshing, isLoading, currentTab, loadConversations, clearTabCache]);
 
-  
-  // Handle tab transitions with animation control
   const handleTabTransitionWithAnimationState = useCallback((targetTab: number) => {
     handleTabTransition(targetTab, isAnimating);
   }, [handleTabTransition, isAnimating]);
 
-  // Effect to handle visibility changes
   useEffect(() => {
     if (isVisible) {
       showDrawer(() => setIsAnimating(false));
@@ -204,14 +180,12 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     }
   }, [isVisible, showDrawer, hideDrawer]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       resetAnimations();
       resetTabAnimations();
     };
   }, [resetAnimations, resetTabAnimations]);
-  
   
   const handleClose = useCallback(() => {
     if (isAnimating) return;
@@ -227,13 +201,16 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     }
   }, [onStartNewChat, isAnimating, onClose]);
   
-  // Handle heatmap selection
-  const handleHeatmapSelect = useCallback((friend: { username: string; displayName?: string }) => {
-    setSelectedFriend(friend);
-    setShowHeatmapModal(true);
-  }, []);
-  
-  // Handle conversation selection with close
+  const handleHeatmapLongPress = (friend: { username: string }, conversationId: string) => {
+    itemRefs.current[conversationId]?.measure((fx, fy, width, height, px, py) => {
+      setTooltip({ visible: true, username: friend.username, x: px, y: py });
+    });
+  };
+
+  const handleHeatmapPressOut = () => {
+    setTooltip(null);
+  };
+
   const handleConversationSelectAndClose = useCallback((conversation: any) => {
     onConversationSelect(conversation);
     onClose();
@@ -250,7 +227,6 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
       statusBarTranslucent={true}
     >
       <View style={styles.container}>
-        {/* Enhanced Overlay */}
         <TouchableOpacity 
           style={styles.overlayTouch}
           activeOpacity={1} 
@@ -268,7 +244,6 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
           />
         </TouchableOpacity>
 
-        {/* Enhanced Drawer */}
         <Animated.View
           style={[
             styles.drawer,
@@ -277,33 +252,22 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
               backgroundColor: theme === 'light' ? designTokens.brand.surface : designTokens.surfaces.dark.elevated,
               borderRightWidth: 0.5,
               borderRightColor: theme === 'light' ? designTokens.borders.light.default : designTokens.borders.dark.default,
-              shadowColor: theme === 'light' ? '#000' : '#fff',
-              shadowOffset: theme === 'light' ? { width: 2, height: 0 } : { width: 0, height: 0 },
-              shadowOpacity: theme === 'light' ? 0.08 : 0.15,
-              shadowRadius: theme === 'light' ? 6 : 4,
-              elevation: theme === 'light' ? 4 : 0,
             }
           ]}
         >
           <SafeAreaView style={styles.drawerContent}>
             <View style={styles.contentWrapper}>
-
-              {/* Enhanced Header with glassmorphic styling */}
               <View style={[
                 styles.header,
                 { 
                   borderBottomColor: theme === 'dark' 
                     ? designTokens.borders.dark.subtle 
                     : designTokens.borders.light.subtle,
-                  backgroundColor: 'transparent'
                 }
               ]}>
-                
-                
                 <View style={styles.tabs}>
                   {tabs.map((tab, index) => {
                     const isActive = index === currentTab;
-                    
                     return (
                       <View
                         key={tab.label}
@@ -338,7 +302,6 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                               size={16} 
                               color={isActive ? tab.iconColor : themeColors.textSecondary} 
                             />
-                            
                             {isActive && (
                               <Text style={[
                                 styles.specialTabText,
@@ -358,7 +321,6 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                 </View>
               </View>
           
-              {/* Enhanced Content - Now using ConversationList component */}
               <ConversationList
                 conversations={conversations}
                 currentTab={currentTab}
@@ -372,12 +334,13 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                 longPressedId={longPressedId}
                 onConversationSelect={handleConversationSelectAndClose}
                 onDeleteConversation={handleDeleteConversationWithFeedback}
-                onHeatmapSelect={handleHeatmapSelect}
+                onHeatmapLongPress={handleHeatmapLongPress}
+                onHeatmapPressOut={handleHeatmapPressOut}
                 onRefresh={handleRefresh}
                 setLongPressedId={setLongPressedId}
+                itemRefs={itemRefs}
               />
               
-              {/* Bottom Action Bar */}
               <View 
                 style={[
                   styles.bottomActionBar,
@@ -385,7 +348,6 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                     borderTopColor: theme === 'dark' 
                       ? designTokens.borders.dark.subtle 
                       : designTokens.borders.light.subtle,
-                    backgroundColor: 'transparent',
                   }
                 ]}
               >
@@ -436,17 +398,15 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
           </SafeAreaView>
         </Animated.View>
 
-        {/* Heatmap Modal */}
-        <HeatmapModal
-          visible={showHeatmapModal}
-          onClose={() => {
-            setShowHeatmapModal(false);
-            setSelectedFriend(null);
-          }}
-          theme={theme}
-          friendUsername={selectedFriend?.username}
-          friendDisplayName={selectedFriend?.displayName}
-        />
+        {tooltip && (
+          <View style={{ position: 'absolute', left: tooltip.x, top: tooltip.y }}>
+            <HeatmapTooltip
+              visible={tooltip.visible}
+              theme={theme}
+              friendUsername={tooltip.username}
+            />
+          </View>
+        )}
       </View>
     </Modal>
   );
@@ -476,11 +436,9 @@ const styles = StyleSheet.create({
   },
   drawerContent: {
     flex: 1,
-    backgroundColor: 'transparent',
   },
   contentWrapper: {
     flex: 1,
-    backgroundColor: 'transparent',
   },
   header: {
     paddingHorizontal: spacing[4],
@@ -496,9 +454,7 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: 8,
   },
-  specialTab: {
-    // Dynamic flex handled inline
-  },
+  specialTab: {},
   neumorphicTab: {
     flexDirection: 'row',
     alignItems: 'center',

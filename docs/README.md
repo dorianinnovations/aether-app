@@ -1,8 +1,8 @@
-# Aether Mobile
+# Aether App
 
-**Decode your adaptive patterns**
+**Quick Start Development Guide**
 
-An intelligent mobile companion that leverages AI to provide personalized insights, real-time chat interactions, and meaningful connections through sophisticated pattern recognition and adaptive learning.
+A simplified overview for developers getting started with the Aether platform. For comprehensive documentation, see the main [README.md](../README.md) and [CLAUDE.md](../CLAUDE.md).
 
 ## 🌟 Features
 
@@ -30,8 +30,8 @@ An intelligent mobile companion that leverages AI to provide personalized insigh
 
 ```bash
 # Clone the repository
-git clone https://github.com/[username]/AetheR.git
-cd AetheR
+git clone https://github.com/[username]/aether-app.git
+cd aether-app
 
 # Install dependencies  
 npm install
@@ -48,12 +48,14 @@ npm run ios          # Run on iOS simulator
 npm run android      # Run on Android emulator  
 npm run web          # Run in web browser
 
-# Testing & Quality
-npm test             # Run test suite
-npm run test:watch   # Run tests in watch mode
-npm run test:coverage # Generate coverage report
+# Testing & Quality (VERIFIED COMMANDS)
 npm run lint         # Run ESLint
 npm run typecheck    # TypeScript type checking
+
+# Manual Testing Scripts
+node scripts/checkServer.js    # Verify backend connectivity
+node scripts/testSignup.js     # Test user registration
+node scripts/testSocialCards.js # Test social features
 ```
 
 ## 🏗️ Architecture
@@ -100,13 +102,13 @@ AetheR features a sophisticated neumorphic design language that emphasizes:
 - **Navigation**: React Navigation 7
 - **Animation**: React Native Reanimated 3
 - **Styling**: StyleSheet with design tokens
-- **Testing**: Jest with React Native Testing Library
+- **Type Safety**: TypeScript with strict mode enforcement
 
 ### Code Quality
-- **ESLint**: Code linting and formatting
-- **TypeScript**: Full type coverage
-- **Testing**: Unit tests, integration tests, and user journey tests
-- **Component Testing**: Isolated component behavior verification
+- **ESLint**: Code linting with TypeScript and React Native rules
+- **TypeScript**: Full type coverage with strict compiler settings
+- **Manual Testing**: Custom scripts for API and feature validation
+- **Real-time Monitoring**: Server-Sent Events for live application state
 
 ## 📱 Screens & Features
 
@@ -129,13 +131,13 @@ The app integrates with backend services for:
 - **Analytics**: Pattern recognition and insights
 - **User Data**: Profile and preference synchronization
 
-## 🧪 Testing Strategy
+## 🧪 Development Strategy
 
-Comprehensive testing approach including:
-- **Unit Tests**: Individual component and function testing
-- **Integration Tests**: Screen-level behavior verification  
-- **User Journey Tests**: End-to-end workflow validation
-- **Performance Testing**: Animation and rendering optimization
+Pragmatic development approach including:
+- **Type Safety**: Comprehensive TypeScript coverage preventing runtime errors
+- **Manual Testing**: Custom testing scripts for critical user flows
+- **Real-time Validation**: Live testing with development server and backend integration
+- **Performance Monitoring**: Animation and rendering optimization with native drivers
 
 ## 📈 Performance
 
@@ -170,4 +172,4 @@ This is a solo-developed startup project. For inquiries about collaboration or i
 
 ---
 
-**AetheR** - *Decode your adaptive patterns*
+**Aether App** - *For complete documentation, see main README.md and CLAUDE.md*

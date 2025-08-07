@@ -28,7 +28,7 @@ import { Ionicons } from '@expo/vector-icons';
 // Enhanced Components
 import { EnhancedChatInput } from '../../design-system/components/molecules';
 import EnhancedBubble from '../../design-system/components/molecules/EnhancedBubble';
-import { Header, HeaderMenu, SignOutModal } from '../../design-system/components/organisms';
+import { Header, HeaderMenu, SignOutModal, HeatmapModal } from '../../design-system/components/organisms';
 import { PageBackground } from '../../design-system/components/atoms/PageBackground';
 import SettingsModal from './SettingsModal';
 import ConversationDrawer from '../../components/ConversationDrawer';
@@ -171,6 +171,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   const [currentFriendUsername, setCurrentFriendUsername] = useState<string | undefined>(
     route?.params?.friendUsername
   );
+  const [showHeatmapModal, setShowHeatmapModal] = useState(false);
+  const [heatmapFriendUsername, setHeatmapFriendUsername] = useState<string | undefined>(undefined);
 
   // Message handling with streaming (must be after currentConversationId declaration)
   const {
@@ -748,7 +750,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             [{ nativeEvent: { contentOffset: { y: headerAnim } } }],
             { 
               useNativeDriver: false,
-              listener: (event) => {
+              listener: (event: any) => {
                 const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
                 const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
                 setIsNearBottom(distanceFromBottom <= 50);
@@ -885,13 +887,19 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             setCurrentFriendUsername(conversation.friendUsername);
             setCurrentConversationId(undefined);
             setShowConversationDrawer(false);
+          } else if (conversation.type === 'custom' && conversation._id.startsWith('orbit-')) {
+            // Handle orbit/heatmap conversation - these are not chat conversations
+            logger.debug('Orbit conversation selected, showing heatmap for:', conversation.friendUsername);
+            setHeatmapFriendUsername(conversation.friendUsername);
+            setShowHeatmapModal(true);
+            setShowConversationDrawer(false);
           } else {
             // Handle AI conversation - clear messages immediately to prevent bleed-through
             setMessages([]);
             const conversationId = conversation._id;
             
-            // Only handle valid conversation IDs (not friend- prefixed ones)
-            if (conversationId && !conversationId.startsWith('friend-')) {
+            // Only handle valid conversation IDs (not friend- or orbit- prefixed ones)
+            if (conversationId && !conversationId.startsWith('friend-') && !conversationId.startsWith('orbit-')) {
               setCurrentConversationId(conversationId);
               setCurrentFriendUsername(undefined);
               handleConversationSelect(conversation as any);
@@ -1273,6 +1281,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         </Animated.View>
       </Modal>
       )}
+
+      {/* Heatmap Modal */}
+      <HeatmapModal
+        visible={showHeatmapModal}
+        onClose={() => setShowHeatmapModal(false)}
+        friendUsername={heatmapFriendUsername}
+        theme={theme}
+      />
+
       </SafeAreaView>
     </PageBackground>
   );

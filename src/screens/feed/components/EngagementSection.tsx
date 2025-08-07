@@ -11,7 +11,7 @@ import { Feather } from '@expo/vector-icons';
 import type { EngagementData, EngagementActions, CardPreferences } from './types';
 
 // Hooks
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 // Tokens
 import { getThemeColors } from '../../../design-system/tokens/colors';

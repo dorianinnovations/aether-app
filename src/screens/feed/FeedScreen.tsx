@@ -38,7 +38,7 @@ import { SocialCard as SocialCardComponent } from '../../design-system/component
 import { useHeaderMenu } from '../../design-system/hooks';
 
 // Hooks & Services
-import { useTheme } from '../../hooks/useTheme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { useSocialCards } from '../../hooks/useSocialCards';
 import { logger } from '../../utils/logger';
 
@@ -296,6 +296,27 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
     }
   };
 
+  const handlePostDelete = async (postId: string) => {
+    try {
+      logger.debug(`Deleting post ${postId}`);
+      
+      // Call API to delete post
+      await SocialProxyAPI.deletePost(postId);
+      
+      // Remove post from local state
+      setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+      
+      // Show success feedback
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Success', 'Post deleted successfully');
+      
+    } catch (error) {
+      logger.error('Error deleting post:', error);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Error', 'Failed to delete post. Please try again.');
+    }
+  };
+
   const handleScroll = (event: any) => {
     const scrollY = event.nativeEvent.contentOffset.y;
     const shouldBeScrolled = scrollY > 50; // Header shrinks after scrolling 50px
@@ -385,9 +406,10 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
         onLike={(postId) => handlePostReaction(postId, 'like')}
         onComment={handlePostComment}
         onShare={handlePostShare}
+        onDelete={handlePostDelete}
       />
     );
-  }, [getProfileMockup, handlePostReaction, handlePostComment, handlePostShare]);
+  }, [getProfileMockup, handlePostReaction, handlePostComment, handlePostShare, handlePostDelete]);
 
   // Note: Helper functions moved to component implementations
 

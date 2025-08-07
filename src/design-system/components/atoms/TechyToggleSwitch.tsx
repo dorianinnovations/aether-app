@@ -111,14 +111,14 @@ const TechyToggleSwitch: React.FC<TechyToggleSwitchProps> = ({
 
     return {
       transform: [
-        { translateX },
-        { scale: scaleValue.value }
+        { translateX: translateX as any },
+        { scale: scaleValue.value as any }
       ],
       shadowOpacity: glowValue.value * 0.2,
       shadowRadius: 4,
       shadowColor: '#000000',
       elevation: 4,
-    };
+    } as any;
   });
 
   // Inner glow effect

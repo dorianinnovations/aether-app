@@ -3,8 +3,10 @@
  * Handles individual post rendering with all customization logic
  */
 
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 
 // Types
 import type { Post } from '../../../services/postsApi';
@@ -15,7 +17,8 @@ import { ProfileSection } from './ProfileSection';
 import { EngagementSection } from './EngagementSection';
 
 // Hooks
-import { useTheme } from '../../../hooks/useTheme';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { authService } from '../../../services/authService';
 
 // Tokens
 import { getThemeColors } from '../../../design-system/tokens/colors';
@@ -27,6 +30,7 @@ interface PostCardProps {
   onLike?: (postId: string) => void;
   onComment?: (postId: string) => void;
   onShare?: (postId: string) => void;
+  onDelete?: (postId: string) => void;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({
@@ -34,11 +38,17 @@ export const PostCard: React.FC<PostCardProps> = ({
   profile,
   onLike,
   onComment,
-  onShare
+  onShare,
+  onDelete
 }) => {
   const { theme } = useTheme();
   const themeColors = getThemeColors(theme);
   const { preferences } = profile;
+  const [showDeleteOptions, setShowDeleteOptions] = useState(false);
+  const [scaleAnim] = useState(new Animated.Value(1));
+  
+  // Get current user to check if they can delete the post
+  const currentUser = authService.getCurrentUser();
 
   // Get dynamic text sizes based on preferences
   const getTextSize = (base: number) => {
@@ -96,13 +106,73 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   const moodIndicator = getMoodIndicator();
 
+  // Check if current user owns this post
+  const isUserPost = currentUser?.username === post.author || profile.name === 'You';
+
+  const handleDeletePress = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowDeleteOptions(true);
+    
+    // Animate scale down for selection feedback
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.98,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handleConfirmDelete = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    Alert.alert(
+      'Delete Post',
+      'Are you sure you want to delete this post? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: async () => {
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowDeleteOptions(false);
+          }
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setShowDeleteOptions(false);
+            onDelete?.(post.id);
+          }
+        }
+      ]
+    );
+  };
+
   return (
-    <View style={[styles.premiumCard, { 
-      backgroundColor: themeColors.surface,
-      borderColor: themeColors.borders.default,
-      borderRadius: preferences.cardCornerRadius,
-      marginVertical: preferences.layout === 'minimal' ? spacing[2] : spacing[4],
-    }]}>
+    <Animated.View style={[
+      styles.premiumCard, 
+      { 
+        backgroundColor: themeColors.surface,
+        borderColor: isUserPost ? `${profile.color}40` : themeColors.borders.default,
+        borderWidth: isUserPost ? 1.5 : 1,
+        borderRadius: preferences.cardCornerRadius,
+        marginVertical: preferences.layout === 'minimal' ? spacing[2] : spacing[4],
+        transform: [{ scale: scaleAnim }],
+        shadowColor: theme === 'dark' ? '#000000' : profile.color,
+        shadowOpacity: theme === 'dark' ? 0.3 : 0.08,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 8 },
+        elevation: isUserPost ? 8 : 6,
+      }
+    ]}>
       {/* Header with profile */}
       <View style={[styles.premiumHeader, {
         backgroundColor: preferences.layout === 'magazine' ? `${profile.color}08` : 'transparent',
@@ -113,6 +183,26 @@ export const PostCard: React.FC<PostCardProps> = ({
           showTimestamp={preferences.showTimestamp}
           timestamp={post.time}
         />
+        
+        {/* Delete button for user's own posts */}
+        {isUserPost && (
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              onPress={handleDeletePress}
+              style={[styles.deleteButton, {
+                backgroundColor: theme === 'dark' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.08)',
+                borderColor: theme === 'dark' ? 'rgba(239, 68, 68, 0.4)' : 'rgba(239, 68, 68, 0.2)',
+              }]}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Feather 
+                name="trash-2" 
+                size={16} 
+                color={theme === 'dark' ? '#FF6B6B' : '#DC2626'} 
+              />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Content with enhanced expressiveness */}
@@ -147,25 +237,41 @@ export const PostCard: React.FC<PostCardProps> = ({
         preferences={preferences}
         accentColor={profile.color}
       />
-    </View>
+      
+      {/* User post indicator */}
+      {isUserPost && (
+        <View style={[styles.userPostIndicator, { backgroundColor: profile.color }]} />
+      )}
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   premiumCard: {
     marginHorizontal: spacing[4],
-    borderWidth: 1,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 6,
+    position: 'relative',
+    overflow: 'hidden',
   },
   premiumHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     paddingHorizontal: spacing[5],
     paddingTop: spacing[5],
     paddingBottom: spacing[4],
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: spacing[2],
+  },
+  deleteButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
   },
   premiumContent: {
     paddingHorizontal: spacing[6],
@@ -185,5 +291,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Nunito-SemiBold',
     fontWeight: '600',
+  },
+  userPostIndicator: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 4,
+    height: '100%',
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
   },
 });

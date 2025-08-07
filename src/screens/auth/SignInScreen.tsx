@@ -27,7 +27,7 @@ import { Header, HeaderMenu } from '../../design-system/components/organisms';
 import { designTokens } from '../../design-system/tokens/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { typography } from '../../design-system/tokens/typography';
-import { AuthAPI } from '../../services/api';
+import { AuthAPI, TokenManager } from '../../services/api';
 import { logger } from '../../utils/logger';
 import type { NavigationProp } from '@react-navigation/native';
 
@@ -172,9 +172,25 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
         setCurrentColorIndex((prev) => (prev + 1) % rainbowPastels.length);
       }, 2000); // Reduced from 800ms to prevent overheating
       
+      // Navigate to main app after success animation
+      setTimeout(async () => {
+        // Verify we have a token and trigger navigation to MainStack
+        const token = await TokenManager.getToken();
+        if (token) {
+          // Navigate to the root and reset to MainStack directly
+          const rootNavigation = navigation.getParent()?.getParent();
+          if (rootNavigation) {
+            rootNavigation.reset({
+              index: 0,
+              routes: [{ name: 'MainStack' }],
+            });
+          }
+        }
+      }, 1500);
+      
       return () => clearInterval(colorCycleInterval);
     }
-  }, [isSignInSuccess, rainbowPastels.length]);
+  }, [isSignInSuccess, rainbowPastels.length, navigation]);
 
   const clearErrorOnChange = () => {
     if (error) {
@@ -237,15 +253,11 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
     try {
       const response = await AuthAPI.login(emailOrUsername.trim(), password);
 
-
       if (response && response.success) { 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         
         setIsSignInSuccess(true);
         setAuthStatus('success');
-        
-        // Small delay to ensure auth state change is fully processed before navigation
-        // No manual navigation needed - App.tsx auth check will handle navigation automatically
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         

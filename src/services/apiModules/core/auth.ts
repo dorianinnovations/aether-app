@@ -37,8 +37,11 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     
     
-    // Handle unauthorized - attempt token refresh first
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Handle unauthorized - attempt token refresh first, but NOT for auth endpoints
+    if (error.response?.status === 401 && !originalRequest._retry && 
+        !originalRequest.url?.includes('/auth/login') && 
+        !originalRequest.url?.includes('/auth/signup') &&
+        !originalRequest.url?.includes('/auth/refresh')) {
       originalRequest._retry = true;
       
       try {

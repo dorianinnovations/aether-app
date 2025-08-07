@@ -127,10 +127,14 @@ const transformSpotifyData = (spotify: any): SpotifyData | undefined => {
 
 // Transform backend data to SocialCard interface
 const transformToSocialCard = (friend: any, socialProxy: any): SocialCard => {
+  // Handle cases where friend.user might be undefined or null
+  const userId = friend.user?._id || friend._id || friend.username || 'unknown';
+  const userName = friend.user?.name || friend.user?.username || friend.displayName || friend.username || 'Unknown User';
+  
   return {
-    id: friend.user._id,
-    userId: friend.user._id,
-    name: friend.user.name || friend.user.username,
+    id: userId,
+    userId: userId,
+    name: userName,
     avatar: undefined, // TODO: Add avatar support
     relationship: 'friend', // Default for now
     lastUpdated: socialProxy.socialProxy?.lastUpdated || friend.addedAt,
@@ -154,10 +158,14 @@ const transformToSocialCard = (friend: any, socialProxy: any): SocialCard => {
 };
 
 const createFallbackSocialCard = (friend: any): SocialCard => {
+  // Handle cases where friend.user might be undefined or null
+  const userId = friend.user?._id || friend._id || friend.username || 'unknown';
+  const userName = friend.user?.name || friend.user?.username || friend.displayName || friend.username || 'Unknown User';
+  
   return {
-    id: friend.user._id,
-    userId: friend.user._id,
-    name: friend.user.name || friend.user.username,
+    id: userId,
+    userId: userId,
+    name: userName,
     relationship: 'friend',
     lastUpdated: friend.addedAt,
     isOnline: false,

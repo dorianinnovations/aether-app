@@ -33,6 +33,7 @@ import { typography } from '../../design-system/tokens/typography';
 import { useSignUpForm } from '../../hooks/useSignUpForm';
 import { usePasswordStrength } from '../../hooks/usePasswordStrength';
 import { useUsernameValidation } from '../../hooks/useUsernameValidation';
+import { TokenManager } from '../../services/api';
 
 const { height } = Dimensions.get('window');
 
@@ -188,8 +189,11 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
   const handleSubmit = async () => {
     Keyboard.dismiss();
     await validateAndSubmit(usernameAvailable, passwordStrength);
-    
-    if (isSignUpSuccess) {
+  };
+
+  // Handle successful signup - separate effect to avoid timing issues
+  useEffect(() => {
+    if (isSignUpSuccess && !isSuccess) {
       setIsSuccess(true);
       
       // Animate success state
@@ -198,8 +202,24 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
         duration: 600,
         useNativeDriver: true,
       }).start();
+      
+      // Navigate to main app after success animation
+      setTimeout(async () => {
+        // Verify we have a token and trigger navigation to MainStack
+        const token = await TokenManager.getToken();
+        if (token) {
+          // Navigate to the root and reset to MainStack directly
+          const rootNavigation = navigation.getParent()?.getParent();
+          if (rootNavigation) {
+            rootNavigation.reset({
+              index: 0,
+              routes: [{ name: 'MainStack' }],
+            });
+          }
+        }
+      }, 1500);
     }
-  };
+  }, [isSignUpSuccess, isSuccess, navigation, successAnim]);
 
 
   // Success screen
