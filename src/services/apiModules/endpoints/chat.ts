@@ -228,7 +228,7 @@ export const ChatAPI = {
 
           xhr.onerror = () => reject(new Error('Request took too long, please try your message once more'));
           xhr.ontimeout = () => reject(new Error('Request took too long, please try your message once more'));
-          xhr.timeout = 30000;
+          xhr.timeout = 120000;
           const requestBody = { 
             message: message, 
             stream: true,

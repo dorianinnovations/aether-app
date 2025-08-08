@@ -40,3 +40,8 @@ export { default as ConversationActionBar } from './ConversationActionBar';
 export { PasswordStrengthIndicator } from './PasswordStrengthIndicator';
 export { UsernameStatusIndicator } from './UsernameStatusIndicator';
 export { AuthButton } from './AuthButton';
+
+// Profile components
+export { ProfileHeader } from './ProfileHeader';
+export { ProfileFieldsGroup } from './ProfileFieldsGroup';
+export { SocialProfileSection } from './SocialProfileSection';

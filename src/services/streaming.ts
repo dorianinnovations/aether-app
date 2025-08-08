@@ -89,7 +89,7 @@ export class StreamingService {
       completed = true;
     };
     
-    xhr.timeout = 30000;
+    xhr.timeout = 120000;
     xhr.send(JSON.stringify({ message: prompt, stream: true }));
     
     // Yield chunks as they arrive with small delay for better UX

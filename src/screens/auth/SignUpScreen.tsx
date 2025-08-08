@@ -208,14 +208,30 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
         // Verify we have a token and trigger navigation to MainStack
         const token = await TokenManager.getToken();
         if (token) {
-          // Navigate to the root and reset to MainStack directly
-          const rootNavigation = navigation.getParent()?.getParent();
-          if (rootNavigation) {
-            rootNavigation.reset({
-              index: 0,
-              routes: [{ name: 'MainStack' }],
-            });
+          try {
+            // Try to navigate to the root and reset to MainStack directly
+            const rootNavigation = navigation.getParent()?.getParent();
+            if (rootNavigation) {
+              rootNavigation.reset({
+                index: 0,
+                routes: [{ name: 'MainStack' }],
+              });
+            } else {
+              // Fallback: navigate to Chat screen directly
+              navigation.navigate('Chat');
+            }
+          } catch (error) {
+            console.error('Navigation error after signup:', error);
+            // Final fallback: navigate to Chat screen
+            navigation.navigate('Chat');
           }
+        } else {
+          // Token not found, reset to sign in
+          console.error('No token found after successful signup');
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'SignIn' }],
+          });
         }
       }, 1500);
     }

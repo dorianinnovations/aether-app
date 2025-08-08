@@ -28,7 +28,15 @@ export { UserBadge } from './UserBadge';
 export { MiniTooltip } from './MiniTooltip';
 export { default as ConversationIcon } from './ConversationIcon';
 export { default as TabButton } from './TabButton';
+export { ProfileImage } from './ProfileImage';
+export { BannerImage } from './BannerImage';
+export { ProfileField } from './ProfileField';
+export { OnlineStatus } from './OnlineStatus';
 
 // Re-export types
 export type { IconName, IconSize } from './Icon';
 export type { UserBadgeType } from './UserBadge';
+export type { ProfileImageProps } from './ProfileImage';
+export type { BannerImageProps } from './BannerImage';
+export type { ProfileFieldProps } from './ProfileField';
+export type { OnlineStatusProps, OnlineStatusType } from './OnlineStatus';

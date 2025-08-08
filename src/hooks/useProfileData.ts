@@ -74,9 +74,10 @@ export const useProfileData = (): UseProfileDataReturn => {
       setLoading(true);
       setError(null);
       
-      const [profileResponse, usernameResponse] = await Promise.all([
+      const [profileResponse, usernameResponse, profileImagesResponse] = await Promise.all([
         UserAPI.getProfile(),
-        FriendsAPI.getUserUsername().catch(() => ({ username: null }))
+        FriendsAPI.getUserUsername().catch(() => ({ username: null })),
+        UserAPI.getProfileImages().catch(() => ({ data: { profilePhoto: null, bannerImage: null } }))
       ]);
       
       if ((profileResponse as any).status === 'success' && ((profileResponse as any).data?.user || (profileResponse as any).data?.data?.user)) {
@@ -93,6 +94,9 @@ export const useProfileData = (): UseProfileDataReturn => {
           userData.name || usernameResponse.username
         );
         
+        // Get profile images from the images endpoint
+        const profileImages = (profileImagesResponse as any).data || {};
+        
         setProfile({
           id: userId, // Use resolved userId instead of userData.id
           email: userData.email,
@@ -100,8 +104,8 @@ export const useProfileData = (): UseProfileDataReturn => {
           bio: userData.bio,
           location: userData.location,
           website: userData.website,
-          profilePicture: (profileResponse as any).data.profilePicture,
-          bannerImage: (profileResponse as any).data.bannerImage,
+          profilePicture: profileImages.profilePhoto?.url,
+          bannerImage: profileImages.bannerImage?.url,
           username: usernameResponse.username || userData.username,
           createdAt: userData.createdAt,
           badges: userBadges,

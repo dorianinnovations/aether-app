@@ -19,7 +19,7 @@ export const AuthAPI = {
     });
     
     
-    if (response.success && (response.data || (response as any).token)) {
+    if ((response.success || (response as any).status === 'success') && ((response as any).token || response.data)) {
       // Store tokens and user data with cleanup - Backend returns token at root level
       const token = (response as any).token || response.data?.token;
       const user = response.data?.user;
@@ -41,7 +41,16 @@ export const AuthAPI = {
       }
     }
     
-    return response as AuthResponse;
+    // Return response in proper AuthResponse format
+    return {
+      success: (response as any).status === 'success',
+      status: (response as any).status || 'error',
+      data: {
+        token: (response as any).token || response.data?.token,
+        user: response.data?.user,
+        refreshToken: (response as any).refreshToken || response.data?.refreshToken
+      }
+    } as AuthResponse;
   },
 
   async login(emailOrUsername: string, password: string): Promise<AuthResponse> {

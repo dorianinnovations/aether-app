@@ -11,7 +11,7 @@ export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://aether-s
 // Create axios instance
 export const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  timeout: 120000,
   headers: {
     'Content-Type': 'application/json',
   },
