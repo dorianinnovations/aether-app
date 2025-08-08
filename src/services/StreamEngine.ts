@@ -22,14 +22,15 @@ export class StreamEngine {
   static async *streamChat(
     prompt: string,
     endpoint: string = '/social-chat',
-    attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>
+    attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>,
+    conversationId?: string
   ): AsyncGenerator<string | StreamChunk, void, unknown> {
     
     // For attachments, fall back to non-streaming (as per backend)
     if (attachments && attachments.length > 0) {
       try {
         const { ChatAPI } = await import('./api');
-        const response = await ChatAPI.sendMessage(prompt, false, attachments);
+        const response = await ChatAPI.sendMessage(prompt, false, attachments, conversationId);
         
         // Extract content from various response formats
         const content = (response as any).content || 
@@ -139,7 +140,11 @@ export class StreamEngine {
     };
     
     xhr.timeout = 30000;
-    xhr.send(JSON.stringify({ message: prompt, stream: true }));
+    xhr.send(JSON.stringify({ 
+      message: prompt, 
+      stream: true,
+      ...(conversationId && { conversationId })
+    }));
     
     // Process chunks and yield individual words as they come from server
     while (!completed || processedChunks < chunks.length) {

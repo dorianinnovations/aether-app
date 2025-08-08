@@ -15,13 +15,14 @@ export class StreamingService {
   static async *streamChat(
     prompt: string,
     endpoint: string = '/social-chat',
-    attachments?: any[]
+    attachments?: any[],
+    conversationId?: string
   ): AsyncGenerator<string, void, unknown> {
     
     // For photo attachments, fall back to non-streaming (as per backend)
     if (attachments && attachments.length > 0) {
       const { ChatAPI } = await import('./api');
-      const response = await ChatAPI.sendMessage(prompt, false, attachments);
+      const response = await ChatAPI.sendMessage(prompt, false, attachments, conversationId);
       yield (response as any).content || '';
       return;
     }
@@ -90,7 +91,11 @@ export class StreamingService {
     };
     
     xhr.timeout = 120000;
-    xhr.send(JSON.stringify({ message: prompt, stream: true }));
+    xhr.send(JSON.stringify({ 
+      message: prompt, 
+      stream: true,
+      ...(conversationId && { conversationId })
+    }));
     
     // Yield chunks as they arrive with small delay for better UX
     while (!completed || processedChunks < chunks.length) {

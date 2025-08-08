@@ -10,7 +10,7 @@ import { logger } from '../../../utils/logger';
 
 export const ChatAPI = {
   // Non-streaming social chat for compatibility (when streaming isn't needed)
-  async sendMessage(prompt: string, _stream: boolean = false, attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>): Promise<ChatResponse> {
+  async sendMessage(prompt: string, _stream: boolean = false, attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>, conversationId?: string): Promise<ChatResponse> {
     try {
       const token = await TokenManager.getToken();
       if (!token) {
@@ -51,7 +51,8 @@ export const ChatAPI = {
       const requestBody = {
         message: prompt,
         stream: false,
-        attachments: processedAttachments
+        attachments: processedAttachments,
+        ...(conversationId && { conversationId })
       };
 
       const response = await fetch(`${API_BASE_URL}/social-chat`, {
@@ -102,14 +103,17 @@ export const ChatAPI = {
   },
 
   // Simple social chat for Aether Server - using original working implementation
-  async socialChat(message: string): Promise<{ success: boolean; response: string; thinking?: string; model?: string; usage?: unknown }> {
+  async socialChat(message: string, conversationId?: string): Promise<{ success: boolean; response: string; thinking?: string; model?: string; usage?: unknown }> {
     const { api } = await import('../core/client');
-    const response = await api.post('/social-chat', { message });
+    const response = await api.post('/social-chat', { 
+      message,
+      ...(conversationId && { conversationId })
+    });
     return response.data;
   },
 
   // Streaming social chat for real-time responses - React Native compatible with XMLHttpRequest  
-  streamSocialChat(message: string, attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>): AsyncGenerator<string | { metadata: unknown }, void, unknown> {
+  streamSocialChat(message: string, attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>, conversationId?: string): AsyncGenerator<string | { metadata: unknown }, void, unknown> {
     
     return (async function* () {
       try {
@@ -232,7 +236,8 @@ export const ChatAPI = {
           const requestBody = { 
             message: message, 
             stream: true,
-            attachments: processedAttachments
+            attachments: processedAttachments,
+            ...(conversationId && { conversationId })
           };
           
           xhr.send(JSON.stringify(requestBody));
@@ -252,13 +257,13 @@ export const ChatAPI = {
   },
 
   // Main streaming method - unified interface for all streaming needs
-  streamMessage(message: string, attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>): AsyncGenerator<string | { metadata: unknown }, void, unknown> {
-    return this.streamSocialChat(message, attachments);
+  streamMessage(message: string, attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>, conversationId?: string): AsyncGenerator<string | { metadata: unknown }, void, unknown> {
+    return this.streamSocialChat(message, attachments, conversationId);
   },
 
   // StreamEngine compatibility - word-based streaming via StreamEngine
-  async *streamMessageWords(prompt: string, attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>): AsyncGenerator<string | { text: string; metadata?: unknown }, void, unknown> {
+  async *streamMessageWords(prompt: string, attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>, conversationId?: string): AsyncGenerator<string | { text: string; metadata?: unknown }, void, unknown> {
     const { StreamEngine } = await import('../../StreamEngine');
-    yield* StreamEngine.streamChat(prompt, '/social-chat', attachments);
+    yield* StreamEngine.streamChat(prompt, '/social-chat', attachments, conversationId);
   },
 };
