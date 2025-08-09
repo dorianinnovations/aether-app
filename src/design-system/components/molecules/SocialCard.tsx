@@ -134,14 +134,10 @@ export const SocialCard: React.FC<SocialCardProps> = memo(({
         )}
       </View>
 
-      {/* Current Status */}
-      {card.currentStatus ? (
+      {/* Current Status - Only show if there's actual status */}
+      {card.currentStatus && (
         <Text style={[styles.status, { color: themeColors.text }]}>
           {card.currentStatus}
-        </Text>
-      ) : (
-        <Text style={[styles.status, { color: themeColors.textMuted, fontStyle: 'italic' }]}>
-          No recent updates
         </Text>
       )}
 
@@ -161,17 +157,25 @@ export const SocialCard: React.FC<SocialCardProps> = memo(({
         </View>
       )}
 
-      {/* Recent Activity */}
-      {card.recentActivities.length > 0 && (
-        <View style={styles.activityContainer}>
-          <Text style={[styles.activityLabel, { color: themeColors.textMuted }]}>
-            Recent:
-          </Text>
+      {/* Recent Activity - Always show something interesting */}
+      <View style={styles.activityContainer}>
+        <Text style={[styles.activityLabel, { color: themeColors.textMuted }]}>
+          Recent:
+        </Text>
+        {card.recentActivities.length > 0 ? (
           <Text style={[styles.activityText, { color: themeColors.textSecondary }]}>
             {card.recentActivities[0].emoji} {card.recentActivities[0].description}
           </Text>
-        </View>
-      )}
+        ) : card.spotify?.currentlyPlaying ? (
+          <Text style={[styles.activityText, { color: '#1db954' }]}>
+            ✨ Connected Spotify account
+          </Text>
+        ) : (
+          <Text style={[styles.activityText, { color: themeColors.textSecondary }]}>
+            🔗 Active on Aether
+          </Text>
+        )}
+      </View>
 
       {/* Spotify Integration */}
       {card.spotify?.currentlyPlaying && (
