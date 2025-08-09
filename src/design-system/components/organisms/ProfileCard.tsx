@@ -171,7 +171,13 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
 
       {/* Spotify Integration */}
       <SpotifyIntegration 
-        spotifyData={socialProfile?.spotify}
+        spotifyData={socialProfile?.spotify ? {
+          ...socialProfile.spotify,
+          currentTrack: socialProfile.spotify.currentTrack ? {
+            ...socialProfile.spotify.currentTrack,
+            album: (socialProfile.spotify.currentTrack as any).album || 'Unknown Album'
+          } : undefined
+        } : { connected: false }}
         onStatusChange={onSpotifyStatusChange}
       />
 

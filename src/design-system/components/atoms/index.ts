@@ -8,6 +8,8 @@ export { default as Input } from './Input';
 export { default as Icon } from './Icon';
 export { default as BasicMarkdown } from './BasicMarkdown';
 export { default as DismissibleBanner } from './DismissibleBanner';
+export { ChatMessage } from './ChatMessage';
+export { ConnectionStatusIndicator } from './ConnectionStatusIndicator';
 export { default as LottieLoader } from './LottieLoader';
 export { default as ShimmerText } from './ShimmerText';
 export { default as RainbowShimmerText } from './RainbowShimmerText';

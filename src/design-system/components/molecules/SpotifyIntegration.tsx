@@ -233,7 +233,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       setLiveProgressMs(currentTrack.progressMs);
       setLastProgressUpdate(Date.now());
     }
-  }, [spotify?.currentTrack?.progressMs, spotify?.currentlyPlaying?.progressMs]);
+  }, [JSON.stringify((spotify as any)?.currentTrack), JSON.stringify((spotify as any)?.currentlyPlaying)]);
 
   // Load initial status and set up live updates
   useEffect(() => {
@@ -878,9 +878,9 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
                 {/* Live Status - Show when we have track data */}
                 {getCurrentTrack(spotify) && (
                   <View style={styles.progressContainer}>
-                    <View style={styles.liveStatusContainer}>
-                      <View style={styles.liveStatusDot} />
-                      <Text style={styles.liveStatusText}>
+                    <View style={styles.statusContainer}>
+                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#4CAF50', marginRight: 4 }} />
+                      <Text style={{ fontSize: 11, color: '#666', opacity: 0.8 }}>
                         {getCurrentTrack(spotify)?.lastPlayed ? 
                           `Last played ${new Date(getCurrentTrack(spotify).lastPlayed).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` :
                           'Live music activity'

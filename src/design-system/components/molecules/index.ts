@@ -8,6 +8,9 @@ export { EnhancedChatInput } from './EnhancedChatInput';
 export { default as EnhancedBubble } from './EnhancedBubble';
 export { ChatHeader } from './ChatHeader';
 export { AttachmentPreview } from './AttachmentPreview';
+export { ChatMessagesList } from './ChatMessagesList';
+export { ChatInputContainer } from './ChatInputContainer';
+export { AddFriendModal } from './AddFriendModal';
 export { PhotoPreview } from './PhotoPreview';
 
 // Connection components (legacy - to be removed)
@@ -24,8 +27,7 @@ export { default as WebSearchResult } from './WebSearchResult';
 // Theme components
 export { ThemeSelector } from './ThemeSelector';
 
-// Social components
-export { SocialCard } from './SocialCard';
+// Social components  
 export { SpotifyIntegration } from './SpotifyIntegration';
 export { DynamicProfileDisplay } from './DynamicProfileDisplay';
 export { LiveSpotifyStatus } from './LiveSpotifyStatus';
