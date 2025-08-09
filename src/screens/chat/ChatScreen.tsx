@@ -1,6 +1,6 @@
 /**
- * Aether - Adaptive Chat Screen (PROPERLY REFACTORED)
- * Maintaining original functionality while using atomic components where appropriate
+ * Aether - Adaptive Chat Screen
+ * The heart of Aether - AI that learns and adapts to your patterns
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -9,14 +9,21 @@ import {
   FlatList,
   StyleSheet,
   Animated,
+  Alert,
+  Text,
+  // Removed unused Dimensions
   SafeAreaView,
   StatusBar,
   TouchableOpacity,
+  Platform,
   Keyboard,
   Easing,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 
 // Enhanced Components
 import { EnhancedChatInput } from '../../design-system/components/molecules';
@@ -27,17 +34,21 @@ import SettingsModal from './SettingsModal';
 import ConversationDrawer from '../../components/ConversationDrawer';
 import { ShimmerText } from '../../design-system/components/atoms/ShimmerText';
 import { WebSearchIndicator } from '../../design-system/components/atoms';
+// Removed unused MessageStatus import
 import TypingIndicator from '../../design-system/components/atoms/TypingIndicator';
-import ScrollToBottomButton from '../../design-system/components/atoms/ScrollToBottomButton';
 
 // Design System
 import { designTokens } from '../../design-system/tokens/colors';
+import { getHeaderMenuShadow } from '../../design-system/tokens/shadows';
 
 // Contexts
 import { useTheme } from '../../contexts/ThemeContext';
 import { useSettings } from '../../contexts/SettingsContext';
+import { typography } from '../../design-system/tokens/typography';
 import { spacing } from '../../design-system/tokens/spacing';
+import { getGlassmorphicStyle } from '../../design-system/tokens/glassmorphism';
 import { useHeaderMenu } from '../../design-system/hooks';
+import { logger } from '../../utils/logger';
 
 // Custom hooks
 import { useGreeting } from '../../hooks/useGreeting';
@@ -45,13 +56,24 @@ import { useKeyboardAnimation } from '../../hooks/useKeyboardAnimation';
 import { useMessages } from '../../hooks/useMessages';
 import { useDynamicPrompts } from '../../hooks/useDynamicPrompts';
 import { useWebSearch } from '../../hooks/useWebSearch';
+import { useGhostTyping } from '../../hooks/useGhostTyping';
 import { useRealTimeMessaging } from '../../hooks/useRealTimeMessaging';
 
 // Types
 import type { Message } from '../../types/chat';
 
 // Services
-import { FriendsAPI } from '../../services/api';
+import { AuthAPI, FriendsAPI, ConversationAPI } from '../../services/api';
+
+// Utils
+import { 
+  createModalAnimationRefs, 
+  // Removed unused animation utilities
+  hideModalAnimation,
+  type ModalAnimationRefs 
+} from '../../utils/animations';
+
+
 
 interface ChatScreenProps {
   route?: {
@@ -61,73 +83,126 @@ interface ChatScreenProps {
   };
 }
 
+// Removed unused useDimensions hook
+
 const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   const navigation = useNavigation();
   const { theme, colors } = useTheme();
   const { settings } = useSettings();
-
-  // Refs
-  const flatListRef = useRef<FlatList>(null);
-  const inputContainerAnim = useRef(new Animated.Value(0)).current;
-  const headerAnim = useRef(new Animated.Value(1)).current;
-
-  // Core hooks
+  // Removed unused screen width
+  
+  // Custom hooks
   const { greetingText, showGreeting, setShowGreeting } = useGreeting();
   const { greetingAnimY, greetingOpacity } = useKeyboardAnimation();
 
-  // Web search hook
+  const flatListRef = useRef<FlatList>(null);
+
+  const scrollToBottom = (instant = false) => {
+    if (flatListRef.current) {
+      try {
+        flatListRef.current.scrollToOffset({ 
+          offset: 99999,
+          animated: !instant // Instant when requested, animated otherwise
+        });
+      } catch (error) {
+        // Silently handle errors
+      }
+    }
+  };
+
+  // Web search hook  
   const {
     searchResults,
     isSearching,
     searchQuery,
     shouldShowSearchIndicator,
+    // clearSearch
   } = useWebSearch();
 
-  // Core UI State
+  
+  // UI State
   const [inputText, setInputText] = useState('');
+  // Removed unused copy tooltip state
+  const [, setShowTestTooltip] = useState(true);
+  const [showDynamicOptionsModal, setShowDynamicOptionsModal] = useState(false);
+  const [headerVisible] = useState(true);
   const [attachments, setAttachments] = useState<any[]>([]);
+  const [, setIsVoiceRecording] = useState(false);
   const [isChatInputFocused, setIsChatInputFocused] = useState(false);
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [, setIsKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isNearBottom, setIsNearBottom] = useState(true);
+  const inputContainerAnim = useRef(new Animated.Value(0)).current;
+  
+  // Animation refs
+  const tooltipOpacity = useRef(new Animated.Value(1)).current;
+  // Removed unused tooltipScale
+  const modalAnimationRefs = useRef<ModalAnimationRefs>(createModalAnimationRefs()).current;
+  const headerAnim = useRef(new Animated.Value(1)).current;
 
-  // Modal States
+  // Settings modal state - simplified
   const [showSettings, setShowSettings] = useState(false);
+  
+  // SignOut modal state
   const [showSignOutModal, setShowSignOutModal] = useState(false);
+  
+  // Wallet modal state
   const [showWalletModal, setShowWalletModal] = useState(false);
+  
+  // Conversation drawer state
   const [showConversationDrawer, setShowConversationDrawer] = useState(false);
+  
+  // Add Friend modal state
   const [showAddFriendModal, setShowAddFriendModal] = useState(false);
-  const [showHeatmapModal, setShowHeatmapModal] = useState(false);
-
-  // Friend/Chat States
+  const [shouldRenderAddFriendModal, setShouldRenderAddFriendModal] = useState(false);
+  const [friendUsername, setFriendUsername] = useState('');
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusType, setStatusType] = useState<'success' | 'error' | 'warning' | 'loading' | null>(null);
+  const [isSubmittingFriendRequest, setIsSubmittingFriendRequest] = useState(false);
+  const [validationError, setValidationError] = useState('');
+  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const shakeAnim = useRef<Animated.Value>(new Animated.Value(0)).current;
+  const addFriendModalOpacity = useRef<Animated.Value>(new Animated.Value(1)).current;
+  
+  const { ghostText } = useGhostTyping({
+    isInputFocused,
+    inputText: friendUsername,
+  });
+  
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(undefined);
   const [currentFriendUsername, setCurrentFriendUsername] = useState<string | undefined>(
     route?.params?.friendUsername
   );
+  const [showHeatmapModal, setShowHeatmapModal] = useState(false);
   const [heatmapFriendUsername, setHeatmapFriendUsername] = useState<string | undefined>(undefined);
 
-  // Add Friend States
-  const [isSubmittingFriendRequest, setIsSubmittingFriendRequest] = useState(false);
-  const [addFriendError, setAddFriendError] = useState<string | undefined>(undefined);
-
-  // Message handling with streaming
+  // Message handling with streaming (must be after currentConversationId declaration)
   const {
     messages,
     isLoading,
     isStreaming,
     handleSend: handleMessageSend,
+    handleMessagePress: _handleMessagePress, // eslint-disable-line @typescript-eslint/no-unused-vars
+    // handleMessageLongPress,
     handleConversationSelect,
     handleHaltStreaming,
     setMessages,
+    // flatListRef: messagesRef,
   } = useMessages(() => setShowGreeting(false), currentConversationId, currentFriendUsername);
 
   // Real-time messaging for friend conversations
   const {
     isConnected: isRealTimeConnected,
     typingUsers,
+    startTyping: startRealTimeTyping,
+    stopTyping: stopRealTimeTyping,
+    markMessageAsRead: _markMessageAsRead, // eslint-disable-line @typescript-eslint/no-unused-vars
+    markAllMessagesAsRead: _markAllMessagesAsRead, // eslint-disable-line @typescript-eslint/no-unused-vars
   } = useRealTimeMessaging({
     friendUsername: currentFriendUsername,
     onNewMessage: (data) => {
+      // Handle incoming friend messages
       if (data.from === currentFriendUsername) {
         const newMessage: Message = {
           id: data.message.messageId,
@@ -146,33 +221,90 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       }
     },
     onReadReceipt: (receipt) => {
+      // Update message status when read receipt is received
       setMessages(prev => prev.map(msg => 
         msg.messageId === receipt.messageId 
           ? { ...msg, readAt: receipt.readAt.toString(), status: 'read' as const }
           : msg
       ));
     },
-    autoConnect: !!currentFriendUsername
+    autoConnect: !!currentFriendUsername  // Enable auto-connect for friend conversations
+  });
+
+  // Dynamic prompts hook for intelligent contextual options (after useMessages)
+  const {
+    prompts: dynamicPrompts,
+    isAnalyzing: isAnalyzingContext,
+    executePrompt,
+    // refreshPrompts
+  } = useDynamicPrompts({
+    messages: messages.map(msg => ({
+      id: msg.id,
+      text: msg.message,
+      sender: msg.sender === 'aether' ? 'ai' : msg.sender === 'system' ? 'ai' : msg.sender,
+      timestamp: new Date(msg.timestamp).getTime()
+    })),
+    onPromptExecute: (promptText: string) => {
+      // Execute the hidden prompt directly
+      handleMessageSend(promptText);
+      // Hide the modal after execution
+      hideModalAnimation(modalAnimationRefs, () => setShowDynamicOptionsModal(false));
+    },
+    enabled: true,
+    refreshInterval: 3
   });
 
   // Header menu hook
-  const { showHeaderMenu, toggleHeaderMenu } = useHeaderMenu({
+  const { showHeaderMenu, setShowHeaderMenu, handleMenuAction, toggleHeaderMenu } = useHeaderMenu({
     screenName: 'chat',
-    onSettingsPress: () => setShowSettings(true),
+    onSettingsPress: () => {
+      setShowSettings(true);
+    },
     onSignOut: () => setShowSignOutModal(true),
     onWalletPress: () => setShowWalletModal(true)
   });
 
-  // Route parameter changes for friend username
+  // Handle route parameter changes for friend username
   useEffect(() => {
     if (route?.params?.friendUsername && route.params.friendUsername !== currentFriendUsername) {
+      // Clear messages immediately when switching to friend to prevent bleed-through
       setMessages([]);
       setCurrentFriendUsername(route.params.friendUsername);
       setCurrentConversationId(undefined);
     }
   }, [route?.params?.friendUsername, currentFriendUsername, setMessages]);
 
-  // Keyboard event listeners for proper scroll behavior
+  // Add Friend modal visibility effect - fixed to prevent useInsertionEffect warnings
+  useEffect(() => {
+    if (showAddFriendModal && !shouldRenderAddFriendModal) {
+      setShouldRenderAddFriendModal(true);
+      // Fade in
+      Animated.timing(addFriendModalOpacity, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }).start();
+    } else if (!showAddFriendModal && shouldRenderAddFriendModal) {
+      // Fade out animation
+      Animated.timing(addFriendModalOpacity, {
+        toValue: 0,
+        duration: 300,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }).start();
+      
+      // Delay unmounting to allow fade-out animation
+      const timer = setTimeout(() => {
+        setShouldRenderAddFriendModal(false);
+      }, 300); // Match fade duration
+      return () => clearTimeout(timer);
+    }
+  }, [showAddFriendModal, shouldRenderAddFriendModal]);
+
+  // Settings modal logic removed - just use showSettings directly
+
+
+  // Keyboard event listeners for proper scroll behavior (only for chat input)
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
       setIsKeyboardVisible(true);
@@ -185,6 +317,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
         useNativeDriver: true,
       }).start();
+      
     });
 
     const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
@@ -209,88 +342,345 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   // Scroll to bottom when input is focused and keyboard appears
   useEffect(() => {
     if (isChatInputFocused && keyboardHeight > 0) {
+      // Wait for paddingBottom to update, then scroll
       setTimeout(() => {
         scrollToBottom();
       }, 300);
     }
   }, [isChatInputFocused, keyboardHeight]);
 
-  // Scroll to bottom function
-  const scrollToBottom = (instant = false) => {
-    if (flatListRef.current) {
-      try {
-        flatListRef.current.scrollToOffset({ 
-          offset: 99999,
-          animated: !instant
-        });
-      } catch {
-        // Silently handle errors
+  // Cleanup effect for rotation stability
+  useEffect(() => {
+    return () => {
+      // Clear any pending timeouts
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
       }
-    }
-  };
+    };
+  }, []);
 
-  // Event Handlers
+  // Removed unused handlers and suggestions
+
+  // Handle Add Friend press
   const handleAddFriendPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowAddFriendModal(true);
   };
 
-  const handleAddFriendSubmit = async (username: string) => {
+  // Username validation function
+  const validateUsername = (username: string): string | null => {
+    if (!username.trim()) {
+      return 'Username is required';
+    }
+    
+    if (username.trim().length < 3) {
+      return 'Username must be at least 3 characters';
+    }
+    
+    if (username.trim().length > 20) {
+      return 'Username cannot exceed 20 characters';
+    }
+    
+    // Check for valid username pattern (alphanumeric, underscores, hyphens)
+    const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+    if (!usernameRegex.test(username.trim())) {
+      return 'Username can only contain letters, numbers, underscores, and hyphens';
+    }
+    
+    return null; // Valid
+  };
+
+  // Clear status function
+  const clearStatus = () => {
+    if (statusTimeoutRef.current) {
+      clearTimeout(statusTimeoutRef.current);
+      statusTimeoutRef.current = null;
+    }
+    setStatusMessage('');
+    setStatusType(null);
+    setValidationError('');
+  };
+
+  // Enhanced status display function
+  const showStatus = (message: string, type: 'success' | 'error' | 'warning' | 'loading', duration: number = 3000) => {
+    clearStatus();
+    setStatusMessage(message);
+    setStatusType(type);
+    
+    if (type !== 'loading' && duration > 0) {
+      statusTimeoutRef.current = setTimeout(() => {
+        clearStatus();
+      }, duration);
+    }
+  };
+
+  // Enhanced shake animation
+  const performShakeAnimation = () => {
+    Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 12, duration: 75, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -12, duration: 75, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 8, duration: 75, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -8, duration: 75, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0, duration: 75, useNativeDriver: true }),
+    ]).start();
+  };
+
+  // Handle Add Friend submission with comprehensive error handling
+  const handleAddFriendSubmit = async () => {
+    const username = friendUsername.trim();
+    
+    // Client-side validation
+    const validationError = validateUsername(username);
+    if (validationError) {
+      setValidationError(validationError);
+      performShakeAnimation();
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
+    // Clear any previous validation errors
+    setValidationError('');
     setIsSubmittingFriendRequest(true);
-    setAddFriendError(undefined);
+    showStatus('Sending friend request...', 'loading');
+    
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     try {
       const result = await FriendsAPI.addFriend(username);
       
       if (result && result.success) {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setShowAddFriendModal(false);
+        // Success scenario
+        setTimeout(async () => {
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }, 150);
+        
+        showStatus('Friend request sent successfully!', 'success', 2000);
+        setFriendUsername('');
+        
+        // Auto-hide modal after success
+        statusTimeoutRef.current = setTimeout(() => {
+          setShowAddFriendModal(false);
+          clearStatus();
+        }, 1500);
+        
       } else {
-        throw new Error(result?.error || 'Failed to send friend request');
+        // Handle various API error responses
+        performShakeAnimation();
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        
+        let errorMessage = 'Failed to send friend request';
+        
+        if (result?.error) {
+          const error = result.error.toLowerCase();
+          
+          if (error.includes('already friends') || error.includes('friend already exists')) {
+            errorMessage = 'You are already friends with this user';
+            showStatus(errorMessage, 'warning', 4000);
+          } else if (error.includes('request already sent') || error.includes('pending')) {
+            errorMessage = 'Friend request already sent';
+            showStatus(errorMessage, 'warning', 4000);
+          } else if (error.includes('user not found') || error.includes('does not exist')) {
+            errorMessage = 'User not found. Check the username and try again';
+            showStatus(errorMessage, 'error', 4000);
+          } else if (error.includes('cannot add yourself') || error.includes('self')) {
+            errorMessage = 'You cannot add yourself as a friend';
+            showStatus(errorMessage, 'warning', 3000);
+          } else if (error.includes('blocked') || error.includes('restricted')) {
+            errorMessage = 'Unable to send request to this user';
+            showStatus(errorMessage, 'error', 4000);
+          } else if (error.includes('limit') || error.includes('maximum')) {
+            errorMessage = 'Friend request limit reached. Try again later';
+            showStatus(errorMessage, 'warning', 4000);
+          } else {
+            errorMessage = result.error;
+            showStatus(errorMessage, 'error', 4000);
+          }
+        } else {
+          showStatus(errorMessage, 'error', 3000);
+        }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      // Network and other errors
+      performShakeAnimation();
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setAddFriendError(error.message || 'Failed to send friend request');
+      
+      let errorMessage = 'Network error. Please try again.';
+      
+      const errorObj = error as { code?: string; message?: string; response?: { status: number } };
+      if (errorObj.code === 'ECONNABORTED' || errorObj.message?.includes('timeout')) {
+        errorMessage = 'Network error, try again in a few minutes';
+      } else if (errorObj.code === 'NETWORK_ERROR' || errorObj.message?.includes('network')) {
+        errorMessage = 'Network error, try again in a few minutes';
+      } else if (errorObj.response?.status === 401) {
+        errorMessage = 'Authentication failed. Please sign in again.';
+      } else if (errorObj.response?.status === 429) {
+        errorMessage = 'Too many requests. Please wait and try again.';
+      } else if (errorObj.response?.status && errorObj.response.status >= 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else if (errorObj.message) {
+        errorMessage = `Error: ${errorObj.message}`;
+      }
+      
+      showStatus(errorMessage, 'error', 4000);
     } finally {
       setIsSubmittingFriendRequest(false);
     }
   };
 
-  const handleInputTextChange = (text: string) => {
-    setInputText(text);
+
+  // Removed unused message press handler
+
+
+  // Enhanced handlers for new components
+  // Note: handleMenuAction now provided by useHeaderMenu hook
+
+  const handleVoiceStart = () => {
+    setIsVoiceRecording(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleVoiceEnd = () => {
+    setIsVoiceRecording(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Add voice processing logic here
   };
 
   const handleEnhancedSend = () => {
-    if (inputText.trim()) {
-      handleMessageSend(inputText.trim());
-      setInputText('');
-      setAttachments([]);
+    if (!inputText.trim() && attachments.length === 0) return;
+    
+    // Store current values before clearing
+    const currentText = inputText;
+    const currentAttachments = [...attachments];
+    
+    // Stop typing indicator when sending
+    if (currentFriendUsername) {
+      stopRealTimeTyping();
     }
+    
+    // Dismiss keyboard immediately to prevent KeyboardAvoidingView positioning issues
+    Keyboard.dismiss();
+    
+    // Clear input immediately
+    setInputText('');
+    setAttachments([]);
+    
+    if (currentAttachments.length > 0) {
+      // Handle attachments - send message with attachments
+      const messageText = currentText.trim() || "";
+      handleMessageSend(messageText, currentAttachments);
+    } else {
+      // Send the message with the current input text
+      handleMessageSend(currentText);
+    }
+    
+    // Auto-scroll to bottom after sending message
+    setTimeout(() => scrollToBottom(), 100);
   };
 
+  // Handle input focus/blur for tooltip fade
   const handleInputFocus = () => {
     setIsChatInputFocused(true);
+    
+    // Smooth fade out with gentle easing
+    Animated.timing(tooltipOpacity, {
+      toValue: 0,
+      duration: 250,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
   };
 
   const handleInputBlur = () => {
     setIsChatInputFocused(false);
+    
+    // Stop typing when input loses focus
+    if (currentFriendUsername) {
+      stopRealTimeTyping();
+    }
+    
+    // Smooth fade in with delay and gentle easing
+    setTimeout(() => {
+      Animated.timing(tooltipOpacity, {
+        toValue: 1,
+        duration: 300,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    }, 100);
   };
 
-  const handleSignOut = async () => {
-    navigation.navigate('Auth' as never);
+  // Handle text input changes for typing indicators
+  const handleInputTextChange = (text: string) => {
+    setInputText(text);
+    
+    // Send typing indicators for friend conversations
+    if (currentFriendUsername && text.trim() && isRealTimeConnected) {
+      startRealTimeTyping();
+    } else if (currentFriendUsername && !text.trim()) {
+      stopRealTimeTyping();
+    }
   };
 
-  // Render message item
-  const renderMessage = ({ item, index }: { item: Message; index: number }) => (
-    <View style={styles.messageItem}>
-      <EnhancedBubble
-        message={item}
-        index={index}
-        theme={theme}
-        messageIndex={index}
-      />
-    </View>
-  );
+  // Removed unused dynamic options handler
+
+  // Modal hide handler
+  const handleHideModal = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    hideModalAnimation(modalAnimationRefs, () => setShowDynamicOptionsModal(false));
+  };
+
+  // Handle creating a new conversation
+  const handleStartNewChat = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      // Create a new conversation on the backend
+      const response = await ConversationAPI.createConversation('New Chat');
+      
+      if (response.success && response.data) {
+        // Clear current messages and set new conversation ID
+        setMessages([]);
+        setCurrentConversationId(response.data._id);
+        setCurrentFriendUsername(undefined); // Clear friend context
+        setShowConversationDrawer(false);
+        
+        // Show success feedback
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        throw new Error('Failed to create conversation');
+      }
+    } catch (error) {
+      logger.error('Error creating new conversation:', error);
+      
+      // Fallback to clearing current state
+      setMessages([]);
+      setCurrentConversationId(undefined);
+      setCurrentFriendUsername(undefined); // Clear friend context
+      setShowConversationDrawer(false);
+      
+      // Show error feedback
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(
+        'Error',
+        'Failed to create new conversation. Starting fresh chat.',
+        [{ text: 'OK', style: 'default' }]
+      );
+    }
+  };
+
+  // Render message item using EnhancedBubble for proper attachment support
+  const renderMessage = ({ item, index }: { item: Message; index: number }) => {
+    return (
+      <View style={styles.messageItem}>
+        <EnhancedBubble
+          message={item}
+          index={index}
+          theme={theme}
+          messageIndex={index}
+        />
+      </View>
+    );
+  };
 
   return (
     <PageBackground theme={theme} variant="chat">
@@ -299,59 +689,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
           barStyle={theme === 'light' ? 'dark-content' : 'light-content'}
           backgroundColor="transparent"
           translucent
-        />
-
-        {/* Header */}
-        <Header
-          title={currentFriendUsername || 'Aether'}
-          showBackButton={!!currentFriendUsername}
-          showMenuButton={true}
-          showConversationsButton={!currentFriendUsername}
-          showDynamicOptionsButton={!currentFriendUsername}
-          onBackPress={() => navigation.goBack()}
-          onMenuPress={toggleHeaderMenu}
-          onConversationsPress={() => setShowConversationDrawer(true)}
-          onDynamicOptionsPress={handleAddFriendPress}
-          theme={theme}
-        />
-
-        {/* Header Menu */}
-        <HeaderMenu
-          visible={showHeaderMenu}
-          onClose={() => toggleHeaderMenu()}
-          onAction={(action) => {
-            toggleHeaderMenu(); // Close menu first
-            
-            switch (action) {
-              case 'chat':
-                if (currentFriendUsername) {
-                  setCurrentFriendUsername(undefined);
-                  setCurrentConversationId(undefined);
-                  setMessages([]);
-                }
-                break;
-              case 'feed':
-                navigation.navigate('Feed' as never);
-                break;
-              case 'friends':
-                navigation.navigate('Social' as never);
-                break;
-              case 'profile':
-                navigation.navigate('Profile' as never);
-                break;
-              case 'wallet':
-                setShowWalletModal(true);
-                break;
-              case 'settings':
-                setShowSettings(true);
-                break;
-              case 'sign_out':
-                setShowSignOutModal(true);
-                break;
-              default:
-                console.log('Unknown action:', action);
-            }
-          }}
         />
 
         {/* Dynamic Greeting Banner */}
@@ -381,128 +718,608 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
           </Animated.View>
         )}
 
-        <View style={styles.chatArea}>
-          {/* Web Search Indicator */}
-          {shouldShowSearchIndicator && (
-            <WebSearchIndicator
-              isSearching={isSearching}
-              searchQuery={searchQuery}
-              resultCount={searchResults.length}
-            />
-          )}
-          
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            renderItem={renderMessage}
-            keyExtractor={(item) => item.id}
-            style={styles.messagesList}
-            contentContainerStyle={[
-              styles.messagesContainer,
-              {
-                paddingBottom: isChatInputFocused 
-                  ? keyboardHeight + 80
-                  : 80,
-              }
-            ]}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="never"
-            onScrollBeginDrag={() => {
-              Keyboard.dismiss();
-            }}
-            onScroll={Animated.event(
-              [{ nativeEvent: { contentOffset: { y: headerAnim } } }],
-              { 
-                useNativeDriver: false,
-                listener: (event: any) => {
-                  const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-                  const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
-                  setIsNearBottom(distanceFromBottom <= 50);
-                }
-              }
-            )}
-            ListFooterComponent={() => {
-              const isTyping = currentFriendUsername && typingUsers[currentFriendUsername];
-              return isTyping ? (
-                <TypingIndicator
-                  username={currentFriendUsername!}
-                  theme={theme}
-                  visible={true}
-                />
-              ) : null;
-            }}
-          />
-        </View>
-
-        {/* Scroll to bottom button */}
-        {!isNearBottom && (
-          <ScrollToBottomButton
-            visible={!isNearBottom}
-            onPress={() => scrollToBottom()}
-            theme={theme}
+      
+      <View style={styles.chatArea}>
+        {/* Web Search Indicator */}
+        {shouldShowSearchIndicator && (
+          <WebSearchIndicator
+            isSearching={isSearching}
+            searchQuery={searchQuery}
+            resultCount={searchResults.length}
           />
         )}
-
-        {/* Enhanced Chat Input */}
-        <Animated.View
-          style={[
-            styles.inputContainer,
+        
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={(item) => item.id}
+          style={styles.messagesList}
+          contentContainerStyle={[
+            styles.messagesContainer,
             {
-              transform: [{ translateY: inputContainerAnim }],
-              backgroundColor: colors.surface,
-              borderTopColor: theme === 'dark' 
+              paddingBottom: isChatInputFocused 
+                ? keyboardHeight + 80 // Reasonable padding when focused
+                : 80, // Default padding when not focused
+            }
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="never"
+          onScrollBeginDrag={() => {
+            // Dismiss keyboard when user starts scrolling
+            Keyboard.dismiss();
+          }}
+          ItemSeparatorComponent={() => <View style={{ height: 0 }} />}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: headerAnim } } }],
+            { 
+              useNativeDriver: false,
+              listener: (event: any) => {
+                const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+                const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+                setIsNearBottom(distanceFromBottom <= 50);
+              }
+            }
+          )}
+          ListFooterComponent={() => {
+            // Show typing indicator for friend conversations
+            const isTyping = currentFriendUsername && typingUsers[currentFriendUsername];
+            return isTyping ? (
+              <TypingIndicator
+                username={currentFriendUsername!}
+                theme={theme}
+                visible={true}
+              />
+            ) : null;
+          }}
+        />
+
+      </View>
+
+      {/* Scroll to bottom button - hidden when near bottom */}
+      {!isNearBottom && (
+        <TouchableOpacity
+          style={[
+            styles.scrollToBottomButton,
+            {
+              backgroundColor: theme === 'dark' 
                 ? 'rgba(255, 255, 255, 0.1)' 
+                : 'rgba(0, 0, 0, 0.05)',
+              borderColor: theme === 'dark' 
+                ? 'rgba(255, 255, 255, 0.15)' 
                 : 'rgba(0, 0, 0, 0.1)',
             }
           ]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            scrollToBottom(false); // Keep animated for button press (smooth UX)
+            // Try scrollToBottom(true) for instant teleport!
+          }}
+          activeOpacity={0.7}
         >
+          <Ionicons 
+            name="chevron-down" 
+            size={20} 
+            color={theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.6)'} 
+          />
+        </TouchableOpacity>
+      )}
+
+      <Animated.View 
+        style={[
+          styles.inputContainer,
+          {
+            transform: [{ translateY: inputContainerAnim }],
+          }
+        ]}
+      >
+        
+        <View style={[
+          styles.chatInputWrapper,
+          {
+            backgroundColor: theme === 'dark' 
+              ? 'rgba(20, 20, 20, 0.95)' 
+              : 'rgba(250, 250, 250, 0.95)',
+            borderTopWidth: 1,
+            borderTopColor: theme === 'dark' 
+              ? 'rgba(255, 255, 255, 0.1)' 
+              : 'rgba(0, 0, 0, 0.1)',
+          }
+        ]}>
           <EnhancedChatInput
             value={inputText}
             onChangeText={handleInputTextChange}
             onSend={handleEnhancedSend}
+            onVoiceStart={handleVoiceStart}
+            onVoiceEnd={handleVoiceEnd}
             isLoading={isLoading}
             isStreaming={isStreaming}
             onHaltStreaming={handleHaltStreaming}
             theme={theme}
             placeholder={currentFriendUsername ? `Chatting with ${currentFriendUsername} •` : "What up?"}
+            nextMessageIndex={messages.length}
+            voiceEnabled={false}
+            enableFileUpload={true}
+            maxAttachments={5}
             attachments={attachments}
             onAttachmentsChange={setAttachments}
             onFocus={handleInputFocus}
             onBlur={handleInputBlur}
+            onSwipeUp={() => setShowTestTooltip(true)}
           />
+        </View>
+      </Animated.View>
+      
+      {/* Settings Modal */}
+      <SettingsModal
+        visible={showSettings}
+        onClose={() => setShowSettings(false)}
+        onSignOut={() => setShowSignOutModal(true)}
+        navigation={navigation}
+      />
+      
+      {/* SignOut Confirmation Modal */}
+      <SignOutModal
+        visible={showSignOutModal}
+        onClose={() => setShowSignOutModal(false)}
+        onConfirm={async () => {
+          try {
+            await AuthAPI.logout();
+            // Auth check in App.tsx will handle navigation automatically
+            // Wait a bit for the auth state to propagate and navigation to occur
+            // before closing the modal
+            setTimeout(() => {
+              setShowSignOutModal(false);
+            }, 1000);
+          } catch (error) {
+            logger.error('Sign out error:', error);
+            // Close immediately on error since the sign out failed
+            setShowSignOutModal(false);
+          }
+        }}
+        theme={theme}
+      />
+
+      {/* Wallet Modal */}
+      <WalletModal
+        visible={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        onTierSelect={(tier) => {
+          // Handle tier selection - could integrate with payment processing here
+          console.log(`Selected tier: ${tier}`);
+        }}
+        currentTier="free"
+        usage={{
+          gpt4o: 45,
+          gpt5: 120,
+          gpt5Limit: 150
+        }}
+      />
+      
+      <ConversationDrawer
+        isVisible={showConversationDrawer}
+        onClose={() => setShowConversationDrawer(false)}
+        onFriendMessagePress={(friendUsername: string) => {
+          // Handle friend message press from drawer - same logic as from friends screen
+          setMessages([]);
+          setCurrentConversationId(undefined);
+          setCurrentFriendUsername(friendUsername);
+          setShowConversationDrawer(false);
+        }}
+        onConversationSelect={(conversation) => {
+          if (conversation.type === 'friend' && conversation.friendUsername) {
+            // Handle friend conversation - ensure clean state
+            logger.debug('Selecting friend conversation:', conversation.friendUsername);
+            
+            // Clear any existing conversation state
+            setCurrentConversationId(undefined);
+            setMessages([]);
+            
+            // Set friend username which will trigger useMessages useEffect
+            setCurrentFriendUsername(conversation.friendUsername);
+            setShowConversationDrawer(false);
+          } else if (conversation.type === 'custom' && conversation._id.startsWith('orbit-')) {
+            // Handle orbit/heatmap conversation - these are not chat conversations
+            logger.debug('Orbit conversation selected, showing heatmap for:', conversation.friendUsername);
+            setHeatmapFriendUsername(conversation.friendUsername);
+            setShowHeatmapModal(true);
+            setShowConversationDrawer(false);
+          } else {
+            // Handle AI conversation - clear messages immediately to prevent bleed-through
+            setMessages([]);
+            const conversationId = conversation._id;
+            
+            // Only handle valid conversation IDs (not friend- or orbit- prefixed ones)
+            if (conversationId && !conversationId.startsWith('friend-') && !conversationId.startsWith('orbit-')) {
+              setCurrentConversationId(conversationId);
+              setCurrentFriendUsername(undefined);
+              handleConversationSelect(conversation as any);
+              setShowConversationDrawer(false);
+            } else {
+              // Invalid conversation ID, just clear state
+              setCurrentConversationId(undefined);
+              setCurrentFriendUsername(undefined);
+              setShowConversationDrawer(false);
+            }
+          }
+        }}
+        onStartNewChat={handleStartNewChat}
+        currentConversationId={currentConversationId}
+        theme={theme}
+      />
+      
+      {/* Enhanced Header */}
+      <Header
+        title={currentFriendUsername ? currentFriendUsername : "Aether"}
+        showMenuButton={true}
+        showConversationsButton={true}
+        leftIcon="user-plus"
+        onMenuPress={toggleHeaderMenu}
+        onConversationsPress={() => setShowConversationDrawer(true)}
+        onLeftPress={handleAddFriendPress}
+        theme={theme}
+        isVisible={headerVisible}
+        isMenuOpen={showHeaderMenu}
+      />
+      
+      {/* Header Menu */}
+      <HeaderMenu
+        visible={showHeaderMenu}
+        onClose={() => {
+          if (setShowHeaderMenu) {
+            setShowHeaderMenu(false);
+          }
+        }}
+        onAction={handleMenuAction}
+        showAuthOptions={true}
+        potentialMatches={5}
+      />
+      
+      
+      {/* Dynamic Options Modal */}
+      {showDynamicOptionsModal && (
+        <Animated.View 
+          style={[
+            styles.modalOverlay,
+            {
+              opacity: modalAnimationRefs.opacity,
+            }
+          ]}
+        >
+          <TouchableOpacity 
+            style={styles.modalBackdrop}
+            onPress={handleHideModal}
+            activeOpacity={1}
+          />
+          <View style={styles.modalPositioner}>
+            <Animated.View style={[
+              styles.dynamicOptionsModal,
+              getGlassmorphicStyle('card', theme),
+              {
+                backgroundColor: theme === 'dark' ? 'rgba(30, 30, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                borderColor: colors.borders?.default || (theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'),
+                opacity: modalAnimationRefs.opacity,
+                transform: [
+                  { scale: modalAnimationRefs.scale },
+                  { translateY: modalAnimationRefs.translateY }
+                ],
+              }
+            ]}>
+              <Text style={[
+                styles.modalTitle,
+                {
+                  color: colors.text,
+                }
+              ]}>
+                Explore Further
+              </Text>
+              
+              {/* Dynamic contextual prompts */}
+              <View style={styles.optionsContainer}>
+                {isAnalyzingContext ? (
+                  <View style={styles.loadingContainer}>
+                    <Text style={[
+                      styles.loadingText,
+                      {
+                        color: colors.textSecondary,
+                      }
+                    ]}>
+                      Analyzing conversation...
+                    </Text>
+                  </View>
+                ) : dynamicPrompts.length > 0 ? (
+                  dynamicPrompts.map((prompt, index) => {
+                    // Color coding: red, yellow, green for first 3 options
+                    const dotColors = ['#FF4757', '#FFA502', '#2ED573'];
+                    const dotColor = dotColors[index % 3];
+                    
+                    return (
+                      <TouchableOpacity
+                        key={prompt.id}
+                        style={[
+                          styles.promptOption,
+                          {
+                            backgroundColor: theme === 'dark' 
+                              ? 'rgba(255, 255, 255, 0.05)' 
+                              : 'rgba(0, 0, 0, 0.03)',
+                            borderColor: theme === 'dark' 
+                              ? 'rgba(255, 255, 255, 0.1)' 
+                              : 'rgba(0, 0, 0, 0.08)',
+                          }
+                        ]}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          executePrompt(prompt.id);
+                        }}
+                        activeOpacity={0.8}
+                      >
+                        <View style={styles.promptHeader}>
+                          <View style={[styles.colorDot, { backgroundColor: dotColor }]} />
+                          <Text style={[
+                            styles.promptText,
+                            {
+                              color: colors.text,
+                            }
+                          ]}>
+                            {prompt.displayText}
+                          </Text>
+                        </View>
+                        <Text style={[
+                          styles.promptCategory,
+                          {
+                            color: colors.textMuted,
+                          }
+                        ]}>
+                          {prompt.archetype}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })
+                ) : (
+                  <Text style={[
+                    styles.placeholderText,
+                    {
+                      color: colors.textSecondary,
+                    }
+                  ]}>
+                    Start a conversation to see contextual options
+                  </Text>
+                )}
+              </View>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.closeButton,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.borders?.default || (theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'),
+                  }
+                ]}
+                onPress={handleHideModal}
+                activeOpacity={0.8}
+              >
+                <Text style={[
+                  styles.closeButtonText,
+                  {
+                    color: colors.text,
+                  }
+                ]}>
+                  Close
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
         </Animated.View>
+      )}
 
-        {/* All Modals */}
-        <SettingsModal
-          visible={showSettings}
-          onClose={() => setShowSettings(false)}
-        />
+      {/* Add Friend Dropdown */}
+      {shouldRenderAddFriendModal && (
+      <Modal
+        visible={shouldRenderAddFriendModal}
+        transparent={true}
+        animationType="none"
+        onRequestClose={() => setShowAddFriendModal(false)}
+      >
+        <Animated.View style={[styles.overlay, { opacity: addFriendModalOpacity }]}>
+          <TouchableOpacity 
+            style={StyleSheet.absoluteFillObject}
+            activeOpacity={1}
+            onPress={() => setShowAddFriendModal(false)}
+          />
+          
+          <Animated.View style={[
+            styles.dropdown,
+            {
+              left: 24,
+              top: 123,
+              backgroundColor: theme === 'light' ? '#ffffff' : designTokens.brand.surfaceDark,
+              borderWidth: 1,
+              borderColor: theme === 'dark' ? designTokens.borders.dark.default : designTokens.borders.light.default,
+              ...getHeaderMenuShadow(theme),
+            }
+          ]}>
+            {/* Arrow pointing to header button with border */}
+            <View style={{ position: 'absolute', top: -9, left: 60 }}>
+              {/* Border triangle (slightly larger) */}
+              <View style={[
+                styles.arrow,
+                {
+                  borderBottomColor: theme === 'dark' ? designTokens.borders.dark.default : designTokens.borders.light.default,
+                  borderLeftWidth: 9,
+                  borderRightWidth: 9,
+                  borderBottomWidth: 9,
+                }
+              ]} />
+              {/* Fill triangle (smaller, on top) */}
+              <View style={[
+                styles.arrow,
+                {
+                  borderBottomColor: theme === 'light' ? '#ffffff' : designTokens.brand.surfaceDark,
+                  position: 'absolute',
+                  top: 1,
+                  left: -0.5,
+                  borderLeftWidth: 8,
+                  borderRightWidth: 8,
+                  borderBottomWidth: 8,
+                }
+              ]} />
+            </View>
+            
+            <View style={styles.dropdownContent}>
+              <Text style={[
+                styles.dropdownTitle,
+                { 
+                  color: theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.primary,
+                  fontFamily: 'Nunito-SemiBold',
+                  letterSpacing: -0.7,
+                }
+              ]}>
+                Add a friend by username
+              </Text>
+              
+              <Animated.View
+                style={{
+                  transform: [{ translateX: shakeAnim }]
+                }}
+              >
+                <TextInput
+                  style={[
+                    styles.friendInput,
+                    {
+                      color: validationError 
+                        ? '#FF6B6B' 
+                        : statusType === 'error' 
+                          ? '#FF4444' 
+                          : statusType === 'success' 
+                            ? '#00DD44' 
+                            : statusType === 'warning'
+                              ? '#FFB366'
+                              : (theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.primary),
+                      backgroundColor: isSubmittingFriendRequest 
+                        ? (theme === 'dark' ? '#2a2a2a' : '#f0f0f0')
+                        : (theme === 'dark' ? '#1a1a1a' : '#f8f8f8'),
+                      borderColor: validationError
+                        ? '#FF6B6B'
+                        : statusType === 'error' 
+                          ? '#FF4444' 
+                          : statusType === 'success' 
+                            ? '#00DD44'
+                            : statusType === 'warning'
+                              ? '#FFB366'
+                              : statusType === 'loading'
+                                ? '#4A90E2'
+                                : (theme === 'dark' ? designTokens.borders.dark.default : designTokens.borders.light.default),
+                      borderWidth: (validationError || statusType) ? 2 : 1,
+                    }
+                  ]}
+                  placeholder={validationError || statusMessage || ghostText}
+                  placeholderTextColor={
+                    validationError 
+                      ? '#FF6B6B' 
+                      : statusType === 'error' 
+                        ? '#FF4444' 
+                        : statusType === 'success' 
+                          ? '#00BB44' 
+                          : statusType === 'warning'
+                            ? '#FF9933'
+                            : statusType === 'loading'
+                              ? '#4A90E2'
+                              : (theme === 'dark' ? designTokens.text.mutedDark : designTokens.text.muted)
+                  }
+                  value={friendUsername}
+                  onChangeText={(text) => {
+                    setFriendUsername(text);
+                    // Clear status and validation errors when user starts typing
+                    if (statusMessage || validationError) {
+                      clearStatus();
+                    }
+                    
+                    // Real-time validation (only show after user stops typing)
+                    if (text.trim().length > 0) {
+                      const validation = validateUsername(text);
+                      if (validation && text.trim().length >= 3) {
+                        // Only show validation error for longer inputs to avoid annoying users
+                        setValidationError(validation);
+                      } else {
+                        setValidationError('');
+                      }
+                    } else {
+                      setValidationError('');
+                    }
+                  }}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardAppearance={theme === 'dark' ? 'dark' : 'light'}
+                  selectionColor={theme === 'dark' ? '#ffffff' : '#007AFF'}
+                  cursorColor={theme === 'dark' ? '#ffffff' : '#007AFF'}
+                  textAlign="center"
+                  editable={!isSubmittingFriendRequest && !statusMessage} // Disable input while submitting or showing status
+                />
+              </Animated.View>
+              
+              <TouchableOpacity
+                style={[
+                  styles.addButton,
+                  {
+                    backgroundColor: isSubmittingFriendRequest 
+                      ? (theme === 'dark' ? '#333333' : '#cccccc')
+                      : statusType === 'success'
+                        ? '#00AA44'
+                        : statusType === 'error' || validationError
+                          ? '#FF4444'
+                          : statusType === 'warning'
+                            ? '#FF9933'
+                            : (theme === 'dark' ? '#0d0d0d' : designTokens.brand.primary),
+                    borderColor: isSubmittingFriendRequest
+                      ? (theme === 'dark' ? '#555555' : '#aaaaaa')
+                      : (theme === 'dark' ? '#262626' : 'transparent'),
+                    borderWidth: theme === 'dark' ? 1 : 0,
+                    opacity: isSubmittingFriendRequest ? 0.7 : 1,
+                    // Strong tight glow for dark mode, shadow for light mode
+                    shadowColor: theme === 'dark' ? '#ffffff' : '#000000',
+                    shadowOffset: { width: 0, height: theme === 'dark' ? 0 : 2 },
+                    shadowOpacity: theme === 'dark' ? 0.4 : 0.3,
+                    shadowRadius: theme === 'dark' ? 4 : 8,
+                    elevation: theme === 'dark' ? 0 : 4,
+                  }
+                ]}
+                onPress={handleAddFriendSubmit}
+                activeOpacity={0.8}
+                disabled={isSubmittingFriendRequest || !!validationError}
+              >
+                <Text style={[
+                  styles.addButtonText,
+                  { 
+                    color: '#ffffff',
+                    fontFamily: 'Nunito-SemiBold',
+                    letterSpacing: -0.3,
+                  }
+                ]}>
+                  {isSubmittingFriendRequest 
+                    ? 'Sending...' 
+                    : statusType === 'success'
+                      ? 'Sent!'
+                      : statusType === 'error' || validationError
+                        ? 'Try Again'
+                        : 'Add Friend'
+                  }
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </Animated.View>
+      </Modal>
+      )}
 
-        <SignOutModal
-          visible={showSignOutModal}
-          onClose={() => setShowSignOutModal(false)}
-          onConfirm={handleSignOut}
-        />
-
-        <WalletModal
-          visible={showWalletModal}
-          onClose={() => setShowWalletModal(false)}
-          onTierSelect={() => {}}
-        />
-
-        <ConversationDrawer
-          isVisible={showConversationDrawer}
-          onClose={() => setShowConversationDrawer(false)}
-          onConversationSelect={(conversation) => handleConversationSelect(conversation as any)}
-          currentConversationId={currentConversationId}
-          theme={theme}
-        />
-
-        <HeatmapModal
-          visible={showHeatmapModal}
-          onClose={() => setShowHeatmapModal(false)}
-          friendUsername={heatmapFriendUsername}
-        />
+      {/* Heatmap Modal */}
+      <HeatmapModal
+        visible={showHeatmapModal}
+        onClose={() => setShowHeatmapModal(false)}
+        friendUsername={heatmapFriendUsername}
+        theme={theme}
+      />
 
       </SafeAreaView>
     </PageBackground>
@@ -513,37 +1330,257 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  greetingBanner: {
-    position: 'absolute',
-    top: 100,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  greetingText: {
-    textAlign: 'center',
-    lineHeight: 24,
-  },
+  
+  // Chat Layout
   chatArea: {
     flex: 1,
   },
+  
   messagesList: {
     flex: 1,
+    paddingHorizontal: 8,
   },
+  
   messagesContainer: {
-    flexGrow: 1,
-    paddingTop: spacing.md,
+    paddingTop: Platform.OS === 'ios' ? 90 : 70,
+    // paddingBottom is now handled dynamically based on keyboard state
+    gap: 0,
   },
-  messageItem: {
-    marginVertical: spacing.xs,
-  },
+  
   inputContainer: {
-    borderTopWidth: 1,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-    paddingHorizontal: spacing.md,
+    position: 'absolute',
+    bottom: -40,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+  },
+  
+  chatInputWrapper: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    paddingBottom: 200, // Extend well below viewport
+    marginHorizontal: 0, // Extend to sides
+    marginBottom: -150, // Pull down to extend below screen edge
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 0, // Keep bottom square to extend off screen
+    borderBottomRightRadius: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+
+  // Message Styles
+  messageItem: {
+    marginVertical: 8,
+    width: '100%',
+  },
+  
+  // Removed unused style definitions
+
+  // Removed more unused styles
+  
+  // Removed unused scroll button styles
+
+  // Dynamic Greeting Banner
+  greetingBanner: {
+    position: 'absolute',
+    top: '50%',
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing[6],
+    paddingVertical: spacing[4],
+    transform: [{ translateY: -12 }],
+  },
+  greetingText: {
+    fontSize: 16,
+    fontWeight: '400', // Regular weight for Poppins balance
+    fontFamily: 'Poppins-Regular', // Poppins for luxury + readability balance
+    letterSpacing: -0.2, // Adjusted for Poppins geometric spacing
+    textAlign: 'center',
+    maxWidth: 280,
+    alignSelf: 'center',
+  },
+
+  // Dynamic Options Modal
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10000,
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalPositioner: {
+    position: 'absolute',
+    bottom: 110, 
+    left: 12,
+    right: 12,
+  },
+  dynamicOptionsModal: {
+    width: '92%', 
+    alignSelf: 'center', 
+    borderRadius: 8, 
+    borderWidth: 1,
+    padding: spacing[2],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalTitle: {
+    ...typography.textStyles.bodyMedium,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: spacing[3],
+  },
+  optionsContainer: {
+    minHeight: 80,
+    paddingVertical: spacing[1],
+    gap: spacing[1],
+  },
+  loadingContainer: {
+    paddingVertical: spacing[4],
+    alignItems: 'center',
+  },
+  loadingText: {
+    ...typography.textStyles.caption,
+    fontStyle: 'italic',
+  },
+  promptOption: {
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: spacing[2],
+  },
+  promptHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing[1],
+  },
+  colorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: spacing[2],
+  },
+  promptText: {
+    ...typography.textStyles.body,
+    fontWeight: '600',
+    flex: 1,
+  },
+  promptCategory: {
+    ...typography.textStyles.caption,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    fontWeight: '500',
+    opacity: 0.7,
+  },
+  placeholderText: {
+    ...typography.textStyles.caption,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  closeButton: {
+    marginTop: spacing[3],
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[4],
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    ...typography.textStyles.labelMedium,
+    fontWeight: '500',
+  },
+  
+  // Removed unused search styles
+  
+  // Add Friend Dropdown Styles
+  overlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  dropdown: {
+    position: 'absolute',
+    width: 280,
+    borderRadius: 16,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[2],
+    overflow: 'visible',
+  },
+  arrow: {
+    width: 0,
+    height: 0,
+    borderStyle: 'solid',
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+  },
+  dropdownContent: {
+    paddingTop: spacing[2],
+  },
+  dropdownTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: spacing[3],
+  },
+  friendInput: {
+    width: '100%',
+    height: 44,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: spacing[3],
+    fontSize: 16,
+    fontWeight: '400',
+    textAlign: 'center',
+    marginBottom: spacing[3],
+  },
+  addButton: {
+    width: '100%',
+    height: 37,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+
+  // Scroll to bottom button
+  scrollToBottomButton: {
+    position: 'absolute',
+    bottom: 120, // Position above input area
+    left: '50%', // Center horizontally
+    marginLeft: -22, // Offset by half width (44/2)
+    width: 44,
+    height: 44,
+    borderRadius: 22, // Perfectly circular
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    zIndex: 1000,
   },
 });
 
