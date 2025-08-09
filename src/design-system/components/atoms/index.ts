@@ -32,6 +32,7 @@ export { ProfileImage } from './ProfileImage';
 export { BannerImage } from './BannerImage';
 export { ProfileField } from './ProfileField';
 export { OnlineStatus } from './OnlineStatus';
+export { SubscriptionTierCard } from './SubscriptionTierCard';
 
 // Re-export types
 export type { IconName, IconSize } from './Icon';

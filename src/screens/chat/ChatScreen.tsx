@@ -28,7 +28,7 @@ import { Ionicons } from '@expo/vector-icons';
 // Enhanced Components
 import { EnhancedChatInput } from '../../design-system/components/molecules';
 import EnhancedBubble from '../../design-system/components/molecules/EnhancedBubble';
-import { Header, HeaderMenu, SignOutModal, HeatmapModal } from '../../design-system/components/organisms';
+import { Header, HeaderMenu, SignOutModal, HeatmapModal, WalletModal } from '../../design-system/components/organisms';
 import { PageBackground } from '../../design-system/components/atoms/PageBackground';
 import SettingsModal from './SettingsModal';
 import ConversationDrawer from '../../components/ConversationDrawer';
@@ -146,6 +146,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   // SignOut modal state
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   
+  // Wallet modal state
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  
   // Conversation drawer state
   const [showConversationDrawer, setShowConversationDrawer] = useState(false);
   
@@ -257,7 +260,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     onSettingsPress: () => {
       setShowSettings(true);
     },
-    onSignOut: () => setShowSignOutModal(true)
+    onSignOut: () => setShowSignOutModal(true),
+    onWalletPress: () => setShowWalletModal(true)
   });
 
   // Handle route parameter changes for friend username
@@ -875,17 +879,44 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         }}
         theme={theme}
       />
+
+      {/* Wallet Modal */}
+      <WalletModal
+        visible={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        onTierSelect={(tier) => {
+          // Handle tier selection - could integrate with payment processing here
+          console.log(`Selected tier: ${tier}`);
+        }}
+        currentTier="free"
+        usage={{
+          gpt4o: 45,
+          gpt5: 120,
+          gpt5Limit: 150
+        }}
+      />
       
       <ConversationDrawer
         isVisible={showConversationDrawer}
         onClose={() => setShowConversationDrawer(false)}
+        onFriendMessagePress={(friendUsername: string) => {
+          // Handle friend message press from drawer - same logic as from friends screen
+          setMessages([]);
+          setCurrentConversationId(undefined);
+          setCurrentFriendUsername(friendUsername);
+          setShowConversationDrawer(false);
+        }}
         onConversationSelect={(conversation) => {
           if (conversation.type === 'friend' && conversation.friendUsername) {
-            // Handle friend conversation - clear messages immediately to prevent bleed-through
+            // Handle friend conversation - ensure clean state
             logger.debug('Selecting friend conversation:', conversation.friendUsername);
-            setMessages([]);
-            setCurrentFriendUsername(conversation.friendUsername);
+            
+            // Clear any existing conversation state
             setCurrentConversationId(undefined);
+            setMessages([]);
+            
+            // Set friend username which will trigger useMessages useEffect
+            setCurrentFriendUsername(conversation.friendUsername);
             setShowConversationDrawer(false);
           } else if (conversation.type === 'custom' && conversation._id.startsWith('orbit-')) {
             // Handle orbit/heatmap conversation - these are not chat conversations

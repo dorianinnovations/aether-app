@@ -41,6 +41,7 @@ import { useHeaderMenu } from '../../design-system/hooks';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useSocialCards } from '../../hooks/useSocialCards';
 import { logger } from '../../utils/logger';
+import { authService } from '../../services/authService';
 
 // Tokens
 import { getThemeColors, getCyclingPastelColor, designTokens } from '../../design-system/tokens/colors';
@@ -196,24 +197,133 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
         logger.debug('Timeline activities found:', timeline.length);
         logger.debug('Activity types:', timeline.map((a: any) => a.type));
         
-        // Transform server activities to Post format for UI compatibility
-        const transformedPosts: Post[] = timeline
-          .filter((activity: any) => activity.type === 'post')
-          .map((activity: any) => ({
-            id: activity._id,
-            title: activity.content?.text || '',
-            content: '',
-            author: activity.user?.username || 'Unknown',
-            time: activity.createdAt,
-            community: 'feed',
-            likesCount: activity.reactions?.length || 0,
-            commentsCount: activity.comments?.length || 0,
-            sharesCount: 0, // Not implemented in server yet
-            userHasLiked: false, // TODO: Check if current user has reacted
-            badge: 'post',
-            engagement: activity.reactions?.length > 5 ? 'high' : activity.reactions?.length > 2 ? 'medium' : 'low',
-            comments: activity.comments || []
-          }));
+        // Group activities by user and time window (last 6 hours)
+        const activityGroups = new Map();
+        const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+        
+        timeline.forEach((activity: any) => {
+          const userId = activity.user?._id || activity.user?.id || 'unknown';
+          const userName = activity.user?.name || activity.user?.username || 'Unknown';
+          const username = activity.user?.username || userName;
+          const activityDate = new Date(activity.createdAt);
+          
+          // Always keep posts separate
+          if (activity.type === 'post') {
+            const postId = `post_${activity._id}`;
+            activityGroups.set(postId, {
+              id: postId,
+              type: 'post',
+              user: { id: userId, name: userName, username },
+              activities: [activity],
+              latestTime: activityDate,
+              isPost: true
+            });
+            return;
+          }
+          
+          // Group other activities by user within time window
+          const groupKey = `user_${userId}`;
+          const existing = activityGroups.get(groupKey);
+          
+          if (existing && !existing.isPost) {
+            // Add to existing user group if within time window
+            const timeDiff = Math.abs(existing.latestTime.getTime() - activityDate.getTime());
+            if (timeDiff <= 6 * 60 * 60 * 1000) { // 6 hours
+              existing.activities.push(activity);
+              if (activityDate > existing.latestTime) {
+                existing.latestTime = activityDate;
+              }
+            } else {
+              // Create new group for this user (older activities)
+              const newGroupKey = `user_${userId}_${activity._id}`;
+              activityGroups.set(newGroupKey, {
+                id: newGroupKey,
+                type: 'user_activities',
+                user: { id: userId, name: userName, username },
+                activities: [activity],
+                latestTime: activityDate,
+                isPost: false
+              });
+            }
+          } else {
+            // Create new user group
+            activityGroups.set(groupKey, {
+              id: groupKey,
+              type: 'user_activities',
+              user: { id: userId, name: userName, username },
+              activities: [activity],
+              latestTime: activityDate,
+              isPost: false
+            });
+          }
+        });
+        
+        // Transform groups to Post format for UI compatibility
+        const transformedPosts: Post[] = Array.from(activityGroups.values())
+          .map((group: any) => {
+            if (group.isPost) {
+              // Single post - keep original format
+              const activity = group.activities[0];
+              return {
+                id: activity._id,
+                title: activity.content?.text || '',
+                content: '',
+                author: group.user.username || group.user.name,
+                authorName: group.user.name || group.user.username,
+                time: activity.createdAt,
+                community: 'feed',
+                likesCount: activity.reactions?.length || 0,
+                commentsCount: activity.comments?.length || 0,
+                sharesCount: 0,
+                userHasLiked: false,
+                badge: 'post',
+                engagement: activity.reactions?.length > 5 ? 'high' : activity.reactions?.length > 2 ? 'medium' : 'low',
+                comments: activity.comments || []
+              };
+            } else {
+              // Aggregated user activities
+              const activitySummary = group.activities.map((activity: any) => {
+                switch (activity.type) {
+                  case 'status_update':
+                    return `📍 ${activity.content?.text || 'Updated status'}`;
+                  case 'mood_update':
+                    return `💭 ${activity.content?.text || `Feeling ${activity.content?.metadata?.mood || 'updated'}`}`;
+                  case 'plans_update':
+                    return `📅 ${activity.content?.text || 'Updated plans'}`;
+                  case 'spotify_track':
+                    return `🎵 Listening to ${activity.content?.metadata?.track?.name || 'music'}`;
+                  case 'friend_added':
+                    return `👥 Connected with ${activity.content?.metadata?.friendUsername || 'someone'}`;
+                  case 'interest_discovered':
+                    return `🧠 New interest: ${activity.content?.metadata?.interest || 'something'}`;
+                  default:
+                    return activity.content?.text || 'Activity update';
+                }
+              }).join('\n');
+              
+              const totalReactions = group.activities.reduce((sum: number, a: any) => sum + (a.reactions?.length || 0), 0);
+              const totalComments = group.activities.reduce((sum: number, a: any) => sum + (a.comments?.length || 0), 0);
+              
+              return {
+                id: group.id,
+                title: `${group.user.name || group.user.username} (@${group.user.username})`,
+                content: activitySummary,
+                author: group.user.username || group.user.name,
+                authorName: group.user.name || group.user.username,
+                time: group.latestTime.toISOString(),
+                community: 'feed',
+                likesCount: totalReactions,
+                commentsCount: totalComments,
+                sharesCount: 0,
+                userHasLiked: false,
+                badge: 'activities',
+                engagement: totalReactions > 5 ? 'high' : totalReactions > 2 ? 'medium' : 'low',
+                comments: [],
+                activityCount: group.activities.length
+              };
+            }
+          })
+          .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
         
         setPosts(transformedPosts);
         logger.debug('Posts loaded from timeline:', transformedPosts.length);
@@ -335,11 +445,14 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
   ), [handleCardPress, handleHangoutRequest]);
 
   // Generate profile data with real usernames + consistent colors
-  const getProfileMockup = useCallback((author: string) => {
+  const getProfileMockup = useCallback((post: Post) => {
+    const currentUser = authService.getCurrentUser();
+    const isCurrentUser = post.author === currentUser?.username;
+    
     // Special case for current user
-    if (author === 'You') {
+    if (isCurrentUser) {
       return { 
-        name: 'You', 
+        name: currentUser?.name || currentUser?.username || 'You',
         avatar: '⭐', 
         relationship: 'You',
         relationshipDetail: 'Your profile',
@@ -360,11 +473,15 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
       };
     }
 
+    // Use actual author data
+    const authorName = (post as any).authorName || post.author;
+    const authorUsername = post.author;
+    
     // Generate consistent avatar and color for real usernames
     const avatars = ['👤', '🙂', '😊', '👨‍💻', '👩‍💻', '🎭', '🎨', '🎵', '🌟', '⚡', '🔥', '💎', '🌈', '🚀', '✨'];
     const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#A8E6CF', '#FFB6C1', '#87CEEB', '#DDA0DD', '#F0E68C', '#FFA07A', '#98FB98', '#87CEFA', '#F5DEB3', '#D3D3D3'];
     
-    const hash = author.split('').reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0);
+    const hash = authorUsername.split('').reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0);
     const avatarIndex = Math.abs(hash) % avatars.length;
     const colorIndex = Math.abs(hash * 2) % colors.length;
     const color = colors[colorIndex];
@@ -375,11 +492,11 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
     const textStyles: TextStyle[] = ['elegant', 'casual', 'bold'];
     
     return { 
-      name: author, // Use the actual username
+      name: authorName, // Use the actual display name
       avatar: avatars[avatarIndex], 
       relationship: 'Friend',
-      relationshipDetail: 'Connected on Aether',
-      location: 'Unknown',
+      relationshipDetail: `@${authorUsername}`, // Show username as detail
+      location: 'Connected',
       color,
       gradient: [color, color] as [string, string],
       preferences: {
@@ -397,7 +514,7 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
   }, []);
 
   const renderPost = useCallback(({ item }: { item: Post }) => {
-    const profile = getProfileMockup(item.author);
+    const profile = getProfileMockup(item);
     
     return (
       <PostCard
@@ -459,15 +576,61 @@ const FeedScreen: React.FC<FeedScreenProps> = ({ navigation }) => {
 
   const renderEmptyState = () => {
     logger.debug('Rendering empty state. Posts:', posts.length, 'Cards:', cards.length, 'Combined:', combinedFeedData.length);
+    
+    // Check if user likely has no friends
+    const noFriendsLikely = posts.length === 0 && cards.length === 0;
+    
     return (
       <View style={styles.emptyContainer}>
-        <Feather name="edit-3" size={64} color={themeColors.textMuted} />
-        <Text style={[styles.emptyTitle, { color: themeColors.text }]}>
-          Ready to Share?
-        </Text>
-        <Text style={[styles.emptySubtitle, { color: themeColors.textMuted }]}>
-          Tap the create button to share your first post with friends
-        </Text>
+        {noFriendsLikely ? (
+          <>
+            <Feather name="users" size={64} color={themeColors.textMuted} />
+            <Text style={[styles.emptyTitle, { color: themeColors.text }]}>
+              Welcome to Aether!
+            </Text>
+            <Text style={[styles.emptySubtitle, { color: themeColors.textMuted, marginBottom: spacing[4] }]}>
+              Your feed will come alive when you connect with friends
+            </Text>
+            
+            <View style={styles.emptyActions}>
+              <TouchableOpacity 
+                style={[styles.actionButton, { backgroundColor: themeColors.primary }]}
+                onPress={() => navigation.navigate('Friends')}
+              >
+                <Feather name="user-plus" size={18} color="white" />
+                <Text style={styles.actionButtonText}>Add Friends</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.actionButton, { 
+                  backgroundColor: 'transparent',
+                  borderWidth: 1,
+                  borderColor: themeColors.borders.default
+                }]}
+                onPress={() => setStatusModalVisible(true)}
+              >
+                <Feather name="edit-3" size={18} color={themeColors.text} />
+                <Text style={[styles.actionButtonText, { color: themeColors.text }]}>
+                  Share Status
+                </Text>
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={[styles.emptyHint, { color: themeColors.textMuted }]}>
+              💡 Tip: Share your username with friends to connect!
+            </Text>
+          </>
+        ) : (
+          <>
+            <Feather name="edit-3" size={64} color={themeColors.textMuted} />
+            <Text style={[styles.emptyTitle, { color: themeColors.text }]}>
+              Ready to Share?
+            </Text>
+            <Text style={[styles.emptySubtitle, { color: themeColors.textMuted }]}>
+              Tap the create button to share your first post with friends
+            </Text>
+          </>
+        )}
       </View>
     );
   };
@@ -826,6 +989,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     lineHeight: 22,
+    fontFamily: 'Nunito-Regular',
+  },
+  emptyActions: {
+    flexDirection: 'row',
+    gap: spacing[3],
+    marginTop: spacing[2],
+    marginBottom: spacing[4],
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    borderRadius: 24,
+    gap: spacing[2],
+  },
+  actionButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Nunito-SemiBold',
+  },
+  emptyHint: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: spacing[4],
     fontFamily: 'Nunito-Regular',
   },
   errorContainer: {

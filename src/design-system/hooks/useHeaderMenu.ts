@@ -17,10 +17,11 @@ interface UseHeaderMenuOptions {
   screenName?: string;
   onSettingsPress?: () => void;
   onSignOut?: () => void;
+  onWalletPress?: () => void;
 }
 
 export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
-  const { screenName, onSettingsPress, onSignOut } = options;
+  const { screenName, onSettingsPress, onSignOut, onWalletPress } = options;
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
   const navigation = useNavigation();
   const { toggleTheme } = useTheme();
@@ -39,7 +40,12 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
         break;
       case 'chat':
         if (screenName !== 'chat') {
-          (navigation as NavigationProp).navigate('Chat');
+          try {
+            (navigation as NavigationProp).navigate('Chat');
+          } catch {
+            // Navigation failed - might be in wrong navigator context
+            console.log('Chat navigation failed - wrong navigator context');
+          }
         }
         break;
       case 'friends':
@@ -51,6 +57,11 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
         if (screenName !== 'feed') {
           (navigation as NavigationProp).navigate('Feed');
         }
+        break;
+      case 'wallet':
+        requestAnimationFrame(() => {
+          onWalletPress?.();
+        });
         break;
       case 'settings':
         requestAnimationFrame(() => {

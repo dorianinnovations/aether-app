@@ -65,6 +65,12 @@ const getAllMenuActions = (theme: 'light' | 'dark'): MenuAction[] => [
     requiresAuth: false 
   },
   { 
+    icon: <Feather name="credit-card" size={16} color={getIconColor('settings', theme)} />, 
+    label: 'Wallet', 
+    key: 'wallet', 
+    requiresAuth: false 
+  },
+  { 
     icon: <Feather name="settings" size={16} color={getIconColor('settings', theme)} />, 
     label: 'Settings', 
     key: 'settings', 

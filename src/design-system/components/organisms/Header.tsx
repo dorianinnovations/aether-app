@@ -159,11 +159,22 @@ export const Header: React.FC<HeaderProps> = ({
   const handleLogoPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      // Navigate to Chat screen (main screen for authenticated users)
-      navigation.navigate('Chat');
+      // Check if we can navigate to Chat (we're in MainStack)
+      const state = navigation.getState();
+      const routes = state.routes;
+      const currentRouteName = routes[routes.length - 1]?.name;
+      
+      // If we're already on Chat screen, do nothing
+      if (currentRouteName === 'Chat') {
+        onTitlePress?.();
+        return;
+      }
+      
+      // Try to navigate to Chat screen (works if we're in MainStack)
+      navigation.navigate('Chat' as never);
     } catch {
-      // Navigation to Chat failed silently
-      // Fallback: use onTitlePress if provided
+      // Navigation to Chat failed - we might be in Auth stack
+      // Use onTitlePress callback if provided
       onTitlePress?.();
     }
   };

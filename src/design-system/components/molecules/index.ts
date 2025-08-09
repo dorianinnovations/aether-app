@@ -45,3 +45,7 @@ export { AuthButton } from './AuthButton';
 export { ProfileHeader } from './ProfileHeader';
 export { ProfileFieldsGroup } from './ProfileFieldsGroup';
 export { SocialProfileSection } from './SocialProfileSection';
+
+// Wallet components
+export { WalletSubscriptions } from './WalletSubscriptions';
+export { WalletCard } from './WalletCard';

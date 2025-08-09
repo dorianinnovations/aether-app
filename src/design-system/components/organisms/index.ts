@@ -13,3 +13,4 @@ export { HeatmapModal } from './HeatmapModal';
 export { default as SearchResultsModal } from './SearchResultsModal';
 export { ProfileInsights } from './ProfileInsights';
 export { ProfileCard } from './ProfileCard';
+export { WalletModal } from './WalletModal';

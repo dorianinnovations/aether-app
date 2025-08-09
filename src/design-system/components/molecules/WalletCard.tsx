@@ -1,0 +1,841 @@
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Animated } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import PagerView from 'react-native-pager-view';
+import * as Haptics from 'expo-haptics';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { designTokens } from '../../tokens/colors';
+import { typography } from '../../tokens/typography';
+import { spacing } from '../../tokens/spacing';
+
+interface WalletCardProps {
+  currentTier?: 'free' | 'pro' | 'elite';
+  usage?: {
+    gpt4o: number;
+    gpt5: number;
+    gpt5Limit?: number;
+  };
+  onUpgrade: (tier: 'pro' | 'elite') => void;
+}
+
+export const WalletCard: React.FC<WalletCardProps> = ({
+  currentTier = 'free',
+  usage = { gpt4o: 45, gpt5: 120, gpt5Limit: 150 },
+  onUpgrade,
+}) => {
+  const { theme, colors } = useTheme();
+  const [activePage, setActivePage] = useState(0);
+  const pagerRef = useRef<PagerView>(null);
+  const longPressAnim = useRef(new Animated.Value(0)).current;
+  const hapticIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const isFreeTier = currentTier === 'free';
+  const isProTier = currentTier === 'pro';
+  const isEliteTier = currentTier === 'elite';
+
+  // Long press with haptic intensity rise
+  const handleLongPressStart = (tier: 'pro' | 'elite') => {
+    // Initial light haptic
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    // Start visual feedback animation
+    Animated.timing(longPressAnim, {
+      toValue: 1,
+      duration: 1500, // 1.5 seconds to complete
+      useNativeDriver: false,
+    }).start();
+
+    // Escalating haptic feedback
+    let hapticCount = 0;
+    hapticIntervalRef.current = setInterval(() => {
+      hapticCount++;
+      if (hapticCount === 3) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } else if (hapticCount === 6) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      } else if (hapticCount >= 8) {
+        // Final success haptic and trigger upgrade
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        onUpgrade(tier);
+        handleLongPressEnd();
+      }
+    }, 200); // Every 200ms
+  };
+
+  const handleLongPressEnd = () => {
+    // Clear haptic interval
+    if (hapticIntervalRef.current) {
+      clearInterval(hapticIntervalRef.current);
+      hapticIntervalRef.current = null;
+    }
+    
+    // Reset animation
+    Animated.timing(longPressAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const getTierInfo = (tier: 'pro' | 'elite') => {
+    if (tier === 'pro') {
+      return {
+        name: 'PRO',
+        price: '$14.99',
+        priceUnit: '/mo',
+        color: '#FF9AA2', // Pastel coral pink
+        accentColors: ['#FFD93D', '#A8E6CF', '#FFB7B2'], // Rainbow accents
+        features: [
+          'Unlimited GPT-4o access',
+          '3,500-4,500 GPT-5 requests/month',
+          'Priority support',
+          'Advanced analytics',
+          'Enhanced features'
+        ]
+      };
+    } else {
+      return {
+        name: 'ELITE',
+        price: '$29.99',
+        priceUnit: '/mo',
+        color: '#B5A7E6', // Pastel lavender
+        accentColors: ['#C7CEEA', '#FFDAC1', '#A8E6CF'], // Rainbow accents
+        features: [
+          'Everything in Pro',
+          'Unlimited GPT-5 (API pricing)',
+          'Early feature access',
+          'Custom integrations',
+          'Dedicated support'
+        ]
+      };
+    }
+  };
+
+  const renderCurrentPlanOverview = () => {
+    const tierColor = isProTier 
+      ? '#FF9AA2' // Pastel coral pink
+      : isEliteTier 
+        ? '#B5A7E6' // Pastel lavender
+        : '#A8E6CF'; // Pastel mint green for free tier
+
+    const gpt5Progress = usage.gpt5Limit ? (usage.gpt5 / usage.gpt5Limit) * 100 : 0;
+    const gpt4oProgress = isFreeTier ? (usage.gpt4o / 150) * 100 : 0;
+
+    return (
+      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        {/* Header Section */}
+        <View style={styles.header}>
+          <View style={styles.tierBadge}>
+            <Feather name="credit-card" size={24} color={tierColor} />
+            <View style={styles.tierInfo}>
+              <Text style={[
+                styles.tierLabel,
+                typography.textStyles.bodySmall,
+                { color: colors.textSecondary }
+              ]}>
+                Current Plan
+              </Text>
+              <Text style={[
+                styles.tierName,
+                typography.textStyles.techyNumberLarge,
+                { 
+                  color: tierColor,
+                  fontWeight: '900',
+                  letterSpacing: 0.2,
+                  textShadowColor: tierColor + '30',
+                  textShadowOffset: { width: 0, height: 1 },
+                  textShadowRadius: 3,
+                }
+              ]}>
+                {currentTier === 'free' ? 'Free' : currentTier === 'pro' ? 'Pro' : 'Elite'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Usage Statistics */}
+        <View style={styles.usageSection}>
+          <Text style={[
+            styles.sectionTitle,
+            typography.textStyles.headlineSmall,
+            { 
+              color: colors.text,
+              fontWeight: '700',
+              letterSpacing: 0.2,
+              fontSize: 15,
+              fontFamily: 'Inter-SemiBold',
+            }
+          ]}>
+            Usage Statistics
+          </Text>
+
+          {isFreeTier && (
+            <>
+              <View style={[
+                styles.usageCard,
+                { borderLeftWidth: 3, borderLeftColor: '#FFD93D' } // Sunshine yellow accent
+              ]}>
+                <View style={styles.usageHeader}>
+                  <Text style={[
+                    styles.usageTitle,
+                    typography.textStyles.bodyLarge,
+                    { 
+                      color: colors.text,
+                      fontWeight: '700',
+                      fontFamily: 'Inter-SemiBold',
+                    }
+                  ]}>
+                    GPT-4o Requests
+                  </Text>
+                  <Text style={[
+                    styles.usageCount,
+                    typography.textStyles.techyNumberSmall,
+                    { 
+                      color: gpt4oProgress > 80 ? '#FF9AA2' : '#FFD93D',
+                      fontWeight: '800',
+                    }
+                  ]}>
+                    {usage.gpt4o}/150
+                  </Text>
+                </View>
+                <View style={styles.progressBar}>
+                  <View style={[
+                    styles.progressFill,
+                    {
+                      backgroundColor: gpt4oProgress > 80 ? '#FF9AA2' : '#FFD93D', // Pastel coral or sunshine yellow
+                      width: `${Math.min(gpt4oProgress, 100)}%`,
+                    }
+                  ]} />
+                </View>
+              </View>
+
+              <View style={[
+                styles.usageCard,
+                { borderLeftWidth: 3, borderLeftColor: '#B5A7E6' } // Pastel lavender accent
+              ]}>
+                <View style={styles.usageHeader}>
+                  <Text style={[
+                    styles.usageTitle,
+                    typography.textStyles.bodyLarge,
+                    { 
+                      color: colors.text,
+                      fontWeight: '700',
+                      fontFamily: 'Inter-SemiBold',
+                    }
+                  ]}>
+                    GPT-5 Requests
+                  </Text>
+                  <Text style={[
+                    styles.usageCount,
+                    typography.textStyles.techyNumberSmall,
+                    { 
+                      color: gpt5Progress > 80 ? '#FF9AA2' : '#B5A7E6',
+                      fontWeight: '800',
+                    }
+                  ]}>
+                    {usage.gpt5}/{usage.gpt5Limit}
+                  </Text>
+                </View>
+                <View style={styles.progressBar}>
+                  <View style={[
+                    styles.progressFill,
+                    {
+                      backgroundColor: gpt5Progress > 80 ? '#FF9AA2' : '#B5A7E6', // Pastel coral or lavender
+                      width: `${Math.min(gpt5Progress, 100)}%`,
+                    }
+                  ]} />
+                </View>
+              </View>
+            </>
+          )}
+
+          {isProTier && (
+            <>
+              <View style={styles.usageCard}>
+                <View style={styles.usageHeader}>
+                  <Text style={[
+                    styles.usageTitle,
+                    typography.textStyles.bodyLarge,
+                    { color: colors.text }
+                  ]}>
+                    GPT-4o Requests
+                  </Text>
+                  <Text style={[
+                    styles.usageCount,
+                    typography.textStyles.techyNumberSmall,
+                    { color: '#A8E6CF' } // Pastel mint green
+                  ]}>
+                    Unlimited
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.usageCard}>
+                <View style={styles.usageHeader}>
+                  <Text style={[
+                    styles.usageTitle,
+                    typography.textStyles.bodyLarge,
+                    { color: colors.text }
+                  ]}>
+                    GPT-5 Requests
+                  </Text>
+                  <Text style={[
+                    styles.usageCount,
+                    typography.textStyles.techyNumberSmall,
+                    { color: tierColor }
+                  ]}>
+                    {usage.gpt5}/4000
+                  </Text>
+                </View>
+                <View style={styles.progressBar}>
+                  <View style={[
+                    styles.progressFill,
+                    {
+                      backgroundColor: '#FFB7B2', // Pastel peach
+                      width: `${Math.min((usage.gpt5 / 4000) * 100, 100)}%`,
+                    }
+                  ]} />
+                </View>
+              </View>
+            </>
+          )}
+
+          {isEliteTier && (
+            <View style={styles.usageCard}>
+              <View style={styles.usageHeader}>
+                <Text style={[
+                  styles.usageTitle,
+                  typography.textStyles.bodyLarge,
+                  { color: colors.text }
+                ]}>
+                  All Models
+                </Text>
+                <Text style={[
+                  styles.usageCount,
+                  typography.textStyles.techyNumberSmall,
+                  { color: '#A8E6CF' } // Pastel mint green
+                ]}>
+                  Unlimited
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Upgrade Hint */}
+        {!isEliteTier && (
+          <View style={styles.swipeHint}>
+            <Text style={[
+              styles.hintText,
+              typography.textStyles.bodyMedium,
+              { color: colors.textSecondary }
+            ]}>
+              Swipe to explore upgrade options
+            </Text>
+            <Feather name="arrow-right" size={16} color={colors.textSecondary} />
+          </View>
+        )}
+      </ScrollView>
+    );
+  };
+
+  const renderTierCard = (tier: 'pro' | 'elite') => {
+    const tierInfo = getTierInfo(tier);
+    
+    return (
+      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        {/* Header Section */}
+        <View style={styles.header}>
+          <View style={styles.tierBadge}>
+            <Feather name="zap" size={24} color={tierInfo.color} />
+            <View style={styles.tierInfo}>
+              <Text style={[
+                styles.tierLabel,
+                typography.textStyles.bodySmall,
+                { color: colors.textSecondary }
+              ]}>
+                Upgrade to
+              </Text>
+              <Text style={[
+                styles.tierName,
+                typography.textStyles.techyNumberLarge,
+                { 
+                  color: tierInfo.color,
+                  fontWeight: '900',
+                  letterSpacing: 0.2,
+                  textShadowColor: tierInfo.color + '30',
+                  textShadowOffset: { width: 0, height: 1 },
+                  textShadowRadius: 3,
+                }
+              ]}>
+                {tierInfo.name === 'PRO' ? 'Pro' : 'Elite'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Features Section */}
+        <View style={styles.featuresSection}>
+          <Text style={[
+            styles.sectionTitle,
+            typography.textStyles.headlineSmall,
+            { 
+              color: colors.text,
+              fontWeight: '700',
+              letterSpacing: 0.2,
+              fontSize: 15,
+              fontFamily: 'Inter-SemiBold',
+            }
+          ]}>
+            {tierInfo.name === 'PRO' ? 'Pro' : 'Elite'} Features
+          </Text>
+          <View style={styles.featuresList}>
+            {tierInfo.features.map((feature, index) => {
+              const rainbowColors = ['#FF9AA2', '#FFD93D', '#A8E6CF', '#B5A7E6', '#FFDAC1'];
+              const featureColor = rainbowColors[index % rainbowColors.length];
+              
+              return (
+                <View key={index} style={styles.featureRow}>
+                  <Feather 
+                    name="check" 
+                    size={16} 
+                    color={featureColor}
+                    style={styles.checkIcon}
+                  />
+                  <Text style={[
+                    styles.featureText,
+                    typography.textStyles.bodyMedium,
+                    { 
+                      color: feature.startsWith('Everything in') ? tierInfo.color : colors.text,
+                      fontWeight: feature.startsWith('Everything in') ? '800' : '500',
+                      fontFamily: feature.startsWith('Everything in') ? 'Inter-Bold' : 'Nunito-Medium',
+                    }
+                  ]}>
+                    {feature}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Long Press to Upgrade Interface */}
+        <View style={styles.upgradeSection}>
+          <Pressable
+            style={[
+              styles.longPressTrack,
+              { borderBottomColor: tierInfo.color }
+            ]}
+            onPressIn={() => handleLongPressStart(tier)}
+            onPressOut={handleLongPressEnd}
+            delayLongPress={1600} // Slightly longer than animation
+          >
+            {/* Progress Fill Animation - Opacity shift as you hold */}
+            <Animated.View
+              style={[
+                styles.longPressFill,
+                {
+                  backgroundColor: tierInfo.color,
+                  opacity: longPressAnim.interpolate({
+                    inputRange: [0, 0.3, 0.6, 1],
+                    outputRange: [0.1, 0.3, 0.6, 0.9], // Smooth opacity rise
+                  }),
+                  width: longPressAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0%', '100%'],
+                  }),
+                }
+              ]}
+            />
+            
+            {/* Content */}
+            <View style={styles.longPressContent}>
+              <View style={styles.longPressInfo}>
+                <Text style={[
+                  styles.longPressLabel,
+                  typography.textStyles.caption,
+                  { color: colors.textSecondary }
+                ]}>
+                  Hold to upgrade
+                </Text>
+                <View style={styles.priceContainer}>
+                  <Text style={[
+                    styles.longPressPrice,
+                    {
+                      fontFamily: 'Inter-Bold',
+                      fontSize: 28,
+                      fontWeight: '900',
+                      letterSpacing: -0.8,
+                      color: tierInfo.color,
+                      lineHeight: 30,
+                    }
+                  ]}>
+                    {tierInfo.price}
+                  </Text>
+                  <View style={styles.priceUnitContainer}>
+                    <Text style={[
+                      styles.priceUnit,
+                      { 
+                        color: tierInfo.accentColors[0],
+                        fontFamily: 'JetBrainsMono-Regular',
+                        fontSize: 11,
+                        fontWeight: '500',
+                        letterSpacing: 0.3,
+                        opacity: 0.8,
+                        lineHeight: 14,
+                      }
+                    ]}>
+                      {tierInfo.priceUnit}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              
+              <Animated.View style={[
+                styles.longPressIcon,
+                {
+                  transform: [{
+                    scale: longPressAnim.interpolate({
+                      inputRange: [0, 0.5, 1],
+                      outputRange: [1, 1.2, 1.4],
+                    })
+                  }]
+                }
+              ]}>
+                <Feather 
+                  name="zap" 
+                  size={18} 
+                  color={tierInfo.color}
+                />
+              </Animated.View>
+            </View>
+          </Pressable>
+        </View>
+      </ScrollView>
+    );
+  };
+
+  return (
+    <View style={[
+      styles.container,
+      {
+        backgroundColor: theme === 'dark' 
+          ? designTokens.brand.surfaceDark 
+          : designTokens.brand.surface,
+      }
+    ]}>
+      {/* Page Indicators - Simple Dots */}
+      {!isEliteTier && (
+        <View style={styles.pageIndicators}>
+          <View style={[
+            styles.dotIndicator,
+            { backgroundColor: activePage === 0 ? '#A8E6CF' : colors.textSecondary }
+          ]} />
+          <View style={[
+            styles.dotIndicator,
+            { backgroundColor: activePage === 1 ? '#FF9AA2' : colors.textSecondary }
+          ]} />
+          <View style={[
+            styles.dotIndicator,
+            { backgroundColor: activePage === 2 ? '#B5A7E6' : colors.textSecondary }
+          ]} />
+        </View>
+      )}
+
+      {/* Swipeable Content */}
+      {isEliteTier ? (
+        renderCurrentPlanOverview()
+      ) : (
+        <PagerView
+          ref={pagerRef}
+          style={styles.pagerView}
+          initialPage={0}
+          onPageSelected={(e) => setActivePage(e.nativeEvent.position)}
+        >
+          <View key="0" style={styles.pageContainer}>
+            {renderCurrentPlanOverview()}
+          </View>
+          <View key="1" style={styles.pageContainer}>
+            {renderTierCard('pro')}
+          </View>
+          <View key="2" style={styles.pageContainer}>
+            {renderTierCard('elite')}
+          </View>
+        </PagerView>
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    // Enhanced neumorphic container effects
+    borderTopWidth: 2,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
+    borderLeftColor: 'rgba(255, 255, 255, 0.1)',
+    borderRightColor: 'rgba(255, 255, 255, 0.1)',
+    // Multiple layered shadows for depth
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: -12,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 28,
+    // Inner glow effect simulation
+    position: 'relative',
+  },
+  pageIndicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: spacing[4],
+    gap: spacing[3],
+  },
+  dotIndicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    opacity: 0.8,
+  },
+  pagerView: {
+    flex: 1,
+  },
+  pageContainer: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  header: {
+    padding: spacing[4],
+    paddingBottom: spacing[3],
+    // Enhanced header with subtle neumorphic styling
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    marginBottom: spacing[2],
+    // Subtle background glow
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+  },
+  tierBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tierInfo: {
+    marginLeft: spacing[3],
+    alignItems: 'center',
+  },
+  tierLabel: {
+    fontSize: 12,
+    letterSpacing: 0.3,
+    marginBottom: spacing[1],
+  },
+  tierName: {
+    // Override styles handled by typography.textStyles.techyNumberLarge
+  },
+  usageSection: {
+    paddingHorizontal: spacing[4],
+    paddingBottom: spacing[3],
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: spacing[2],
+  },
+  usageCard: {
+    backgroundColor: 'rgba(128, 128, 128, 0.05)',
+    borderRadius: 16,
+    padding: spacing[4],
+    marginBottom: spacing[3],
+    // Enhanced neumorphic card effects
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
+    // Subtle inner glow
+    position: 'relative' as const,
+  },
+  usageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing[2],
+  },
+  usageTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  usageCount: {
+    // Override styles handled by typography.textStyles.techyUsage
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: 'rgba(128, 128, 128, 0.15)',
+    borderRadius: 6,
+    overflow: 'hidden',
+    // Neumorphic progress bar styling
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+    // Tech-inspired inner shadow effect
+    position: 'relative',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 5,
+    // Enhanced progress fill with glow
+    shadowColor: 'currentColor',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
+    elevation: 3,
+    // Tech-inspired gradient simulation
+    position: 'relative',
+  },
+  swipeHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing[6],
+    paddingVertical: spacing[4],
+    gap: spacing[2],
+  },
+  hintText: {
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  featuresSection: {
+    paddingHorizontal: spacing[4],
+    paddingBottom: spacing[3],
+  },
+  featuresList: {
+    gap: spacing[3],
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkIcon: {
+    marginRight: spacing[3],
+  },
+  featureText: {
+    fontSize: 15,
+    lineHeight: 20,
+    flex: 1,
+  },
+  upgradeSection: {
+    paddingHorizontal: spacing[4],
+    paddingBottom: spacing[4],
+  },
+  longPressTrack: {
+    height: 56,
+    borderBottomWidth: 4,
+    borderTopWidth: 2,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+    borderLeftColor: 'rgba(255, 255, 255, 0.1)',
+    borderRightColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(128, 128, 128, 0.08)',
+    borderRadius: 12,
+    position: 'relative',
+    overflow: 'hidden',
+    justifyContent: 'center',
+    // Enhanced neumorphic upgrade button
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+    // Tech glow effect
+    marginHorizontal: 2,
+    marginVertical: 4,
+  },
+  longPressFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    // No border radius - clean rectangular fill
+  },
+  longPressContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing[4],
+    zIndex: 1,
+  },
+  longPressInfo: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  longPressLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    marginBottom: spacing[1]/2,
+    opacity: 0.7,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing[1]/2,
+  },
+  priceUnitContainer: {
+    justifyContent: 'flex-end',
+    paddingBottom: 2,
+  },
+  longPressPrice: {
+    // Typography handled inline
+  },
+  priceUnit: {
+    // Typography handled inline
+  },
+  longPressIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    // Neumorphic icon container with tech glow
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
+    // Tech-inspired inner glow
+    position: 'relative',
+  },
+});

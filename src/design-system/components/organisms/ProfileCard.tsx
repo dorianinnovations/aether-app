@@ -11,7 +11,7 @@ import {
   StyleSheet,
   ViewStyle,
 } from 'react-native';
-import { ProfileHeader, ProfileFieldsGroup, SocialProfileSection } from '../molecules';
+import { ProfileHeader, ProfileFieldsGroup, SocialProfileSection, SpotifyIntegration } from '../molecules';
 import { ProfileInsights } from './ProfileInsights';
 import { LottieLoader, UserBadgeType } from '../atoms';
 import { spacing } from '../../tokens/spacing';
@@ -85,6 +85,7 @@ export interface ProfileCardProps {
   onDeleteProfileImage?: () => void;
   onDeleteBanner?: () => void;
   onInsightsToggle?: (expanded: boolean) => void;
+  onSpotifyStatusChange?: () => void;
   /** Custom styles */
   style?: ViewStyle;
   /** Scroll view ref */
@@ -107,6 +108,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   onDeleteProfileImage,
   onDeleteBanner,
   onInsightsToggle,
+  onSpotifyStatusChange,
   style,
   scrollRef,
 }) => {
@@ -166,6 +168,12 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
           style={styles.socialSection}
         />
       )}
+
+      {/* Spotify Integration */}
+      <SpotifyIntegration 
+        spotifyData={socialProfile?.spotify}
+        onStatusChange={onSpotifyStatusChange}
+      />
 
       {/* AI Insights */}
       {socialProfile?.personality && (

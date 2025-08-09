@@ -25,7 +25,6 @@ import {
   SignOutModal, 
   ProfileSuccessModal 
 } from '../design-system/components/organisms';
-import { SpotifyIntegration } from '../design-system/components/molecules';
 import SettingsModal from './chat/SettingsModal';
 
 // Hooks and Context
@@ -415,14 +414,10 @@ export const ProfileScreen: React.FC = () => {
           onDeleteProfileImage={handleDeleteProfileImage}
           onDeleteBanner={handleDeleteBannerImage}
           onInsightsToggle={handleInsightsToggle}
-          scrollRef={scrollViewRef}
-        />
-
-        {/* Spotify Integration */}
-        <SpotifyIntegration 
-          onStatusChange={() => {
+          onSpotifyStatusChange={() => {
             refreshAllData();
           }}
+          scrollRef={scrollViewRef}
         />
 
         {/* Floating View Mode Toggle Button */}

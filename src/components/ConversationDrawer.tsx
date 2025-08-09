@@ -29,10 +29,22 @@ import * as Haptics from 'expo-haptics';
 import { designTokens, getThemeColors } from '../design-system/tokens/colors';
 import { spacing } from '../design-system/tokens/spacing';
 import { log } from '../utils/logger';
+import { FriendsAPI } from '../services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 type FeatherIconNames = keyof typeof Feather.glyphMap;
+
+interface Friend {
+  username: string;
+  friendId?: string;
+  name?: string;
+  avatar?: string;
+  status?: 'online' | 'offline' | 'away';
+  lastSeen?: string;
+  addedAt?: string;
+  topInterests?: string[];
+}
 
 interface ConversationDrawerProps {
   isVisible: boolean;
@@ -41,6 +53,7 @@ interface ConversationDrawerProps {
   onStartNewChat?: () => void;
   currentConversationId?: string;
   theme: 'light' | 'dark';
+  onFriendMessagePress?: (friendUsername: string) => void;
 }
 
 const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
@@ -50,6 +63,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   onStartNewChat,
   currentConversationId,
   theme,
+  onFriendMessagePress,
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -57,6 +71,10 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   
   const [tooltip, setTooltip] = useState<{ visible: boolean; username: string; x: number; y: number } | null>(null);
   const itemRefs = useRef<{ [key: string]: View }>({});
+
+  // Friends state
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [friendsLoading, setFriendsLoading] = useState(false);
 
   const themeColors = getThemeColors(theme);
   
@@ -126,9 +144,50 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     autoRefresh: isVisible
   });
 
+  // Fetch friends list
+  const fetchFriends = async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setIsRefreshing(true);
+      } else {
+        setFriendsLoading(true);
+      }
+      
+      const { TokenManager } = await import('../services/api');
+      const token = await TokenManager.getToken();
+      if (!token) return;
+
+      const response = await FriendsAPI.getFriendsList();
+      
+      if (response.success && response.friends) {
+        setFriends(response.friends);
+      } else if (response.success && response.data && response.data.friends) {
+        setFriends(response.data.friends);
+      } else if (Array.isArray(response)) {
+        setFriends(response);
+      } else {
+        setFriends([]);
+      }
+    } catch (error) {
+      log.error('Error fetching friends:', error);
+      setFriends([]);
+    } finally {
+      setFriendsLoading(false);
+      if (isRefresh) {
+        setIsRefreshing(false);
+      }
+    }
+  };
+
   useEffect(() => {
     if (isVisible) {
-      loadConversations(currentTab);
+      if (currentTab === 1) {
+        // Friends tab - fetch friends
+        fetchFriends();
+      } else {
+        // Other tabs - load conversations
+        loadConversations(currentTab);
+      }
     }
   }, [isVisible, currentTab, loadConversations]);
   
@@ -151,22 +210,28 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   }, [handleDeleteConversation]);
 
   const handleRefresh = useCallback(async () => {
-    if (isRefreshing || isLoading) return;
+    if (isRefreshing || isLoading || friendsLoading) return;
     
-    setIsRefreshing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     try {
-      clearTabCache(currentTab);
-      await loadConversations(currentTab, true);
+      if (currentTab === 1) {
+        // Friends tab - refresh friends
+        await fetchFriends(true);
+      } else {
+        // Other tabs - refresh conversations
+        setIsRefreshing(true);
+        clearTabCache(currentTab);
+        await loadConversations(currentTab, true);
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
-      log.error('Failed to refresh conversations:', error);
+      log.error('Failed to refresh:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsRefreshing(false);
     }
-  }, [isRefreshing, isLoading, currentTab, loadConversations, clearTabCache]);
+  }, [isRefreshing, isLoading, friendsLoading, currentTab, loadConversations, clearTabCache, fetchFriends]);
 
   const handleTabTransitionWithAnimationState = useCallback((targetTab: number) => {
     handleTabTransition(targetTab, isAnimating);
@@ -327,7 +392,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                 tabs={tabs}
                 currentConversationId={currentConversationId}
                 theme={theme}
-                isLoading={isLoading}
+                isLoading={currentTab === 1 ? friendsLoading : isLoading}
                 isRefreshing={isRefreshing}
                 isTabSwitching={isTabSwitching}
                 isAnimating={isAnimating}
@@ -339,6 +404,8 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                 onRefresh={handleRefresh}
                 setLongPressedId={setLongPressedId}
                 itemRefs={itemRefs}
+                friends={friends}
+                onFriendMessagePress={onFriendMessagePress}
               />
               
               <View 

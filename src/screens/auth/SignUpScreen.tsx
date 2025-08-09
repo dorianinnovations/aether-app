@@ -217,13 +217,21 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                 routes: [{ name: 'MainStack' }],
               });
             } else {
-              // Fallback: navigate to Chat screen directly
-              navigation.navigate('Chat');
+              // Fallback: reset to MainStack
+              (global as any).clearAuthState = null;
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'MainStack' }],
+              });
             }
           } catch (error) {
             console.error('Navigation error after signup:', error);
-            // Final fallback: navigate to Chat screen
-            navigation.navigate('Chat');
+            // Final fallback: reset to MainStack
+            (global as any).clearAuthState = null;
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainStack' }],
+            });
           }
         } else {
           // Token not found, reset to sign in

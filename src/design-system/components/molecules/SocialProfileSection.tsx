@@ -118,27 +118,6 @@ export const SocialProfileSection: React.FC<SocialProfileSectionProps> = ({
         )}
       </View>
 
-      {/* Spotify Integration */}
-      {socialProfile.spotify?.connected && (
-        <View style={spotifyCardStyle}>
-          <Text style={labelStyle}>
-            🎵 Recently Played
-          </Text>
-          {socialProfile.spotify.currentTrack ? (
-            <Text style={valueStyle}>
-              {socialProfile.spotify.currentTrack.name} - {socialProfile.spotify.currentTrack.artist}
-            </Text>
-          ) : (socialProfile.spotify.recentTracks?.length && socialProfile.spotify.recentTracks.length > 0) ? (
-            <Text style={valueStyle}>
-              {socialProfile.spotify.recentTracks[0]?.name} - {socialProfile.spotify.recentTracks[0]?.artist}
-            </Text>
-          ) : (
-            <Text style={[valueStyle, { color: colors.textSecondary }]}>
-              No recent activity
-            </Text>
-          )}
-        </View>
-      )}
     </View>
   );
 };

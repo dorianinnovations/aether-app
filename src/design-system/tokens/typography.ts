@@ -35,6 +35,11 @@ export const typography = {
     uiSemiBold: 'Inter-SemiBold',
     uiBold: 'Inter-Bold',
     
+    // JetBrains Mono (monospace) - for code, numbers, and techy displays
+    mono: 'JetBrainsMono-Regular',
+    monoMedium: 'JetBrainsMono-Medium',
+    monoBold: 'JetBrainsMono-Bold',
+    
     // Fallback to system fonts
     system: 'System',
   },
@@ -256,6 +261,43 @@ export const typography = {
       fontWeight: '400' as const,
       lineHeight: 24,
       letterSpacing: -0.1,
+    },
+    
+    // Techy Number Styles - JetBrains Mono for numbers, stats, and prices
+    techyNumberLarge: {
+      fontSize: 28,
+      fontFamily: getFontFamily('JetBrainsMono-Bold', 'monospace'),
+      fontWeight: '700' as const,
+      lineHeight: 32,
+      letterSpacing: -0.5,
+    },
+    techyNumberMedium: {
+      fontSize: 22,
+      fontFamily: getFontFamily('JetBrainsMono-Bold', 'monospace'),
+      fontWeight: '700' as const,
+      lineHeight: 26,
+      letterSpacing: -0.3,
+    },
+    techyNumberSmall: {
+      fontSize: 18,
+      fontFamily: getFontFamily('JetBrainsMono-Medium', 'monospace'),
+      fontWeight: '600' as const,
+      lineHeight: 22,
+      letterSpacing: -0.2,
+    },
+    techyPrice: {
+      fontSize: 24,
+      fontFamily: getFontFamily('JetBrainsMono-Bold', 'monospace'),
+      fontWeight: '700' as const,
+      lineHeight: 28,
+      letterSpacing: -0.4,
+    },
+    techyUsage: {
+      fontSize: 20,
+      fontFamily: getFontFamily('JetBrainsMono-Medium', 'monospace'),
+      fontWeight: '600' as const,
+      lineHeight: 24,
+      letterSpacing: -0.2,
     },
   },
   

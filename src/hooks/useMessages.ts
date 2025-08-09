@@ -109,6 +109,13 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
                   status: msg.status,
                 }));
                 
+                // Sort messages by timestamp to ensure proper chronological order (oldest first)
+                convertedMessages.sort((a, b) => {
+                  const timeA = new Date(a.timestamp).getTime();
+                  const timeB = new Date(b.timestamp).getTime();
+                  return timeA - timeB;
+                });
+                
                 // Cache the loaded messages
                 messageCache.current.set(cacheKey, convertedMessages);
                 setMessages(convertedMessages);
@@ -143,6 +150,13 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
                 timestamp: msg.timestamp,
                 variant: 'default',
               }));
+              
+              // Sort messages by timestamp to ensure proper chronological order (oldest first)
+              convertedMessages.sort((a, b) => {
+                const timeA = new Date(a.timestamp).getTime();
+                const timeB = new Date(b.timestamp).getTime();
+                return timeA - timeB;
+              });
               
               // Cache the loaded messages
               messageCache.current.set(cacheKey, convertedMessages);
@@ -527,6 +541,13 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         timestamp: msg.timestamp,
         variant: 'default',
       }));
+      
+      // Sort messages by timestamp to ensure proper chronological order (oldest first)
+      convertedMessages.sort((a, b) => {
+        const timeA = new Date(a.timestamp).getTime();
+        const timeB = new Date(b.timestamp).getTime();
+        return timeA - timeB;
+      });
       
       // Replace current messages with loaded conversation and cache them using the extracted conversationId
       setMessages(convertedMessages);

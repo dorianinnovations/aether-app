@@ -17,6 +17,13 @@ import {
   // RefreshControl,
   // ScrollView
 } from 'react-native';
+import Animated, { 
+  useSharedValue, 
+  withRepeat, 
+  withTiming, 
+  useAnimatedStyle,
+  interpolate 
+} from 'react-native-reanimated';
 import { WebView } from 'react-native-webview';
 // import * as AuthSession from 'expo-auth-session';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
@@ -68,6 +75,16 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
   const [showWebView, setShowWebView] = useState(false);
   const [authUrl, setAuthUrl] = useState('');
 
+  // Live playback state
+  const [liveProgressMs, setLiveProgressMs] = useState(0);
+  const [lastProgressUpdate, setLastProgressUpdate] = useState(Date.now());
+
+  // Animation values
+  const pulseAnimation = useSharedValue(0);
+  const waveAnimation1 = useSharedValue(0);
+  const waveAnimation2 = useSharedValue(0);
+  const waveAnimation3 = useSharedValue(0);
+
   // Use prop data if provided, otherwise use state data
   const spotify = spotifyData || spotifyStatus;
   
@@ -75,34 +92,188 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
   const hasConnectedProperty = (data: any): data is { connected: boolean; currentTrack?: any; topTracks?: any[] } => {
     return data && typeof data.connected === 'boolean';
   };
-  
+
   // Helper to get current track from either data format
   const getCurrentTrack = (data: any) => {
     if (hasConnectedProperty(data)) {
-      return data.currentTrack;
+      const track = data.currentTrack;
+      if (track) {
+        logger.info('🎵 FULL TRACK DATA:', JSON.stringify(track, null, 2));
+        logger.info('Current track from connected data:', {
+          name: track.name,
+          artist: track.artist,
+          isPlaying: track.isPlaying,
+          progressMs: track.progressMs,
+          durationMs: track.durationMs,
+          hasProgressMs: typeof track.progressMs !== 'undefined',
+          hasDurationMs: typeof track.durationMs !== 'undefined'
+        });
+      }
+      return track;
     } else if (data && data.currentlyPlaying) {
       // Convert SpotifyData format to expected format
-      return {
+      const track = {
         name: data.currentlyPlaying.name,
         artist: data.currentlyPlaying.artist,
         album: '', // SpotifyData doesn't have album in currentlyPlaying
-        isPlaying: data.currentlyPlaying.isPlaying
+        isPlaying: data.currentlyPlaying.isPlaying,
+        progressMs: data.currentlyPlaying.progressMs,
+        durationMs: data.currentlyPlaying.durationMs
       };
+      logger.info('Current track from currentlyPlaying data:', track);
+      return track;
     }
+    logger.info('No current track data found', data);
     return null;
   };
 
-  // Load initial status
+  // Format time from milliseconds to MM:SS
+  const formatTime = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Get live progress (real-time calculation)
+  const getLiveProgress = () => {
+    const currentTrack = getCurrentTrack(spotify);
+    const baseProgressMs = currentTrack?.progressMs || 0;
+    
+    if (!currentTrack?.isPlaying && currentTrack?.isPlaying !== undefined) {
+      return baseProgressMs; // Return static progress when paused
+    }
+    
+    // Calculate live progress based on time elapsed since last update
+    const now = Date.now();
+    const timeSinceUpdate = now - lastProgressUpdate;
+    const estimatedProgress = baseProgressMs + timeSinceUpdate;
+    
+    // Don't exceed duration
+    const duration = currentTrack?.durationMs || 0;
+    return Math.min(estimatedProgress, duration);
+  };
+
+  // Animated styles
+  const pulseStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(pulseAnimation.value, [0, 1], [0.6, 1]),
+    transform: [{
+      scale: interpolate(pulseAnimation.value, [0, 1], [0.8, 1])
+    }]
+  }));
+
+  const wave1Style = useAnimatedStyle(() => ({
+    height: interpolate(waveAnimation1.value, [0, 1], [4, 12])
+  }));
+
+  const wave2Style = useAnimatedStyle(() => ({
+    height: interpolate(waveAnimation2.value, [0, 1], [8, 16])
+  }));
+
+  const wave3Style = useAnimatedStyle(() => ({
+    height: interpolate(waveAnimation3.value, [0, 1], [3, 8])
+  }));
+
+  // Start/stop animations based on playing state
+  useEffect(() => {
+    const currentTrack = getCurrentTrack(spotify);
+    const isPlaying = currentTrack?.isPlaying;
+
+    if (isPlaying === true || isPlaying === undefined) {
+      // Start pulse animation for the dot
+      pulseAnimation.value = withRepeat(
+        withTiming(1, { duration: 1000 }),
+        -1,
+        true
+      );
+      
+      // Start wave animations with different timings
+      waveAnimation1.value = withRepeat(
+        withTiming(1, { duration: 800 }),
+        -1,
+        true
+      );
+      waveAnimation2.value = withRepeat(
+        withTiming(1, { duration: 1200 }),
+        -1,
+        true
+      );
+      waveAnimation3.value = withRepeat(
+        withTiming(1, { duration: 600 }),
+        -1,
+        true
+      );
+    } else {
+      // Stop animations when not playing
+      pulseAnimation.value = withTiming(0);
+      waveAnimation1.value = withTiming(0);
+      waveAnimation2.value = withTiming(0);
+      waveAnimation3.value = withTiming(0);
+    }
+  }, [getCurrentTrack(spotify)?.isPlaying]);
+
+  // Live progress updater - updates every second when playing
+  useEffect(() => {
+    const currentTrack = getCurrentTrack(spotify);
+    const isPlaying = currentTrack?.isPlaying === true || currentTrack?.isPlaying === undefined;
+    
+    if (!isPlaying || !currentTrack?.durationMs) return;
+
+    const interval = setInterval(() => {
+      setLiveProgressMs(getLiveProgress());
+    }, 1000); // Update every second
+
+    return () => clearInterval(interval);
+  }, [spotify, lastProgressUpdate]);
+
+  // Sync progress when Spotify data changes
+  useEffect(() => {
+    const currentTrack = getCurrentTrack(spotify);
+    if (currentTrack?.progressMs !== undefined) {
+      setLiveProgressMs(currentTrack.progressMs);
+      setLastProgressUpdate(Date.now());
+    }
+  }, [spotify?.currentTrack?.progressMs, spotify?.currentlyPlaying?.progressMs]);
+
+  // Load initial status and set up live updates
   useEffect(() => {
     loadSpotifyStatus();
-  }, []);
+    
+    // Set up live polling for connected users
+    const startLiveUpdates = () => {
+      const currentTrack = getCurrentTrack(spotify);
+      const isPlaying = currentTrack?.isPlaying;
+      
+      // Use slower polling since we have live progress updates
+      const pollInterval = 30000; // 30s to sync with server data
+      
+      const interval = setInterval(() => {
+        loadSpotifyStatus();
+      }, pollInterval);
+      
+      return interval;
+    };
+    
+    let pollInterval: NodeJS.Timeout | null = null;
+    
+    const isConnected = hasConnectedProperty(spotify) && spotify.connected;
+    if (isConnected) {
+      pollInterval = startLiveUpdates();
+    }
+    
+    return () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+    };
+  }, [hasConnectedProperty(spotify) && spotify?.connected, getCurrentTrack(spotify)?.isPlaying]);
 
   // Handle deep link return from Spotify
   useEffect(() => {
     const handleUrl = async (url: string) => {
-      console.log('🎵 Received deep link:', url);
+      logger.info('Received Spotify deep link:', url);
       if (url.includes('aether://spotify-auth')) {
-        console.log('🎵 Spotify auth callback received');
+        logger.info('Spotify auth callback received');
         
         // Parse query parameters from the URL
         const urlObj = new URL(url);
@@ -110,12 +281,12 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         const state = urlObj.searchParams.get('state');
         
         if (code && state) {
-          console.log('🎵 Processing OAuth callback with code and state');
+          logger.info('Processing OAuth callback with code and state');
           try {
             setConnecting(true);
             // Call the mobile callback endpoint
             await SpotifyAPI.handleMobileCallback(code, state);
-            console.log('🎵 OAuth callback processed successfully');
+            logger.info('OAuth callback processed successfully');
             
             // Refresh status after successful auth
             setTimeout(async () => {
@@ -124,13 +295,13 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
               Alert.alert('Success!', 'Spotify account connected successfully');
             }, 1000);
           } catch (error) {
-            console.error('🎵 OAuth callback error:', error);
+            logger.error('OAuth callback error:', error);
             Alert.alert('Connection Failed', 'Failed to complete Spotify authentication');
           } finally {
             setConnecting(false);
           }
         } else {
-          console.log('🎵 Missing code or state in callback URL');
+          logger.warn('Missing code or state in callback URL');
           // Still refresh status in case it worked
           setTimeout(async () => {
             await loadSpotifyStatus();
@@ -150,7 +321,11 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       setLoading(true);
       const response = await SpotifyAPI.getStatus();
       if (response.success) {
-        setSpotifyStatus(response.data);
+        // The server returns { success: true, spotify: {...} }
+        // But we need to access response.spotify, not response.data
+        const spotifyData = response.spotify || response.data;
+        setSpotifyStatus(spotifyData);
+        logger.info('Spotify status loaded:', spotifyData);
       }
     } catch (err) {
       logger.warn('Failed to load Spotify status:', err);
@@ -162,7 +337,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
   const handleConnect = async () => {
     try {
       setConnecting(true);
-      console.log('🎵 Starting Spotify connection...');
+      logger.info('Starting Spotify connection...');
       
       // Get the auth URL from server
       const authResponse = await SpotifyAPI.getAuthUrl();
@@ -172,7 +347,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         throw new Error('Failed to get authentication URL');
       }
 
-      console.log('🎵 Opening Spotify auth in WebView');
+      logger.info('Opening Spotify auth in WebView');
       
       // Open in WebView instead of browser
       setAuthUrl(authUrlFromServer);
@@ -245,25 +420,58 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
 
   const styles = StyleSheet.create({
     container: {
-      backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.8)',
+      backgroundColor: theme === 'dark' ? 'rgba(29, 185, 84, 0.1)' : 'rgba(29, 185, 84, 0.05)',
       borderRadius: 16,
-      padding: spacing.md,
+      padding: spacing.lg,
+      marginHorizontal: spacing.md,
       marginTop: spacing.md,
+      marginBottom: spacing.lg,
       borderWidth: 1,
-      borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-      width: '95%',
-      alignSelf: 'center',
+      borderColor: theme === 'dark' ? 'rgba(29, 185, 84, 0.3)' : 'rgba(29, 185, 84, 0.2)',
+      shadowColor: '#1DB954',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
     },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginBottom: spacing.md,
+      marginBottom: spacing.lg,
+      paddingBottom: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: 'rgba(29, 185, 84, 0.2)',
     },
     title: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: colors.text,
+      fontSize: 20,
+      fontWeight: '700',
+      color: '#1DB954',
+    },
+    liveHeaderIndicator: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(29, 185, 84, 0.1)',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 8,
+      marginLeft: spacing.sm,
+    },
+    liveHeaderDot: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: '#1DB954',
+      marginRight: 4,
+    },
+    liveHeaderText: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: '#1DB954',
+      letterSpacing: 0.5,
     },
     connectButton: {
       backgroundColor: '#1DB954',
@@ -287,61 +495,170 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.6)',
-      borderRadius: 12,
-      padding: spacing.sm,
+      borderRadius: 16,
+      padding: spacing.md,
       marginBottom: spacing.sm,
+      borderWidth: 1,
+      borderColor: 'transparent',
+    },
+    currentTrackPlaying: {
+      borderColor: 'rgba(29, 185, 84, 0.3)',
+      backgroundColor: theme === 'dark' ? 'rgba(29, 185, 84, 0.05)' : 'rgba(29, 185, 84, 0.02)',
+    },
+    albumArtContainer: {
+      position: 'relative',
+      marginRight: spacing.md,
     },
     albumArt: {
-      width: 60,
-      height: 60,
+      width: 80,
+      height: 80,
+      borderRadius: 16,
+      borderWidth: 2,
+      borderColor: 'rgba(29, 185, 84, 0.3)',
+    },
+    albumArtPlaceholder: {
+      backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    liveIndicator: {
+      position: 'absolute',
+      bottom: 4,
+      right: 4,
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: 2,
+      backgroundColor: 'rgba(29, 185, 84, 0.9)',
+      paddingHorizontal: 6,
+      paddingVertical: 3,
       borderRadius: 8,
-      marginRight: spacing.sm,
+    },
+    liveWave: {
+      width: 2,
+      backgroundColor: '#FFFFFF',
+      borderRadius: 1,
+      height: 8, // Default height, will be animated
     },
     trackInfo: {
       flex: 1,
     },
+    trackHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 4,
+    },
     trackName: {
-      fontSize: 16,
+      fontSize: 17,
       color: colors.text,
       fontWeight: '600',
+      flex: 1,
+    },
+    playingBadge: {
+      backgroundColor: '#1DB954',
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginLeft: spacing.sm,
     },
     artistName: {
-      fontSize: 14,
+      fontSize: 15,
       color: colors.textSecondary,
-      marginTop: 2,
+      marginBottom: 2,
     },
     albumName: {
-      fontSize: 12,
+      fontSize: 13,
       color: colors.textMuted,
-      marginTop: 2,
+      marginBottom: 6,
+    },
+    progressContainer: {
+      marginTop: spacing.md,
+      marginBottom: spacing.sm,
+    },
+    progressBar: {
+      height: 4,
+      backgroundColor: 'rgba(29, 185, 84, 0.2)',
+      borderRadius: 2,
+      overflow: 'hidden',
+      marginBottom: spacing.xs,
+    },
+    progressFill: {
+      height: '100%',
+      backgroundColor: '#1DB954',
+      borderRadius: 2,
+    },
+    timeContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    timeText: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    statusContainer: {
+      marginTop: spacing.xs,
     },
     playingIndicator: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginTop: spacing.xs,
+    },
+    pulsingDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: '#1DB954',
+      marginRight: spacing.xs,
     },
     playingText: {
       fontSize: 12,
       color: '#1DB954',
-      marginLeft: spacing.xs,
+      fontWeight: '500',
+    },
+    pausedText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    noTrackContainer: {
+      alignItems: 'center',
+      paddingVertical: spacing.lg,
+      gap: spacing.sm,
+    },
+    noTrackSubtext: {
+      fontSize: 12,
+      color: colors.textMuted,
+      textAlign: 'center',
+      marginTop: 4,
     },
     actionButtons: {
       flexDirection: 'row',
       justifyContent: 'space-around',
-      marginTop: spacing.md,
+      marginTop: spacing.lg,
+      paddingTop: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: 'rgba(29, 185, 84, 0.2)',
+      gap: spacing.md,
     },
     actionButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      borderRadius: 12,
-      backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.6)',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderRadius: 16,
+      backgroundColor: 'rgba(29, 185, 84, 0.1)',
+      borderWidth: 1,
+      borderColor: 'rgba(29, 185, 84, 0.3)',
+      flex: 1,
+      justifyContent: 'center',
     },
     actionButtonText: {
       fontSize: 14,
-      color: colors.text,
+      color: '#1DB954',
       marginLeft: spacing.xs,
+      fontWeight: '600',
     },
     noTrack: {
       fontSize: 14,
@@ -379,6 +696,45 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       fontSize: 16,
       opacity: 0.7,
     },
+    recentlyPlayedContainer: {
+      backgroundColor: theme === 'dark' ? 'rgba(29, 185, 84, 0.08)' : 'rgba(29, 185, 84, 0.03)',
+      borderRadius: 12,
+      padding: spacing.md,
+      marginHorizontal: spacing.md,
+      marginTop: spacing.xs,
+      marginBottom: spacing.lg,
+      borderWidth: 1,
+      borderColor: theme === 'dark' ? 'rgba(29, 185, 84, 0.2)' : 'rgba(29, 185, 84, 0.15)',
+    },
+    recentlyPlayedTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#1DB954',
+      marginBottom: spacing.sm,
+    },
+    recentTrackCard: {
+      backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.4)',
+      borderRadius: 8,
+      padding: spacing.sm,
+      borderWidth: 1,
+      borderColor: 'transparent',
+    },
+    recentTrackName: {
+      fontSize: 15,
+      color: colors.text,
+      fontWeight: '500',
+      marginBottom: 2,
+    },
+    recentTrackArtist: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginBottom: 2,
+    },
+    recentTrackTime: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      fontStyle: 'italic',
+    },
   });
 
   if (loading && !spotify) {
@@ -391,10 +747,10 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
 
   const handleWebViewMessage = (event: any) => {
     const { data } = event.nativeEvent;
-    console.log('🎵 WebView message received:', data);
+    logger.info('WebView message received:', data);
     
     if (data === 'spotify-connected') {
-      console.log('🎵 Spotify connection successful!');
+      logger.info('Spotify connection successful!');
       setShowWebView(false);
       setConnecting(false);
       
@@ -410,7 +766,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
   const handleWebViewNavigationStateChange = (navState: any) => {
     // Close WebView if we detect the success page
     if (navState.url.includes('spotify/callback') && navState.title?.includes('Spotify Connected')) {
-      console.log('🎵 Detected success page, closing WebView...');
+      logger.info('Detected success page, closing WebView...');
       setTimeout(() => {
         setShowWebView(false);
         setConnecting(false);
@@ -425,13 +781,26 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
     }
   };
 
+  logger.info('🎵 SpotifyIntegration rendering with data:', {
+    hasSpotifyData: !!spotify,
+    connected: hasConnectedProperty(spotify) && spotify?.connected,
+    currentTrack: getCurrentTrack(spotify)?.name,
+    isPlaying: getCurrentTrack(spotify)?.isPlaying
+  });
+
   return (
     <>
       <View style={styles.container}>
         <View style={styles.header}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <FontAwesome name="spotify" size={24} color="#1DB954" />
-            <Text style={styles.title}> Spotify</Text>
+            <FontAwesome name="spotify" size={28} color="#1DB954" />
+            <Text style={styles.title}>Spotify</Text>
+            {(getCurrentTrack(spotify)?.isPlaying === true || getCurrentTrack(spotify)?.isPlaying === undefined) && (
+              <View style={styles.liveHeaderIndicator}>
+                <Animated.View style={[styles.liveHeaderDot, pulseStyle]} />
+                <Text style={styles.liveHeaderText}>🔥 LIVE</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -454,36 +823,97 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         <View style={styles.connectedContent}>
           {getCurrentTrack(spotify) ? (
             <TouchableOpacity
-              style={styles.currentTrack}
+              style={[
+                styles.currentTrack,
+                getCurrentTrack(spotify)?.isPlaying && styles.currentTrackPlaying
+              ]}
               onPress={() => openTrackInSpotify(getCurrentTrack(spotify)?.spotifyUrl)}
               activeOpacity={0.8}
             >
-              {getCurrentTrack(spotify)?.imageUrl && (
-                <Image
-                  source={{ uri: getCurrentTrack(spotify)?.imageUrl }}
-                  style={styles.albumArt}
-                />
-              )}
-              <View style={styles.trackInfo}>
-                <Text style={styles.trackName} numberOfLines={1}>
-                  {getCurrentTrack(spotify)?.name}
-                </Text>
-                <Text style={styles.artistName} numberOfLines={1}>
-                  {getCurrentTrack(spotify)?.artist}
-                </Text>
-                <Text style={styles.albumName} numberOfLines={1}>
-                  {getCurrentTrack(spotify)?.album}
-                </Text>
-                {getCurrentTrack(spotify)?.isPlaying && (
-                  <View style={styles.playingIndicator}>
-                    <Ionicons name="play-circle" size={14} color="#1DB954" />
-                    <Text style={styles.playingText}>Now Playing</Text>
+              {/* Album Art with Live Indicator Overlay */}
+              <View style={styles.albumArtContainer}>
+                {getCurrentTrack(spotify)?.imageUrl ? (
+                  <Image
+                    source={{ uri: getCurrentTrack(spotify)?.imageUrl }}
+                    style={styles.albumArt}
+                  />
+                ) : (
+                  <View style={[styles.albumArt, styles.albumArtPlaceholder]}>
+                    <Ionicons name="musical-notes" size={24} color={colors.textSecondary} />
+                  </View>
+                )}
+                
+                {/* Live Playing Indicator */}
+                {(getCurrentTrack(spotify)?.isPlaying === true || getCurrentTrack(spotify)?.isPlaying === undefined) && (
+                  <View style={styles.liveIndicator}>
+                    <Animated.View style={[styles.liveWave, wave1Style]} />
+                    <Animated.View style={[styles.liveWave, wave2Style]} />
+                    <Animated.View style={[styles.liveWave, wave3Style]} />
                   </View>
                 )}
               </View>
+              
+              <View style={styles.trackInfo}>
+                <View style={styles.trackHeader}>
+                  <Text style={styles.trackName} numberOfLines={1}>
+                    {getCurrentTrack(spotify)?.name}
+                  </Text>
+                  {(getCurrentTrack(spotify)?.isPlaying === true || getCurrentTrack(spotify)?.isPlaying === undefined) && (
+                    <View style={styles.playingBadge}>
+                      <Ionicons name="play" size={10} color="#FFFFFF" />
+                    </View>
+                  )}
+                </View>
+                
+                <Text style={styles.artistName} numberOfLines={1}>
+                  {getCurrentTrack(spotify)?.artist}
+                </Text>
+                
+                {getCurrentTrack(spotify)?.album && (
+                  <Text style={styles.albumName} numberOfLines={1}>
+                    {getCurrentTrack(spotify)?.album}
+                  </Text>
+                )}
+                
+                {/* Live Status - Show when we have track data */}
+                {getCurrentTrack(spotify) && (
+                  <View style={styles.progressContainer}>
+                    <View style={styles.liveStatusContainer}>
+                      <View style={styles.liveStatusDot} />
+                      <Text style={styles.liveStatusText}>
+                        {getCurrentTrack(spotify)?.lastPlayed ? 
+                          `Last played ${new Date(getCurrentTrack(spotify).lastPlayed).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` :
+                          'Live music activity'
+                        }
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Status Text */}
+                <View style={styles.statusContainer}>
+                  {getCurrentTrack(spotify)?.isPlaying === true ? (
+                    <View style={styles.playingIndicator}>
+                      <Animated.View style={[styles.pulsingDot, pulseStyle]} />
+                      <Text style={styles.playingText}>Now Playing</Text>
+                    </View>
+                  ) : getCurrentTrack(spotify)?.isPlaying === false ? (
+                    <Text style={styles.pausedText}>Paused</Text>
+                  ) : (
+                    <View style={styles.playingIndicator}>
+                      <Animated.View style={[styles.pulsingDot, pulseStyle]} />
+                      <Text style={styles.playingText}>Recently Played</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
             </TouchableOpacity>
           ) : (
-            <Text style={styles.noTrack}>No track currently playing</Text>
+            <View style={styles.noTrackContainer}>
+              <Ionicons name="musical-notes-outline" size={32} color={colors.textSecondary} />
+              <Text style={styles.noTrack}>No track currently playing</Text>
+              <Text style={styles.noTrackSubtext}>Music will appear here when you start listening</Text>
+            </View>
           )}
 
           <View style={styles.actionButtons}>
@@ -496,7 +926,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
                 <ActivityIndicator size="small" color={colors.primary || '#1DB954'} />
               ) : (
                 <>
-                  <Ionicons name="refresh" size={18} color={colors.text} />
+                  <Ionicons name="refresh" size={18} color="#1DB954" />
                   <Text style={styles.actionButtonText}>Refresh</Text>
                 </>
               )}
@@ -506,13 +936,35 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
               style={styles.actionButton}
               onPress={handleDisconnect}
             >
-              <Ionicons name="unlink" size={18} color={colors.text} />
+              <Ionicons name="unlink" size={18} color="#1DB954" />
               <Text style={styles.actionButtonText}>Disconnect</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
     </View>
+
+    {/* Recently Played Tracks */}
+    {hasConnectedProperty(spotify) && spotify.connected && spotify.currentTrack && (
+      <View style={styles.recentlyPlayedContainer}>
+        <Text style={styles.recentlyPlayedTitle}>
+          🎵 Rotation
+        </Text>
+        <View style={styles.recentTrackCard}>
+          <Text style={styles.recentTrackName} numberOfLines={1}>
+            {spotify.currentTrack.name}
+          </Text>
+          <Text style={styles.recentTrackArtist} numberOfLines={1}>
+            {spotify.currentTrack.artist}
+          </Text>
+          {spotify.currentTrack.lastPlayed && (
+            <Text style={styles.recentTrackTime}>
+              {new Date(spotify.currentTrack.lastPlayed).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+            </Text>
+          )}
+        </View>
+      </View>
+    )}
 
     {/* Spotify OAuth WebView Modal */}
     <Modal
