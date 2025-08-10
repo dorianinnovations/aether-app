@@ -12,6 +12,7 @@ export interface UserProfile {
   email: string;
   username?: string;
   name?: string;
+  displayName?: string;
   bio?: string;
   location?: string;
   website?: string;
@@ -78,6 +79,7 @@ export class ProfileDataService {
           email: user.email || '',
           username: user.username,
           name: user.name,
+          displayName: user.name || user.displayName,
           bio: user.bio,
           location: user.location,
           website: user.website,

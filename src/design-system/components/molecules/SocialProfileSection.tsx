@@ -78,11 +78,6 @@ export const SocialProfileSection: React.FC<SocialProfileSectionProps> = ({
     color: colors.text,
   };
 
-  const spotifyCardStyle: ViewStyle = {
-    ...cardStyle,
-    borderLeftWidth: 3,
-    borderLeftColor: '#1DB954', // Spotify green
-  };
 
   return (
     <View style={containerStyle}>

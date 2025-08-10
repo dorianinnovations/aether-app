@@ -20,6 +20,7 @@ import { OnlineStatusType } from '../atoms/OnlineStatus';
 export interface UserProfile {
   email: string;
   username?: string;
+  displayName?: string;
   bio?: string;
   location?: string;
   website?: string;

@@ -8,7 +8,7 @@ import { View, Text, StyleSheet, ViewStyle, TouchableOpacity } from 'react-nativ
 import Svg, { Path, Circle } from 'react-native-svg';
 import { MiniTooltip } from './MiniTooltip';
 
-export type UserBadgeType = 'founder' | 'og';
+export type UserBadgeType = 'founder' | 'og' | 'early' | 'supporter' | 'verified' | 'creator';
 
 interface UserBadgeProps {
   type: UserBadgeType;
@@ -51,34 +51,94 @@ const AbstractSwirl: React.FC<{ width: number; height: number; theme: 'light' | 
 
 const getBadgeConfig = (theme: 'light' | 'dark' = 'light') => ({
   founder: {
-    text: 'FOUNDER',
-    color: theme === 'light' ? '#B8860B' : '#FFF700',
-    backgroundColor: theme === 'light' ? 'rgba(255, 215, 0, 0.15)' : 'rgba(255, 215, 0, 0.2)',
-    borderColor: theme === 'light' ? 'rgba(255, 215, 0, 0.3)' : 'rgba(255, 215, 0, 0.4)',
-    fontFamily: 'Inter-Bold',
-    hasSwirl: true,
-    textShadow: {
-      color: theme === 'light' ? 'rgba(255, 215, 0, 0.9)' : 'rgba(255, 247, 0, 0.9)',
-      offset: { width: 0, height: 0 },
-      radius: theme === 'light' ? 6 : 8,
-    },
-    premiumGlow: true,
-    tooltip: 'This badge is presented to users who supported Aether during its founding period and helped shape the platform.',
-  },
-  og: {
-    text: 'OG',
-    color: theme === 'light' ? '#8B5CF6' : '#E879F9',
-    backgroundColor: theme === 'light' ? 'rgba(155, 89, 182, 0.25)' : 'rgba(155, 89, 182, 0.2)',
-    borderColor: theme === 'light' ? 'rgba(155, 89, 182, 0.4)' : 'rgba(155, 89, 182, 0.5)',
+    text: '⚡',
+    color: theme === 'light' ? '#FF6B35' : '#FF8C42',
+    backgroundColor: theme === 'light' ? 'rgba(255, 107, 53, 0.12)' : 'rgba(255, 140, 66, 0.15)',
+    borderColor: theme === 'light' ? 'rgba(255, 107, 53, 0.25)' : 'rgba(255, 140, 66, 0.3)',
     fontFamily: 'Inter-Bold',
     hasSwirl: false,
     textShadow: {
-      color: theme === 'light' ? 'rgba(139, 92, 246, 0.8)' : 'rgba(232, 121, 249, 0.9)',
+      color: theme === 'light' ? 'rgba(255, 107, 53, 0.6)' : 'rgba(255, 140, 66, 0.7)',
       offset: { width: 0, height: 0 },
-      radius: theme === 'light' ? 5 : 7,
+      radius: 3,
     },
     premiumGlow: true,
-    tooltip: 'This badge is presented to users who were among the first to join Aether and helped establish the community.',
+    tooltip: 'Founding member who helped build Aether from the ground up',
+  },
+  og: {
+    text: '🔥',
+    color: theme === 'light' ? '#8B5CF6' : '#A78BFA',
+    backgroundColor: theme === 'light' ? 'rgba(139, 92, 246, 0.12)' : 'rgba(167, 139, 250, 0.15)',
+    borderColor: theme === 'light' ? 'rgba(139, 92, 246, 0.25)' : 'rgba(167, 139, 250, 0.3)',
+    fontFamily: 'Inter-Bold',
+    hasSwirl: false,
+    textShadow: {
+      color: theme === 'light' ? 'rgba(139, 92, 246, 0.6)' : 'rgba(167, 139, 250, 0.7)',
+      offset: { width: 0, height: 0 },
+      radius: 3,
+    },
+    premiumGlow: true,
+    tooltip: 'OG member from the early days of Aether',
+  },
+  verified: {
+    text: '✓',
+    color: theme === 'light' ? '#06B6D4' : '#67E8F9',
+    backgroundColor: theme === 'light' ? 'rgba(6, 182, 212, 0.12)' : 'rgba(103, 232, 249, 0.15)',
+    borderColor: theme === 'light' ? 'rgba(6, 182, 212, 0.25)' : 'rgba(103, 232, 249, 0.3)',
+    fontFamily: 'Inter-Bold',
+    hasSwirl: false,
+    textShadow: {
+      color: theme === 'light' ? 'rgba(6, 182, 212, 0.6)' : 'rgba(103, 232, 249, 0.7)',
+      offset: { width: 0, height: 0 },
+      radius: 2,
+    },
+    premiumGlow: false,
+    tooltip: 'Verified community member',
+  },
+  early: {
+    text: '⭐',
+    color: theme === 'light' ? '#10B981' : '#34D399',
+    backgroundColor: theme === 'light' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(52, 211, 153, 0.15)',
+    borderColor: theme === 'light' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(52, 211, 153, 0.3)',
+    fontFamily: 'Inter-Bold',
+    hasSwirl: false,
+    textShadow: {
+      color: theme === 'light' ? 'rgba(16, 185, 129, 0.6)' : 'rgba(52, 211, 153, 0.7)',
+      offset: { width: 0, height: 0 },
+      radius: 3,
+    },
+    premiumGlow: false,
+    tooltip: 'Early adopter who joined in the first wave',
+  },
+  supporter: {
+    text: '💎',
+    color: theme === 'light' ? '#3B82F6' : '#60A5FA',
+    backgroundColor: theme === 'light' ? 'rgba(59, 130, 246, 0.12)' : 'rgba(96, 165, 250, 0.15)',
+    borderColor: theme === 'light' ? 'rgba(59, 130, 246, 0.25)' : 'rgba(96, 165, 250, 0.3)',
+    fontFamily: 'Inter-Bold',
+    hasSwirl: false,
+    textShadow: {
+      color: theme === 'light' ? 'rgba(59, 130, 246, 0.6)' : 'rgba(96, 165, 250, 0.7)',
+      offset: { width: 0, height: 0 },
+      radius: 3,
+    },
+    premiumGlow: false,
+    tooltip: 'Platform supporter and contributor',
+  },
+  creator: {
+    text: '🎨',
+    color: theme === 'light' ? '#F59E0B' : '#FCD34D',
+    backgroundColor: theme === 'light' ? 'rgba(245, 158, 11, 0.12)' : 'rgba(252, 211, 77, 0.15)',
+    borderColor: theme === 'light' ? 'rgba(245, 158, 11, 0.25)' : 'rgba(252, 211, 77, 0.3)',
+    fontFamily: 'Inter-Bold',
+    hasSwirl: false,
+    textShadow: {
+      color: theme === 'light' ? 'rgba(245, 158, 11, 0.6)' : 'rgba(252, 211, 77, 0.7)',
+      offset: { width: 0, height: 0 },
+      radius: 3,
+    },
+    premiumGlow: false,
+    tooltip: 'Content creator and community builder',
   },
 });
 
@@ -176,25 +236,27 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   userBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 40,
+    minWidth: 24,
+    minHeight: 24,
     overflow: 'hidden',
   },
   badgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 16,
   },
   premiumText: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-    textTransform: 'uppercase',
+    fontSize: 14,
+    fontWeight: '400',
+    letterSpacing: 0,
+    lineHeight: 16,
   },
 });
 

@@ -33,6 +33,7 @@ export { default as TabButton } from './TabButton';
 export { ProfileImage } from './ProfileImage';
 export { BannerImage } from './BannerImage';
 export { ProfileField } from './ProfileField';
+export { ProminentUserDisplay } from './ProminentUserDisplay';
 export { OnlineStatus } from './OnlineStatus';
 export { SubscriptionTierCard } from './SubscriptionTierCard';
 
@@ -42,4 +43,5 @@ export type { UserBadgeType } from './UserBadge';
 export type { ProfileImageProps } from './ProfileImage';
 export type { BannerImageProps } from './BannerImage';
 export type { ProfileFieldProps } from './ProfileField';
+export type { ProminentUserDisplayProps } from './ProminentUserDisplay';
 export type { OnlineStatusProps, OnlineStatusType } from './OnlineStatus';

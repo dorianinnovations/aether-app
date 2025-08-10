@@ -45,7 +45,6 @@ export interface ChatMessagesListRef {
 export const ChatMessagesList = forwardRef<ChatMessagesListRef, ChatMessagesListProps>(
   ({
     messages,
-    isLoading,
     isStreaming,
     typingUsers,
     currentFriendUsername,
@@ -98,7 +97,7 @@ export const ChatMessagesList = forwardRef<ChatMessagesListRef, ChatMessagesList
                 offset: 99999,
                 animated: true
               });
-            } catch (error) {
+            } catch (_error) {
               // Silently handle errors
             }
           }

@@ -84,5 +84,20 @@ export const SpotifyAPI = {
     } catch (error) {
       throw error;
     }
+  },
+
+  // Get user's top tracks from Spotify
+  async getTopTracks(timeRange: 'short_term' | 'medium_term' | 'long_term' = 'short_term', limit: number = 10): Promise<any> {
+    try {
+      const response = await api.get('/spotify/top-tracks', {
+        params: {
+          time_range: timeRange,
+          limit
+        }
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 };

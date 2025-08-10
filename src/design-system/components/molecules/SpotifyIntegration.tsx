@@ -3,7 +3,7 @@
  * Handles Spotify OAuth connection and displays current playing status
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -74,9 +74,12 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
   const [refreshing, setRefreshing] = useState(false);
   const [showWebView, setShowWebView] = useState(false);
   const [authUrl, setAuthUrl] = useState('');
+  const [topTracks, setTopTracks] = useState<any[]>([]);
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const rotationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Live playback state
-  const [liveProgressMs, setLiveProgressMs] = useState(0);
+  const [, setLiveProgressMs] = useState(0);
   const [lastProgressUpdate, setLastProgressUpdate] = useState(Date.now());
 
   // Animation values
@@ -96,20 +99,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
   // Helper to get current track from either data format
   const getCurrentTrack = (data: any) => {
     if (hasConnectedProperty(data)) {
-      const track = data.currentTrack;
-      if (track) {
-        logger.info('🎵 FULL TRACK DATA:', JSON.stringify(track, null, 2));
-        logger.info('Current track from connected data:', {
-          name: track.name,
-          artist: track.artist,
-          isPlaying: track.isPlaying,
-          progressMs: track.progressMs,
-          durationMs: track.durationMs,
-          hasProgressMs: typeof track.progressMs !== 'undefined',
-          hasDurationMs: typeof track.durationMs !== 'undefined'
-        });
-      }
-      return track;
+      return data.currentTrack;
     } else if (data && data.currentlyPlaying) {
       // Convert SpotifyData format to expected format
       const track = {
@@ -120,20 +110,11 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         progressMs: data.currentlyPlaying.progressMs,
         durationMs: data.currentlyPlaying.durationMs
       };
-      logger.info('Current track from currentlyPlaying data:', track);
       return track;
     }
-    logger.info('No current track data found', data);
     return null;
   };
 
-  // Format time from milliseconds to MM:SS
-  const formatTime = (ms: number) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
 
   // Get live progress (real-time calculation)
   const getLiveProgress = () => {
@@ -235,14 +216,34 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
     }
   }, [JSON.stringify((spotify as any)?.currentTrack), JSON.stringify((spotify as any)?.currentlyPlaying)]);
 
+  // Rotation effect for top tracks
+  useEffect(() => {
+    if (topTracks.length > 0) {
+      // Clear existing interval
+      if (rotationIntervalRef.current) {
+        clearInterval(rotationIntervalRef.current);
+      }
+      
+      // Set up rotation every 3 seconds
+      rotationIntervalRef.current = setInterval(() => {
+        setCurrentTrackIndex((prev) => (prev + 1) % Math.min(topTracks.length, 10));
+      }, 3000);
+      
+      return () => {
+        if (rotationIntervalRef.current) {
+          clearInterval(rotationIntervalRef.current);
+        }
+      };
+    }
+  }, [topTracks.length]);
+
   // Load initial status and set up live updates
   useEffect(() => {
     loadSpotifyStatus();
+    loadTopTracks();
     
     // Set up live polling for connected users
     const startLiveUpdates = () => {
-      const currentTrack = getCurrentTrack(spotify);
-      const isPlaying = currentTrack?.isPlaying;
       
       // Use slower polling since we have live progress updates
       const pollInterval = 30000; // 30s to sync with server data
@@ -291,6 +292,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
             // Refresh status after successful auth
             setTimeout(async () => {
               await loadSpotifyStatus();
+              await loadTopTracks();
               onStatusChange?.();
               Alert.alert('Success!', 'Spotify account connected successfully');
             }, 1000);
@@ -305,6 +307,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
           // Still refresh status in case it worked
           setTimeout(async () => {
             await loadSpotifyStatus();
+            await loadTopTracks();
             onStatusChange?.();
           }, 1000);
         }
@@ -325,7 +328,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         // But we need to access response.spotify, not response.data
         const spotifyData = response.spotify || response.data;
         setSpotifyStatus(spotifyData);
-        logger.info('Spotify status loaded:', spotifyData);
+        // Status loaded successfully
       }
     } catch (err) {
       logger.warn('Failed to load Spotify status:', err);
@@ -334,10 +337,22 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
     }
   };
 
+  const loadTopTracks = async () => {
+    try {
+      const response = await SpotifyAPI.getTopTracks('short_term', 10);
+      if (response.success && response.tracks) {
+        setTopTracks(response.tracks);
+        // Top tracks loaded
+      }
+    } catch (err) {
+      logger.warn('Failed to load top tracks:', err);
+    }
+  };
+
   const handleConnect = async () => {
     try {
       setConnecting(true);
-      logger.info('Starting Spotify connection...');
+      // Starting Spotify connection
       
       // Get the auth URL from server
       const authResponse = await SpotifyAPI.getAuthUrl();
@@ -347,7 +362,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         throw new Error('Failed to get authentication URL');
       }
 
-      logger.info('Opening Spotify auth in WebView');
+      // Opening auth in WebView
       
       // Open in WebView instead of browser
       setAuthUrl(authUrlFromServer);
@@ -394,6 +409,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       const response = await SpotifyAPI.refresh();
       if (response.success) {
         await loadSpotifyStatus();
+        await loadTopTracks();
         Alert.alert('Success', 'Spotify data refreshed');
       }
     } catch (err: unknown) {
@@ -735,6 +751,77 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       color: colors.textSecondary,
       fontStyle: 'italic',
     },
+    rotationHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.sm,
+    },
+    trackCounter: {
+      backgroundColor: 'rgba(29, 185, 84, 0.2)',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 6,
+    },
+    trackCounterText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: '#1DB954',
+    },
+    topTracksRotation: {
+      position: 'relative',
+      height: 90,
+      marginBottom: spacing.sm,
+    },
+    activeTrackCard: {
+      opacity: 1,
+      transform: [{ scale: 1 }],
+    },
+    hiddenTrackCard: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      opacity: 0,
+      transform: [{ scale: 0.95 }],
+    },
+    trackRankContainer: {
+      position: 'absolute',
+      top: 8,
+      right: 8,
+      backgroundColor: 'rgba(29, 185, 84, 0.15)',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    trackRank: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: '#1DB954',
+    },
+    trackDetailsContainer: {
+      paddingRight: 40,
+    },
+    recentTrackAlbum: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontStyle: 'italic',
+    },
+    rotationIndicator: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 4,
+      marginTop: spacing.xs,
+    },
+    rotationDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: 'rgba(29, 185, 84, 0.2)',
+    },
+    rotationDotActive: {
+      backgroundColor: '#1DB954',
+    },
   });
 
   if (loading && !spotify) {
@@ -757,6 +844,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       // Refresh status after successful connection
       setTimeout(async () => {
         await loadSpotifyStatus();
+        await loadTopTracks();
         onStatusChange?.();
         Alert.alert('Success!', 'Spotify account connected successfully');
       }, 1000);
@@ -774,19 +862,13 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         // Refresh status
         setTimeout(async () => {
           await loadSpotifyStatus();
+          await loadTopTracks();
           onStatusChange?.();
           Alert.alert('Success!', 'Spotify account connected successfully');
         }, 1000);
       }, 2000); // Give user time to see success page
     }
   };
-
-  logger.info('🎵 SpotifyIntegration rendering with data:', {
-    hasSpotifyData: !!spotify,
-    connected: hasConnectedProperty(spotify) && spotify?.connected,
-    currentTrack: getCurrentTrack(spotify)?.name,
-    isPlaying: getCurrentTrack(spotify)?.isPlaying
-  });
 
   return (
     <>
@@ -944,24 +1026,56 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       )}
     </View>
 
-    {/* Recently Played Tracks */}
-    {hasConnectedProperty(spotify) && spotify.connected && spotify.currentTrack && (
+    {/* Top Tracks Rotation */}
+    {hasConnectedProperty(spotify) && spotify.connected && topTracks.length > 0 && (
       <View style={styles.recentlyPlayedContainer}>
-        <Text style={styles.recentlyPlayedTitle}>
-          🎵 Rotation
-        </Text>
-        <View style={styles.recentTrackCard}>
-          <Text style={styles.recentTrackName} numberOfLines={1}>
-            {spotify.currentTrack.name}
+        <View style={styles.rotationHeader}>
+          <Text style={styles.recentlyPlayedTitle}>
+            🎵 Top 10 This Week
           </Text>
-          <Text style={styles.recentTrackArtist} numberOfLines={1}>
-            {spotify.currentTrack.artist}
-          </Text>
-          {spotify.currentTrack.lastPlayed && (
-            <Text style={styles.recentTrackTime}>
-              {new Date(spotify.currentTrack.lastPlayed).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+          <View style={styles.trackCounter}>
+            <Text style={styles.trackCounterText}>
+              {currentTrackIndex + 1}/{Math.min(topTracks.length, 10)}
             </Text>
-          )}
+          </View>
+        </View>
+        <View style={styles.topTracksRotation}>
+          {topTracks.slice(0, 10).map((track, index) => (
+            <View 
+              key={index}
+              style={[
+                styles.recentTrackCard,
+                index === currentTrackIndex && styles.activeTrackCard,
+                index !== currentTrackIndex && styles.hiddenTrackCard
+              ]}
+            >
+              <View style={styles.trackRankContainer}>
+                <Text style={styles.trackRank}>#{index + 1}</Text>
+              </View>
+              <View style={styles.trackDetailsContainer}>
+                <Text style={styles.recentTrackName} numberOfLines={1}>
+                  {track.name}
+                </Text>
+                <Text style={styles.recentTrackArtist} numberOfLines={1}>
+                  {track.artists?.map((a: any) => a.name).join(', ') || 'Unknown Artist'}
+                </Text>
+                <Text style={styles.recentTrackAlbum} numberOfLines={1}>
+                  {track.album?.name || 'Unknown Album'}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+        <View style={styles.rotationIndicator}>
+          {topTracks.slice(0, 10).map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.rotationDot,
+                index === currentTrackIndex && styles.rotationDotActive
+              ]}
+            />
+          ))}
         </View>
       </View>
     )}

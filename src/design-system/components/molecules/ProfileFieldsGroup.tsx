@@ -9,13 +9,14 @@ import {
   StyleSheet,
   ViewStyle,
 } from 'react-native';
-import { ProfileField } from '../atoms';
-import { UserBadge, UserBadgeType } from '../atoms/UserBadge';
+import { ProfileField, ProminentUserDisplay } from '../atoms';
+import { UserBadgeType } from '../atoms/UserBadge';
 import { spacing } from '../../tokens/spacing';
 
 export interface UserProfile {
   email: string;
   username?: string;
+  displayName?: string;
   bio?: string;
   location?: string;
   website?: string;
@@ -48,25 +49,13 @@ export const ProfileFieldsGroup: React.FC<ProfileFieldsGroupProps> = ({
 }) => {
   return (
     <View style={[styles.container, style]}>
-      {/* Username with badges */}
+      {/* Prominent Username and Display Name */}
       {profile.username && (
-        <ProfileField
-          label="Username"
-          value={`@${profile.username}`}
-          editable={false} // Username typically not editable
-          monospace={true}
-          rightContent={
-            <View style={styles.badgeContainer}>
-              {profile.badges?.filter(badge => badge.isVisible).map((badge) => (
-                <UserBadge
-                  key={badge.id}
-                  type={badge.badgeType}
-                  style={styles.badge}
-                  glowIntensity="medium"
-                />
-              ))}
-            </View>
-          }
+        <ProminentUserDisplay
+          displayName={profile.displayName}
+          username={profile.username}
+          badges={profile.badges}
+          style={styles.prominentDisplay}
         />
       )}
 
@@ -123,13 +112,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[5],
     paddingTop: 80, // Space for profile image overlap
   },
-  badgeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-  },
-  badge: {
-    // Badge styles handled by UserBadge component
+  prominentDisplay: {
+    marginBottom: spacing[6],
+    marginTop: spacing[3],
   },
 });
 
