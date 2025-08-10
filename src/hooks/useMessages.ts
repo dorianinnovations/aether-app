@@ -23,7 +23,7 @@ interface UseMessagesReturn {
   flatListRef: React.RefObject<FlatList | null>;
 }
 
-export const useMessages = (onHideGreeting?: () => void, conversationId?: string, friendUsername?: string): UseMessagesReturn => {
+export const useMessages = (onHideGreeting?: () => void, conversationId?: string, friendUsername?: string, externalFlatListRef?: React.RefObject<FlatList>): UseMessagesReturn => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -222,6 +222,8 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
       if (cacheKey) {
         messageCache.current.set(cacheKey, newMessages);
       }
+      
+      
       return newMessages;
     });
     setIsLoading(true);

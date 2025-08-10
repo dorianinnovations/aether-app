@@ -87,6 +87,9 @@ export interface ProfileCardProps {
   onDeleteBanner?: () => void;
   onInsightsToggle?: (expanded: boolean) => void;
   onSpotifyStatusChange?: () => void;
+  onConfigurePress?: () => void;
+  /** Whether configure mode is active */
+  configureMode?: boolean;
   /** Custom styles */
   style?: ViewStyle;
   /** Scroll view ref */
@@ -110,6 +113,8 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   onDeleteBanner,
   onInsightsToggle,
   onSpotifyStatusChange,
+  onConfigurePress,
+  configureMode = false,
   style,
   scrollRef,
 }) => {
@@ -143,6 +148,8 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
       <ProfileHeader
         profileImageUri={profile.profilePicture}
         bannerImageUri={profile.bannerImage}
+        username={profile.username}
+        displayName={profile.displayName}
         editable={editMode}
         uploading={uploading}
         status={onlineStatus}
@@ -152,6 +159,8 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         onBannerPress={onBannerPress}
         onDeleteProfileImage={onDeleteProfileImage}
         onDeleteBanner={onDeleteBanner}
+        onConfigurePress={onConfigurePress}
+        configureMode={configureMode}
       />
 
       {/* Profile Fields */}
@@ -171,16 +180,18 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
       )}
 
       {/* Spotify Integration */}
-      <SpotifyIntegration 
-        spotifyData={socialProfile?.spotify ? {
-          ...socialProfile.spotify,
-          currentTrack: socialProfile.spotify.currentTrack ? {
-            ...socialProfile.spotify.currentTrack,
-            album: (socialProfile.spotify.currentTrack as any).album || 'Unknown Album'
-          } : undefined
-        } : { connected: false }}
-        onStatusChange={onSpotifyStatusChange}
-      />
+      <View style={styles.spotifySection}>
+        <SpotifyIntegration 
+          spotifyData={socialProfile?.spotify ? {
+            ...socialProfile.spotify,
+            currentTrack: socialProfile.spotify.currentTrack ? {
+              ...socialProfile.spotify.currentTrack,
+              album: (socialProfile.spotify.currentTrack as any).album || 'Unknown Album'
+            } : undefined
+          } : { connected: false }}
+          onStatusChange={onSpotifyStatusChange}
+        />
+      </View>
 
       {/* AI Insights */}
       {socialProfile?.personality && (
@@ -219,6 +230,11 @@ const styles = StyleSheet.create({
   socialSection: {
     paddingHorizontal: spacing[5],
     marginTop: spacing[4],
+  },
+  spotifySection: {
+    paddingHorizontal: spacing[5],
+    marginTop: spacing[4],
+    marginBottom: 60, // Way more space after Spotify
   },
   insightsSection: {
     paddingHorizontal: spacing[5],

@@ -9,7 +9,7 @@ import {
   StyleSheet,
   ViewStyle,
 } from 'react-native';
-import { ProfileField, ProminentUserDisplay } from '../atoms';
+import { ProfileField } from '../atoms';
 import { UserBadgeType } from '../atoms/UserBadge';
 import { spacing } from '../../tokens/spacing';
 
@@ -49,23 +49,6 @@ export const ProfileFieldsGroup: React.FC<ProfileFieldsGroupProps> = ({
 }) => {
   return (
     <View style={[styles.container, style]}>
-      {/* Prominent Username and Display Name */}
-      {profile.username && (
-        <ProminentUserDisplay
-          displayName={profile.displayName}
-          username={profile.username}
-          badges={profile.badges}
-          style={styles.prominentDisplay}
-        />
-      )}
-
-      {/* Email */}
-      <ProfileField
-        label="Email"
-        value={profile.email}
-        editable={false} // Email typically not editable in profile
-      />
-
       {/* Bio */}
       <ProfileField
         label="Bio"
@@ -110,11 +93,7 @@ export const ProfileFieldsGroup: React.FC<ProfileFieldsGroupProps> = ({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: spacing[5],
-    paddingTop: 80, // Space for profile image overlap
-  },
-  prominentDisplay: {
-    marginBottom: spacing[6],
-    marginTop: spacing[3],
+    paddingTop: 40, // Reduced space since no prominent display
   },
 });
 

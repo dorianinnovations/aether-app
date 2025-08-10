@@ -205,7 +205,7 @@ export const LiveSpotifyStatus: React.FC<LiveSpotifyStatusProps> = ({
           <View style={styles.headerLeft}>
             <MaterialIcons name="music-note" size={16} color="#1DB954" />
             <Text style={[styles.headerTitle, { color: colors.text }]}>
-              {currentTrack ? 'Now Playing' : 'Recently Played'}
+              {currentTrack ? 'Now Playing' : 'Currently Listening'}
             </Text>
             {currentTrack && status.live?.statusAgeSeconds && (
               <Text style={[styles.statusAge, { color: colors.textSecondary }]}>

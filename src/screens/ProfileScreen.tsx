@@ -11,6 +11,8 @@ import {
   StatusBar,
   TouchableOpacity,
   Dimensions,
+  Platform,
+  AppState,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
@@ -47,6 +49,7 @@ export const ProfileScreen: React.FC = () => {
   
   // State management
   const [editMode, setEditMode] = useState(false);
+  const [configureMode, setConfigureMode] = useState(false);
   const [viewMode, setViewMode] = useState<'basic' | 'busy'>('basic');
   const [uploading, setUploading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -170,12 +173,19 @@ export const ProfileScreen: React.FC = () => {
     }
   };
 
-  // Image upload handlers
+  // Image upload handlers with improved error handling
   const handleProfileImageUpload = async () => {
     if (!profile) return;
     
     setUploading(true);
     try {
+      // Check memory and app state before starting upload
+      if (Platform.OS === 'ios' && AppState.currentState !== 'active') {
+        setErrorMessage('Please ensure the app is in the foreground for image uploads.');
+        setShowErrorModal(true);
+        return;
+      }
+      
       const result = await ProfileImageService.handleProfileImageUpload();
       
       if (result.success && result.imageUrl) {
@@ -190,8 +200,21 @@ export const ProfileScreen: React.FC = () => {
         setErrorMessage(result.error);
         setShowErrorModal(true);
       }
-    } catch (_error: any) {
-      setErrorMessage('Failed to upload profile picture. Please try again.');
+    } catch (error: any) {
+      logger.error('Profile image upload error:', error);
+      
+      let errorMessage = 'Failed to upload profile picture. Please try again.';
+      
+      // Handle specific iOS/TestFlight errors
+      if (Platform.OS === 'ios') {
+        if (error.message?.includes('memory')) {
+          errorMessage = 'Not enough memory to upload image. Please close other apps and try again.';
+        } else if (error.message?.includes('background')) {
+          errorMessage = 'Upload failed. Please keep the app in the foreground during uploads.';
+        }
+      }
+      
+      setErrorMessage(errorMessage);
       setShowErrorModal(true);
     } finally {
       setUploading(false);
@@ -203,6 +226,13 @@ export const ProfileScreen: React.FC = () => {
     
     setUploading(true);
     try {
+      // Check memory and app state before starting upload
+      if (Platform.OS === 'ios' && AppState.currentState !== 'active') {
+        setErrorMessage('Please ensure the app is in the foreground for image uploads.');
+        setShowErrorModal(true);
+        return;
+      }
+      
       const result = await ProfileImageService.handleBannerImageUpload();
       
       if (result.success && result.imageUrl) {
@@ -217,8 +247,21 @@ export const ProfileScreen: React.FC = () => {
         setErrorMessage(result.error);
         setShowErrorModal(true);
       }
-    } catch (_error: any) {
-      setErrorMessage('Failed to upload banner image. Please try again.');
+    } catch (error: any) {
+      logger.error('Banner image upload error:', error);
+      
+      let errorMessage = 'Failed to upload banner image. Please try again.';
+      
+      // Handle specific iOS/TestFlight errors
+      if (Platform.OS === 'ios') {
+        if (error.message?.includes('memory')) {
+          errorMessage = 'Not enough memory to upload image. Please close other apps and try again.';
+        } else if (error.message?.includes('background')) {
+          errorMessage = 'Upload failed. Please keep the app in the foreground during uploads.';
+        }
+      }
+      
+      setErrorMessage(errorMessage);
       setShowErrorModal(true);
     } finally {
       setUploading(false);
@@ -282,6 +325,10 @@ export const ProfileScreen: React.FC = () => {
   // UI handlers
   const toggleViewMode = () => {
     setViewMode(prev => prev === 'basic' ? 'busy' : 'basic');
+  };
+
+  const handleConfigurePress = () => {
+    setConfigureMode(!configureMode);
   };
 
   const handleInsightsToggle = (expanded: boolean) => {
@@ -417,6 +464,8 @@ export const ProfileScreen: React.FC = () => {
           onSpotifyStatusChange={() => {
             refreshAllData();
           }}
+          onConfigurePress={handleConfigurePress}
+          configureMode={configureMode}
           scrollRef={scrollViewRef}
         />
 

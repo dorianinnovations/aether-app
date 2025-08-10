@@ -5,6 +5,8 @@
 
 import { api } from '../core/client';
 import { TokenManager } from '../utils/storage';
+import { Platform } from 'react-native';
+import { ImageUtils } from '../../../utils/imageUtils';
 
 export const UserAPI = {
   async getProfile(): Promise<unknown> {
@@ -60,23 +62,30 @@ export const UserAPI = {
     try {
       const formData = new FormData();
       
-      // Create file object for React Native
-      const imageFile = {
-        uri: imageUri,
-        type: 'image/jpeg',
-        name: 'profile-picture.jpg',
-      } as any;
+      // Use image utilities for better platform compatibility
+      const { fileObject } = ImageUtils.getFormDataConfig(imageUri, 'profile');
       
-      formData.append('profilePhoto', imageFile);
+      formData.append('profilePhoto', fileObject);
 
       const response = await api.post('/user/profile-photo', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        // Add timeout and other options for better reliability
+        timeout: 60000, // 60 second timeout
       });
       
       return response.data;
     } catch (error: unknown) {
+      // Enhanced error logging for debugging TestFlight issues
+      console.error('Profile picture upload error details:', {
+        error,
+        imageUri,
+        platform: Platform.OS,
+        errorMessage: (error as any)?.message,
+        errorResponse: (error as any)?.response?.data,
+        errorStatus: (error as any)?.response?.status,
+      });
       throw error;
     }
   },
@@ -94,23 +103,30 @@ export const UserAPI = {
     try {
       const formData = new FormData();
       
-      // Create file object for React Native
-      const imageFile = {
-        uri: imageUri,
-        type: 'image/jpeg',
-        name: 'banner-image.jpg',
-      } as any;
+      // Use image utilities for better platform compatibility
+      const { fileObject } = ImageUtils.getFormDataConfig(imageUri, 'banner');
       
-      formData.append('bannerImage', imageFile);
+      formData.append('bannerImage', fileObject);
 
       const response = await api.post('/user/banner-image', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        // Add timeout and other options for better reliability
+        timeout: 60000, // 60 second timeout
       });
       
       return response.data;
     } catch (error: unknown) {
+      // Enhanced error logging for debugging TestFlight issues
+      console.error('Banner image upload error details:', {
+        error,
+        imageUri,
+        platform: Platform.OS,
+        errorMessage: (error as any)?.message,
+        errorResponse: (error as any)?.response?.data,
+        errorStatus: (error as any)?.response?.status,
+      });
       throw error;
     }
   },

@@ -73,5 +73,11 @@
     <string>Light</string>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Aether needs access to your photo library to upload profile pictures and banner images.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Aether needs access to your camera to take profile pictures and banner images.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Aether needs access to save images to your photo library.</string>
   </dict>
 </plist>

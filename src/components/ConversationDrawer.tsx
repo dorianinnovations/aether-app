@@ -14,6 +14,7 @@ import {
   Dimensions,
   Animated,
   Modal,
+  Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { HeatmapTooltip } from '../design-system/components/organisms/HeatmapTooltip';
@@ -92,6 +93,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     isLoading,
     loadConversations,
     handleDeleteConversation,
+    handleDeleteAllConversations,
     clearCache,
     clearTabCache,
     setConversations,
@@ -280,6 +282,38 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     onConversationSelect(conversation);
     onClose();
   }, [onConversationSelect, onClose]);
+
+  const handleClearAllConversations = useCallback(() => {
+    if (currentTab !== 0) return; // Only allow clearing Aether conversations
+    
+    Alert.alert(
+      'Clear All Conversations',
+      'This will permanently delete all your conversations with Aether. This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const success = await handleDeleteAllConversations();
+              if (success) {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              } else {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              }
+            } catch (error) {
+              log.error('Failed to clear all conversations:', error);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            }
+          },
+        },
+      ]
+    );
+  }, [currentTab, handleDeleteAllConversations]);
   
   if (!isVisible) return null;
 
@@ -418,11 +452,36 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                   }
                 ]}
               >
+                {/* Clear All button - only show on Aether tab and when conversations exist */}
+                {currentTab === 0 && conversations.length > 0 && (
+                  <TouchableOpacity
+                    style={[
+                      styles.heroButton,
+                      styles.trioButton,
+                      {
+                        backgroundColor: theme === 'dark' 
+                          ? 'rgba(255, 59, 48, 0.12)' 
+                          : 'rgba(255, 59, 48, 0.10)',
+                        borderWidth: 1,
+                        borderColor: theme === 'light' ? 'rgba(255, 59, 48, 0.25)' : 'rgba(255, 59, 48, 0.3)',
+                      }
+                    ]}
+                    onPress={handleClearAllConversations}
+                    activeOpacity={0.8}
+                    disabled={isAnimating || isLoading}
+                  >
+                    <Feather name="trash-2" size={16} color="#FF3B30" />
+                    <Text style={[styles.trioButtonText, { color: '#FF3B30' }]}>
+                      Clear All
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                
                 {onStartNewChat && (
                   <TouchableOpacity
                     style={[
                       styles.heroButton,
-                      styles.primaryHeroButton,
+                      styles.trioButton,
                       {
                         backgroundColor: theme === 'dark' 
                           ? 'rgba(255,255,255,0.1)' 
@@ -435,8 +494,8 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                     activeOpacity={0.92}
                     disabled={isAnimating}
                   >
-                    <Feather name="plus" size={18} color={themeColors.text} />
-                    <Text style={[styles.heroButtonText, { color: themeColors.text }]}>
+                    <Feather name="plus" size={16} color={themeColors.text} />
+                    <Text style={[styles.trioButtonText, { color: themeColors.text }]}>
                       New Chat
                     </Text>
                   </TouchableOpacity>
@@ -445,7 +504,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                 <TouchableOpacity
                   style={[
                     styles.heroButton,
-                    styles.secondaryHeroButton,
+                    styles.trioButton,
                     {
                       backgroundColor: theme === 'dark' 
                         ? 'rgba(255,255,255,0.1)' 
@@ -458,7 +517,10 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                   activeOpacity={0.92}
                   disabled={isAnimating}
                 >
-                  <Feather name="x" size={18} color={themeColors.text} />
+                  <Feather name="x" size={16} color={themeColors.text} />
+                  <Text style={[styles.trioButtonText, { color: themeColors.text }]}>
+                    Close
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -556,24 +618,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
   },
-  primaryHeroButton: {
+  trioButton: {
     flex: 1,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[1],
-    gap: spacing[2],
-    minHeight: 36,
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[2],
+    gap: 4,
+    minHeight: 40,
+    maxWidth: '32%',
   },
-  secondaryHeroButton: {
-    width: 40,
-    height: 36,
-  },
-  heroButtonText: {
-    color: '#787878',
-    fontSize: 14,
+  trioButtonText: {
+    fontSize: 11,
     fontWeight: '500',
-    lineHeight: 22,
+    lineHeight: 16,
     fontFamily: 'Poppins-Medium',
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
+    textAlign: 'center',
   },
 });
 

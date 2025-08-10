@@ -436,36 +436,24 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
 
   const styles = StyleSheet.create({
     container: {
-      backgroundColor: theme === 'dark' ? 'rgba(29, 185, 84, 0.1)' : 'rgba(29, 185, 84, 0.05)',
-      borderRadius: 16,
-      padding: spacing.lg,
-      marginHorizontal: spacing.md,
-      marginTop: spacing.md,
-      marginBottom: spacing.lg,
-      borderWidth: 1,
-      borderColor: theme === 'dark' ? 'rgba(29, 185, 84, 0.3)' : 'rgba(29, 185, 84, 0.2)',
-      shadowColor: '#1DB954',
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
+      backgroundColor: 'transparent',
+      padding: 0,
+      marginHorizontal: spacing[5],
+      marginTop: spacing[2],
+      marginBottom: spacing[2],
     },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: spacing.lg,
-      paddingBottom: spacing.sm,
-      borderBottomWidth: 1,
-      borderBottomColor: 'rgba(29, 185, 84, 0.2)',
+      justifyContent: 'flex-start',
+      marginBottom: spacing[1],
+      paddingBottom: 0,
     },
     title: {
-      fontSize: 20,
-      fontWeight: '700',
-      color: '#1DB954',
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginLeft: spacing[1],
     },
     liveHeaderIndicator: {
       flexDirection: 'row',
@@ -505,17 +493,15 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       marginLeft: spacing.xs,
     },
     connectedContent: {
-      marginTop: spacing.sm,
+      marginTop: 0,
     },
     currentTrack: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.6)',
-      borderRadius: 16,
-      padding: spacing.md,
-      marginBottom: spacing.sm,
-      borderWidth: 1,
-      borderColor: 'transparent',
+      backgroundColor: 'transparent',
+      borderRadius: 0,
+      padding: 0,
+      marginBottom: 0,
     },
     currentTrackPlaying: {
       borderColor: 'rgba(29, 185, 84, 0.3)',
@@ -523,14 +509,13 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
     },
     albumArtContainer: {
       position: 'relative',
-      marginRight: spacing.md,
+      marginRight: spacing[2],
     },
     albumArt: {
-      width: 80,
-      height: 80,
-      borderRadius: 16,
-      borderWidth: 2,
-      borderColor: 'rgba(29, 185, 84, 0.3)',
+      width: 28,
+      height: 28,
+      borderRadius: 4,
+      borderWidth: 0,
     },
     albumArtPlaceholder: {
       backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
@@ -565,10 +550,11 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       marginBottom: 4,
     },
     trackName: {
-      fontSize: 17,
+      fontSize: 13,
       color: colors.text,
-      fontWeight: '600',
+      fontWeight: '500',
       flex: 1,
+      marginBottom: 1,
     },
     playingBadge: {
       backgroundColor: '#1DB954',
@@ -580,9 +566,9 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       marginLeft: spacing.sm,
     },
     artistName: {
-      fontSize: 15,
+      fontSize: 11,
       color: colors.textSecondary,
-      marginBottom: 2,
+      marginBottom: 0,
     },
     albumName: {
       fontSize: 13,
@@ -875,14 +861,8 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       <View style={styles.container}>
         <View style={styles.header}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <FontAwesome name="spotify" size={28} color="#1DB954" />
-            <Text style={styles.title}>Spotify</Text>
-            {(getCurrentTrack(spotify)?.isPlaying === true || getCurrentTrack(spotify)?.isPlaying === undefined) && (
-              <View style={styles.liveHeaderIndicator}>
-                <Animated.View style={[styles.liveHeaderDot, pulseStyle]} />
-                <Text style={styles.liveHeaderText}>🔥 LIVE</Text>
-              </View>
-            )}
+            <FontAwesome name="spotify" size={14} color={colors.textSecondary} />
+            <Text style={styles.title}>Playing Now</Text>
           </View>
         </View>
 
@@ -940,11 +920,6 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
                   <Text style={styles.trackName} numberOfLines={1}>
                     {getCurrentTrack(spotify)?.name}
                   </Text>
-                  {(getCurrentTrack(spotify)?.isPlaying === true || getCurrentTrack(spotify)?.isPlaying === undefined) && (
-                    <View style={styles.playingBadge}>
-                      <Ionicons name="play" size={10} color="#FFFFFF" />
-                    </View>
-                  )}
                 </View>
                 
                 <Text style={styles.artistName} numberOfLines={1}>
@@ -957,37 +932,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
                   </Text>
                 )}
                 
-                {/* Live Status - Show when we have track data */}
-                {getCurrentTrack(spotify) && (
-                  <View style={styles.progressContainer}>
-                    <View style={styles.statusContainer}>
-                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#4CAF50', marginRight: 4 }} />
-                      <Text style={{ fontSize: 11, color: '#666', opacity: 0.8 }}>
-                        {getCurrentTrack(spotify)?.lastPlayed ? 
-                          `Last played ${new Date(getCurrentTrack(spotify).lastPlayed).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` :
-                          'Live music activity'
-                        }
-                      </Text>
-                    </View>
-                  </View>
-                )}
 
-                {/* Status Text */}
-                <View style={styles.statusContainer}>
-                  {getCurrentTrack(spotify)?.isPlaying === true ? (
-                    <View style={styles.playingIndicator}>
-                      <Animated.View style={[styles.pulsingDot, pulseStyle]} />
-                      <Text style={styles.playingText}>Now Playing</Text>
-                    </View>
-                  ) : getCurrentTrack(spotify)?.isPlaying === false ? (
-                    <Text style={styles.pausedText}>Paused</Text>
-                  ) : (
-                    <View style={styles.playingIndicator}>
-                      <Animated.View style={[styles.pulsingDot, pulseStyle]} />
-                      <Text style={styles.playingText}>Recently Played</Text>
-                    </View>
-                  )}
-                </View>
               </View>
             </TouchableOpacity>
           ) : (
@@ -998,87 +943,10 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
             </View>
           )}
 
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={handleRefresh}
-              disabled={refreshing}
-            >
-              {refreshing ? (
-                <ActivityIndicator size="small" color={colors.primary || '#1DB954'} />
-              ) : (
-                <>
-                  <Ionicons name="refresh" size={18} color="#1DB954" />
-                  <Text style={styles.actionButtonText}>Refresh</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={handleDisconnect}
-            >
-              <Ionicons name="unlink" size={18} color="#1DB954" />
-              <Text style={styles.actionButtonText}>Disconnect</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       )}
     </View>
 
-    {/* Top Tracks Rotation */}
-    {hasConnectedProperty(spotify) && spotify.connected && topTracks.length > 0 && (
-      <View style={styles.recentlyPlayedContainer}>
-        <View style={styles.rotationHeader}>
-          <Text style={styles.recentlyPlayedTitle}>
-            🎵 Top 10 This Week
-          </Text>
-          <View style={styles.trackCounter}>
-            <Text style={styles.trackCounterText}>
-              {currentTrackIndex + 1}/{Math.min(topTracks.length, 10)}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.topTracksRotation}>
-          {topTracks.slice(0, 10).map((track, index) => (
-            <View 
-              key={index}
-              style={[
-                styles.recentTrackCard,
-                index === currentTrackIndex && styles.activeTrackCard,
-                index !== currentTrackIndex && styles.hiddenTrackCard
-              ]}
-            >
-              <View style={styles.trackRankContainer}>
-                <Text style={styles.trackRank}>#{index + 1}</Text>
-              </View>
-              <View style={styles.trackDetailsContainer}>
-                <Text style={styles.recentTrackName} numberOfLines={1}>
-                  {track.name}
-                </Text>
-                <Text style={styles.recentTrackArtist} numberOfLines={1}>
-                  {track.artists?.map((a: any) => a.name).join(', ') || 'Unknown Artist'}
-                </Text>
-                <Text style={styles.recentTrackAlbum} numberOfLines={1}>
-                  {track.album?.name || 'Unknown Album'}
-                </Text>
-              </View>
-            </View>
-          ))}
-        </View>
-        <View style={styles.rotationIndicator}>
-          {topTracks.slice(0, 10).map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.rotationDot,
-                index === currentTrackIndex && styles.rotationDotActive
-              ]}
-            />
-          ))}
-        </View>
-      </View>
-    )}
 
     {/* Spotify OAuth WebView Modal */}
     <Modal

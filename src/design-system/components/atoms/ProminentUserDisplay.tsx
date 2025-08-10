@@ -71,7 +71,7 @@ export const ProminentUserDisplay: React.FC<ProminentUserDisplayProps> = ({
           ]}
           numberOfLines={1}
         >
-          @{username}
+          {username}
         </Text>
 
         {/* Badges */}

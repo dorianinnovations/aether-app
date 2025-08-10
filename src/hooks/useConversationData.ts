@@ -232,6 +232,21 @@ export const useConversationData = () => {
     }
   }, []);
 
+  // Delete all conversations function
+  const handleDeleteAllConversations = useCallback(async () => {
+    try {
+      await ConversationAPI.deleteAllConversations();
+      setConversations([]);
+      // Clear cache after deleting all
+      setConversationCache({});
+      log.debug('Deleted all conversations');
+      return true;
+    } catch (error) {
+      log.error('Failed to delete all conversations:', error);
+      return false;
+    }
+  }, []);
+
   // Clear cache
   const clearCache = useCallback(() => {
     setConversationCache({});
@@ -252,6 +267,7 @@ export const useConversationData = () => {
     isLoading,
     loadConversations,
     handleDeleteConversation,
+    handleDeleteAllConversations,
     clearCache,
     clearTabCache,
     setConversations, // For real-time updates

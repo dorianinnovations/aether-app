@@ -40,6 +40,12 @@ export const typography = {
     monoMedium: 'JetBrainsMono-Medium',
     monoBold: 'JetBrainsMono-Bold',
     
+    // Mozilla Headline - for distinctive headings and usernames
+    mozillaHeadline: 'MozillaHeadline_400Regular',
+    mozillaHeadlineMedium: 'MozillaHeadline_500Medium',
+    mozillaHeadlineSemiBold: 'MozillaHeadline_600SemiBold',
+    mozillaHeadlineBold: 'MozillaHeadline_700Bold',
+    
     // Fallback to system fonts
     system: 'System',
   },
@@ -299,6 +305,54 @@ export const typography = {
       lineHeight: 24,
       letterSpacing: -0.2,
     },
+    
+    // Username display style - Mozilla Headline for distinctive look
+    username: {
+      fontSize: 20,
+      fontFamily: getFontFamily('MozillaHeadline_600SemiBold', 'monospace'),
+      fontWeight: '600' as const,
+      lineHeight: 26,
+      letterSpacing: -0.3,
+    },
+    
+    // Profile field hierarchy styles
+    profileFieldLabelPrimary: {
+      fontSize: 13,
+      fontFamily: getFontFamily('Inter-SemiBold', 'sans-serif'),
+      fontWeight: '600' as const,
+      lineHeight: 16,
+      letterSpacing: 0.2,
+      textTransform: 'uppercase' as const,
+    },
+    profileFieldLabelSecondary: {
+      fontSize: 12,
+      fontFamily: getFontFamily('Inter-Medium', 'sans-serif'),
+      fontWeight: '500' as const,
+      lineHeight: 15,
+      letterSpacing: 0.1,
+      textTransform: 'uppercase' as const,
+    },
+    profileFieldValuePrimary: {
+      fontSize: 18,
+      fontFamily: getFontFamily('CrimsonPro-SemiBold', 'serif'),
+      fontWeight: '600' as const,
+      lineHeight: 24,
+      letterSpacing: -0.2,
+    },
+    profileFieldValueSecondary: {
+      fontSize: 15,
+      fontFamily: getFontFamily('Nunito-Medium', 'sans-serif'),
+      fontWeight: '500' as const,
+      lineHeight: 21,
+      letterSpacing: -0.1,
+    },
+    profileFieldValueTertiary: {
+      fontSize: 14,
+      fontFamily: getFontFamily('Nunito-Regular', 'sans-serif'),
+      fontWeight: '400' as const,
+      lineHeight: 20,
+      letterSpacing: -0.05,
+    },
   },
   
   // Direct access shortcuts (for backward compatibility)
@@ -372,6 +426,12 @@ export const fontConfig = {
   'Poppins-Regular': require('../../../assets/fonts/Poppins-Regular.ttf'),
   'Poppins-Medium': require('../../../assets/fonts/Poppins-Medium.ttf'),
   'Poppins-SemiBold': require('../../../assets/fonts/Poppins-SemiBold.ttf'),
+  
+  // Mozilla Headline - distinctive font for usernames and special headings
+  'MozillaHeadline_400Regular': require('../../../node_modules/@expo-google-fonts/mozilla-headline/400Regular/MozillaHeadline_400Regular.ttf'),
+  'MozillaHeadline_500Medium': require('../../../node_modules/@expo-google-fonts/mozilla-headline/500Medium/MozillaHeadline_500Medium.ttf'),
+  'MozillaHeadline_600SemiBold': require('../../../node_modules/@expo-google-fonts/mozilla-headline/600SemiBold/MozillaHeadline_600SemiBold.ttf'),
+  'MozillaHeadline_700Bold': require('../../../node_modules/@expo-google-fonts/mozilla-headline/700Bold/MozillaHeadline_700Bold.ttf'),
 };
 
 export default typography;

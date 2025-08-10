@@ -3,7 +3,7 @@
  * Complex component for displaying AI-learned personality insights with animations
  */
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -48,6 +48,11 @@ export const ProfileInsights: React.FC<ProfileInsightsProps> = ({
 }) => {
   const { theme, colors } = useTheme();
   const [isExpanded, setIsExpanded] = useState(expanded);
+
+  // Sync local state with props
+  useEffect(() => {
+    setIsExpanded(expanded);
+  }, [expanded]);
 
   // Animation refs for sequential fade-in
   const interestsOpacity = useRef(new Animated.Value(0)).current;
@@ -97,7 +102,9 @@ export const ProfileInsights: React.FC<ProfileInsightsProps> = ({
   };
 
   const handleToggle = () => {
+    console.log('ProfileInsights handleToggle called, current isExpanded:', isExpanded);
     const newExpanded = !isExpanded;
+    console.log('ProfileInsights setting newExpanded to:', newExpanded);
     setIsExpanded(newExpanded);
     onToggle?.(newExpanded);
 
@@ -118,7 +125,7 @@ export const ProfileInsights: React.FC<ProfileInsightsProps> = ({
           AI Insights
         </Text>
         <Feather
-          name={isExpanded ? 'chevron-up' : 'chevron-down'}
+          name={isExpanded ? 'chevron-down' : 'chevron-right'}
           size={20}
           color={colors.text}
         />

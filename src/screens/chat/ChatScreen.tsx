@@ -132,6 +132,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   const [, setIsKeyboardVisible] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isNearBottom, setIsNearBottom] = useState(true);
+  const [extraPaddingBottom, setExtraPaddingBottom] = useState(0);
   const inputContainerAnim = useRef(new Animated.Value(0)).current;
   
   // Animation refs
@@ -188,8 +189,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     handleConversationSelect,
     handleHaltStreaming,
     setMessages,
-    // flatListRef: messagesRef,
-  } = useMessages(() => setShowGreeting(false), currentConversationId, currentFriendUsername);
+    flatListRef: messagesRef,
+  } = useMessages(() => setShowGreeting(false), currentConversationId, currentFriendUsername, flatListRef);
 
   // Real-time messaging for friend conversations
   const {
@@ -342,12 +343,23 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   // Scroll to bottom when input is focused and keyboard appears
   useEffect(() => {
     if (isChatInputFocused && keyboardHeight > 0) {
-      // Wait for paddingBottom to update, then scroll
-      setTimeout(() => {
-        scrollToBottom();
-      }, 300);
+      // DISABLED - was interfering with user message positioning
+      // setTimeout(() => {
+      //   scrollToBottom();
+      // }, 300);
     }
   }, [isChatInputFocused, keyboardHeight]);
+
+
+  // Keep extra padding permanently - don't remove it
+  // useEffect(() => {
+  //   if (extraPaddingBottom > 0) {
+  //     // Only remove padding when bot is completely idle (not loading AND not streaming)
+  //     if (!isLoading && !isStreaming) {
+  //       setTimeout(() => setExtraPaddingBottom(0), 1000); // Short delay after bot stops
+  //     }
+  //   }
+  // }, [isLoading, isStreaming, extraPaddingBottom]);
 
   // Cleanup effect for rotation stability
   useEffect(() => {
@@ -573,13 +585,60 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       handleMessageSend(currentText);
     }
     
-    // Auto-scroll to bottom after sending message
-    setTimeout(() => scrollToBottom(), 100);
+    // Adjust padding based on message length and account for loading state
+    const messageLength = currentText.trim().length;
+    let basePadding;
+    
+    if (messageLength <= 3) {
+      basePadding = 500; // Very short messages (like "hey") need more padding
+    } else if (messageLength <= 15) {
+      basePadding = 350; // Short messages need less padding
+    } else if (messageLength <= 50) {
+      basePadding = 250; // Medium messages need even less padding  
+    } else {
+      basePadding = 200; // Long messages need minimal padding
+    }
+    
+    // Add extra padding when bot is loading/streaming (Lottie animation takes space)
+    const loadingPadding = (isLoading || isStreaming) ? 100 : 0;
+    
+    setExtraPaddingBottom(basePadding + loadingPadding);
+    
+    // Scroll to bottom after padding is applied
+    setTimeout(() => scrollToBottom(), 200);
   };
 
   // Handle input focus/blur for tooltip fade
   const handleInputFocus = () => {
     setIsChatInputFocused(true);
+    
+    // Scroll to show bottom of last bot message when input is focused
+    setTimeout(() => {
+      if (flatListRef.current && messages.length > 0) {
+        // Find the last bot message
+        const lastBotMessageIndex = messages.map((msg, index) => ({ msg, index }))
+          .reverse()
+          .find(({ msg }) => msg.sender === 'aether')?.index;
+        
+        if (lastBotMessageIndex !== undefined) {
+          try {
+            // Scroll to show the bot message near the top, accounting for more messages
+            const messageIndex = Math.max(0, lastBotMessageIndex - 1); // Show message before bot message too
+            flatListRef.current.scrollToIndex({
+              index: messageIndex,
+              animated: true,
+              viewPosition: 0.05 // Position even higher for longer conversations
+            });
+          } catch (error) {
+            // Fallback to regular scroll to bottom
+            scrollToBottom();
+          }
+        } else {
+          // No bot message found, just scroll to bottom
+          scrollToBottom();
+        }
+      }
+    }, 100);
     
     // Smooth fade out with gentle easing
     Animated.timing(tooltipOpacity, {
@@ -739,8 +798,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             styles.messagesContainer,
             {
               paddingBottom: isChatInputFocused 
-                ? keyboardHeight + 80 // Reasonable padding when focused
-                : 80, // Default padding when not focused
+                ? keyboardHeight + 80 + extraPaddingBottom // Focused + extra padding
+                : 80 + extraPaddingBottom, // Default + extra padding
             }
           ]}
           showsVerticalScrollIndicator={false}
@@ -750,17 +809,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             Keyboard.dismiss();
           }}
           ItemSeparatorComponent={() => <View style={{ height: 0 }} />}
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { y: headerAnim } } }],
-            { 
-              useNativeDriver: false,
-              listener: (event: any) => {
-                const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-                const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
-                setIsNearBottom(distanceFromBottom <= 50);
-              }
-            }
-          )}
+          onScroll={(event: any) => {
+            // Simplified scroll handler without Animated.event
+            const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+            const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+            setIsNearBottom(distanceFromBottom <= 50);
+          }}
           ListFooterComponent={() => {
             // Show typing indicator for friend conversations
             const isTyping = currentFriendUsername && typingUsers[currentFriendUsername];
@@ -792,8 +846,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
           ]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            scrollToBottom(false); // Keep animated for button press (smooth UX)
-            // Try scrollToBottom(true) for instant teleport!
+            scrollToBottom(false);
           }}
           activeOpacity={0.7}
         >

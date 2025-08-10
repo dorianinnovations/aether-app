@@ -3,10 +3,11 @@
  * Handles profile and banner image operations with proper error handling
  */
 
-import { Alert } from 'react-native';
+import { Alert, Platform, AppState } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { UserAPI } from './apiModules/endpoints/user';
 import { logger } from '../utils/logger';
+import { ImageUtils } from '../utils/imageUtils';
 
 export interface ImageUploadResult {
   success: boolean;
@@ -20,17 +21,38 @@ export class ProfileImageService {
    */
   static async requestPermissions(): Promise<{ mediaLibrary: boolean; camera: boolean }> {
     try {
+      // On iOS, we need to be more explicit about permissions
       const [mediaLibraryResult, cameraResult] = await Promise.all([
         ImagePicker.requestMediaLibraryPermissionsAsync(),
         ImagePicker.requestCameraPermissionsAsync()
       ]);
 
-      return {
+      const permissions = {
         mediaLibrary: mediaLibraryResult.status === 'granted',
         camera: cameraResult.status === 'granted'
       };
+
+      // Log permission status for debugging TestFlight issues
+      if (Platform.OS === 'ios') {
+        logger.info('iOS Permissions Status:', {
+          mediaLibrary: mediaLibraryResult.status,
+          camera: cameraResult.status,
+          canAskAgain: mediaLibraryResult.canAskAgain,
+          cameraCanAskAgain: cameraResult.canAskAgain
+        });
+      }
+
+      return permissions;
     } catch (error) {
       logger.error('Error requesting permissions:', error);
+      // On iOS, permission errors can be more critical
+      if (Platform.OS === 'ios') {
+        Alert.alert(
+          'Permission Error',
+          'Unable to request photo permissions. Please check your device settings.',
+          [{ text: 'OK' }]
+        );
+      }
       return { mediaLibrary: false, camera: false };
     }
   }
@@ -72,12 +94,22 @@ export class ProfileImageService {
     try {
       let result: ImagePicker.ImagePickerResult;
 
+      // Use platform-optimized options
+      const imageType = aspectRatio[0] === aspectRatio[1] ? 'profile' : 'banner';
+      const platformOptions = ImageUtils.getImagePickerOptions(imageType);
+      
       const options: ImagePicker.ImagePickerOptions = {
-        mediaTypes: ['images'],
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: aspectRatio,
-        quality: 0.8,
+        quality: platformOptions.quality,
+        ...(Platform.OS === 'ios' && {
+          // iOS-specific options for better TestFlight compatibility
+          allowsMultipleSelection: false,
+        }),
       };
+
+      logger.info(`Launching ${useCamera ? 'camera' : 'image library'} with options:`, options);
 
       if (useCamera) {
         result = await ImagePicker.launchCameraAsync(options);
@@ -85,10 +117,31 @@ export class ProfileImageService {
         result = await ImagePicker.launchImageLibraryAsync(options);
       }
 
+      logger.info('Image picker result:', {
+        cancelled: result.canceled,
+        hasAssets: result.assets ? result.assets.length > 0 : false,
+        firstAssetUri: result.assets?.[0]?.uri
+      });
+
       return result;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to open image picker. Please try again.');
+      
+      // More specific error handling for iOS TestFlight
+      let errorMessage = 'Failed to open image picker. Please try again.';
+      
+      if (Platform.OS === 'ios') {
+        if (error.message?.includes('permission')) {
+          errorMessage = 'Photo permissions are required. Please enable them in Settings.';
+        } else if (error.message?.includes('memory')) {
+          errorMessage = 'Not enough memory to process the image. Please try a smaller photo.';
+        } else if (error.message?.includes('cancelled')) {
+          // User cancelled - don't show error
+          return null;
+        }
+      }
+      
+      Alert.alert('Error', errorMessage);
       return null;
     }
   }
@@ -98,7 +151,26 @@ export class ProfileImageService {
    */
   static async uploadProfilePicture(imageUri: string): Promise<ImageUploadResult> {
     try {
+      logger.info('Starting profile picture upload:', { imageUri });
+      
+      // Validate image URI using utility
+      const uriValidation = ImageUtils.validateImageUri(imageUri);
+      if (!uriValidation.valid) {
+        throw new Error(uriValidation.error || 'Invalid image URI');
+      }
+      
+      // Check app state for iOS
+      const uploadCheck = ImageUtils.shouldProceedWithUpload(AppState.currentState);
+      if (!uploadCheck.proceed) {
+        throw new Error(uploadCheck.reason || 'Cannot upload at this time');
+      }
+      
+      // Log image info for debugging
+      ImageUtils.logImageInfo(imageUri, 'Profile picture upload');
+
       const response = await UserAPI.uploadProfilePicture(imageUri);
+      
+      logger.info('Profile upload response:', response);
       
       // Server returns: {data: {profilePhoto: {url: ..., filename: ..., etc}}}
       if (response?.data?.profilePhoto) {
@@ -115,9 +187,23 @@ export class ProfileImageService {
       };
     } catch (error: any) {
       logger.error('Profile picture upload failed:', error);
+      
+      // More specific error messages for common TestFlight issues
+      let errorMessage = error.message || 'Failed to upload profile picture';
+      
+      if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = 'Upload timed out. Please try again with a smaller image.';
+      } else if (error.message?.includes('413') || error.message?.includes('too large')) {
+        errorMessage = 'Image is too large. Please select a smaller photo.';
+      } else if (error.message?.includes('unsupported') || error.message?.includes('format')) {
+        errorMessage = 'Unsupported image format. Please use JPG or PNG.';
+      }
+      
       return {
         success: false,
-        error: error.message || 'Failed to upload profile picture'
+        error: errorMessage
       };
     }
   }
@@ -127,7 +213,26 @@ export class ProfileImageService {
    */
   static async uploadBannerImage(imageUri: string): Promise<ImageUploadResult> {
     try {
+      logger.info('Starting banner image upload:', { imageUri });
+      
+      // Validate image URI using utility
+      const uriValidation = ImageUtils.validateImageUri(imageUri);
+      if (!uriValidation.valid) {
+        throw new Error(uriValidation.error || 'Invalid image URI');
+      }
+      
+      // Check app state for iOS
+      const uploadCheck = ImageUtils.shouldProceedWithUpload(AppState.currentState);
+      if (!uploadCheck.proceed) {
+        throw new Error(uploadCheck.reason || 'Cannot upload at this time');
+      }
+      
+      // Log image info for debugging
+      ImageUtils.logImageInfo(imageUri, 'Banner image upload');
+
       const response = await UserAPI.uploadBannerImage(imageUri);
+      
+      logger.info('Banner upload response:', response);
       
       // Server returns: {data: {bannerImage: {url: ..., filename: ..., etc}}}
       if (response?.data?.bannerImage) {
@@ -144,9 +249,23 @@ export class ProfileImageService {
       };
     } catch (error: any) {
       logger.error('Banner image upload failed:', error);
+      
+      // More specific error messages for common TestFlight issues
+      let errorMessage = error.message || 'Failed to upload banner image';
+      
+      if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = 'Upload timed out. Please try again with a smaller image.';
+      } else if (error.message?.includes('413') || error.message?.includes('too large')) {
+        errorMessage = 'Image is too large. Please select a smaller photo.';
+      } else if (error.message?.includes('unsupported') || error.message?.includes('format')) {
+        errorMessage = 'Unsupported image format. Please use JPG or PNG.';
+      }
+      
       return {
         success: false,
-        error: error.message || 'Failed to upload banner image'
+        error: errorMessage
       };
     }
   }
