@@ -871,12 +871,21 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
           styles.chatInputWrapper,
           {
             backgroundColor: theme === 'dark' 
-              ? 'rgba(20, 20, 20, 0.95)' 
-              : 'rgba(250, 250, 250, 0.95)',
-            borderTopWidth: 1,
+              ? 'rgb(20, 20, 20)' 
+              : 'rgb(250, 250, 250)',
+            borderTopWidth: 0.5,
+            borderLeftWidth: 0.5,
+            borderRightWidth: 0.5,
             borderTopColor: theme === 'dark' 
-              ? 'rgba(255, 255, 255, 0.1)' 
-              : 'rgba(0, 0, 0, 0.1)',
+              ? 'rgba(255, 255, 255, 0.08)' 
+              : 'rgba(0, 0, 0, 0.08)',
+            borderLeftColor: theme === 'dark' 
+              ? 'rgba(255, 255, 255, 0.08)' 
+              : 'rgba(0, 0, 0, 0.08)',
+            borderRightColor: theme === 'dark' 
+              ? 'rgba(255, 255, 255, 0.08)' 
+              : 'rgba(0, 0, 0, 0.08)',
+            shadowOpacity: theme === 'dark' ? 0.4 : 0.15,
           }
         ]}>
           <EnhancedChatInput
@@ -1414,15 +1423,15 @@ const styles = StyleSheet.create({
     paddingBottom: 200, // Extend well below viewport
     marginHorizontal: 0, // Extend to sides
     marginBottom: -150, // Pull down to extend below screen edge
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     borderBottomLeftRadius: 0, // Keep bottom square to extend off screen
     borderBottomRightRadius: 0,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: -12 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 16,
   },
 
   // Message Styles

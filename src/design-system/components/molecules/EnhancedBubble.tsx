@@ -15,6 +15,7 @@ import {
   Dimensions,
   PanResponder,
   Modal,
+  Linking,
 } from 'react-native';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 
@@ -168,27 +169,37 @@ const StreamContent: React.FC<{
               }
             ]}>
               <Text style={[styles.toolCallName, { color: theme === 'dark' ? '#a8d8ff' : '#add6ffff' }]}>
-                🔍 {toolCall.name === 'webSearchTool' ? 'Web Search Results' : toolCall.name.replace(/_/g, ' ')}
+                {toolCall.name === 'webSearchTool' ? 'Web Search Results' : toolCall.name.replace(/_/g, ' ')}
               </Text>
               {toolCall.status === 'completed' && toolCall.result ? (
                 <View>
                   {/* Handle web search results specifically */}
-                  {toolCall.name === 'webSearchTool' && (toolCall.result as any)?.data?.structure?.results ? (
+                  {toolCall.name === 'webSearchTool' && (toolCall.result as any)?.structure?.results ? (
                     <View>
                       <Text style={[styles.searchQuery, { color: theme === 'dark' ? '#515151ff' : '#333333' }]}>
-                        Query: "{(toolCall.result as any)?.data?.structure?.query}"
+                        Query: "{(toolCall.result as any)?.structure?.query}"
                       </Text>
-                      {((toolCall.result as any)?.data?.structure?.results || []).map((result: { title: string; url: string; snippet: string; link?: string }, resultIndex: number) => (
-                        <View key={resultIndex} style={[
-                          styles.searchResultItem,
-                          {
-                            backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 102, 204, 0.08)',
-                            borderBottomColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 102, 204, 0.2)',
-                            borderRadius: 8,
-                            marginVertical: 4,
-                            padding: 12,
-                          }
-                        ]}>
+                      {((toolCall.result as any)?.structure?.results || []).map((result: { title: string; url: string; snippet: string; link?: string }, resultIndex: number) => (
+                        <TouchableOpacity 
+                          key={resultIndex} 
+                          style={[
+                            styles.searchResultItem,
+                            {
+                              backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 102, 204, 0.08)',
+                              borderBottomColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 102, 204, 0.2)',
+                              borderRadius: 8,
+                              marginVertical: 4,
+                              padding: 12,
+                            }
+                          ]}
+                          onPress={() => {
+                            const url = result.link || result.url;
+                            if (url) {
+                              Linking.openURL(url);
+                            }
+                          }}
+                          activeOpacity={0.7}
+                        >
                           <Text style={[styles.searchResultTitle, { color: theme === 'dark' ? '#ffffff' : '#333333' }]}>
                             {result.title}
                           </Text>
@@ -198,7 +209,7 @@ const StreamContent: React.FC<{
                           <Text style={[styles.searchResultLink, { color: theme === 'dark' ? '#a8d8ff' : '#0066cc' }]}>
                             {result.link || result.url}
                           </Text>
-                        </View>
+                        </TouchableOpacity>
                       ))}
                     </View>
                   ) : (
@@ -742,11 +753,12 @@ const styles = StyleSheet.create({
     gap: spacing[1],
   },
   toolCallCard: {
-    padding: spacing[2],
-    borderRadius: borderRadius.sm,
+    padding: spacing[4],
+    borderRadius: 20,
     backgroundColor: 'rgba(0, 102, 204, 0.15)',
     borderWidth: 1,
     borderColor: 'rgba(0, 102, 204, 0.3)',
+    alignItems: 'center',
   },
   toolCallName: {
     fontSize: 14,
@@ -754,6 +766,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito-SemiBold',
     marginBottom: spacing[1],
     textTransform: 'capitalize',
+    alignSelf: 'flex-start',
   },
   toolCallResult: {
     fontSize: 13,

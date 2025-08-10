@@ -520,8 +520,8 @@ export const WalletCard: React.FC<WalletCardProps> = ({
       styles.container,
       {
         backgroundColor: theme === 'dark' 
-          ? designTokens.brand.surfaceDark 
-          : designTokens.brand.surface,
+          ? 'rgb(20, 20, 20)' 
+          : 'rgb(250, 250, 250)',
       }
     ]}>
       {/* Page Indicators - Simple Dots */}
@@ -570,15 +570,14 @@ export const WalletCard: React.FC<WalletCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     // Enhanced neumorphic container effects
-    borderTopWidth: 2,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    borderLeftColor: 'rgba(255, 255, 255, 0.1)',
-    borderRightColor: 'rgba(255, 255, 255, 0.1)',
+    borderTopWidth: 0,
+    borderLeftWidth: 1.5,
+    borderRightWidth: 1.5,
+    borderLeftColor: 'rgba(255, 255, 255, 0.05)',
+    borderRightColor: 'rgba(255, 255, 255, 0.05)',
     // Multiple layered shadows for depth
     shadowColor: '#000000',
     shadowOffset: {
@@ -593,9 +592,10 @@ const styles = StyleSheet.create({
   },
   pageIndicators: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     paddingVertical: spacing[4],
+    paddingHorizontal: spacing[4],
     gap: spacing[3],
   },
   dotIndicator: {
@@ -626,11 +626,11 @@ const styles = StyleSheet.create({
   tierBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   tierInfo: {
     marginLeft: spacing[3],
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   tierLabel: {
     fontSize: 12,
@@ -718,8 +718,8 @@ const styles = StyleSheet.create({
   swipeHint: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing[6],
+    justifyContent: 'flex-start',
+    paddingHorizontal: spacing[4],
     paddingVertical: spacing[4],
     gap: spacing[2],
   },

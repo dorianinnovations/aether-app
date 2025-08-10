@@ -9,7 +9,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
-import { getGlassmorphicStyle } from '../../tokens/glassmorphism';
+import { createNeumorphicContainer } from '../../tokens/shadows';
 import Icon from '../atoms/Icon';
 
 interface WebSearchResultProps {
@@ -139,11 +139,11 @@ const WebSearchResult: React.FC<WebSearchResultProps> = ({
     <TouchableOpacity
       style={[
         styles.container,
-        getGlassmorphicStyle('card', theme),
-        { borderColor: colors.borders.default }
+        createNeumorphicContainer(theme, 'elevated'),
+        { backgroundColor: colors.surface }
       ]}
       onPress={handlePress}
-      activeOpacity={0.7}
+      activeOpacity={0.85}
     >
       <View style={styles.header}>
         <View style={styles.mainContent}>
@@ -258,10 +258,10 @@ const WebSearchResult: React.FC<WebSearchResultProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 20,
     marginVertical: spacing[2],
     padding: spacing[4],
+    minHeight: 120,
   },
   header: {
     flexDirection: 'row',
@@ -281,19 +281,10 @@ const styles = StyleSheet.create({
   thumbnailContainer: {
     width: 56,
     height: 56,
-    borderRadius: 10,
+    borderRadius: 16,
     borderWidth: 1,
     overflow: 'hidden',
     position: 'relative',
-    // Premium shadow effect
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
   },
   thumbnail: {
     width: '100%',
@@ -311,19 +302,10 @@ const styles = StyleSheet.create({
   fallbackIcon: {
     width: 56,
     height: 56,
-    borderRadius: 10,
+    borderRadius: 16,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    // Premium shadow effect
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
   },
   title: {
     fontFamily: typography.fonts.bodyMedium,

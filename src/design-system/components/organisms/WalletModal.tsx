@@ -129,9 +129,6 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     height: screenHeight * 0.45,
-    // Neumorphic top borders with glow effects
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.2)',
     // Enhanced shadows for depth
     shadowColor: '#000000',
     shadowOffset: {
