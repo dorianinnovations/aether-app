@@ -22,7 +22,7 @@ export interface SettingSections {
   appearance: SettingSection;
   accessibility: SettingSection;
   notifications: SettingSection;
-  display: SettingSection;
+  models: SettingSection;
   privacy: SettingSection;
 }
 
@@ -60,7 +60,6 @@ export const getSettingsIconColor = (index: number): string => {
 // Factory function to create settings sections with current state values
 export const createSettingsSections = (settings: {
   theme: 'light' | 'dark';
-  dynamicOptions: boolean;
   backgroundType: BackgroundType;
   highContrast: boolean;
   largeText: boolean;
@@ -68,24 +67,22 @@ export const createSettingsSections = (settings: {
   notificationsEnabled: boolean;
   soundEnabled: boolean;
   hapticsEnabled: boolean;
-  keepScreenOn: boolean;
-  showTimestamps: boolean;
   analyticsEnabled: boolean;
   autoSaveEnabled: boolean;
   autoLock: boolean;
+  selectedModels?: string[];
 }): SettingSections => ({
   appearance: {
-    title: 'Appearance & Personalization',
+    title: 'Appearance',
     icon: 'sliders',
-    description: 'Customize your visual experience with themes and dynamic options',
+    description: 'Customize your visual experience with themes and backgrounds',
     items: [
       { key: 'theme', label: 'Use dark theme', value: settings.theme === 'dark', type: 'switch' },
-      { key: 'dynamicOptions', label: 'Show dynamic interface elements', value: settings.dynamicOptions, type: 'switch' },
       { key: 'backgroundType', label: 'Choose background appearance', value: settings.backgroundType, type: 'selector' },
     ]
   },
   accessibility: {
-    title: 'Accessibility & Comfort',
+    title: 'Accessibility',
     icon: 'eye',
     description: 'Visual and interaction aids for better usability',
     items: [
@@ -95,7 +92,7 @@ export const createSettingsSections = (settings: {
     ]
   },
   notifications: {
-    title: 'Notifications & Alerts',
+    title: 'Notifications',
     icon: 'bell',
     description: 'Control push notifications, sounds, and haptic feedback',
     items: [
@@ -104,17 +101,20 @@ export const createSettingsSections = (settings: {
       { key: 'haptics', label: 'Feel vibrations for interactions', value: settings.hapticsEnabled, type: 'switch' },
     ]
   },
-  display: {
-    title: 'Display & Screen',
-    icon: 'monitor',
-    description: 'Screen behavior and visual presentation settings',
+  models: {
+    title: 'Models',
+    icon: 'cpu',
+    description: 'Select and prioritize AI models for different tasks',
     items: [
-      { key: 'keepScreenOn', label: 'Prevent screen from sleeping', value: settings.keepScreenOn, type: 'switch' },
-      { key: 'showTimestamps', label: 'Display message times', value: settings.showTimestamps, type: 'switch' },
+      { key: 'gpt5', label: 'GPT-5 - Latest OpenAI flagship model', value: settings.selectedModels?.includes('gpt5') ?? true, type: 'switch' },
+      { key: 'gemini25pro', label: 'Gemini 2.5 Pro - Advanced reasoning model', value: settings.selectedModels?.includes('gemini25pro') ?? true, type: 'switch' },
+      { key: 'opus41', label: 'Claude Opus 4.1 - Superior language understanding', value: settings.selectedModels?.includes('opus41') ?? true, type: 'switch' },
+      { key: 'sonnetthinking', label: 'Sonnet Thinking - Enhanced logical reasoning', value: settings.selectedModels?.includes('sonnetthinking') ?? false, type: 'switch' },
+      { key: 'llama3', label: 'Llama 3 - Open-source efficiency model', value: settings.selectedModels?.includes('llama3') ?? false, type: 'switch' },
     ]
   },
   privacy: {
-    title: 'Privacy & Data Control',
+    title: 'Privacy',
     icon: 'shield',
     description: 'Manage your data, analytics, and privacy preferences',
     items: [

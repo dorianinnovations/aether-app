@@ -82,11 +82,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [reduceMotion, setReduceMotion] = useState(false);
   const [highContrast, setHighContrast] = useState(false);
   const [largeText, setLargeText] = useState(false);
-  const [keepScreenOn, setKeepScreenOn] = useState(false);
-  const [showTimestamps, setShowTimestamps] = useState(true);
   const [autoLock, setAutoLock] = useState(true);
   const [backgroundType, setBackgroundType] = useState<BackgroundType>('blue');
-  const [dynamicOptions, setDynamicOptions] = useState(false);
+  const [selectedModels, setSelectedModels] = useState<string[]>(['gpt5', 'gemini25pro', 'opus41']);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [userData, setUserData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -115,7 +113,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   // Create settings sections with current state values
   const subDrawerSections = createSettingsSections({
     theme,
-    dynamicOptions,
     backgroundType,
     highContrast,
     largeText,
@@ -123,11 +120,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     notificationsEnabled,
     soundEnabled,
     hapticsEnabled,
-    keepScreenOn,
-    showTimestamps,
     analyticsEnabled,
     autoSaveEnabled,
     autoLock,
+    selectedModels,
   });
   
   
@@ -161,11 +157,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       setReduceMotion(settings.reduceMotion);
       setHighContrast(settings.highContrast);
       setLargeText(settings.largeText);
-      setKeepScreenOn(settings.keepScreenOn);
-      setShowTimestamps(settings.showTimestamps);
       setAutoLock(settings.autoLock);
       setBackgroundType(settings.backgroundType || globalSettings.backgroundType);
-      setDynamicOptions(settings.dynamicOptions);
+      setSelectedModels(settings.selectedModels || ['gpt5', 'gemini25pro', 'opus41']);
     } catch (error) {
       logger.error('Failed to load settings:', error);
     }
@@ -238,21 +232,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           setLargeText(value);
           await SettingsStorage.setSetting('largeText', value);
           break;
-        case 'keepScreenOn':
-          setKeepScreenOn(value);
-          await SettingsStorage.setSetting('keepScreenOn', value);
-          break;
-        case 'showTimestamps':
-          setShowTimestamps(value);
-          await SettingsStorage.setSetting('showTimestamps', value);
-          break;
         case 'autoLock':
           setAutoLock(value);
           await SettingsStorage.setSetting('autoLock', value);
           break;
-        case 'dynamicOptions':
-          setDynamicOptions(value);
-          await updateSetting('dynamicOptions', value);
+        // Model settings
+        case 'gpt5':
+        case 'gemini25pro':
+        case 'opus41':
+        case 'sonnetthinking':
+        case 'llama3':
+          handleModelToggle(setting, value);
           break;
       }
     } catch (error) {
@@ -268,6 +258,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       await updateSetting('backgroundType', backgroundType);
     } catch (error) {
       logger.error('Failed to save backgroundType setting:', error);
+    }
+  };
+
+  const handleModelToggle = async (modelKey: string, isEnabled: boolean) => {
+    try {
+      let updatedModels;
+      if (isEnabled) {
+        updatedModels = [...selectedModels, modelKey];
+      } else {
+        updatedModels = selectedModels.filter(model => model !== modelKey);
+      }
+      
+      setSelectedModels(updatedModels);
+      await SettingsStorage.setSetting('selectedModels', updatedModels);
+    } catch (error) {
+      logger.error('Failed to save model setting:', error);
     }
   };
 
@@ -498,6 +504,29 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     theme={theme}
                     colors={colors}
                   />
+                )}
+                
+                {/* Models section with sequential opacity effects */}
+                {activeSubDrawer === 'models' && item.type === 'switch' && (
+                  <View style={styles.modelItemContainer}>
+                    <Animated.View
+                      style={[
+                        styles.modelChevron,
+                        {
+                          opacity: item.value ? 1 : 0.3,
+                          transform: [{ 
+                            rotate: item.value ? '0deg' : '-90deg' 
+                          }]
+                        }
+                      ]}
+                    >
+                      <Feather 
+                        name="chevron-right" 
+                        size={16} 
+                        color={itemColor} 
+                      />
+                    </Animated.View>
+                  </View>
                 )}
               </SettingItemComponent>
             );
@@ -735,8 +764,6 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: spacing[2],
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     width: 40,
     height: 40,
     alignItems: 'center',
@@ -849,8 +876,6 @@ const styles = StyleSheet.create({
   backButton: {
     padding: spacing[2],
     marginRight: spacing[3],
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   subDrawerTitle: {
     fontFamily: typography.fonts.headingSemiBold,
@@ -907,6 +932,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '400',
     letterSpacing: -0.1,
+  },
+  
+  // Model-specific styles
+  modelItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: spacing[2],
+  },
+  modelChevron: {
+    padding: spacing[1],
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   
 });
