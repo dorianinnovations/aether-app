@@ -99,5 +99,19 @@ export const SpotifyAPI = {
     } catch (error) {
       throw error;
     }
+  },
+
+  // Get artist listening history for heatmap visualization
+  async getArtistListeningHistory(artistId: string, days: number = 365): Promise<any> {
+    try {
+      const response = await api.get(`/spotify/artist-listening-history/${artistId}`, {
+        params: {
+          days
+        }
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 };

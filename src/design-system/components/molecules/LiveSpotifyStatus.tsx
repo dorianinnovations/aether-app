@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  AppState,
 } from 'react-native';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 
@@ -24,6 +25,7 @@ import { spacing } from '../../tokens/spacing';
 
 // Services
 import { SpotifyAPI } from '../../../services/api';
+import { sseService } from '../../../services/sseService';
 
 interface LiveSpotifyStatusProps {
   username: string;
@@ -81,6 +83,7 @@ export const LiveSpotifyStatus: React.FC<LiveSpotifyStatusProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [appState, setAppState] = useState<string>(AppState.currentState);
 
   const fetchLiveStatus = async () => {
     try {
@@ -102,16 +105,61 @@ export const LiveSpotifyStatus: React.FC<LiveSpotifyStatusProps> = ({
     }
   };
 
-  // Auto-refresh every 30 seconds
+  // App state monitoring
   useEffect(() => {
+    const handleAppStateChange = (nextAppState: string) => {
+      setAppState(nextAppState);
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription?.remove();
+  }, []);
+
+  // Real-time SSE connection setup
+  useEffect(() => {
+    // Connect to SSE for real-time updates
+    sseService.connect();
+
+    // Listen for Spotify track changes
+    const handleTrackChange = (data: any) => {
+      // Only update if this is for the current user we're viewing
+      if (data.username === username) {
+        logger.info('🎵 Real-time Spotify update received:', data);
+        fetchLiveStatus(); // Fetch latest data when track changes
+      }
+    };
+
+    const handleStatusUpdate = (data: any) => {
+      if (data.username === username) {
+        logger.info('🔄 Spotify status update received:', data);
+        fetchLiveStatus();
+      }
+    };
+
+    sseService.onSpotifyTrackChange(handleTrackChange);
+    sseService.onSpotifyStatusUpdate(handleStatusUpdate);
+
+    return () => {
+      sseService.off('spotify:track_change', handleTrackChange);
+      sseService.off('spotify:status_update', handleStatusUpdate);
+    };
+  }, [username]);
+
+  // Fallback polling - reduced frequency since we have real-time updates
+  useEffect(() => {
+    if (appState !== 'active') return;
+    
     fetchLiveStatus();
     
+    // Much less frequent polling as fallback (every 60 seconds)
     const interval = setInterval(() => {
-      fetchLiveStatus();
-    }, 30000);
+      if (AppState.currentState === 'active') {
+        fetchLiveStatus();
+      }
+    }, 60000); // Fallback poll every minute
 
     return () => clearInterval(interval);
-  }, [username]);
+  }, [username, appState]);
 
   const openInSpotify = (spotifyUrl?: string) => {
     if (spotifyUrl) {

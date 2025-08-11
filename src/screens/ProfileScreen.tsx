@@ -20,12 +20,13 @@ import { Feather } from '@expo/vector-icons';
 // Design System
 import { PageBackground } from '../design-system/components/atoms/PageBackground';
 import { LottieLoader } from '../design-system/components/atoms/LottieLoader';
-import { ProfileCard } from '../design-system/components/organisms/ProfileCard';
+import { PersonaModal } from '../design-system/components/organisms/PersonaModal';
 import { 
   Header, 
   HeaderMenu, 
   SignOutModal, 
-  ProfileSuccessModal 
+  ProfileSuccessModal,
+  ProfileCard 
 } from '../design-system/components/organisms';
 import SettingsModal from './chat/SettingsModal';
 
@@ -33,6 +34,7 @@ import SettingsModal from './chat/SettingsModal';
 import { useTheme } from '../contexts/ThemeContext';
 import { useHeaderMenu } from '../design-system/hooks';
 import { useProfileData } from '../hooks/useProfileData';
+import { useToast } from '../hooks';
 
 // Services
 import { AuthAPI } from '../services/api';
@@ -46,7 +48,17 @@ import { spacing } from '../design-system/tokens/spacing';
 export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation();
   const { theme, colors } = useTheme();
+  const { showSuccess, showError, showWarning } = useToast();
   
+  // Profile data hook
+  const {
+    profile: baseProfile,
+    socialProfile,
+    loading,
+    saveProfile: saveProfileData,
+    refreshAllData
+  } = useProfileData();
+
   // State management
   const [editMode, setEditMode] = useState(false);
   const [configureMode, setConfigureMode] = useState(false);
@@ -57,22 +69,11 @@ export const ProfileScreen: React.FC = () => {
   const [shouldRenderSignOutModal, setShouldRenderSignOutModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showErrorModal, setShowErrorModal] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [showInsightsExpanded, setShowInsightsExpanded] = useState(false);
+  const [showPersonaModal, setShowPersonaModal] = useState(false);
 
   // Refs
   const scrollViewRef = useRef<any>(null);
   const qualiaViewRef = useRef<View>(null);
-
-  // Profile data hook
-  const {
-    profile: baseProfile,
-    socialProfile,
-    loading,
-    saveProfile: saveProfileData,
-    refreshAllData
-  } = useProfileData();
   
   // Local editable profile state
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -83,6 +84,7 @@ export const ProfileScreen: React.FC = () => {
       setProfile(baseProfile);
     }
   }, [baseProfile, editMode]);
+
 
   // Header menu hook
   const { showHeaderMenu, setShowHeaderMenu, handleMenuAction, toggleHeaderMenu } = useHeaderMenu({
@@ -134,21 +136,82 @@ export const ProfileScreen: React.FC = () => {
     }
   };
 
-  const handleFieldChange = (field: keyof UserProfile, value: string) => {
+  const handleFieldChange = (field: keyof UserProfile, value: string | any) => {
     if (!profile) return;
     
-    // Validate field
-    const validation = ProfileDataService.validateProfileField(field, value);
-    if (!validation.valid) {
-      setErrorMessage(validation.error || 'Invalid field value');
-      setShowErrorModal(true);
-      return;
-    }
+    try {
+      // Basic validation fallback
+      const validateField = (fieldName: string, fieldValue: string): { valid: boolean; error?: string } => {
+        if (!fieldValue) return { valid: true };
+        
+        switch (fieldName) {
+          case 'email':
+            if (!/\S+@\S+\.\S+/.test(fieldValue)) {
+              return { valid: false, error: 'Please enter a valid email address' };
+            }
+            break;
+          case 'website':
+            if (fieldValue && !fieldValue.startsWith('http') && !fieldValue.includes('.')) {
+              return { valid: false, error: 'Please enter a valid website URL' };
+            }
+            break;
+          case 'bio':
+            if (fieldValue.length > 500) {
+              return { valid: false, error: 'Bio must be less than 500 characters' };
+            }
+            break;
+          case 'name':
+          case 'displayName':
+            if (fieldValue.length > 100) {
+              return { valid: false, error: 'Name must be less than 100 characters' };
+            }
+            break;
+          case 'location':
+            if (fieldValue.length > 100) {
+              return { valid: false, error: 'Location must be less than 100 characters' };
+            }
+            break;
+        }
+        return { valid: true };
+      };
 
-    setProfile(prev => prev ? ({
-      ...prev,
-      [field]: value
-    }) : null);
+      // Special handling for social links
+      if (field === 'socialLinks') {
+        setProfile(prev => prev ? ({
+          ...prev,
+          socialLinks: value
+        }) : null);
+        return;
+      }
+
+      // Try service validation first, fallback to basic validation (only for string values)
+      if (typeof value === 'string') {
+        let validation;
+        try {
+          validation = ProfileDataService?.validateProfileField?.(field, value) || validateField(field, value);
+        } catch (error) {
+          logger.warn('Service validation failed, using fallback:', error);
+          validation = validateField(field, value);
+        }
+
+        if (!validation.valid) {
+          showError(validation.error || 'Invalid field value');
+          return;
+        }
+      }
+
+      setProfile(prev => prev ? ({
+        ...prev,
+        [field]: value
+      }) : null);
+    } catch (error) {
+      logger.error('Error in handleFieldChange:', error);
+      // Still update the field but without validation
+      setProfile(prev => prev ? ({
+        ...prev,
+        [field]: value
+      }) : null);
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -156,22 +219,33 @@ export const ProfileScreen: React.FC = () => {
     
     try {
       const profileData = {
-        name: profile.name,
+        name: profile.displayName || profile.name,
         bio: profile.bio,
         location: profile.location,
         website: profile.website,
+        socialLinks: profile.socialLinks,
       };
       
-      await saveProfileData(profileData);
-      setShowSuccessModal(true);
+      // Try using the hook's save function first
+      if (saveProfileData && typeof saveProfileData === 'function') {
+        await saveProfileData(profileData);
+      } else {
+        // Fallback to direct service call
+        const result = await ProfileDataService.updateProfile(profileData);
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to save profile');
+        }
+      }
+      
+      showSuccess('Profile saved successfully!');
       setEditMode(false);
     } catch (error: any) {
       logger.error('Error saving profile:', error);
       const errorMsg = error.message || 'Failed to save profile. Please try again.';
-      setErrorMessage(errorMsg);
-      setShowErrorModal(true);
+      showError(errorMsg);
     }
   };
+
 
   // Image upload handlers with improved error handling
   const handleProfileImageUpload = async () => {
@@ -181,8 +255,7 @@ export const ProfileScreen: React.FC = () => {
     try {
       // Check memory and app state before starting upload
       if (Platform.OS === 'ios' && AppState.currentState !== 'active') {
-        setErrorMessage('Please ensure the app is in the foreground for image uploads.');
-        setShowErrorModal(true);
+        showError('Please ensure the app is in the foreground for image uploads.');
         return;
       }
       
@@ -193,12 +266,11 @@ export const ProfileScreen: React.FC = () => {
           ...prev,
           profilePicture: result.imageUrl
         } : null);
-        setShowSuccessModal(true);
+        showSuccess('Profile image uploaded successfully!');
         // Note: Not refreshing immediately to avoid overwriting the uploaded image
         // The image will persist in the server and be fetched on next refresh
       } else if (result.error && result.error !== 'Image selection cancelled') {
-        setErrorMessage(result.error);
-        setShowErrorModal(true);
+        showError(result.error);
       }
     } catch (error: any) {
       logger.error('Profile image upload error:', error);
@@ -214,8 +286,7 @@ export const ProfileScreen: React.FC = () => {
         }
       }
       
-      setErrorMessage(errorMessage);
-      setShowErrorModal(true);
+      showError(errorMessage);
     } finally {
       setUploading(false);
     }
@@ -228,8 +299,7 @@ export const ProfileScreen: React.FC = () => {
     try {
       // Check memory and app state before starting upload
       if (Platform.OS === 'ios' && AppState.currentState !== 'active') {
-        setErrorMessage('Please ensure the app is in the foreground for image uploads.');
-        setShowErrorModal(true);
+        showError('Please ensure the app is in the foreground for image uploads.');
         return;
       }
       
@@ -240,12 +310,11 @@ export const ProfileScreen: React.FC = () => {
           ...prev,
           bannerImage: result.imageUrl
         } : null);
-        setShowSuccessModal(true);
+        showSuccess('Banner image uploaded successfully!');
         // Note: Not refreshing immediately to avoid overwriting the uploaded image
         // The image will persist in the server and be fetched on next refresh
       } else if (result.error && result.error !== 'Image selection cancelled') {
-        setErrorMessage(result.error);
-        setShowErrorModal(true);
+        showError(result.error);
       }
     } catch (error: any) {
       logger.error('Banner image upload error:', error);
@@ -261,8 +330,7 @@ export const ProfileScreen: React.FC = () => {
         }
       }
       
-      setErrorMessage(errorMessage);
-      setShowErrorModal(true);
+      showError(errorMessage);
     } finally {
       setUploading(false);
     }
@@ -280,16 +348,14 @@ export const ProfileScreen: React.FC = () => {
           ...prev,
           profilePicture: undefined
         } : null);
-        setShowSuccessModal(true);
+        showSuccess('Profile picture deleted successfully!');
         // Note: Not refreshing immediately to avoid issues
         // The deletion will persist in the server and be reflected on next refresh
       } else if (result.error && result.error !== 'Cancelled') {
-        setErrorMessage(result.error);
-        setShowErrorModal(true);
+        showError(result.error);
       }
     } catch (_error: any) {
-      setErrorMessage('Failed to delete profile picture. Please try again.');
-      setShowErrorModal(true);
+      showError('Failed to delete profile picture. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -307,16 +373,14 @@ export const ProfileScreen: React.FC = () => {
           ...prev,
           bannerImage: undefined
         } : null);
-        setShowSuccessModal(true);
+        showSuccess('Banner image deleted successfully!');
         // Note: Not refreshing immediately to avoid issues
         // The deletion will persist in the server and be reflected on next refresh
       } else if (result.error && result.error !== 'Cancelled') {
-        setErrorMessage(result.error);
-        setShowErrorModal(true);
+        showError(result.error);
       }
     } catch (_error: any) {
-      setErrorMessage('Failed to delete banner image. Please try again.');
-      setShowErrorModal(true);
+      showError('Failed to delete banner image. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -331,26 +395,10 @@ export const ProfileScreen: React.FC = () => {
     setConfigureMode(!configureMode);
   };
 
-  const handleInsightsToggle = (expanded: boolean) => {
-    setShowInsightsExpanded(expanded);
-    
-    if (expanded) {
-      // Scroll to section when expanding
-      setTimeout(() => {
-        if (qualiaViewRef.current && scrollViewRef.current) {
-          qualiaViewRef.current.measure((x: number, y: number, width: number, height: number, pageX: number, pageY: number) => {
-            const screenHeight = Dimensions.get('window').height;
-            const scrollToY = Math.max(0, pageY - (screenHeight * 0.3));
-            
-            scrollViewRef.current?.scrollTo({
-              y: scrollToY,
-              animated: true,
-            });
-          });
-        }
-      }, 50);
-    }
+  const handleUsernamePress = () => {
+    setShowPersonaModal(true);
   };
+
 
   // Loading state
   if (loading) {
@@ -428,20 +476,6 @@ export const ProfileScreen: React.FC = () => {
           onMenuPress={handleMenuPress}
           isMenuOpen={showHeaderMenu}
           theme={theme}
-          rightIcon={
-            <TouchableOpacity
-              onPress={editMode ? handleSaveProfile : () => setEditMode(true)}
-              activeOpacity={0.7}
-              style={styles.headerIcon}
-            >
-              <Feather 
-                name={editMode ? 'check' : 'edit'} 
-                size={18} 
-                color={colors.text}
-              />
-            </TouchableOpacity>
-          }
-          onRightPress={() => {}}
         />
 
         {/* Profile Card */}
@@ -453,38 +487,21 @@ export const ProfileScreen: React.FC = () => {
           refreshing={refreshing}
           viewMode={viewMode}
           onlineStatus="online"
-          showInsightsExpanded={showInsightsExpanded}
           onRefresh={handleRefresh}
           onFieldChange={handleFieldChange}
           onProfileImagePress={handleProfileImageUpload}
           onBannerPress={handleBannerImageUpload}
           onDeleteProfileImage={handleDeleteProfileImage}
           onDeleteBanner={handleDeleteBannerImage}
-          onInsightsToggle={handleInsightsToggle}
           onSpotifyStatusChange={() => {
             refreshAllData();
           }}
           onConfigurePress={handleConfigurePress}
+          onUsernamePress={handleUsernamePress}
           configureMode={configureMode}
           scrollRef={scrollViewRef}
         />
 
-        {/* Floating View Mode Toggle Button */}
-        <TouchableOpacity
-          onPress={toggleViewMode}
-          activeOpacity={0.8}
-          style={[styles.fab, { 
-            backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.8)',
-            borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)',
-            shadowColor: theme === 'dark' ? '#000000' : '#000000',
-          }]}
-        >
-          <Feather 
-            name={viewMode === 'basic' ? 'layers' : 'minimize-2'} 
-            size={18} 
-            color={theme === 'dark' ? '#FFFFFF' : '#333333'}
-          />
-        </TouchableOpacity>
 
         {/* Header Menu */}
         <HeaderMenu
@@ -518,14 +535,28 @@ export const ProfileScreen: React.FC = () => {
           theme={theme}
         />
 
-        {/* Error Modal */}
-        <ProfileSuccessModal
-          visible={showErrorModal}
-          onClose={() => setShowErrorModal(false)}
-          theme={theme}
-          isError={true}
-          errorMessage={errorMessage}
+
+        {/* Persona Modal */}
+        <PersonaModal
+          visible={showPersonaModal}
+          personalityData={socialProfile?.personality || undefined}
+          username={profile.username}
+          profileImageUri={profile.profilePicture}
+          onClose={() => setShowPersonaModal(false)}
         />
+
+        {/* Floating Edit Icon */}
+        <TouchableOpacity
+          onPress={editMode ? handleSaveProfile : () => setEditMode(true)}
+          activeOpacity={0.7}
+          style={styles.floatingEditIcon}
+        >
+          <Feather 
+            name={editMode ? 'check' : 'edit-3'} 
+            size={24} 
+            color={editMode ? '#4CAF50' : colors.text}
+          />
+        </TouchableOpacity>
       </SafeAreaView>
     </PageBackground>
   );
@@ -554,27 +585,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[3],
     borderRadius: 12,
   },
-  headerIcon: {
-    padding: spacing[2],
-  },
-  fab: {
+  floatingEditIcon: {
     position: 'absolute',
-    bottom: 30,
-    right: 30,
-    width: 64,
-    height: 36,
-    borderRadius: 12,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 6,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    zIndex: 1000,
+    bottom: 25,
+    right: 25,
+    padding: spacing[2],
   },
 });
 

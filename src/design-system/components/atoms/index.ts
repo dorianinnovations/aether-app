@@ -27,6 +27,9 @@ export { NotificationDot } from './NotificationDot';
 export { default as ActionButton } from './ActionButton';
 export { default as Badge } from './Badge';
 export { UserBadge } from './UserBadge';
+export { AdvancedBadge } from './AdvancedBadge';
+export { InteractiveBadge } from './InteractiveBadge';
+export { PrestigiousBadge, mapDatabaseBadgeToPrestigious } from './PrestigiousBadge';
 export { MiniTooltip } from './MiniTooltip';
 export { default as ConversationIcon } from './ConversationIcon';
 export { default as TabButton } from './TabButton';
@@ -36,12 +39,17 @@ export { ProfileField } from './ProfileField';
 export { ProminentUserDisplay } from './ProminentUserDisplay';
 export { OnlineStatus } from './OnlineStatus';
 export { SubscriptionTierCard } from './SubscriptionTierCard';
+export { NowPlayingIndicator } from './NowPlayingIndicator';
+export { Toast } from './Toast';
 
 // Re-export types
 export type { IconName, IconSize } from './Icon';
 export type { UserBadgeType } from './UserBadge';
+export type { BadgeType, BadgeStyle, BadgeAnimation } from './AdvancedBadge';
+export type { PrestigiousBadgeType, PrestigiousBadgeProps } from './PrestigiousBadge';
 export type { ProfileImageProps } from './ProfileImage';
 export type { BannerImageProps } from './BannerImage';
 export type { ProfileFieldProps } from './ProfileField';
 export type { ProminentUserDisplayProps } from './ProminentUserDisplay';
 export type { OnlineStatusProps, OnlineStatusType } from './OnlineStatus';
+export type { ToastType } from './Toast';

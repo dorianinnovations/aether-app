@@ -28,7 +28,7 @@ import { Ionicons } from '@expo/vector-icons';
 // Enhanced Components
 import { EnhancedChatInput } from '../../design-system/components/molecules';
 import EnhancedBubble from '../../design-system/components/molecules/EnhancedBubble';
-import { Header, HeaderMenu, SignOutModal, HeatmapModal, WalletModal } from '../../design-system/components/organisms';
+import { Header, HeaderMenu, SignOutModal, ArtistListeningModal, WalletModal } from '../../design-system/components/organisms';
 import { PageBackground } from '../../design-system/components/atoms/PageBackground';
 import SettingsModal from './SettingsModal';
 import ConversationDrawer from '../../components/ConversationDrawer';
@@ -175,8 +175,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   const [currentFriendUsername, setCurrentFriendUsername] = useState<string | undefined>(
     route?.params?.friendUsername
   );
-  const [showHeatmapModal, setShowHeatmapModal] = useState(false);
-  const [heatmapFriendUsername, setHeatmapFriendUsername] = useState<string | undefined>(undefined);
+  const [showArtistModal, setShowArtistModal] = useState(false);
+  const [artistData, setArtistData] = useState<{ id: string; name: string } | undefined>(undefined);
 
   // Message handling with streaming (must be after currentConversationId declaration)
   const {
@@ -190,7 +190,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     handleHaltStreaming,
     setMessages,
     flatListRef: messagesRef,
-  } = useMessages(() => setShowGreeting(false), currentConversationId, currentFriendUsername, flatListRef);
+  } = useMessages(() => setShowGreeting(false), currentConversationId, currentFriendUsername, flatListRef as React.RefObject<FlatList>);
 
   // Real-time messaging for friend conversations
   const {
@@ -982,9 +982,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             setShowConversationDrawer(false);
           } else if (conversation.type === 'custom' && conversation._id.startsWith('orbit-')) {
             // Handle orbit/heatmap conversation - these are not chat conversations
-            logger.debug('Orbit conversation selected, showing heatmap for:', conversation.friendUsername);
-            setHeatmapFriendUsername(conversation.friendUsername);
-            setShowHeatmapModal(true);
+            logger.debug('Orbit conversation selected, showing artist listening for:', conversation.friendUsername);
+            setArtistData({ id: `spotify_${conversation.friendUsername}`, name: `${conversation.friendUsername}'s Music` });
+            setShowArtistModal(true);
             setShowConversationDrawer(false);
           } else {
             // Handle AI conversation - clear messages immediately to prevent bleed-through
@@ -1375,11 +1375,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       </Modal>
       )}
 
-      {/* Heatmap Modal */}
-      <HeatmapModal
-        visible={showHeatmapModal}
-        onClose={() => setShowHeatmapModal(false)}
-        friendUsername={heatmapFriendUsername}
+      {/* Artist Listening Modal */}
+      <ArtistListeningModal
+        visible={showArtistModal}
+        onClose={() => setShowArtistModal(false)}
+        artistId={artistData?.id}
+        artistName={artistData?.name}
         theme={theme}
       />
 

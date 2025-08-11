@@ -12,11 +12,11 @@ export const shadows = {
       // Elevated surfaces (buttons, cards floating above background)
       elevated: {
         shadowColor: designTokens.surfaces.light.shadow,
-        shadowOffset: { width: 8, height: 8 },
+        shadowOffset: { width: 4, height: 4 },
         shadowOpacity: 0.15,
-        shadowRadius: 16,
+        shadowRadius: 8,
         elevation: 8, // Android
-        // CSS equivalent: '8px 8px 16px rgba(224, 224, 224, 0.15), -8px -8px 16px rgba(255, 255, 255, 0.7)'
+        // CSS equivalent: '4px 4px 8px rgba(224, 224, 224, 0.15), -4px -4px 8px rgba(255, 255, 255, 0.7)'
       },
       
       // Subtle elevation (list items, nav elements)
@@ -62,11 +62,11 @@ export const shadows = {
       // Dark theme neumorphic shadows
       elevated: {
         shadowColor: '#000000',
-        shadowOffset: { width: 8, height: 8 },
+        shadowOffset: { width: 4, height: 4 },
         shadowOpacity: 0.4,
-        shadowRadius: 16,
+        shadowRadius: 8,
         elevation: 8,
-        // CSS: '8px 8px 16px rgba(0, 0, 0, 0.4), -8px -8px 16px rgba(51, 51, 51, 0.1)'
+        // CSS: '4px 4px 8px rgba(0, 0, 0, 0.4), -4px -4px 8px rgba(51, 51, 51, 0.1)'
       },
       
       subtle: {

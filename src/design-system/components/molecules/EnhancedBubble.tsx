@@ -79,7 +79,7 @@ const StreamingText: React.FC<{
     fontSize: 16,
     lineHeight: 24,
     letterSpacing: -0.1,
-    fontFamily: 'Poppins-Regular',
+    fontFamily: 'Inter-Regular', // Ultra-clean modern font for AI messages
     fontWeight: '400' as '400',
     color: theme === 'dark' ? '#ffffff' : '#1a1a1a',
   };
@@ -522,54 +522,42 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
     >
       <View>
         {isUser ? (
-          // User messages
+          // Optimized User messages
           <View style={styles.userMessageContainer}>
-            {/* Show message bubble when there's text or attachments */}
-            {(((message.text && message.text.trim().length > 0) || (message.message && message.message.trim().length > 0)) || 
-              (message.attachments && message.attachments.length > 0)) && (
-              <TouchableOpacity
-                onLongPress={handleLongPress}
-                activeOpacity={1}
-                delayLongPress={300}
-              >
-                <Animated.View style={[
-                  styles.userProfileBubble,
-                  {
-                    backgroundColor: theme === 'light' ? '#F0F0F0' : '#202020',
-                    borderWidth: 1,
-                    borderColor: theme === 'light' ? '#E5E5E7' : '#38383A',
-                  }
-                ]}>
-                  {/* Render photo attachments within the bubble */}
-                  {renderPhotoAttachments()}
-                  {/* Render document attachments within the bubble */}
-                  {renderDocumentAttachments()}
-                  {/* Only render text if there is actual text content */}
-                  {((message.text && message.text.trim().length > 0) || (message.message && message.message.trim().length > 0)) && (
-                    <Text 
-                      style={[
-                        styles.messageText,
-                        {
-                          fontSize: 16,
-                          lineHeight: 24,
-                          letterSpacing: -0.1,
-                          fontFamily: 'Poppins-Regular',
-                          fontWeight: '400',
-                          color: theme === 'dark' ? '#ffffff' : '#1a1a1a',
-                          textAlign: 'left',
-                          marginTop: message.attachments && message.attachments.length > 0 ? 4 : 0,
-                        }
-                      ]}
-                    >
-                      {message.text || message.message}
-                    </Text>
-                  )}
-                </Animated.View>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              onLongPress={handleLongPress}
+              activeOpacity={1}
+              delayLongPress={300}
+              style={styles.userTouchable}
+            >
+              <Animated.View style={[
+                styles.userProfileBubble,
+                theme === 'light' ? styles.userBubbleLight : styles.userBubbleDark
+              ]}>
+                {/* Apple-style abstract gradient border overlay */}
+                <View style={[
+                  styles.gradientBorderOverlay,
+                  theme === 'light' ? styles.gradientLight : styles.gradientDark
+                ]} />
+                {/* Render photo attachments within the bubble */}
+                {renderPhotoAttachments()}
+                {/* Render document attachments within the bubble */}
+                {renderDocumentAttachments()}
+                {/* Message text */}
+                {(message.text?.trim() || message.message?.trim()) && (
+                  <Text style={[
+                    styles.userMessageText,
+                    theme === 'light' ? styles.userTextLight : styles.userTextDark,
+                    (message.attachments?.length || 0) > 0 && styles.userTextWithAttachments
+                  ]}>
+                    {message.text || message.message}
+                  </Text>
+                )}
+              </Animated.View>
+            </TouchableOpacity>
             
             {/* Message status indicators for friend messages */}
-            {isUser && (message.fromMe || message.status || message.readAt || message.deliveredAt) && (
+            {(message.fromMe || message.status || message.readAt || message.deliveredAt) && (
               <MessageStatus
                 status={message.status}
                 readAt={message.readAt}
@@ -597,7 +585,16 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
             />
             {showTimestampAndActions && (
               <View style={styles.botMessageFooter}>
-                <Text style={[styles.timestamp, { color: theme === 'dark' ? '#888888' : '#666666' }]}>
+                <Text style={[
+                  typography.textStyles.timestampSmall,
+                  { 
+                    color: theme === 'dark' ? '#888888' : '#666666',
+                    fontFamily: 'Inter-Regular',
+                    fontSize: 11,
+                    letterSpacing: 0.2,
+                    opacity: 0.6,
+                  }
+                ]}>
                   {formatTimestamp(message.timestamp)}
                 </Text>
               </View>
@@ -683,33 +680,122 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   userProfileBubble: {
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    maxWidth: width * 0.8,
+    borderRadius: 14,        // Less rounded for cleaner look
+    paddingHorizontal: 10,   // Tighter horizontal padding
+    paddingVertical: 6,      // Minimal vertical padding
+    maxWidth: width * 0.75,  // Slightly narrower for better readability
     alignSelf: 'flex-end',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#D1D1D6',
+    minHeight: 28,          // Compact minimum height
   },
-  userMessageText: {
+  userMessageTextCompact: {
     fontSize: 16,
     lineHeight: 20,
   },
   botTextWrapper: {
-    maxWidth: width * 0.98,
+    maxWidth: width * 0.85,  // Better constraint for readability
     alignSelf: 'flex-start',
-    paddingRight: 16,
+    paddingRight: 20,        // More breathing room
+    paddingLeft: 2,          // Subtle left padding
   },
   botTextContainer: {
     flexDirection: 'column',
+    paddingVertical: 2,      // Subtle vertical spacing
   },
   messageText: {
-    ...typography.textStyles.body,
+    // Enhanced typography for chat messages
+    fontFamily: 'Inter-Regular',
+    fontSize: 16,
+    fontWeight: '400',
+    lineHeight: 22,
+    letterSpacing: -0.05,
+  },
+  
+  // Optimized user message styles
+  userTouchable: {
+    // Empty style for TouchableOpacity optimization
+  },
+  userMessageText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 16,
+    fontWeight: '400',
+    lineHeight: 22,          // Better line height for readability
+    letterSpacing: -0.02,    // Subtle letter spacing for clean look
+    textAlign: 'left',
+    margin: 0,               // Remove any default margins
+    padding: 0,              // Remove any default padding
+  },
+  userTextLight: {
+    color: '#1a1a1a',
+  },
+  userTextDark: {
+    color: '#ffffff',
+  },
+  userTextWithAttachments: {
+    marginTop: 6,            // Better spacing when attachments are present
+  },
+  userBubbleLight: {
+    backgroundColor: '#F5F5F7',
+    borderRadius: 14,
+    overflow: 'visible',      // Allow spike to show
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  userBubbleDark: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 14,
+    overflow: 'visible',      // Allow spike to show
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  
+  
+  // Apple-style abstract gradient border overlay
+  gradientBorderOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 14,
+    pointerEvents: 'none',   // Don't interfere with touch
+  },
+  gradientLight: {
+    // Abstract off-center gradient border for light mode
+    borderWidth: 1,
+    borderColor: 'transparent',
+    backgroundColor: 'transparent',
+    // Create the Apple-style gradient effect using multiple borders
+    borderTopColor: 'rgba(0, 0, 0, 0.03)',
+    borderRightColor: 'rgba(0, 0, 0, 0.08)',   // Stronger on right
+    borderBottomColor: 'rgba(0, 0, 0, 0.06)',  // Medium on bottom
+    borderLeftColor: 'rgba(0, 0, 0, 0.02)',    // Subtle on left
+    // Add inner glow effect
+    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowOffset: { width: -0.5, height: -0.5 }, // Inner shadow simulation
+    shadowOpacity: 1,
+    shadowRadius: 0.5,
+  },
+  gradientDark: {
+    // Abstract off-center gradient border for dark mode
+    borderWidth: 1,
+    borderColor: 'transparent',
+    backgroundColor: 'transparent',
+    // Create the Apple-style gradient effect for dark mode
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+    borderRightColor: 'rgba(255, 255, 255, 0.12)', // Brighter on right
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)', // Medium on bottom
+    borderLeftColor: 'rgba(255, 255, 255, 0.04)',   // Subtle on left
+    // Add inner glow effect
+    shadowColor: 'rgba(255, 255, 255, 0.1)',
+    shadowOffset: { width: -0.5, height: -0.5 }, // Inner shadow simulation
+    shadowOpacity: 1,
+    shadowRadius: 0.5,
   },
   lottieAnimation: {
     width: 160, // Increased size for better visibility
@@ -728,7 +814,8 @@ const styles = StyleSheet.create({
   searchResultsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Nunito-SemiBold',
+    fontFamily: 'Inter-SemiBold',
+    letterSpacing: -0.05,
     marginBottom: spacing[2],
   },
   sourceCard: {
@@ -740,13 +827,17 @@ const styles = StyleSheet.create({
   sourceTitle: {
     fontSize: 13,
     fontWeight: '500',
-    fontFamily: 'Nunito-Medium',
+    fontFamily: 'Inter-Medium',
+    letterSpacing: -0.02,
+    lineHeight: 18,
     marginBottom: 2,
   },
   sourceDomain: {
-    fontSize: 12,
-    fontFamily: 'Nunito-Regular',
-    opacity: 0.7,
+    fontSize: 11,
+    fontFamily: 'Inter-Regular',
+    letterSpacing: 0.1,
+    opacity: 0.65,
+    lineHeight: 14,
   },
   toolCallsContainer: {
     marginTop: spacing[2],
@@ -763,20 +854,23 @@ const styles = StyleSheet.create({
   toolCallName: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Nunito-SemiBold',
+    fontFamily: 'Inter-SemiBold',
+    letterSpacing: -0.05,
     marginBottom: spacing[1],
     textTransform: 'capitalize',
     alignSelf: 'flex-start',
   },
   toolCallResult: {
     fontSize: 13,
-    fontFamily: 'Nunito-Regular',
-    lineHeight: 18,
+    fontFamily: 'Inter-Regular',
+    lineHeight: 19,
+    letterSpacing: -0.02,
   },
   searchQuery: {
     fontSize: 13,
     fontWeight: '500',
-    fontFamily: 'Nunito-Medium',
+    fontFamily: 'Inter-Medium',
+    letterSpacing: 0.05,
     marginBottom: spacing[2],
     fontStyle: 'italic',
   },
@@ -789,21 +883,24 @@ const styles = StyleSheet.create({
   searchResultTitle: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Nunito-SemiBold',
+    fontFamily: 'Inter-SemiBold',
+    letterSpacing: -0.05,
     marginBottom: spacing[1],
     lineHeight: 20,
   },
   searchResultSnippet: {
     fontSize: 13,
-    fontFamily: 'Nunito-Regular',
-    lineHeight: 18,
+    fontFamily: 'Inter-Regular',
+    lineHeight: 19,
+    letterSpacing: -0.02,
     marginBottom: spacing[1],
   },
   searchResultLink: {
     fontSize: 12,
-    fontFamily: 'Nunito-Regular',
+    fontFamily: 'Inter-Regular',
+    letterSpacing: 0.1,
     textDecorationLine: 'underline',
-    opacity: 0.8,
+    opacity: 0.75,
   },
   messageFooter: {
     flexDirection: 'row',
@@ -824,9 +921,12 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: 11,
-    fontFamily: 'Nunito-Regular',
-    opacity: 0.7,
+    fontFamily: 'Inter-Regular',
+    fontWeight: '400',
+    letterSpacing: 0.2,
+    opacity: 0.6,
     flex: 1,
+    marginTop: 4,           // Better spacing from message text
   },
   actionButtons: {
     flexDirection: 'row',
@@ -908,8 +1008,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   actionLabel: {
-    fontSize: 12,
-    fontFamily: 'Nunito-Medium',
+    fontSize: 11,
+    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
+    letterSpacing: 0.1,
     marginTop: 4,
     textAlign: 'center',
   },

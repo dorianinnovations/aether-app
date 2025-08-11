@@ -29,7 +29,7 @@ export const glassmorphism = {
       shadowColor: 'rgba(0, 0, 0, 0.08)',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.12,
-      shadowRadius: 8,
+      shadowRadius: 4,
       elevation: 4,
     },
     
@@ -76,7 +76,7 @@ export const glassmorphism = {
       shadowColor: 'rgba(0, 0, 0, 0.2)',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.2,
-      shadowRadius: 8,
+      shadowRadius: 4,
       elevation: 4,
     },
     

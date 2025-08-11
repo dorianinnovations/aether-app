@@ -10,7 +10,7 @@ import { useTheme } from '../../../contexts/ThemeContext';
 import AddFriendModal from '../molecules/AddFriendModal';
 import SettingsModal from '../../../screens/chat/SettingsModal';
 import ConversationDrawer from '../../../components/ConversationDrawer';
-import { SignOutModal, HeatmapModal, WalletModal } from '../organisms';
+import { SignOutModal, ArtistListeningModal, WalletModal } from '../organisms';
 // Remove unused DynamicPrompt import - using any[] for now
 
 interface ChatModalsManagerProps {
@@ -40,10 +40,10 @@ interface ChatModalsManagerProps {
   onSelectConversation: (conversationId: string) => void;
   currentConversationId?: string;
 
-  // Heatmap Modal
-  showHeatmapModal: boolean;
-  onCloseHeatmapModal: () => void;
-  heatmapFriendUsername?: string;
+  // Artist Listening Modal
+  showArtistModal: boolean;
+  onCloseArtistModal: () => void;
+  artistData?: { id: string; name: string };
 
   // Dynamic Options Modal
   showDynamicOptionsModal: boolean;
@@ -83,10 +83,10 @@ export const ChatModalsManager: React.FC<ChatModalsManagerProps> = ({
   onSelectConversation,
   currentConversationId,
 
-  // Heatmap Modal
-  showHeatmapModal,
-  onCloseHeatmapModal,
-  heatmapFriendUsername,
+  // Artist Listening Modal
+  showArtistModal,
+  onCloseArtistModal,
+  artistData,
 
   // Dynamic Options Modal (if implemented)
   showDynamicOptionsModal,
@@ -142,11 +142,13 @@ export const ChatModalsManager: React.FC<ChatModalsManagerProps> = ({
         theme={'light'}
       />
 
-      {/* Heatmap Modal */}
-      <HeatmapModal
-        visible={showHeatmapModal}
-        onClose={onCloseHeatmapModal}
-        friendUsername={heatmapFriendUsername}
+      {/* Artist Listening Modal */}
+      <ArtistListeningModal
+        visible={showArtistModal}
+        onClose={onCloseArtistModal}
+        artistId={artistData?.id}
+        artistName={artistData?.name}
+        theme={theme}
       />
 
       {/* Dynamic Options Modal - Placeholder for future implementation */}

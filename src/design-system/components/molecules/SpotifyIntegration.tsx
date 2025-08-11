@@ -24,6 +24,7 @@ import Animated, {
   useAnimatedStyle,
   interpolate 
 } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { WebView } from 'react-native-webview';
 // import * as AuthSession from 'expo-auth-session';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
@@ -33,6 +34,7 @@ import { logger } from '../../../utils/logger';
 import { useTheme } from '../../../contexts/ThemeContext';
 // import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
+import { NowPlayingIndicator } from '../atoms';
 
 // API
 import { SpotifyAPI } from '../../../services/api';
@@ -84,9 +86,6 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
 
   // Animation values
   const pulseAnimation = useSharedValue(0);
-  const waveAnimation1 = useSharedValue(0);
-  const waveAnimation2 = useSharedValue(0);
-  const waveAnimation3 = useSharedValue(0);
 
   // Use prop data if provided, otherwise use state data
   const spotify = spotifyData || spotifyStatus;
@@ -143,17 +142,6 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
     }]
   }));
 
-  const wave1Style = useAnimatedStyle(() => ({
-    height: interpolate(waveAnimation1.value, [0, 1], [4, 12])
-  }));
-
-  const wave2Style = useAnimatedStyle(() => ({
-    height: interpolate(waveAnimation2.value, [0, 1], [8, 16])
-  }));
-
-  const wave3Style = useAnimatedStyle(() => ({
-    height: interpolate(waveAnimation3.value, [0, 1], [3, 8])
-  }));
 
   // Start/stop animations based on playing state
   useEffect(() => {
@@ -167,29 +155,9 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         -1,
         true
       );
-      
-      // Start wave animations with different timings
-      waveAnimation1.value = withRepeat(
-        withTiming(1, { duration: 800 }),
-        -1,
-        true
-      );
-      waveAnimation2.value = withRepeat(
-        withTiming(1, { duration: 1200 }),
-        -1,
-        true
-      );
-      waveAnimation3.value = withRepeat(
-        withTiming(1, { duration: 600 }),
-        -1,
-        true
-      );
     } else {
       // Stop animations when not playing
       pulseAnimation.value = withTiming(0);
-      waveAnimation1.value = withTiming(0);
-      waveAnimation2.value = withTiming(0);
-      waveAnimation3.value = withTiming(0);
     }
   }, [getCurrentTrack(spotify)?.isPlaying]);
 
@@ -438,22 +406,35 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
     container: {
       backgroundColor: 'transparent',
       padding: 0,
-      marginHorizontal: spacing[5],
+      marginHorizontal: spacing[2],
       marginTop: spacing[2],
       marginBottom: spacing[2],
+    },
+    headerContainer: {
+      marginBottom: spacing[4], // More space below header
     },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'flex-start',
-      marginBottom: spacing[1],
-      paddingBottom: 0,
+      justifyContent: 'space-between',
+      paddingBottom: spacing[2], // Add padding below
+    },
+    gradientBorder: {
+      height: 1,
+      width: '100%',
+      marginTop: spacing[1],
     },
     title: {
       fontSize: 12,
       fontWeight: '600',
       color: colors.textSecondary,
       marginLeft: spacing[1],
+    },
+    spotifyCredit: {
+      fontSize: 10,
+      fontWeight: '400',
+      color: colors.textMuted,
+      fontStyle: 'italic',
     },
     liveHeaderIndicator: {
       flexDirection: 'row',
@@ -478,18 +459,20 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       letterSpacing: 0.5,
     },
     connectButton: {
-      backgroundColor: '#1DB954',
+      backgroundColor: 'transparent',
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.sm,
-      borderRadius: 999,
+      borderRadius: 8,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(29, 185, 84, 0.6)',
     },
     connectButtonText: {
       fontSize: 14,
       fontWeight: '600',
-      color: '#FFFFFF',
+      color: '#1DB954',
       marginLeft: spacing.xs,
     },
     connectedContent: {
@@ -512,9 +495,9 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       marginRight: spacing[2],
     },
     albumArt: {
-      width: 28,
-      height: 28,
-      borderRadius: 4,
+      width: 100,
+      height: 100,
+      borderRadius: 8,
       borderWidth: 0,
     },
     albumArtPlaceholder: {
@@ -522,26 +505,17 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       justifyContent: 'center',
       alignItems: 'center',
     },
-    liveIndicator: {
-      position: 'absolute',
-      bottom: 4,
-      right: 4,
-      flexDirection: 'row',
-      alignItems: 'flex-end',
-      gap: 2,
-      backgroundColor: 'rgba(29, 185, 84, 0.9)',
-      paddingHorizontal: 6,
-      paddingVertical: 3,
-      borderRadius: 8,
-    },
-    liveWave: {
-      width: 2,
-      backgroundColor: '#FFFFFF',
-      borderRadius: 1,
-      height: 8, // Default height, will be animated
-    },
     trackInfo: {
       flex: 1,
+    },
+    albumArtLottieContainer: {
+      position: 'absolute',
+      bottom: -10,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: 20,
     },
     trackHeader: {
       flexDirection: 'row',
@@ -550,7 +524,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       marginBottom: 4,
     },
     trackName: {
-      fontSize: 13,
+      fontSize: 11,
       color: colors.text,
       fontWeight: '500',
       flex: 1,
@@ -566,14 +540,15 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       marginLeft: spacing.sm,
     },
     artistName: {
-      fontSize: 11,
+      fontSize: 9,
       color: colors.textSecondary,
-      marginBottom: 0,
+      marginBottom: spacing[2], // Add space after artist name
     },
     albumName: {
-      fontSize: 13,
+      fontSize: 10,
       color: colors.textMuted,
       marginBottom: 6,
+      marginTop: spacing[1], // Add space before album name
     },
     progressContainer: {
       marginTop: spacing.md,
@@ -859,11 +834,24 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
   return (
     <>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <FontAwesome name="spotify" size={14} color={colors.textSecondary} />
-            <Text style={styles.title}>Playing Now</Text>
+        <View style={styles.headerContainer}>
+          <View style={styles.header}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="musical-notes" size={14} color={colors.textSecondary} />
+              <Text style={styles.title}>Playing Now</Text>
+            </View>
+            <Text style={styles.spotifyCredit}>via Spotify</Text>
           </View>
+          <LinearGradient
+            colors={[
+              theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+              theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+              'transparent'
+            ]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.gradientBorder}
+          />
         </View>
 
       {!hasConnectedProperty(spotify) || !spotify.connected ? (
@@ -873,10 +861,10 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
           disabled={connecting}
         >
           {connecting ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <ActivityIndicator size="small" color="#1DB954" />
           ) : (
             <>
-              <FontAwesome name="spotify" size={20} color="#FFFFFF" />
+              <FontAwesome name="spotify" size={20} color="#1DB954" />
               <Text style={styles.connectButtonText}>Connect Spotify</Text>
             </>
           )}
@@ -901,18 +889,17 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
                   />
                 ) : (
                   <View style={[styles.albumArt, styles.albumArtPlaceholder]}>
-                    <Ionicons name="musical-notes" size={24} color={colors.textSecondary} />
+                    <Ionicons name="musical-notes" size={40} color={colors.textSecondary} />
                   </View>
                 )}
                 
-                {/* Live Playing Indicator */}
+                {/* Now Playing Indicator under album art */}
                 {(getCurrentTrack(spotify)?.isPlaying === true || getCurrentTrack(spotify)?.isPlaying === undefined) && (
-                  <View style={styles.liveIndicator}>
-                    <Animated.View style={[styles.liveWave, wave1Style]} />
-                    <Animated.View style={[styles.liveWave, wave2Style]} />
-                    <Animated.View style={[styles.liveWave, wave3Style]} />
+                  <View style={styles.albumArtLottieContainer}>
+                    <NowPlayingIndicator size={100} />
                   </View>
                 )}
+                
               </View>
               
               <View style={styles.trackInfo}>

@@ -4,10 +4,10 @@
  */
 
 // Import types from main types file
-import type { Post, Comment, Community, CreatePostData, CreateCommentData, SocialTab } from '../../../types/social';
+import type { NewsPost, Community, SocialTab } from '../../../types/social';
 
 // Re-export for convenience
-export type { Post, Comment, Community, CreatePostData, CreateCommentData, SocialTab };
+export type { NewsPost, Community, SocialTab };
 
 export interface SocialScreenProps {
   navigation: any;
@@ -18,27 +18,14 @@ export interface TabPillsProps {
   onTabPress: (tab: SocialTab) => void;
 }
 
-export interface PostCardProps {
-  post: Post;
-  onLike: (postId: string) => void;
-  onComment: (postId: string) => void;
-  onShare: (postId: string) => void;
+export interface NewsCardProps {
+  post: NewsPost;
 }
 
-export interface PostsFeedProps {
-  posts: Post[];
+export interface NewsFeedProps {
+  posts: NewsPost[];
   loading: boolean;
   onRefresh: () => void;
-  onPostPress: (post: Post) => void;
-  onLike: (postId: string) => void;
-  onComment: (postId: string) => void;
-  onShare: (postId: string) => void;
-}
-
-export interface CreatePostModalProps {
-  visible: boolean;
-  onClose: () => void;
-  onSubmit: (data: CreatePostData) => void;
 }
 
 export interface CommunityChipProps {

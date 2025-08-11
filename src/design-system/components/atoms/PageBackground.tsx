@@ -15,7 +15,7 @@ import { useSettings } from '../../../hooks/useSettings';
 interface PageBackgroundProps {
   theme?: 'light' | 'dark';
   children: React.ReactNode;
-  variant?: 'default' | 'auth' | 'hero' | 'profile' | 'chat' | 'friends' | 'dashboard' | 'onboarding' | 'social' | 'insights' | 'feed';
+  variant?: 'default' | 'auth' | 'hero' | 'profile' | 'chat' | 'friends' | 'dashboard' | 'onboarding' | 'social' | 'insights' | 'news';
   style?: ViewStyle;
 }
 
@@ -85,7 +85,7 @@ export const PageBackground: React.FC<PageBackgroundProps> = ({
           ? ['#fffffe', '#fffffe', '#fffffe'] // Very light cream
           : [darkGrey, '#1A1A1A', darkGrey]; // Consistent dark
       
-      case 'feed':
+      case 'news':
         return theme === 'light'
           ? ['#fefefe', '#fdfdfd', '#fefefe'] // Very light pearl
           : [darkGrey, '#1A1A1A', darkGrey]; // Consistent dark

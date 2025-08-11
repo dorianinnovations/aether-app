@@ -11,8 +11,7 @@ import {
   ViewStyle,
   TouchableOpacity,
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { BannerImage, ProfileImage, OnlineStatus, OnlineStatusType } from '../atoms';
+import { BannerImage, ProfileImage, OnlineStatusType, UserBadge, UserBadgeType, InteractiveBadge, PrestigiousBadge, mapDatabaseBadgeToPrestigious } from '../atoms';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { spacing } from '../../tokens/spacing';
 import { typography } from '../../tokens/typography';
@@ -26,6 +25,12 @@ export interface ProfileHeaderProps {
   username?: string;
   /** Display name */
   displayName?: string;
+  /** User badges */
+  badges?: Array<{
+    id: string;
+    badgeType: UserBadgeType;
+    isVisible: boolean;
+  }>;
   /** Whether images are editable */
   editable?: boolean;
   /** Whether upload is in progress */
@@ -40,6 +45,10 @@ export interface ProfileHeaderProps {
   bannerHeight?: number;
   /** Profile image size */
   profileImageSize?: 'small' | 'medium' | 'large' | 'xlarge';
+  /** Friends count */
+  friendsCount?: number;
+  /** Followers count */
+  followersCount?: number;
   /** Callbacks */
   onProfileImagePress?: () => void;
   onBannerPress?: () => void;
@@ -51,6 +60,8 @@ export interface ProfileHeaderProps {
   onConfigurePress?: () => void;
   /** Whether configure mode is active */
   configureMode?: boolean;
+  /** Callback when username is pressed */
+  onUsernamePress?: () => void;
 }
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
@@ -58,22 +69,29 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   bannerImageUri,
   username,
   displayName,
+  badges,
   editable = false,
   uploading = false,
-  status = 'online',
-  statusMessage,
-  showDetailedStatus = false,
   bannerHeight = 200,
   profileImageSize = 'large',
+  friendsCount,
+  followersCount,
   onProfileImagePress,
   onBannerPress,
   onDeleteProfileImage,
   onDeleteBanner,
-  onConfigurePress,
-  configureMode = false,
+  onUsernamePress,
   style,
 }) => {
   const { colors, theme } = useTheme();
+  
+  // Custom subtle glassmorphism for profile stats
+  const subtleGlassStyle = {
+    backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 0.5,
+    borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
+    backdropFilter: 'blur(10px)',
+  };
 
   return (
     <View style={[styles.container, style]}>
@@ -86,6 +104,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         onPress={onBannerPress}
         showDeleteButton={editable}
         onDelete={onDeleteBanner}
+        addBottomFade={true}
+        theme={theme}
       >
 
         {/* Profile Image Container */}
@@ -99,6 +119,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
             showDeleteButton={editable}
             onDelete={onDeleteProfileImage}
           />
+          
         </View>
 
         {/* Username Display - positioned to the right of profile image */}
@@ -113,33 +134,41 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 {displayName}
               </Text>
             )}
-            <View style={styles.usernameRowContainer}>
-              <View style={[styles.usernameBox, { 
-                backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.65)',
-                borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.12)'
-              }]}>
-                <View style={styles.usernameRow}>
-                  <View style={styles.onlineDot} />
-                  <Text
-                    style={[styles.username, typography.textStyles.username, { color: colors.textSecondary }]}
-                    numberOfLines={1}
-                  >
-                    {username}
-                  </Text>
-                </View>
-              </View>
-              <TouchableOpacity 
-                style={styles.configButton}
-                onPress={onConfigurePress}
-                activeOpacity={0.6}
+            {/* Username centered */}
+            <View style={styles.usernameDisplayContainer}>
+              <Text
+                style={[styles.usernameText, { color: colors.textSecondary }]}
+                numberOfLines={1}
               >
-                <Feather 
-                  name="chevron-down" 
-                  size={16} 
-                  color={colors.textSecondary} 
-                />
-              </TouchableOpacity>
+                {username}
+              </Text>
             </View>
+            
+            {/* Accolades/Badges under username */}
+            {badges && badges.length > 0 && (
+              <View style={styles.accoladesContainer}>
+                {badges
+                  .filter(badge => badge.isVisible)
+                  .map(badge => {
+                    const displayType = mapDatabaseBadgeToPrestigious(badge.badgeType);
+                    
+                    // Only show prestigious badges (VIP and LEGEND)
+                    if (!displayType) return null;
+                    
+                    return (
+                      <PrestigiousBadge 
+                        key={badge.id}
+                        badgeKey={badge.id}
+                        type={displayType}
+                        theme={theme}
+                        showTooltip={true}
+                        size="small"
+                      />
+                    );
+                  })
+                  .filter(Boolean)}
+              </View>
+            )}
           </View>
         )}
       </BannerImage>
@@ -157,24 +186,37 @@ const styles = StyleSheet.create({
   },
   profileImageContainer: {
     position: 'absolute',
-    bottom: -60,
-    left: spacing[5],
+    bottom: -50,
+    left: spacing[3], // Moved further left
     zIndex: 100,
     elevation: 10,
   },
   usernameContainer: {
     position: 'absolute',
-    bottom: -60,
-    left: 160, // Positioned to the right of the profile image
-    right: spacing[5],
-    zIndex: 99,
+    bottom: -60, // Adjusted to -60
+    left: 150, // Adjusted to 150
+    right: spacing[3],
+    zIndex: 1002,
+    elevation: 1002,
     paddingVertical: spacing[2],
+    alignItems: 'flex-start',
+    justifyContent: 'center',
   },
   displayName: {
     fontSize: 22,
     fontWeight: '700',
     letterSpacing: -0.5,
     marginBottom: spacing[1],
+  },
+  accoladesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: spacing[1] * 0.5,
+    flexWrap: 'wrap',
+    marginTop: spacing[1],
+    zIndex: 1001,
+    elevation: 1001,
   },
   usernameRowContainer: {
     flexDirection: 'row',
@@ -184,25 +226,16 @@ const styles = StyleSheet.create({
     marginTop: spacing[1],
   },
   usernameBox: {
-    paddingHorizontal: spacing[1],
-    paddingVertical: 2,
-    borderRadius: 8,
-    borderWidth: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
-    backdropFilter: 'blur(10px)',
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  configButton: {
-    padding: spacing[1],
-    justifyContent: 'center',
+    flexDirection: 'column',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[1],
+    borderRadius: 6,
+    minWidth: 75,
+    minHeight: 26,
+    overflow: 'visible',
+    flex: 0,
   },
   usernameRow: {
     flexDirection: 'row',
@@ -210,13 +243,53 @@ const styles = StyleSheet.create({
     gap: spacing[1],
   },
   onlineDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: '#00ff00',
   },
   username: {
     // Font styling now handled by typography.textStyles.username
+  },
+  usernameDisplayContainer: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+    paddingVertical: spacing[1],
+    minHeight: 26,
+  },
+  usernameText: {
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 24,
+  },
+  socialStats: {
+    flexDirection: 'row',
+    gap: spacing[1],
+  },
+  socialStatItem: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[1],
+    borderRadius: 6,
+    minWidth: 75,
+    minHeight: 26,
+    overflow: 'visible',
+    flex: 0,
+  },
+  socialStatCount: {
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
+  socialStatLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    lineHeight: 13,
+    opacity: 0.8,
   },
 });
 

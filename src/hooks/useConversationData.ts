@@ -18,6 +18,8 @@ export interface Conversation {
   streak?: number;
   lastMessage?: string;
   displayName?: string;
+  createdAt?: string;
+  messages?: Array<{ content: string; [key: string]: any }>;
 }
 
 interface Friend {
@@ -39,17 +41,19 @@ interface FriendConversationData {
 export const useConversationData = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreConversations, setHasMoreConversations] = useState(true);
   
   // Cache conversations per tab to avoid unnecessary API calls
   const [conversationCache, setConversationCache] = useState<{
-    [key: number]: { data: Conversation[], timestamp: number }
+    [key: number]: { data: Conversation[], timestamp: number, hasMore: boolean }
   }>({});
   const CACHE_DURATION = 30000; // 30 seconds
 
   // Load Aether conversations (AI chats)
-  const loadAetherConversations = useCallback(async (): Promise<Conversation[]> => {
+  const loadAetherConversations = useCallback(async (limit: number = 5, offset: number = 0): Promise<{conversations: Conversation[], hasMore: boolean}> => {
     try {
-      const aetherResponse = await ConversationAPI.getRecentConversations(20);
+      const aetherResponse = await ConversationAPI.getRecentConversations(limit + 1); // +1 to check if there are more
       
       let conversations: Conversation[] = [];
       
@@ -66,9 +70,15 @@ export const useConversationData = () => {
         log.debug('Could not find conversations in response');
         conversations = [];
       }
+
+      // Check if there are more conversations
+      const hasMore = conversations.length > limit;
+      if (hasMore) {
+        conversations = conversations.slice(0, limit); // Remove the extra item
+      }
       
       // If no conversations, try to create a test one
-      if (conversations.length === 0) {
+      if (conversations.length === 0 && offset === 0) {
         try {
           const testConversationResponse = await ConversationAPI.createConversation('New Chat');
           if (testConversationResponse && testConversationResponse.conversations) {
@@ -79,12 +89,12 @@ export const useConversationData = () => {
         }
       }
       
-      return conversations;
+      return { conversations, hasMore };
     } catch (error: unknown) {
       const errorWithStatus = error as { status?: number };
       if (errorWithStatus.status === 404) {
         log.debug('No conversations found (404), showing empty state');
-        return [];
+        return { conversations: [], hasMore: false };
       }
       throw error;
     }
@@ -175,49 +185,66 @@ export const useConversationData = () => {
   }, []);
 
   // Main load function
-  const loadConversations = useCallback(async (currentTab: number, forceRefresh: boolean = false) => {
+  const loadConversations = useCallback(async (currentTab: number, forceRefresh: boolean = false, loadMore: boolean = false) => {
     try {
-      // Check cache first unless force refresh
-      if (!forceRefresh) {
+      // Check cache first unless force refresh or loading more
+      if (!forceRefresh && !loadMore) {
         const cached = conversationCache[currentTab];
         if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
           setConversations(cached.data);
+          setHasMoreConversations(cached.hasMore);
           log.debug(`Using cached data for tab ${currentTab}:`, cached.data.length);
           return;
         }
       }
       
-      setIsLoading(true);
+      if (loadMore) {
+        setIsLoadingMore(true);
+      } else {
+        setIsLoading(true);
+      }
+      
       let newConversations: Conversation[] = [];
+      let hasMore = false;
       
       switch (currentTab) {
         case 0: // Aether - AI conversations
-          newConversations = await loadAetherConversations();
+          const aetherResult = await loadAetherConversations(5, loadMore ? conversations.length : 0);
+          newConversations = loadMore ? [...conversations, ...aetherResult.conversations] : aetherResult.conversations;
+          hasMore = aetherResult.hasMore;
           break;
         case 1: // Friends - People conversations
           newConversations = await loadFriendsConversations();
+          hasMore = false; // Friends don't need pagination for now
           break;
         case 2: // Orbit - Heatmap functionality
           newConversations = await loadOrbitConversations();
+          hasMore = false; // Orbit doesn't need pagination for now
           break;
         default:
           newConversations = [];
+          hasMore = false;
       }
       
       // Update cache and state
       setConversationCache(prev => ({
         ...prev,
-        [currentTab]: { data: newConversations, timestamp: Date.now() }
+        [currentTab]: { data: newConversations, timestamp: Date.now(), hasMore }
       }));
       setConversations(newConversations);
+      setHasMoreConversations(hasMore);
       
     } catch (error) {
       log.error('Failed to load conversations:', error);
-      setConversations([]);
+      if (!loadMore) {
+        setConversations([]);
+        setHasMoreConversations(false);
+      }
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
-  }, [conversationCache, CACHE_DURATION, loadAetherConversations, loadFriendsConversations, loadOrbitConversations]);
+  }, [conversationCache, CACHE_DURATION, loadAetherConversations, loadFriendsConversations, loadOrbitConversations, conversations]);
 
   // Delete conversation function
   const handleDeleteConversation = useCallback(async (conversationId: string) => {
@@ -262,10 +289,20 @@ export const useConversationData = () => {
     });
   }, []);
 
+  // Load more conversations
+  const loadMoreConversations = useCallback(async (currentTab: number) => {
+    if (!isLoadingMore && hasMoreConversations) {
+      await loadConversations(currentTab, false, true);
+    }
+  }, [isLoadingMore, hasMoreConversations, loadConversations]);
+
   return {
     conversations,
     isLoading,
+    isLoadingMore,
+    hasMoreConversations,
     loadConversations,
+    loadMoreConversations,
     handleDeleteConversation,
     handleDeleteAllConversations,
     clearCache,

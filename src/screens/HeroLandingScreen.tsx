@@ -299,7 +299,7 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                   fontWeight: "600",
                   letterSpacing: -5,
                   textAlign: "center",
-                  fontFamily: "CrimsonPro-Bold",
+                  fontFamily: "CrimsonPro_700Bold",
                   textShadowColor: theme === "dark" ? 'rgba(255, 255, 255, 0.8)' : 'rgba(145, 145, 145, 0.9)',
                   textShadowOffset: { width: 0, height: theme === "dark" ? 0 : 2 },
                   textShadowRadius: theme === "dark" ? 12 : 6,

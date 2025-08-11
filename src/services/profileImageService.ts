@@ -8,6 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { UserAPI } from './apiModules/endpoints/user';
 import { logger } from '../utils/logger';
 import { ImageUtils } from '../utils/imageUtils';
+import { ErrorHandler } from '../utils/errorHandling';
 
 export interface ImageUploadResult {
   success: boolean;
@@ -188,18 +189,8 @@ export class ProfileImageService {
     } catch (error: any) {
       logger.error('Profile picture upload failed:', error);
       
-      // More specific error messages for common TestFlight issues
-      let errorMessage = error.message || 'Failed to upload profile picture';
-      
-      if (error.message?.includes('network') || error.message?.includes('fetch')) {
-        errorMessage = 'Network error. Please check your connection and try again.';
-      } else if (error.message?.includes('timeout')) {
-        errorMessage = 'Upload timed out. Please try again with a smaller image.';
-      } else if (error.message?.includes('413') || error.message?.includes('too large')) {
-        errorMessage = 'Image is too large. Please select a smaller photo.';
-      } else if (error.message?.includes('unsupported') || error.message?.includes('format')) {
-        errorMessage = 'Unsupported image format. Please use JPG or PNG.';
-      }
+      // Use centralized error handling
+      const errorMessage = ErrorHandler.getFileUploadErrorMessage(error, 'image');
       
       return {
         success: false,
@@ -250,18 +241,8 @@ export class ProfileImageService {
     } catch (error: any) {
       logger.error('Banner image upload failed:', error);
       
-      // More specific error messages for common TestFlight issues
-      let errorMessage = error.message || 'Failed to upload banner image';
-      
-      if (error.message?.includes('network') || error.message?.includes('fetch')) {
-        errorMessage = 'Network error. Please check your connection and try again.';
-      } else if (error.message?.includes('timeout')) {
-        errorMessage = 'Upload timed out. Please try again with a smaller image.';
-      } else if (error.message?.includes('413') || error.message?.includes('too large')) {
-        errorMessage = 'Image is too large. Please select a smaller photo.';
-      } else if (error.message?.includes('unsupported') || error.message?.includes('format')) {
-        errorMessage = 'Unsupported image format. Please use JPG or PNG.';
-      }
+      // Use centralized error handling
+      const errorMessage = ErrorHandler.getFileUploadErrorMessage(error, 'image');
       
       return {
         success: false,

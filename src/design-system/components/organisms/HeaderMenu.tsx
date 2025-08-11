@@ -48,14 +48,8 @@ const getAllMenuActions = (theme: 'light' | 'dark'): MenuAction[] => [
   },
   { 
     icon: <Feather name="rss" size={16} color={getIconColor('feed', theme)} />, 
-    label: 'Feed', 
-    key: 'feed', 
-    requiresAuth: false 
-  },
-  { 
-    icon: <Feather name="users" size={16} color={getIconColor('friends', theme)} />, 
-    label: 'Friends List', 
-    key: 'friends', 
+    label: 'News', 
+    key: 'news', 
     requiresAuth: false 
   },
   { 

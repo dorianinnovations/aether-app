@@ -74,13 +74,13 @@ const getBadgeConfig = (theme: 'light' | 'dark' = 'light') => ({
   },
   verified: {
     text: 'VIP',
-    color: theme === 'light' ? '#06B6D4' : '#67E8F9',
+    color: theme === 'light' ? '#3B82F6' : '#60A5FA',
     backgroundColor: 'transparent',
-    borderColor: theme === 'light' ? '#06B6D4' : '#67E8F9',
+    borderColor: theme === 'light' ? '#3B82F6' : '#60A5FA',
     fontFamily: 'Inter-ExtraBold',
     hasSwirl: false,
     textShadow: null,
-    premiumGlow: false,
+    premiumGlow: true,
     tooltip: 'Verified community member',
   },
   early: {

@@ -39,15 +39,15 @@ export const MiniTooltip: React.FC<MiniTooltipProps> = ({
           opacity,
           width,
           left: -width / 2 + 20, // Center relative to badge
-          backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.9)',
-          shadowColor: theme === 'light' ? '#000' : '#fff',
+          backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.9)',
+          shadowColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : '#fff',
         },
       ]}
     >
       <Text
         style={[
           styles.tooltipText,
-          { color: '#fff' },
+          { color: theme === 'light' ? '#6B7280' : '#fff' },
         ]}
       >
         {text}

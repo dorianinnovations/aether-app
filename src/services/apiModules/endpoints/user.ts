@@ -7,6 +7,7 @@ import { api } from '../core/client';
 import { TokenManager } from '../utils/storage';
 import { Platform } from 'react-native';
 import { ImageUtils } from '../../../utils/imageUtils';
+import { ErrorHandler } from '../../../utils/errorHandling';
 
 export const UserAPI = {
   async getProfile(): Promise<unknown> {
@@ -77,16 +78,25 @@ export const UserAPI = {
       
       return response.data;
     } catch (error: unknown) {
-      // Enhanced error logging for debugging TestFlight issues
+      // Enhanced error logging and processing
+      const processedError = ErrorHandler.processApiError(error, 'profile_image_upload');
+      
       console.error('Profile picture upload error details:', {
         error,
         imageUri,
         platform: Platform.OS,
+        processedError,
         errorMessage: (error as any)?.message,
         errorResponse: (error as any)?.response?.data,
         errorStatus: (error as any)?.response?.status,
       });
-      throw error;
+      
+      // Create a more informative error object
+      const enhancedError = new Error(processedError.userMessage);
+      (enhancedError as any).originalError = error;
+      (enhancedError as any).errorCode = processedError.errorCode;
+      
+      throw enhancedError;
     }
   },
 
@@ -118,16 +128,25 @@ export const UserAPI = {
       
       return response.data;
     } catch (error: unknown) {
-      // Enhanced error logging for debugging TestFlight issues
+      // Enhanced error logging and processing
+      const processedError = ErrorHandler.processApiError(error, 'banner_image_upload');
+      
       console.error('Banner image upload error details:', {
         error,
         imageUri,
         platform: Platform.OS,
+        processedError,
         errorMessage: (error as any)?.message,
         errorResponse: (error as any)?.response?.data,
         errorStatus: (error as any)?.response?.status,
       });
-      throw error;
+      
+      // Create a more informative error object
+      const enhancedError = new Error(processedError.userMessage);
+      (enhancedError as any).originalError = error;
+      (enhancedError as any).errorCode = processedError.errorCode;
+      
+      throw enhancedError;
     }
   },
 

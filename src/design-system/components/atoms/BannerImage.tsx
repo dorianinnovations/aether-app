@@ -14,6 +14,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export interface BannerImageProps {
   /** Image URI or null for placeholder */
@@ -36,6 +37,10 @@ export interface BannerImageProps {
   imageStyle?: ImageStyle;
   /** Children to overlay on the banner */
   children?: React.ReactNode;
+  /** Whether to add a fade gradient at the bottom */
+  addBottomFade?: boolean;
+  /** Theme for the fade gradient */
+  theme?: 'light' | 'dark';
 }
 
 export const BannerImage: React.FC<BannerImageProps> = ({
@@ -49,6 +54,8 @@ export const BannerImage: React.FC<BannerImageProps> = ({
   style,
   imageStyle,
   children,
+  addBottomFade = false,
+  theme = 'light',
 }) => {
 
   const containerStyle: ViewStyle = {
@@ -58,6 +65,9 @@ export const BannerImage: React.FC<BannerImageProps> = ({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     backgroundColor: '#F8F9FA',
+    borderWidth: 3,
+    borderBottomWidth: 0, // No border at bottom since it fades
+    borderColor: 'transparent',
     ...style,
   };
 
@@ -101,12 +111,53 @@ export const BannerImage: React.FC<BannerImageProps> = ({
 
   return (
     <View style={{ overflow: 'visible', position: 'relative' }}>
-      <TouchableOpacity
-        style={{ ...containerStyle, overflow: 'hidden' }}
-        onPress={editable ? onPress : undefined}
-        disabled={uploading || !editable}
-        activeOpacity={editable ? 0.8 : 1}
-      >
+      {/* Neumorphic Banner Container - thinner */}
+      <View style={{
+        backgroundColor: theme === 'dark' ? '#0F0F0F' : '#FAFAFA',
+        borderTopLeftRadius: 27,
+        borderTopRightRadius: 27,
+        padding: 3,
+        shadowColor: theme === 'dark' ? '#000000' : '#000000',
+        shadowOffset: {
+          width: -2,
+          height: -2,
+        },
+        shadowOpacity: theme === 'dark' ? 0.5 : 0.15,
+        shadowRadius: 8,
+        elevation: 0,
+      }}>
+        {/* Inner Elevated Banner */}
+        <View style={{
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          shadowColor: theme === 'dark' ? '#FFFFFF' : '#FFFFFF',
+          shadowOffset: {
+            width: 1,
+            height: 1,
+          },
+          shadowOpacity: theme === 'dark' ? 0.015 : 0.4,
+          shadowRadius: 6,
+          elevation: 0,
+          overflow: 'hidden',
+        }}>
+          <TouchableOpacity
+            style={{ 
+              ...containerStyle, 
+              overflow: 'hidden', 
+              borderWidth: 0,
+              shadowColor: theme === 'dark' ? '#000000' : '#000000',
+              shadowOffset: {
+                width: 0,
+                height: 3,
+              },
+              shadowOpacity: 0.15,
+              shadowRadius: 8,
+              elevation: 6,
+            }}
+            onPress={editable ? onPress : undefined}
+            disabled={uploading || !editable}
+            activeOpacity={editable ? 0.8 : 1}
+          >
         {/* Banner Image */}
         {imageUri && (
           <Image 
@@ -126,6 +177,19 @@ export const BannerImage: React.FC<BannerImageProps> = ({
           </View>
         )}
 
+        {/* Bottom fade gradient for seamless blending */}
+        {addBottomFade && (
+          <LinearGradient
+            colors={
+              theme === 'dark' 
+                ? ['transparent', 'rgba(15,15,15,0.4)', 'rgba(15,15,15,0.8)', 'rgba(15,15,15,1)']
+                : ['transparent', 'rgba(250,250,250,0.4)', 'rgba(250,250,250,0.8)', 'rgba(250,250,250,1)']
+            }
+            locations={[0, 0.5, 0.8, 1]}
+            style={styles.bottomFade}
+          />
+        )}
+
         {/* Delete button */}
         {showDeleteButton && !uploading && imageUri && editable && (
           <TouchableOpacity 
@@ -136,7 +200,9 @@ export const BannerImage: React.FC<BannerImageProps> = ({
             <Feather name="x" size={16} color="white" />
           </TouchableOpacity>
         )}
-      </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       {/* Overlay content (profile image, status indicators, etc.) - positioned outside of clipped banner */}
       {children}
@@ -150,6 +216,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  bottomFade: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '40%',
+    zIndex: 5,
   },
 });
 

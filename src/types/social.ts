@@ -3,50 +3,15 @@
  * Types for living profiles, social cards, and life coordination
  */
 
-export interface Post {
+// News/Event-driven posts
+export interface NewsPost {
   id: string;
-  userId: string;
-  userName: string;
-  userAvatar?: string;
-  content: string;
-  communityId?: string;
-  communityName?: string;
-  likes: number;
-  comments: number;
-  shares: number;
-  timestamp: string;
-  isLiked?: boolean;
-  tags?: string[];
-}
-
-export interface Comment {
-  id: string;
-  postId: string;
-  userId: string;
-  userName: string;
-  userAvatar?: string;
+  title: string;
   content: string;
   timestamp: string;
-  likes: number;
-  isLiked?: boolean;
-}
-
-export interface CreatePostData {
-  content: string;
-  communityId?: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  category?: string;
   tags?: string[];
-}
-
-export interface CreateCommentData {
-  postId: string;
-  content: string;
-}
-
-export interface PostsResponse {
-  posts: Post[];
-  hasMore: boolean;
-  page: number;
-  total: number;
 }
 
 export interface Community {
@@ -58,7 +23,7 @@ export interface Community {
   isJoined?: boolean;
 }
 
-export type SocialTab = 'feed' | 'groups' | 'strategize' | 'collaborate';
+export type SocialTab = 'news' | 'groups' | 'strategize' | 'collaborate';
 
 // Feed & Living Profiles
 export interface SocialCard {

@@ -4,29 +4,29 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Post } from '../types';
+import type { NewsPost } from '../types';
 import { generateMockPosts } from '../utils';
 import { SocialProxyAPI } from '../../../services/apiModules/endpoints/social';
 
 export interface UseSocialDataReturn {
-  posts: Post[];
+  posts: NewsPost[];
   loading: boolean;
   error: string | null;
   refreshing: boolean;
-  fetchPosts: () => Promise<void>;
+  fetchNewsPosts: () => Promise<void>;
   refreshPosts: () => Promise<void>;
-  addPost: (post: Post) => void;
-  updatePost: (postId: string, updates: Partial<Post>) => void;
+  addPost: (post: NewsPost) => void;
+  updatePost: (postId: string, updates: Partial<NewsPost>) => void;
   removePost: (postId: string) => void;
 }
 
 export const useSocialData = (): UseSocialDataReturn => {
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<NewsPost[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchPosts = useCallback(async () => {
+  const fetchNewsPosts = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -35,8 +35,8 @@ export const useSocialData = (): UseSocialDataReturn => {
         // Try to fetch real timeline data from API
         const response = await SocialProxyAPI.getTimeline(1, 20);
         if (response.success && response.data && Array.isArray(response.data)) {
-          // Transform API response to Post format if needed
-          const transformedPosts: Post[] = response.data.map((item: any, index: number) => ({
+          // Transform API response to NewsPost format if needed
+          const transformedNewsPosts: NewsPost[] = response.data.map((item: any, index: number) => ({
             id: item.id || `api-post-${index}`,
             userId: item.userId || item.user?.id || `user-${index}`,
             userName: item.userName || item.user?.username || item.user?.name || `User ${index}`,
@@ -50,16 +50,16 @@ export const useSocialData = (): UseSocialDataReturn => {
             isLiked: item.isLiked || false,
             tags: item.tags || [],
           }));
-          setPosts(transformedPosts);
+          setPosts(transformedNewsPosts);
         } else {
           // Fallback to mock data if API returns empty or invalid data
-          const mockPosts = generateMockPosts(20);
-          setPosts(mockPosts);
+          const mockNewsPosts = generateMockPosts(20);
+          setPosts(mockNewsPosts);
         }
       } catch (apiError) {
         // If API fails, fall back to mock data
-        const mockPosts = generateMockPosts(20);
-        setPosts(mockPosts);
+        const mockNewsPosts = generateMockPosts(20);
+        setPosts(mockNewsPosts);
       }
     } catch (err) {
       setError('Failed to fetch posts');
@@ -77,8 +77,8 @@ export const useSocialData = (): UseSocialDataReturn => {
         // Try to fetch real timeline data from API
         const response = await SocialProxyAPI.getTimeline(1, 20);
         if (response.success && response.data && Array.isArray(response.data)) {
-          // Transform API response to Post format if needed
-          const transformedPosts: Post[] = response.data.map((item: any, index: number) => ({
+          // Transform API response to NewsPost format if needed
+          const transformedNewsPosts: NewsPost[] = response.data.map((item: any, index: number) => ({
             id: item.id || `api-post-${index}`,
             userId: item.userId || item.user?.id || `user-${index}`,
             userName: item.userName || item.user?.username || item.user?.name || `User ${index}`,
@@ -92,16 +92,16 @@ export const useSocialData = (): UseSocialDataReturn => {
             isLiked: item.isLiked || false,
             tags: item.tags || [],
           }));
-          setPosts(transformedPosts);
+          setPosts(transformedNewsPosts);
         } else {
           // Fallback to mock data if API returns empty or invalid data
-          const mockPosts = generateMockPosts(20);
-          setPosts(mockPosts);
+          const mockNewsPosts = generateMockPosts(20);
+          setPosts(mockNewsPosts);
         }
       } catch (apiError) {
         // If API fails, fall back to mock data
-        const mockPosts = generateMockPosts(20);
-        setPosts(mockPosts);
+        const mockNewsPosts = generateMockPosts(20);
+        setPosts(mockNewsPosts);
       }
     } catch (err) {
       setError('Failed to refresh posts');
@@ -110,7 +110,7 @@ export const useSocialData = (): UseSocialDataReturn => {
     }
   }, []);
 
-  const addPost = useCallback(async (post: Post) => {
+  const addPost = useCallback(async (post: NewsPost) => {
     try {
       // Try to post to real API if it's a status update
       if (post.content && post.content.trim()) {
@@ -121,7 +121,7 @@ export const useSocialData = (): UseSocialDataReturn => {
       }
       
       // Always add to local state for immediate UI update
-      setPosts(prevPosts => [post, ...prevPosts]);
+      setPosts(prevNewsPosts => [post, ...prevNewsPosts]);
       
       // Refresh posts to get latest from server (including the one we just posted)
       setTimeout(() => {
@@ -129,26 +129,26 @@ export const useSocialData = (): UseSocialDataReturn => {
       }, 1000);
     } catch (err) {
       // Still add locally even if API fails
-      setPosts(prevPosts => [post, ...prevPosts]);
+      setPosts(prevNewsPosts => [post, ...prevNewsPosts]);
     }
   }, [refreshPosts]);
 
-  const updatePost = useCallback((postId: string, updates: Partial<Post>) => {
-    setPosts(prevPosts =>
-      prevPosts.map(post =>
+  const updatePost = useCallback((postId: string, updates: Partial<NewsPost>) => {
+    setPosts(prevNewsPosts =>
+      prevNewsPosts.map(post =>
         post.id === postId ? { ...post, ...updates } : post
       )
     );
   }, []);
 
   const removePost = useCallback((postId: string) => {
-    setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+    setPosts(prevNewsPosts => prevNewsPosts.filter(post => post.id !== postId));
   }, []);
 
   // Initial load
   useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
+    fetchNewsPosts();
+  }, [fetchNewsPosts]);
 
   // Auto-refresh every 5 minutes
   useEffect(() => {
@@ -166,7 +166,7 @@ export const useSocialData = (): UseSocialDataReturn => {
     loading,
     error,
     refreshing,
-    fetchPosts,
+    fetchNewsPosts,
     refreshPosts,
     addPost,
     updatePost,

@@ -18,7 +18,7 @@ import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 // Types
-import type { SocialTab, Post, CreatePostData } from './types';
+import type { SocialTab, NewsPost } from './types';
 
 // Design System
 import { PageBackground } from '../../design-system/components/atoms/PageBackground';
@@ -33,7 +33,7 @@ import { CommunityChip } from './components';
 
 // Hooks
 import { useTheme } from '../../hooks/useTheme';
-import { useSocialData, useRealTimeUpdates, usePostActions } from './hooks';
+import { useSocialData, useRealTimeUpdates } from './hooks';
 
 // Constants & Utils
 import { SOCIAL_TABS } from './constants';
@@ -53,7 +53,7 @@ const SocialScreen: React.FC<SocialScreenProps> = ({ navigation }) => {
   const themeColors = getThemeColors(theme);
   
   // State
-  const [activeTab, setActiveTab] = useState<SocialTab>('feed');
+  const [activeTab, setActiveTab] = useState<SocialTab>('news');
   const [searchQuery, setSearchQuery] = useState('');
   const [createModalVisible, setCreateModalVisible] = useState(false);
   
@@ -74,13 +74,10 @@ const SocialScreen: React.FC<SocialScreenProps> = ({ navigation }) => {
     onPostAdded: addPost,
     onPostUpdated: updatePost,
     onPostRemoved: removePost,
-    enabled: activeTab === 'feed',
+    enabled: activeTab === 'news',
   });
   
-  // Post actions with optimistic updates
-  const { likePost, sharePost, commentOnPost } = usePostActions({
-    onPostUpdate: updatePost,
-  });
+  // Post actions removed - now just news display
   
   // Handlers
   const handleTabPress = useCallback(async (tab: SocialTab) => {
@@ -88,39 +85,7 @@ const SocialScreen: React.FC<SocialScreenProps> = ({ navigation }) => {
     setActiveTab(tab);
   }, []);
   
-  const handleCreatePost = useCallback(async (data: CreatePostData) => {
-    try {
-      // Create optimistic post
-      const newPost: Post = {
-        id: `temp-${Date.now()}`,
-        userId: 'current-user',
-        userName: 'You',
-        content: data.content,
-        communityId: data.communityId,
-        communityName: data.communityId ? 
-          data.communityId.charAt(0).toUpperCase() + data.communityId.slice(1) : undefined,
-        likes: 0,
-        comments: 0,
-        shares: 0,
-        timestamp: new Date().toISOString(),
-        isLiked: false,
-        tags: data.tags,
-      };
-      
-      addPost(newPost);
-      setCreateModalVisible(false);
-      
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (error) {
-      logger.error('Error creating post:', error);
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    }
-  }, [addPost]);
-  
-  const handlePostPress = useCallback((post: Post) => {
-    // Navigate to post detail or expand inline
-    logger.debug('Post pressed:', post.id);
-  }, []);
+  // Remove post creation - news is server-driven only
   
   // Filter posts based on search query
   const filteredPosts = searchQuery ? filterPosts(posts, searchQuery) : posts;
@@ -128,14 +93,14 @@ const SocialScreen: React.FC<SocialScreenProps> = ({ navigation }) => {
   // Render different content based on active tab
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'feed':
+      case 'news':
         return (
           <ScrollView style={{ flex: 1, padding: 16 }}>
             <Text style={{ color: themeColors.text, fontSize: 16, textAlign: 'center' }}>
-              Posts Feed Component - Coming Soon
+              News Feed Component - Coming Soon
             </Text>
             <Text style={{ color: themeColors.textSecondary, fontSize: 14, textAlign: 'center', marginTop: 8 }}>
-              {filteredPosts.length} posts loaded
+              Server-driven news will appear here
             </Text>
           </ScrollView>
         );

@@ -9,6 +9,18 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import {
+  MozillaText_400Regular,
+  MozillaText_500Medium,
+  MozillaText_600SemiBold,
+  MozillaText_700Bold,
+} from '@expo-google-fonts/mozilla-text';
+import {
+  CrimsonPro_400Regular,
+  CrimsonPro_500Medium,
+  CrimsonPro_600SemiBold,
+  CrimsonPro_700Bold,
+} from '@expo-google-fonts/crimson-pro';
 // Removed bottom tabs - using stack navigation only
 import { View, StyleSheet, Dimensions, Image } from 'react-native';
 
@@ -21,9 +33,8 @@ import OnboardingScreen from './src/screens/onboarding/OnboardingScreen';
 import SignInScreen from './src/screens/auth/SignInScreen';
 import SignUpScreen from './src/screens/auth/SignUpScreen';
 import ChatScreen from './src/screens/chat/ChatScreen';
-import FriendsScreen from './src/screens/FriendsScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
-import FeedScreen from './src/screens/feed/FeedScreen';
+import NewsScreen from './src/screens/NewsScreen';
 
 // Services
 import { TokenManager } from './src/services/api';
@@ -31,6 +42,7 @@ import { TokenManager } from './src/services/api';
 // Contexts
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import { SettingsProvider } from './src/contexts/SettingsContext';
+import { ToastProvider } from './src/design-system/components/organisms';
 
 // Design System
 import { getThemeColors } from './src/design-system/tokens/colors';
@@ -64,9 +76,8 @@ export type AuthStackParamList = {
 
 export type MainStackParamList = {
   Chat: undefined;
-  Friends: undefined;
   Profile: undefined;
-  Feed: undefined;
+  News: undefined;
 };
 
 // Create navigators
@@ -123,9 +134,8 @@ const MainStackNavigator = () => {
       }}
     >
       <MainStack.Screen name="Chat" component={ChatScreen} />
-      <MainStack.Screen name="Friends" component={FriendsScreen} />
       <MainStack.Screen name="Profile" component={ProfileScreen} />
-      <MainStack.Screen name="Feed" component={FeedScreen} />
+      <MainStack.Screen name="News" component={NewsScreen} />
     </MainStack.Navigator>
   );
 };
@@ -178,7 +188,17 @@ export default function App() {
 
   const loadFonts = async () => {
     try {
-      await Font.loadAsync(fontConfig);
+      await Font.loadAsync({
+        ...fontConfig,
+        MozillaText_400Regular,
+        MozillaText_500Medium,
+        MozillaText_600SemiBold,
+        MozillaText_700Bold,
+        CrimsonPro_400Regular,
+        CrimsonPro_500Medium,
+        CrimsonPro_600SemiBold,
+        CrimsonPro_700Bold,
+      });
       setFontsLoaded(true);
     } catch (error) {
       logger.error('Font loading error:', error);
@@ -227,6 +247,7 @@ export default function App() {
   return (
     <SettingsProvider>
       <ThemeProvider>
+        <ToastProvider>
         <NavigationContainer>
         <StatusBar style="auto" />
         <RootStack.Navigator
@@ -246,6 +267,7 @@ export default function App() {
           )}
         </RootStack.Navigator>
         </NavigationContainer>
+        </ToastProvider>
       </ThemeProvider>
     </SettingsProvider>
   );

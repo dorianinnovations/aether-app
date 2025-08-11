@@ -1,4 +1,5 @@
 import { TokenManager } from './api';
+import EventSource from 'react-native-sse';
 
 export interface SSEEvent {
   type: string;
@@ -13,6 +14,9 @@ class SSEService {
   private isConnecting = false;
   private isManuallyDisconnected = false;
   private connectionState = false;
+
+  private eventSource: EventSource | null = null;
+  private reconnectTimeout: NodeJS.Timeout | null = null;
 
   async connect(): Promise<void> {
     if (this.isConnecting || this.connectionState) {
@@ -29,16 +33,52 @@ class SSEService {
         return;
       }
 
-      // For now, we'll simulate a successful connection
-      // In the future, this could be replaced with a polling mechanism
-      // or a proper EventSource polyfill that works with React Native
-      this.connectionState = true;
-      this.isConnecting = false;
-      
+      const baseURL = 'https://aether-server-j5kh.onrender.com';
+      const eventSourceUrl = `${baseURL}/notifications/stream`;
+
+      // Create EventSource connection
+      this.eventSource = new EventSource(eventSourceUrl, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      this.eventSource.addEventListener('open', () => {
+        this.connectionState = true;
+        this.isConnecting = false;
+        console.log('🔗 SSE connection established');
+      });
+
+      this.eventSource.addEventListener('message', (event: any) => {
+        try {
+          const data = JSON.parse(event.data);
+          this.handleEvent({
+            type: data.type,
+            data: data.data,
+            timestamp: data.timestamp || new Date().toISOString(),
+          });
+        } catch (error) {
+          console.warn('Failed to parse SSE event:', error);
+        }
+      });
+
+      this.eventSource.addEventListener('error', (error: any) => {
+        console.warn('SSE connection error:', error);
+        this.connectionState = false;
+        this.isConnecting = false;
+        
+        // Auto-reconnect unless manually disconnected
+        if (!this.isManuallyDisconnected) {
+          this.reconnectTimeout = setTimeout(() => {
+            this.connect();
+          }, 5000);
+        }
+      });
 
     } catch (error) {
       this.isConnecting = false;
       this.connectionState = false;
+      console.error('SSE connection failed:', error);
     }
   }
 
@@ -65,6 +105,16 @@ class SSEService {
     this.isManuallyDisconnected = true;
     this.connectionState = false;
     this.isConnecting = false;
+    
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
+    }
+    
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
   }
 
   // Event subscription methods
@@ -121,6 +171,15 @@ class SSEService {
 
   onMessageAdded(handler: (data: any) => void): void {
     this.on('conversation:message_added', (event) => handler(event.data));
+  }
+
+  // Spotify event handlers
+  onSpotifyTrackChange(handler: (data: any) => void): void {
+    this.on('spotify:track_change', (event) => handler(event.data));
+  }
+
+  onSpotifyStatusUpdate(handler: (data: any) => void): void {
+    this.on('spotify:status_update', (event) => handler(event.data));
   }
 
   isConnected(): boolean {

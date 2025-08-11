@@ -75,54 +75,54 @@ export const createSettingsSections = (settings: {
   autoLock: boolean;
 }): SettingSections => ({
   appearance: {
-    title: 'Appearance',
+    title: 'Appearance & Personalization',
     icon: 'sliders',
-    description: 'Theme and dynamic options',
+    description: 'Customize your visual experience with themes and dynamic options',
     items: [
-      { key: 'theme', label: 'Dark Mode', value: settings.theme === 'dark', type: 'switch' },
-      { key: 'dynamicOptions', label: 'Dynamic Options', value: settings.dynamicOptions, type: 'switch' },
-      { key: 'backgroundType', label: 'Background Style', value: settings.backgroundType, type: 'selector' },
+      { key: 'theme', label: 'Use dark theme', value: settings.theme === 'dark', type: 'switch' },
+      { key: 'dynamicOptions', label: 'Show dynamic interface elements', value: settings.dynamicOptions, type: 'switch' },
+      { key: 'backgroundType', label: 'Choose background appearance', value: settings.backgroundType, type: 'selector' },
     ]
   },
   accessibility: {
-    title: 'Accessibility',
+    title: 'Accessibility & Comfort',
     icon: 'eye',
-    description: 'Visual and interaction aids',
+    description: 'Visual and interaction aids for better usability',
     items: [
-      { key: 'highContrast', label: 'High Contrast', value: settings.highContrast, type: 'switch' },
-      { key: 'largeText', label: 'Large Text', value: settings.largeText, type: 'switch' },
-      { key: 'reduceMotion', label: 'Reduce Motion', value: settings.reduceMotion, type: 'switch' },
+      { key: 'highContrast', label: 'Increase text and button contrast', value: settings.highContrast, type: 'switch' },
+      { key: 'largeText', label: 'Use larger text size', value: settings.largeText, type: 'switch' },
+      { key: 'reduceMotion', label: 'Minimize animations and movement', value: settings.reduceMotion, type: 'switch' },
     ]
   },
   notifications: {
-    title: 'Notifications',
+    title: 'Notifications & Alerts',
     icon: 'bell',
-    description: 'Push alerts, sounds, haptics',
+    description: 'Control push notifications, sounds, and haptic feedback',
     items: [
-      { key: 'notifications', label: 'Push Notifications', value: settings.notificationsEnabled, type: 'switch' },
-      { key: 'sound', label: 'Sound Effects', value: settings.soundEnabled, type: 'switch' },
-      { key: 'haptics', label: 'Haptic Feedback', value: settings.hapticsEnabled, type: 'switch' },
+      { key: 'notifications', label: 'Show notifications', value: settings.notificationsEnabled, type: 'switch' },
+      { key: 'sound', label: 'Play notification sounds', value: settings.soundEnabled, type: 'switch' },
+      { key: 'haptics', label: 'Feel vibrations for interactions', value: settings.hapticsEnabled, type: 'switch' },
     ]
   },
   display: {
-    title: 'Display',
+    title: 'Display & Screen',
     icon: 'monitor',
-    description: 'Screen and visual settings',
+    description: 'Screen behavior and visual presentation settings',
     items: [
-      { key: 'keepScreenOn', label: 'Keep Screen On', value: settings.keepScreenOn, type: 'switch' },
-      { key: 'showTimestamps', label: 'Show Timestamps', value: settings.showTimestamps, type: 'switch' },
+      { key: 'keepScreenOn', label: 'Prevent screen from sleeping', value: settings.keepScreenOn, type: 'switch' },
+      { key: 'showTimestamps', label: 'Display message times', value: settings.showTimestamps, type: 'switch' },
     ]
   },
   privacy: {
-    title: 'Privacy & Data',
+    title: 'Privacy & Data Control',
     icon: 'shield',
-    description: 'Analytics, backups, data control',
+    description: 'Manage your data, analytics, and privacy preferences',
     items: [
-      { key: 'analytics', label: 'Analytics', value: settings.analyticsEnabled, type: 'switch' },
-      { key: 'autoSave', label: 'Auto-Save Chats', value: settings.autoSaveEnabled, type: 'switch' },
-      { key: 'autoLock', label: 'Auto-Lock', value: settings.autoLock, type: 'switch' },
-      { key: 'exportData', label: 'Export Data', type: 'action' },
-      { key: 'clearData', label: 'Clear All Data', type: 'action', destructive: true },
+      { key: 'analytics', label: 'Help improve Aether', value: settings.analyticsEnabled, type: 'switch' },
+      { key: 'autoSave', label: 'Automatically save conversations', value: settings.autoSaveEnabled, type: 'switch' },
+      { key: 'autoLock', label: 'Lock app when inactive', value: settings.autoLock, type: 'switch' },
+      { key: 'exportData', label: 'Download your data', type: 'action' },
+      { key: 'clearData', label: 'Delete all app data', type: 'action', destructive: true },
     ]
   },
 });

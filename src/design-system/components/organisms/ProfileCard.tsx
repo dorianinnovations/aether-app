@@ -11,11 +11,18 @@ import {
   StyleSheet,
   ViewStyle,
 } from 'react-native';
-import { ProfileHeader, ProfileFieldsGroup, SocialProfileSection, SpotifyIntegration } from '../molecules';
-import { ProfileInsights } from './ProfileInsights';
-import { LottieLoader, UserBadgeType } from '../atoms';
+import { ProfileHeader, ProfileFieldsGroup, SocialProfileSection, SpotifyIntegration, SocialStats } from '../molecules';
+import { LottieLoader, UserBadgeType, InteractiveBadge, AdvancedBadge } from '../atoms';
 import { spacing } from '../../tokens/spacing';
 import { OnlineStatusType } from '../atoms/OnlineStatus';
+
+export interface SocialLinks {
+  instagram?: string;
+  x?: string; // formerly Twitter
+  spotify?: string;
+  facebook?: string;
+  website?: string;
+}
 
 export interface UserProfile {
   email: string;
@@ -23,7 +30,8 @@ export interface UserProfile {
   displayName?: string;
   bio?: string;
   location?: string;
-  website?: string;
+  website?: string; // kept for backward compatibility
+  socialLinks?: SocialLinks;
   profilePicture?: string;
   bannerImage?: string;
   badges?: Array<{
@@ -37,6 +45,8 @@ export interface SocialProfile {
   currentStatus?: string;
   mood?: string;
   currentPlans?: string;
+  friendsCount?: number;
+  followersCount?: number;
   spotify?: {
     connected: boolean;
     currentTrack?: {
@@ -76,18 +86,16 @@ export interface ProfileCardProps {
   viewMode?: 'basic' | 'busy';
   /** Online status */
   onlineStatus?: OnlineStatusType;
-  /** Whether to show AI insights expanded */
-  showInsightsExpanded?: boolean;
   /** Callbacks */
   onRefresh?: () => void;
-  onFieldChange?: (field: keyof UserProfile, value: string) => void;
+  onFieldChange?: (field: keyof UserProfile, value: string | SocialLinks) => void;
   onProfileImagePress?: () => void;
   onBannerPress?: () => void;
   onDeleteProfileImage?: () => void;
   onDeleteBanner?: () => void;
-  onInsightsToggle?: (expanded: boolean) => void;
   onSpotifyStatusChange?: () => void;
   onConfigurePress?: () => void;
+  onUsernamePress?: () => void;
   /** Whether configure mode is active */
   configureMode?: boolean;
   /** Custom styles */
@@ -104,16 +112,15 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   refreshing = false,
   viewMode = 'basic',
   onlineStatus = 'online',
-  showInsightsExpanded = false,
   onRefresh,
   onFieldChange,
   onProfileImagePress,
   onBannerPress,
   onDeleteProfileImage,
   onDeleteBanner,
-  onInsightsToggle,
   onSpotifyStatusChange,
   onConfigurePress,
+  onUsernamePress,
   configureMode = false,
   style,
   scrollRef,
@@ -150,16 +157,20 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         bannerImageUri={profile.bannerImage}
         username={profile.username}
         displayName={profile.displayName}
+        badges={profile.badges}
         editable={editMode}
         uploading={uploading}
         status={onlineStatus}
         statusMessage={socialProfile?.currentStatus}
         showDetailedStatus={viewMode === 'busy'}
+        friendsCount={socialProfile?.friendsCount}
+        followersCount={socialProfile?.followersCount}
         onProfileImagePress={onProfileImagePress}
         onBannerPress={onBannerPress}
         onDeleteProfileImage={onDeleteProfileImage}
         onDeleteBanner={onDeleteBanner}
         onConfigurePress={onConfigurePress}
+        onUsernamePress={onUsernamePress}
         configureMode={configureMode}
       />
 
@@ -171,13 +182,11 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         onFieldChange={onFieldChange}
       />
 
-      {/* Social Profile Section */}
-      {socialProfile && (
-        <SocialProfileSection
-          socialProfile={socialProfile}
-          style={styles.socialSection}
-        />
-      )}
+      {/* Social Stats - Full Width Above Spotify */}
+      <SocialStats 
+        friendsCount={socialProfile?.friendsCount}
+        followersCount={socialProfile?.followersCount}
+      />
 
       {/* Spotify Integration */}
       <View style={styles.spotifySection}>
@@ -193,15 +202,6 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         />
       </View>
 
-      {/* AI Insights */}
-      {socialProfile?.personality && (
-        <ProfileInsights
-          personalityData={socialProfile.personality}
-          expanded={showInsightsExpanded}
-          onToggle={onInsightsToggle}
-          style={styles.insightsSection}
-        />
-      )}
 
       {/* Bottom spacing */}
       <View style={styles.bottomSpacing} />
@@ -233,11 +233,8 @@ const styles = StyleSheet.create({
   },
   spotifySection: {
     paddingHorizontal: spacing[5],
-    marginTop: spacing[4],
-    marginBottom: 60, // Way more space after Spotify
-  },
-  insightsSection: {
-    paddingHorizontal: spacing[5],
+    marginTop: spacing[16], // Even more space from profile header
+    marginBottom: spacing[8], // More spacing at bottom
   },
   bottomSpacing: {
     height: 100, // Extra space for floating elements

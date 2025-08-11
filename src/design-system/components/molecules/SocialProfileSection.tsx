@@ -75,22 +75,18 @@ const ProfileCube: React.FC<ProfileCubeProps> = ({
   const cubeStyle: ViewStyle = {
     width: size,
     height: size,
-    backgroundColor: hasValue 
-      ? (theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.8)') 
-      : (theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)'),
+    backgroundColor: 'transparent',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: hasValue 
-      ? (theme === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.08)')
-      : (theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)'),
+    borderWidth: 0,
+    borderColor: 'transparent',
     padding: spacing[2],
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: hasValue ? 0.1 : 0.02,
-    shadowRadius: 4,
-    elevation: hasValue ? 3 : 1,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   };
 
   const displayValue = Array.isArray(value) ? value[0] : value;
@@ -104,48 +100,6 @@ const ProfileCube: React.FC<ProfileCubeProps> = ({
       disabled={!hasValue}
     >
       <View style={{ flex: 1, justifyContent: 'space-between', width: '100%' }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'flex-start' }}>
-          {hasMore && (
-            <Text style={{ 
-              fontSize: 10, 
-              color: colors.textSecondary,
-              fontFamily: typography.fonts.mono 
-            }}>
-              +{value.length - 1}
-            </Text>
-          )}
-        </View>
-        
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%' }}>
-          <View style={{ flex: 1 }}>
-            <Text style={[
-              typography.textStyles.profileFieldLabelSecondary,
-              { color: colors.textSecondary, marginBottom: spacing[1] }
-            ]}>
-              {label}
-            </Text>
-            
-            {hasValue && (
-              <Text 
-                style={[
-                  typography.textStyles.profileFieldValueTertiary,
-                  { color: colors.text }
-                ]}
-                numberOfLines={2}
-                ellipsizeMode="tail"
-              >
-                {displayValue}
-              </Text>
-            )}
-          </View>
-          
-          <Feather 
-            name={icon as any} 
-            size={16} 
-            color={hasValue ? colors.primary : colors.textSecondary}
-            style={{ marginLeft: spacing[1] }}
-          />
-        </View>
       </View>
     </TouchableOpacity>
   );

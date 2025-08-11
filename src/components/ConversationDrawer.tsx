@@ -1,7 +1,8 @@
 /**
- * ConversationDrawer - Modular slide-out conversation history
- * Clean implementation with three labeled categories: Aether, Friends, Custom
- * Refactored for modularity and maintainability
+ * ConversationDrawer - Revolutionary Inbox-Style Conversation Interface
+ * Utility-focused design that encourages exploration with unconventional patterns
+ * Three distinct channels: Aether AI, Friends Network, and Group Chats
+ * Features layered navigation, contextual actions, and immersive interaction patterns
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -17,7 +18,7 @@ import {
   Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { HeatmapTooltip } from '../design-system/components/organisms/HeatmapTooltip';
+import { ArtistListeningModal } from '../design-system/components/organisms/ArtistListeningModal';
 import { ConversationList } from './ConversationList';
 import {
   useConversationTabs,
@@ -27,14 +28,12 @@ import {
 } from '../hooks';
 import type { Conversation } from '../hooks/useConversationData';
 import * as Haptics from 'expo-haptics';
-import { designTokens, getThemeColors } from '../design-system/tokens/colors';
-import { spacing } from '../design-system/tokens/spacing';
+import { getThemeColors } from '../design-system/tokens/colors';
+import { spacing, borderRadius, neumorphicSpacing } from '../design-system/tokens/spacing';
 import { log } from '../utils/logger';
 import { FriendsAPI } from '../services/api';
 
 const { width: screenWidth } = Dimensions.get('window');
-
-type FeatherIconNames = keyof typeof Feather.glyphMap;
 
 interface Friend {
   username: string;
@@ -70,7 +69,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [longPressedId, setLongPressedId] = useState<string | null>(null);
   
-  const [tooltip, setTooltip] = useState<{ visible: boolean; username: string; x: number; y: number } | null>(null);
+  const [artistModal, setArtistModal] = useState<{ visible: boolean; artistId: string; artistName: string; x: number; y: number } | null>(null);
   const itemRefs = useRef<{ [key: string]: View }>({});
 
   // Friends state
@@ -91,7 +90,10 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const {
     conversations,
     isLoading,
+    isLoadingMore,
+    hasMoreConversations,
     loadConversations,
+    loadMoreConversations,
     handleDeleteConversation,
     handleDeleteAllConversations,
     clearCache,
@@ -268,14 +270,14 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     }
   }, [onStartNewChat, isAnimating, onClose]);
   
-  const handleHeatmapLongPress = (friend: { username: string }, conversationId: string) => {
-    itemRefs.current[conversationId]?.measure((fx, fy, width, height, px, py) => {
-      setTooltip({ visible: true, username: friend.username, x: px, y: py });
+  const handleArtistListeningPress = (artist: { id: string; name: string }, itemId: string) => {
+    itemRefs.current[itemId]?.measure((fx, fy, width, height, px, py) => {
+      setArtistModal({ visible: true, artistId: artist.id, artistName: artist.name, x: px, y: py });
     });
   };
 
-  const handleHeatmapPressOut = () => {
-    setTooltip(null);
+  const handleArtistListeningClose = () => {
+    setArtistModal(null);
   };
 
   const handleConversationSelectAndClose = useCallback((conversation: any) => {
@@ -284,35 +286,62 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   }, [onConversationSelect, onClose]);
 
   const handleClearAllConversations = useCallback(() => {
-    if (currentTab !== 0) return; // Only allow clearing Aether conversations
-    
-    Alert.alert(
-      'Clear All Conversations',
-      'This will permanently delete all your conversations with Aether. This action cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Clear All',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const success = await handleDeleteAllConversations();
-              if (success) {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              } else {
+    if (currentTab === 0) {
+      // Clear Aether conversations
+      Alert.alert(
+        'Clear All Conversations',
+        'This will permanently delete all your conversations with Aether. This action cannot be undone.',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Clear All',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const success = await handleDeleteAllConversations();
+                if (success) {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                } else {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                }
+              } catch (error) {
+                log.error('Failed to clear all conversations:', error);
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
               }
-            } catch (error) {
-              log.error('Failed to clear all conversations:', error);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    } else if (currentTab === 1) {
+      // Clear friends list
+      Alert.alert(
+        'Clear All Friends',
+        'This will remove all friends from your list. This action cannot be undone.',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Clear All',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                // Clear local friends state
+                setFriends([]);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              } catch (error) {
+                log.error('Failed to clear all friends:', error);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              }
+            },
+          },
+        ]
+      );
+    }
   }, [currentTab, handleDeleteAllConversations]);
   
   if (!isVisible) return null;
@@ -337,7 +366,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
               StyleSheet.absoluteFillObject,
               {
                 opacity: overlayOpacity,
-                backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                backgroundColor: 'rgba(0, 0, 0, 0.3)',
               }
             ]}
           />
@@ -348,76 +377,86 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
             styles.drawer,
             {
               transform: [{ translateX: slideAnim }],
-              backgroundColor: theme === 'light' ? designTokens.brand.surface : designTokens.surfaces.dark.elevated,
-              borderRightWidth: 0.5,
-              borderRightColor: theme === 'light' ? designTokens.borders.light.default : designTokens.borders.dark.default,
+              backgroundColor: theme === 'light' ? '#FFFFFF' : '#1A1A1A',
+              borderRightWidth: neumorphicSpacing.borderWidth.default,
+              borderColor: theme === 'light' ? '#E0E0E0' : '#3A3A3A',
             }
           ]}
         >
           <SafeAreaView style={styles.drawerContent}>
             <View style={styles.contentWrapper}>
+              {/* Minimal Header */}
               <View style={[
-                styles.header,
-                { 
-                  borderBottomColor: theme === 'dark' 
-                    ? designTokens.borders.dark.subtle 
-                    : designTokens.borders.light.subtle,
+                styles.inboxHeader,
+                {
+                  backgroundColor: 'transparent',
+                  borderBottomWidth: 1,
+                  borderBottomColor: theme === 'light' ? '#F0F0F0' : '#2A2A2A',
                 }
               ]}>
-                <View style={styles.tabs}>
+                {/* Minimal Title */}
+                <View style={styles.inboxTitleSection}>
+                  <Text style={[
+                    styles.inboxTitle,
+                    { color: themeColors.text }
+                  ]}>
+                    Chats
+                  </Text>
+                  <Text style={[
+                    styles.inboxCount,
+                    { color: themeColors.textSecondary }
+                  ]}>
+                    {conversations.length + friends.length}
+                  </Text>
+                </View>
+                
+                {/* Minimal Tab System */}
+                <View style={styles.channelTabs}>
                   {tabs.map((tab, index) => {
                     const isActive = index === currentTab;
+                    const tabProgress = tabAnimations[index];
+                    
                     return (
-                      <View
+                      <Animated.View
                         key={tab.label}
-                        style={[styles.specialTab, { flex: isActive ? 1 : 0 }]}
+                        style={[
+                          styles.channelTab,
+                          {
+                            opacity: tabProgress,
+                          }
+                        ]}
                       >
-                        <Animated.View
-                          style={{
-                            opacity: tabAnimations[index]
-                          }}
+                        <TouchableOpacity
+                          style={[
+                            styles.channelTabButton,
+                            {
+                              backgroundColor: isActive
+                                ? (theme === 'dark' ? 'rgba(42, 42, 42, 0.3)' : 'rgba(248, 248, 248, 0.5)')
+                                : 'transparent',
+                              borderBottomColor: isActive 
+                                ? themeColors.primary
+                                : 'transparent',
+                            }
+                          ]}
+                          onPress={() => handleTabTransitionWithAnimationState(index)}
+                          activeOpacity={0.7}
+                          disabled={isAnimating}
                         >
-                          <TouchableOpacity
-                            style={[
-                              styles.neumorphicTab,
-                              {
-                                backgroundColor: isActive 
-                                  ? (theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)')
-                                  : 'transparent',
-                                borderWidth: 1,
-                                borderColor: isActive 
-                                  ? (theme === 'light' ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.15)')
-                                  : 'transparent',
-                                minWidth: isActive ? 'auto' : 40,
-                                paddingHorizontal: isActive ? spacing[3] : spacing[2],
-                              }
-                            ]}
-                            onPress={() => handleTabTransitionWithAnimationState(index)}
-                            activeOpacity={0.9}
-                            disabled={isAnimating}
-                          >
-                            <Feather 
-                              name={tab.icon as FeatherIconNames} 
-                              size={16} 
-                              color={isActive ? tab.iconColor : themeColors.textSecondary} 
-                            />
-                            {isActive && (
-                              <Text style={[
-                                styles.specialTabText,
-                                {
-                                  color: tab.color,
-                                  fontWeight: '600',
-                                }
-                              ]}>
-                                {tab.label}
-                              </Text>
-                            )}
-                          </TouchableOpacity>
-                        </Animated.View>
-                      </View>
+                          <Text style={[
+                            styles.channelTabText,
+                            {
+                              color: isActive ? themeColors.text : themeColors.textSecondary,
+                              fontWeight: isActive ? '600' : '400',
+                            }
+                          ]}>
+                            {tab.label}
+                          </Text>
+                        </TouchableOpacity>
+                      </Animated.View>
                     );
                   })}
                 </View>
+                
               </View>
           
               <ConversationList
@@ -427,114 +466,125 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                 currentConversationId={currentConversationId}
                 theme={theme}
                 isLoading={currentTab === 1 ? friendsLoading : isLoading}
+                isLoadingMore={isLoadingMore}
+                hasMoreConversations={hasMoreConversations && currentTab === 0}
                 isRefreshing={isRefreshing}
                 isTabSwitching={isTabSwitching}
                 isAnimating={isAnimating}
                 longPressedId={longPressedId}
                 onConversationSelect={handleConversationSelectAndClose}
                 onDeleteConversation={handleDeleteConversationWithFeedback}
-                onHeatmapLongPress={handleHeatmapLongPress}
-                onHeatmapPressOut={handleHeatmapPressOut}
+                onArtistListeningPress={handleArtistListeningPress}
+                onArtistListeningClose={handleArtistListeningClose}
                 onRefresh={handleRefresh}
+                onLoadMore={() => loadMoreConversations(currentTab)}
                 setLongPressedId={setLongPressedId}
                 itemRefs={itemRefs}
                 friends={friends}
                 onFriendMessagePress={onFriendMessagePress}
               />
               
-              <View 
-                style={[
-                  styles.bottomActionBar,
-                  {
-                    borderTopColor: theme === 'dark' 
-                      ? designTokens.borders.dark.subtle 
-                      : designTokens.borders.light.subtle,
-                  }
-                ]}
-              >
-                {/* Clear All button - only show on Aether tab and when conversations exist */}
-                {currentTab === 0 && conversations.length > 0 && (
+              {/* Minimal Action Dock */}
+              <View style={[
+                styles.actionDock,
+                {
+                  backgroundColor: 'transparent',
+                  borderTopWidth: 1,
+                  borderTopColor: theme === 'light' ? '#F0F0F0' : '#2A2A2A',
+                }
+              ]}>
+                {/* Minimal primary action */}
+                {currentTab === 0 ? (
                   <TouchableOpacity
                     style={[
-                      styles.heroButton,
-                      styles.trioButton,
+                      styles.primaryAction,
                       {
-                        backgroundColor: theme === 'dark' 
-                          ? 'rgba(255, 59, 48, 0.12)' 
-                          : 'rgba(255, 59, 48, 0.10)',
+                        backgroundColor: theme === 'dark' ? '#2A2A2A' : '#F8F8F8',
                         borderWidth: 1,
-                        borderColor: theme === 'light' ? 'rgba(255, 59, 48, 0.25)' : 'rgba(255, 59, 48, 0.3)',
-                      }
-                    ]}
-                    onPress={handleClearAllConversations}
-                    activeOpacity={0.8}
-                    disabled={isAnimating || isLoading}
-                  >
-                    <Feather name="trash-2" size={16} color="#FF3B30" />
-                    <Text style={[styles.trioButtonText, { color: '#FF3B30' }]}>
-                      Clear All
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                
-                {onStartNewChat && (
-                  <TouchableOpacity
-                    style={[
-                      styles.heroButton,
-                      styles.trioButton,
-                      {
-                        backgroundColor: theme === 'dark' 
-                          ? 'rgba(255,255,255,0.1)' 
-                          : 'rgba(0, 0, 0, 0.08)',
-                        borderWidth: 1,
-                        borderColor: theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.15)',
+                        borderColor: theme === 'dark' ? '#3A3A3A' : '#E0E0E0',
                       }
                     ]}
                     onPress={handleNewChat}
-                    activeOpacity={0.92}
+                    activeOpacity={0.7}
                     disabled={isAnimating}
                   >
-                    <Feather name="plus" size={16} color={themeColors.text} />
-                    <Text style={[styles.trioButtonText, { color: themeColors.text }]}>
+                    <Text style={[
+                      styles.primaryActionText,
+                      { color: themeColors.text }
+                    ]}>
                       New Chat
                     </Text>
                   </TouchableOpacity>
-                )}
+                ) : currentTab === 1 ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.primaryAction,
+                      {
+                        backgroundColor: theme === 'dark' ? '#2A2A2A' : '#F8F8F8',
+                        borderWidth: 1,
+                        borderColor: theme === 'dark' ? '#3A3A3A' : '#E0E0E0',
+                      }
+                    ]}
+                    activeOpacity={0.7}
+                    disabled={isAnimating}
+                  >
+                    <Text style={[
+                      styles.primaryActionText,
+                      { color: themeColors.text }
+                    ]}>
+                      Add Friend
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
                 
-                <TouchableOpacity
-                  style={[
-                    styles.heroButton,
-                    styles.trioButton,
-                    {
-                      backgroundColor: theme === 'dark' 
-                        ? 'rgba(255,255,255,0.1)' 
-                        : 'rgba(0, 0, 0, 0.08)',
-                      borderWidth: 1,
-                      borderColor: theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.15)',
-                    }
-                  ]}
-                  onPress={handleClose}
-                  activeOpacity={0.92}
-                  disabled={isAnimating}
-                >
-                  <Feather name="x" size={16} color={themeColors.text} />
-                  <Text style={[styles.trioButtonText, { color: themeColors.text }]}>
-                    Close
-                  </Text>
-                </TouchableOpacity>
+                {/* Minimal secondary actions */}
+                <View style={styles.secondaryActions}>
+                  <TouchableOpacity
+                    style={styles.secondaryAction}
+                    onPress={handleRefresh}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.secondaryActionText, { color: themeColors.textSecondary }]}>
+                      Refresh
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  {(currentTab === 0 && conversations.length > 0) || (currentTab === 1 && friends.length > 0) ? (
+                    <TouchableOpacity
+                      style={styles.secondaryAction}
+                      onPress={handleClearAllConversations}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.secondaryActionText, { color: '#FF6B6B' }]}>
+                        Clear All
+                      </Text>
+                    </TouchableOpacity>
+                  ) : null}
+                  
+                  <TouchableOpacity
+                    style={styles.secondaryAction}
+                    onPress={handleClose}
+                    activeOpacity={0.7}
+                    disabled={isAnimating}
+                  >
+                    <Text style={[styles.secondaryActionText, { color: themeColors.textSecondary }]}>
+                      Close
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </SafeAreaView>
         </Animated.View>
 
-        {tooltip && (
-          <View style={{ position: 'absolute', left: tooltip.x, top: tooltip.y }}>
-            <HeatmapTooltip
-              visible={tooltip.visible}
-              theme={theme}
-              friendUsername={tooltip.username}
-            />
-          </View>
+        {artistModal && (
+          <ArtistListeningModal
+            visible={artistModal.visible}
+            theme={theme}
+            artistId={artistModal.artistId}
+            artistName={artistModal.artistName}
+            onClose={handleArtistListeningClose}
+          />
         )}
       </View>
     </Modal>
@@ -558,10 +608,15 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     bottom: 0,
-    width: screenWidth * 0.85,
-    borderTopRightRadius: 22,
-    borderBottomRightRadius: 22,
+    width: screenWidth * 0.75,
     overflow: 'visible',
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    borderTopRightRadius: borderRadius.xl,
+    borderBottomRightRadius: borderRadius.xl,
   },
   drawerContent: {
     flex: 1,
@@ -569,70 +624,96 @@ const styles = StyleSheet.create({
   contentWrapper: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    paddingTop: 18,
-    borderBottomWidth: 0.5,
-    borderTopRightRadius: 22,
-  },
-  tabs: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    width: '100%',
-    gap: 8,
-  },
-  specialTab: {},
-  neumorphicTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[2],
-    borderRadius: 10,
-    minHeight: 36,
-    gap: spacing[2],
-  },
-  specialTabText: {
-    fontSize: 12,
-    fontWeight: '400',
-    letterSpacing: -0.3,
-    fontFamily: 'Poppins-Regular',
-    textAlign: 'center',
-  },
-  bottomActionBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  // Minimal Header Styles
+  inboxHeader: {
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
-    paddingBottom: spacing[2],
-    borderTopWidth: 0.5,
-    borderBottomRightRadius: 16,
-    gap: spacing[2],
+    paddingTop: spacing[4],
+    gap: spacing[6],
   },
-  heroButton: {
-    flexDirection: 'row',
+  inboxTitleSection: {
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
-    overflow: 'hidden',
+    gap: spacing[1],
   },
-  trioButton: {
-    flex: 1,
-    paddingHorizontal: spacing[2],
-    paddingVertical: spacing[2],
-    gap: 4,
-    minHeight: 40,
-    maxWidth: '32%',
-  },
-  trioButtonText: {
-    fontSize: 11,
-    fontWeight: '500',
-    lineHeight: 16,
-    fontFamily: 'Poppins-Medium',
-    letterSpacing: -0.2,
+  inboxTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    fontFamily: 'MozillaText_600SemiBold',
+    letterSpacing: -1.2,
     textAlign: 'center',
+  },
+  inboxCount: {
+    fontSize: 14,
+    fontWeight: '400',
+    fontFamily: 'Inter-Regular',
+  },
+  // Badge text styling handled by getTextStyle
+  
+  // Channel Tab System
+  channelTabs: {
+    flexDirection: 'row',
+    gap: spacing[2],
+  },
+  channelTab: {
+    flex: 1,
+  },
+  channelTabButton: {
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 32,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+    marginHorizontal: spacing[1],
+    borderTopLeftRadius: borderRadius.md,
+    borderTopRightRadius: borderRadius.lg,
+  },
+  channelTabText: {
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
+  
+  // Minimal Action Dock
+  actionDock: {
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    gap: spacing[2],
+  },
+  primaryAction: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    minHeight: 28,
+    borderRadius: 4,
+  },
+  primaryActionText: {
+    fontSize: 12,
+    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
+    letterSpacing: -0.4,
+  },
+  secondaryActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    gap: spacing[2],
+  },
+  secondaryAction: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
+  },
+  secondaryActionText: {
+    fontSize: 12,
+    fontWeight: '400',
+    fontFamily: 'Inter-Regular',
+    letterSpacing: -0.3,
   },
 });
 

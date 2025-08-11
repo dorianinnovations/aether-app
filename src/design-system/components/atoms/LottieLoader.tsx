@@ -18,24 +18,24 @@ export const LottieLoader: React.FC<LottieLoaderProps> = ({
   color: _color, // Kept for compatibility but not used since Lottie colors are baked in
   style,
 }) => {
-  const getSize = () => {
+  const getDimensions = () => {
     if (typeof size === 'number') {
-      return size;
+      return { width: size * 1.5, height: size };
     }
     
     switch (size) {
       case 'small':
-        return 35;
+        return { width: 52, height: 35 };
       case 'medium':
-        return 45;
+        return { width: 68, height: 45 };
       case 'large':
-        return 65;
+        return { width: 98, height: 65 };
       default:
-        return 45;
+        return { width: 68, height: 45 };
     }
   };
 
-  const animationSize = getSize();
+  const { width, height } = getDimensions();
 
   return (
     <View style={[styles.container, style]}>
@@ -44,8 +44,8 @@ export const LottieLoader: React.FC<LottieLoaderProps> = ({
         autoPlay
         loop
         style={{
-          width: animationSize,
-          height: animationSize,
+          width: width,
+          height: height,
         }}
       />
     </View>

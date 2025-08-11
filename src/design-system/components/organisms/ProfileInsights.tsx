@@ -55,20 +55,15 @@ export const ProfileInsights: React.FC<ProfileInsightsProps> = ({
   }, [expanded]);
 
   // Animation refs for sequential fade-in
-  const interestsOpacity = useRef(new Animated.Value(0)).current;
-  const communicationOpacity = useRef(new Animated.Value(0)).current;
-  const statsOpacity = useRef(new Animated.Value(0)).current;
-  const lastAnalyzedOpacity = useRef(new Animated.Value(0)).current;
+  const interestsOpacity = useRef(new Animated.Value(1)).current;
+  const communicationOpacity = useRef(new Animated.Value(1)).current;
+  const lastAnalyzedOpacity = useRef(new Animated.Value(1)).current;
 
-  if (!personalityData) {
-    return null;
-  }
 
   const animateInsights = () => {
     // Reset all animations
     interestsOpacity.setValue(0);
     communicationOpacity.setValue(0);
-    statsOpacity.setValue(0);
     lastAnalyzedOpacity.setValue(0);
 
     // Sequential animations with stagger
@@ -79,11 +74,6 @@ export const ProfileInsights: React.FC<ProfileInsightsProps> = ({
         useNativeDriver: true,
       }),
       Animated.timing(communicationOpacity, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      Animated.timing(statsOpacity, {
         toValue: 1,
         duration: 400,
         useNativeDriver: true,
@@ -116,29 +106,58 @@ export const ProfileInsights: React.FC<ProfileInsightsProps> = ({
   return (
     <View style={[styles.container, style]}>
       {/* Section Header */}
-      <TouchableOpacity
-        style={styles.header}
-        onPress={handleToggle}
-        activeOpacity={0.7}
-      >
+      <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>
-          AI Insights
+          Persona
         </Text>
-        <Feather
-          name={isExpanded ? 'chevron-down' : 'chevron-right'}
-          size={20}
-          color={colors.text}
-        />
-      </TouchableOpacity>
+      </View>
 
       {/* Expanded Content */}
-      {isExpanded && (
-        <View style={styles.content}>
-          {/* Interests */}
-          {personalityData.interests && personalityData.interests.length > 0 && (
-            <Animated.View style={[styles.subsection, { opacity: interestsOpacity }]}>
+      <View style={styles.content}>
+          {/* Communication Style */}
+          {personalityData?.communicationStyle && (
+            <Animated.View style={[styles.subsection, { opacity: communicationOpacity }]}>
               <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                Detected Interests
+                Communication Style
+              </Text>
+              <View style={styles.communicationGrid}>
+                {Object.entries(personalityData.communicationStyle).map(([key, value]) => (
+                  <View key={key} style={styles.styleItem}>
+                    <Text style={[styles.styleLabel, { color: colors.text }]}>
+                      {key}
+                    </Text>
+                    <View style={[styles.progressBar, { 
+                      backgroundColor: theme === 'light' ? '#E0E0E0' : 'rgba(255, 255, 255, 0.1)' 
+                    }]}>
+                      <View
+                        style={[
+                          styles.progressFill,
+                          {
+                            width: `${Number(value) * 100}%`,
+                            backgroundColor: `hsl(${(Object.keys(personalityData?.communicationStyle || {}).indexOf(key) * 90) % 360}, 60%, ${theme === 'light' ? '75%' : '80%'})`,
+                            shadowColor: `hsl(${(Object.keys(personalityData?.communicationStyle || {}).indexOf(key) * 90) % 360}, 60%, 65%)`,
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 2,
+                            elevation: 2,
+                          }
+                        ]}
+                      />
+                    </View>
+                    <Text style={[styles.styleValue, { color: colors.textSecondary }]}>
+                      {Math.round(Number(value) * 100)}%
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </Animated.View>
+          )}
+
+          {/* Interests */}
+          {personalityData?.interests && personalityData.interests.length > 0 && (
+            <Animated.View style={[styles.subsection, styles.interestsSection, { opacity: interestsOpacity }]}>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                Interests
               </Text>
               <View style={styles.interestsContainer}>
                 {personalityData.interests.slice(0, 6).map((interest, index) => (
@@ -161,75 +180,9 @@ export const ProfileInsights: React.FC<ProfileInsightsProps> = ({
             </Animated.View>
           )}
 
-          {/* Communication Style */}
-          {personalityData.communicationStyle && (
-            <Animated.View style={[styles.subsection, { opacity: communicationOpacity }]}>
-              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                Communication Style
-              </Text>
-              <View style={styles.communicationGrid}>
-                {Object.entries(personalityData.communicationStyle).map(([key, value]) => (
-                  <View key={key} style={styles.styleItem}>
-                    <Text style={[styles.styleLabel, { color: colors.text }]}>
-                      {key.charAt(0).toUpperCase() + key.slice(1)}
-                    </Text>
-                    <View style={[styles.progressBar, { 
-                      backgroundColor: theme === 'light' ? '#E0E0E0' : colors.surface 
-                    }]}>
-                      <View
-                        style={[
-                          styles.progressFill,
-                          {
-                            width: `${value * 100}%`,
-                            backgroundColor: '#4CAF50'
-                          }
-                        ]}
-                      />
-                    </View>
-                    <Text style={[styles.styleValue, { color: colors.textSecondary }]}>
-                      {Math.round(value * 100)}%
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </Animated.View>
-          )}
-
-          {/* Statistics */}
-          <Animated.View style={[styles.subsection, { opacity: statsOpacity }]}>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Profile Statistics
-            </Text>
-            <View style={styles.statsGrid}>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.text }]}>
-                  {personalityData.totalMessages || 0}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  Messages Analyzed
-                </Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.text }]}>
-                  {personalityData.interests?.length || 0}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  Interests Found
-                </Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: colors.text }]}>
-                  {personalityData.lastAnalyzed ? 'Active' : 'Learning'}
-                </Text>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-                  AI Status
-                </Text>
-              </View>
-            </View>
-          </Animated.View>
 
           {/* Last Analyzed */}
-          {personalityData.lastAnalyzed && (
+          {personalityData?.lastAnalyzed && (
             <Animated.View style={[styles.lastAnalyzed, { opacity: lastAnalyzedOpacity }]}>
               <Text style={[styles.lastAnalyzedText, { color: colors.textSecondary }]}>
                 Last analyzed: {new Date(personalityData.lastAnalyzed).toLocaleDateString()}
@@ -237,15 +190,14 @@ export const ProfileInsights: React.FC<ProfileInsightsProps> = ({
             </Animated.View>
           )}
         </View>
-      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: spacing[6],
-    paddingTop: spacing[4],
+    marginTop: spacing[8],
+    paddingTop: spacing[6],
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.1)',
   },
@@ -261,89 +213,89 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   content: {
-    gap: spacing[5],
+    gap: spacing[10],
   },
   subsection: {
-    gap: spacing[3],
+    gap: spacing[4],
+    paddingBottom: spacing[2],
+  },
+  interestsSection: {
+    paddingTop: spacing[4],
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
   },
   subtitle: {
-    ...typography.textStyles.bodyMedium,
+    fontSize: 18,
+    fontFamily: typography.fonts.mozillaHeadlineSemiBold,
     fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: -0.2,
+    lineHeight: 24,
   },
   
   // Interests
   interestsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing[2],
+    gap: spacing[3],
+    marginTop: spacing[2],
   },
   interestTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    borderRadius: 20,
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
+    borderRadius: 6,
     borderWidth: 1,
-    gap: spacing[2],
+    gap: spacing[1],
+    minWidth: 60,
+    justifyContent: 'center',
   },
   interestText: {
     ...typography.textStyles.bodySmall,
     fontWeight: '500',
+    fontSize: 11,
   },
   confidenceText: {
     ...typography.textStyles.caption,
-    fontSize: 11,
+    fontSize: 9,
+    fontWeight: '400',
   },
   
   // Communication Style
   communicationGrid: {
-    gap: spacing[3],
+    gap: spacing[4],
+    marginTop: spacing[2],
   },
   styleItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[3],
+    gap: spacing[4],
+    paddingVertical: spacing[1],
   },
   styleLabel: {
     ...typography.textStyles.bodySmall,
     fontWeight: '500',
-    width: 80,
+    width: 90,
+    fontSize: 13,
   },
   progressBar: {
     flex: 1,
-    height: 8,
+    height: 14,
     borderRadius: 4,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 2,
   },
   styleValue: {
     ...typography.textStyles.caption,
-    width: 40,
+    width: 45,
     textAlign: 'right',
-  },
-  
-  // Statistics
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: spacing[3],
-  },
-  statItem: {
-    alignItems: 'center',
-    gap: spacing[1],
-  },
-  statValue: {
-    ...typography.textStyles.headlineMedium,
-    fontWeight: '700',
-  },
-  statLabel: {
-    ...typography.textStyles.caption,
-    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '500',
   },
   
   // Last Analyzed

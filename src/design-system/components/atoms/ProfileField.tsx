@@ -13,6 +13,7 @@ import {
   TextStyle,
   TextInputProps,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
@@ -48,6 +49,8 @@ export interface ProfileFieldProps {
   monospace?: boolean;
   /** Icon or additional content to show next to the value */
   rightContent?: React.ReactNode;
+  /** Icon name to show next to the label */
+  icon?: string;
 }
 
 export const ProfileField: React.FC<ProfileFieldProps> = ({
@@ -66,6 +69,7 @@ export const ProfileField: React.FC<ProfileFieldProps> = ({
   valueStyle,
   monospace = false,
   rightContent,
+  icon,
 }) => {
   const { colors } = useTheme();
 
@@ -83,7 +87,6 @@ export const ProfileField: React.FC<ProfileFieldProps> = ({
     ...typography.textStyles.bodyMedium,
     fontWeight: '600',
     color: colors.textSecondary,
-    marginBottom: spacing[2],
     ...labelStyle,
   };
 
@@ -108,7 +111,17 @@ export const ProfileField: React.FC<ProfileFieldProps> = ({
 
   return (
     <View style={containerStyle}>
-      <Text style={finalLabelStyle}>{label}</Text>
+      <View style={styles.labelContainer}>
+        {icon && (
+          <Feather 
+            name={icon as any} 
+            size={16} 
+            color={colors.textSecondary} 
+            style={styles.labelIcon}
+          />
+        )}
+        <Text style={finalLabelStyle}>{label}</Text>
+      </View>
       
       {editable ? (
         <TextInput
@@ -139,6 +152,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  labelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing[2],
+  },
+  labelIcon: {
+    marginRight: spacing[2],
   },
 });
 

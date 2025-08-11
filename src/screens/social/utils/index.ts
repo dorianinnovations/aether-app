@@ -4,7 +4,7 @@
  */
 
 import { COMMUNITY_COLORS } from '../constants';
-import type { Post } from '../types';
+import type { NewsPost } from '../types';
 
 /**
  * Get community color by ID
@@ -15,25 +15,25 @@ export const getCommunityColor = (communityId?: string): string => {
 };
 
 /**
- * Filter posts by search query
+ * Filter news posts by search query
  */
-export const filterPosts = (posts: Post[], query: string): Post[] => {
+export const filterPosts = (posts: NewsPost[], query: string): NewsPost[] => {
   if (!query.trim()) return posts;
   
   const searchTerm = query.toLowerCase();
   return posts.filter(
     (post) =>
       post.content.toLowerCase().includes(searchTerm) ||
-      post.userName.toLowerCase().includes(searchTerm) ||
-      post.communityName?.toLowerCase().includes(searchTerm) ||
-      post.tags?.some(tag => tag.toLowerCase().includes(searchTerm))
+      post.title.toLowerCase().includes(searchTerm) ||
+      post.category?.toLowerCase().includes(searchTerm) ||
+      post.tags?.some((tag: string) => tag.toLowerCase().includes(searchTerm))
   );
 };
 
 /**
- * Sort posts by timestamp (newest first)
+ * Sort news posts by timestamp (newest first)
  */
-export const sortPostsByTimestamp = (posts: Post[]): Post[] => {
+export const sortPostsByTimestamp = (posts: NewsPost[]): NewsPost[] => {
   return [...posts].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 };
 
@@ -62,29 +62,25 @@ export const truncateContent = (content: string, maxLength: number = 150): strin
 };
 
 /**
- * Generate mock posts for testing
+ * Generate mock news posts for testing
  */
-export const generateMockPosts = (count: number = 10): Post[] => {
-  const mockPosts: Post[] = [];
+export const generateMockPosts = (count: number = 10): NewsPost[] => {
+  const mockPosts: NewsPost[] = [];
   const communities = ['general', 'tech', 'creative', 'wellness', 'learning'];
   const userNames = ['Alice Johnson', 'Bob Smith', 'Carol Davis', 'David Wilson', 'Eve Brown'];
   
   for (let i = 0; i < count; i++) {
-    const communityId = communities[Math.floor(Math.random() * communities.length)];
-    const userName = userNames[Math.floor(Math.random() * userNames.length)];
+    const category = communities[Math.floor(Math.random() * communities.length)];
+    const priorities: NewsPost['priority'][] = ['low', 'medium', 'high', 'urgent'];
+    const priority = priorities[Math.floor(Math.random() * priorities.length)];
     
     mockPosts.push({
-      id: `post-${i + 1}`,
-      userId: `user-${Math.floor(Math.random() * 5) + 1}`,
-      userName,
-      content: `This is a sample post content for demonstration purposes. Post number ${i + 1} in the ${communityId} community.`,
-      communityId,
-      communityName: communityId.charAt(0).toUpperCase() + communityId.slice(1),
-      likes: Math.floor(Math.random() * 100),
-      comments: Math.floor(Math.random() * 50),
-      shares: Math.floor(Math.random() * 25),
+      id: `news-${i + 1}`,
+      title: `News Update ${i + 1}`,
+      content: `This is a sample news content for demonstration purposes. News item ${i + 1} in the ${category} category.`,
       timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-      isLiked: Math.random() > 0.7,
+      priority,
+      category,
       tags: [`tag${i % 3 + 1}`, `category${i % 2 + 1}`],
     });
   }

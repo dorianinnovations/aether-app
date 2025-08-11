@@ -6,7 +6,7 @@
 import type { Community, SocialTab } from '../types';
 
 export const SOCIAL_TABS: { key: SocialTab; label: string; icon: string }[] = [
-  { key: 'feed', label: 'Feed', icon: 'home' },
+  { key: 'news', label: 'News', icon: 'home' },
   { key: 'groups', label: 'Groups', icon: 'users' },
   { key: 'strategize', label: 'Strategize', icon: 'target' },
   { key: 'collaborate', label: 'Collaborate', icon: 'git-branch' },

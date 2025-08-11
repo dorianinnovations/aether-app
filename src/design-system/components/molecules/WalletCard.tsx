@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Animated } from 'react-n
 import { Feather } from '@expo/vector-icons';
 import PagerView from 'react-native-pager-view';
 import * as Haptics from 'expo-haptics';
+import { PrestigiousBadge } from '../atoms/PrestigiousBadge';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { designTokens } from '../../tokens/colors';
 import { typography } from '../../tokens/typography';
@@ -80,28 +81,29 @@ export const WalletCard: React.FC<WalletCardProps> = ({
   const getTierInfo = (tier: 'pro' | 'elite') => {
     if (tier === 'pro') {
       return {
-        name: 'PRO',
-        price: '$14.99',
+        name: 'LEGEND',
+        price: '$15',
         priceUnit: '/mo',
         color: '#FF9AA2', // Pastel coral pink
         accentColors: ['#FFD93D', '#A8E6CF', '#FFB7B2'], // Rainbow accents
         features: [
           'Unlimited GPT-4o access',
-          '3,500-4,500 GPT-5 requests/month',
-          'Priority support',
-          'Advanced analytics',
-          'Enhanced features'
+          '1000 GPT-5/Opus 4.1 special requests/month',
+          'Background music listening analysis',
+          'Spotify/streaming services integration',
+          'Profile customizations',
+          'LEGEND badge'
         ]
       };
     } else {
       return {
-        name: 'ELITE',
-        price: '$29.99',
+        name: 'VIP',
+        price: '$30',
         priceUnit: '/mo',
         color: '#B5A7E6', // Pastel lavender
         accentColors: ['#C7CEEA', '#FFDAC1', '#A8E6CF'], // Rainbow accents
         features: [
-          'Everything in Pro',
+          'Everything in LEGEND',
           'Unlimited GPT-5 (API pricing)',
           'Early feature access',
           'Custom integrations',
@@ -126,7 +128,6 @@ export const WalletCard: React.FC<WalletCardProps> = ({
         {/* Header Section */}
         <View style={styles.header}>
           <View style={styles.tierBadge}>
-            <Feather name="credit-card" size={24} color={tierColor} />
             <View style={styles.tierInfo}>
               <Text style={[
                 styles.tierLabel,
@@ -137,18 +138,39 @@ export const WalletCard: React.FC<WalletCardProps> = ({
               </Text>
               <Text style={[
                 styles.tierName,
-                typography.textStyles.techyNumberLarge,
                 { 
-                  color: tierColor,
-                  fontWeight: '900',
-                  letterSpacing: 0.2,
-                  textShadowColor: tierColor + '30',
-                  textShadowOffset: { width: 0, height: 1 },
-                  textShadowRadius: 3,
+                  color: '#FFFFFF',
+                  fontFamily: 'MozillaHeadline_700Bold',
+                  fontSize: 18,
+                  fontWeight: '700',
+                  letterSpacing: -0.3,
+                  textTransform: 'uppercase',
+                  textShadowColor: '#FFFFFF',
+                  textShadowOffset: { width: 0, height: 0 },
+                  textShadowRadius: 2,
                 }
               ]}>
-                {currentTier === 'free' ? 'Free' : currentTier === 'pro' ? 'Pro' : 'Elite'}
+                {currentTier === 'free' ? 'Free' : currentTier === 'pro' ? 'LEGEND' : 'VIP'}
               </Text>
+            </View>
+            <View style={styles.badgeContainer}>
+              {currentTier === 'pro' ? (
+                <PrestigiousBadge 
+                  type="legend"
+                  theme={theme}
+                  size="small"
+                  showTooltip={false}
+                />
+              ) : currentTier === 'elite' ? (
+                <PrestigiousBadge 
+                  type="vip"
+                  theme={theme}
+                  size="small"
+                  showTooltip={false}
+                />
+              ) : (
+                <Feather name="credit-card" size={24} color={tierColor} />
+              )}
             </View>
           </View>
         </View>
@@ -157,14 +179,7 @@ export const WalletCard: React.FC<WalletCardProps> = ({
         <View style={styles.usageSection}>
           <Text style={[
             styles.sectionTitle,
-            typography.textStyles.headlineSmall,
-            { 
-              color: colors.text,
-              fontWeight: '700',
-              letterSpacing: 0.2,
-              fontSize: 15,
-              fontFamily: 'Inter-SemiBold',
-            }
+            { color: colors.text }
           ]}>
             Usage Statistics
           </Text>
@@ -173,26 +188,33 @@ export const WalletCard: React.FC<WalletCardProps> = ({
             <>
               <View style={[
                 styles.usageCard,
-                { borderLeftWidth: 3, borderLeftColor: '#FFD93D' } // Sunshine yellow accent
+                { 
+                  borderLeftWidth: 2, 
+                  borderLeftColor: '#FFD93D',
+                  backgroundColor: 'rgba(255, 217, 61, 0.03)'
+                }
               ]}>
                 <View style={styles.usageHeader}>
                   <Text style={[
                     styles.usageTitle,
-                    typography.textStyles.bodyLarge,
                     { 
                       color: colors.text,
-                      fontWeight: '700',
-                      fontFamily: 'Inter-SemiBold',
+                      fontFamily: 'Inter-Medium',
+                      fontSize: 14,
+                      fontWeight: '600',
+                      letterSpacing: 0.2,
                     }
                   ]}>
                     GPT-4o Requests
                   </Text>
                   <Text style={[
                     styles.usageCount,
-                    typography.textStyles.techyNumberSmall,
                     { 
                       color: gpt4oProgress > 80 ? '#FF9AA2' : '#FFD93D',
-                      fontWeight: '800',
+                      fontFamily: 'Inter-Bold',
+                      fontSize: 13,
+                      fontWeight: '700',
+                      letterSpacing: 0.3,
                     }
                   ]}>
                     {usage.gpt4o}/150
@@ -211,26 +233,33 @@ export const WalletCard: React.FC<WalletCardProps> = ({
 
               <View style={[
                 styles.usageCard,
-                { borderLeftWidth: 3, borderLeftColor: '#B5A7E6' } // Pastel lavender accent
+                { 
+                  borderLeftWidth: 2, 
+                  borderLeftColor: '#B5A7E6',
+                  backgroundColor: 'rgba(181, 167, 230, 0.03)'
+                }
               ]}>
                 <View style={styles.usageHeader}>
                   <Text style={[
                     styles.usageTitle,
-                    typography.textStyles.bodyLarge,
                     { 
                       color: colors.text,
-                      fontWeight: '700',
-                      fontFamily: 'Inter-SemiBold',
+                      fontFamily: 'Inter-Medium',
+                      fontSize: 14,
+                      fontWeight: '600',
+                      letterSpacing: 0.2,
                     }
                   ]}>
                     GPT-5 Requests
                   </Text>
                   <Text style={[
                     styles.usageCount,
-                    typography.textStyles.techyNumberSmall,
                     { 
                       color: gpt5Progress > 80 ? '#FF9AA2' : '#B5A7E6',
-                      fontWeight: '800',
+                      fontFamily: 'Inter-Bold',
+                      fontSize: 13,
+                      fontWeight: '700',
+                      letterSpacing: 0.3,
                     }
                   ]}>
                     {usage.gpt5}/{usage.gpt5Limit}
@@ -277,14 +306,14 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                     typography.textStyles.bodyLarge,
                     { color: colors.text }
                   ]}>
-                    GPT-5 Requests
+                    GPT-5/Opus 4.1 Special Requests
                   </Text>
                   <Text style={[
                     styles.usageCount,
                     typography.textStyles.techyNumberSmall,
                     { color: tierColor }
                   ]}>
-                    {usage.gpt5}/4000
+                    {usage.gpt5}/1000
                   </Text>
                 </View>
                 <View style={styles.progressBar}>
@@ -292,7 +321,7 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                     styles.progressFill,
                     {
                       backgroundColor: '#FFB7B2', // Pastel peach
-                      width: `${Math.min((usage.gpt5 / 4000) * 100, 100)}%`,
+                      width: `${Math.min((usage.gpt5 / 1000) * 100, 100)}%`,
                     }
                   ]} />
                 </View>
@@ -347,7 +376,6 @@ export const WalletCard: React.FC<WalletCardProps> = ({
         {/* Header Section */}
         <View style={styles.header}>
           <View style={styles.tierBadge}>
-            <Feather name="zap" size={24} color={tierInfo.color} />
             <View style={styles.tierInfo}>
               <Text style={[
                 styles.tierLabel,
@@ -358,18 +386,37 @@ export const WalletCard: React.FC<WalletCardProps> = ({
               </Text>
               <Text style={[
                 styles.tierName,
-                typography.textStyles.techyNumberLarge,
                 { 
-                  color: tierInfo.color,
-                  fontWeight: '900',
-                  letterSpacing: 0.2,
-                  textShadowColor: tierInfo.color + '30',
-                  textShadowOffset: { width: 0, height: 1 },
-                  textShadowRadius: 3,
+                  color: '#FFFFFF',
+                  fontFamily: 'MozillaHeadline_700Bold',
+                  fontSize: 20,
+                  fontWeight: '700',
+                  letterSpacing: -0.3,
+                  textTransform: 'uppercase',
+                  textShadowColor: '#FFFFFF',
+                  textShadowOffset: { width: 0, height: 0 },
+                  textShadowRadius: 2,
                 }
               ]}>
-                {tierInfo.name === 'PRO' ? 'Pro' : 'Elite'}
+                {tierInfo.name}
               </Text>
+            </View>
+            <View style={styles.badgeContainer}>
+              {tier === 'pro' ? (
+                <PrestigiousBadge 
+                  type="legend"
+                  theme={theme}
+                  size="small"
+                  showTooltip={false}
+                />
+              ) : (
+                <PrestigiousBadge 
+                  type="vip"
+                  theme={theme}
+                  size="small"
+                  showTooltip={false}
+                />
+              )}
             </View>
           </View>
         </View>
@@ -378,16 +425,9 @@ export const WalletCard: React.FC<WalletCardProps> = ({
         <View style={styles.featuresSection}>
           <Text style={[
             styles.sectionTitle,
-            typography.textStyles.headlineSmall,
-            { 
-              color: colors.text,
-              fontWeight: '700',
-              letterSpacing: 0.2,
-              fontSize: 15,
-              fontFamily: 'Inter-SemiBold',
-            }
+            { color: colors.text }
           ]}>
-            {tierInfo.name === 'PRO' ? 'Pro' : 'Elite'} Features
+            {tierInfo.name} Features
           </Text>
           <View style={styles.featuresList}>
             {tierInfo.features.map((feature, index) => {
@@ -453,8 +493,14 @@ export const WalletCard: React.FC<WalletCardProps> = ({
               <View style={styles.longPressInfo}>
                 <Text style={[
                   styles.longPressLabel,
-                  typography.textStyles.caption,
-                  { color: colors.textSecondary }
+                  { 
+                    color: colors.textSecondary,
+                    fontSize: 10,
+                    letterSpacing: 0.8,
+                    textTransform: 'uppercase',
+                    fontFamily: 'MozillaHeadline_600SemiBold',
+                    fontWeight: '600',
+                  }
                 ]}>
                   Hold to upgrade
                 </Text>
@@ -462,12 +508,15 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                   <Text style={[
                     styles.longPressPrice,
                     {
-                      fontFamily: 'Inter-Bold',
+                      fontFamily: 'MozillaText_700Bold',
                       fontSize: 28,
-                      fontWeight: '900',
-                      letterSpacing: -0.8,
-                      color: tierInfo.color,
+                      fontWeight: '700',
+                      letterSpacing: -0.2,
+                      color: '#FFFFFF',
                       lineHeight: 30,
+                      textShadowColor: '#FFFFFF',
+                      textShadowOffset: { width: 0, height: 0 },
+                      textShadowRadius: 2,
                     }
                   ]}>
                     {tierInfo.price}
@@ -524,23 +573,6 @@ export const WalletCard: React.FC<WalletCardProps> = ({
           : 'rgb(250, 250, 250)',
       }
     ]}>
-      {/* Page Indicators - Simple Dots */}
-      {!isEliteTier && (
-        <View style={styles.pageIndicators}>
-          <View style={[
-            styles.dotIndicator,
-            { backgroundColor: activePage === 0 ? '#A8E6CF' : colors.textSecondary }
-          ]} />
-          <View style={[
-            styles.dotIndicator,
-            { backgroundColor: activePage === 1 ? '#FF9AA2' : colors.textSecondary }
-          ]} />
-          <View style={[
-            styles.dotIndicator,
-            { backgroundColor: activePage === 2 ? '#B5A7E6' : colors.textSecondary }
-          ]} />
-        </View>
-      )}
 
       {/* Swipeable Content */}
       {isEliteTier ? (
@@ -570,8 +602,8 @@ export const WalletCard: React.FC<WalletCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     // Enhanced neumorphic container effects
     borderTopWidth: 0,
     borderLeftWidth: 1.5,
@@ -590,20 +622,6 @@ const styles = StyleSheet.create({
     // Inner glow effect simulation
     position: 'relative',
   },
-  pageIndicators: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    paddingVertical: spacing[4],
-    paddingHorizontal: spacing[4],
-    gap: spacing[3],
-  },
-  dotIndicator: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    opacity: 0.8,
-  },
   pagerView: {
     flex: 1,
   },
@@ -615,13 +633,8 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: spacing[4],
-    paddingBottom: spacing[3],
-    // Enhanced header with subtle neumorphic styling
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    paddingBottom: spacing[1],
     marginBottom: spacing[2],
-    // Subtle background glow
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
   },
   tierBadge: {
     flexDirection: 'row',
@@ -629,8 +642,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   tierInfo: {
-    marginLeft: spacing[3],
+    marginRight: spacing[3],
     alignItems: 'flex-start',
+    flex: 1,
   },
   tierLabel: {
     fontSize: 12,
@@ -642,30 +656,33 @@ const styles = StyleSheet.create({
   },
   usageSection: {
     paddingHorizontal: spacing[4],
-    paddingBottom: spacing[3],
+    paddingBottom: spacing[8],
+    paddingTop: 0,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: spacing[2],
+    fontFamily: 'Inter-Bold',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    opacity: 0.8,
+    marginBottom: spacing[3],
   },
   usageCard: {
-    backgroundColor: 'rgba(128, 128, 128, 0.05)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderRadius: 12,
     padding: spacing[4],
-    marginBottom: spacing[3],
-    // Enhanced neumorphic card effects
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    marginBottom: spacing[2],
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     shadowColor: '#000000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 6,
-    // Subtle inner glow
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
     position: 'relative' as const,
   },
   usageHeader: {
@@ -682,37 +699,16 @@ const styles = StyleSheet.create({
     // Override styles handled by typography.textStyles.techyUsage
   },
   progressBar: {
-    height: 8,
-    backgroundColor: 'rgba(128, 128, 128, 0.15)',
-    borderRadius: 6,
+    height: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: 3,
     overflow: 'hidden',
-    // Neumorphic progress bar styling
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-    // Tech-inspired inner shadow effect
+    borderWidth: 0,
     position: 'relative',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 5,
-    // Enhanced progress fill with glow
-    shadowColor: 'currentColor',
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0.6,
-    shadowRadius: 4,
-    elevation: 3,
-    // Tech-inspired gradient simulation
+    borderRadius: 3,
     position: 'relative',
   },
   swipeHint: {
@@ -721,6 +717,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[4],
+    paddingTop: spacing[6],
     gap: spacing[2],
   },
   hintText: {
@@ -729,17 +726,18 @@ const styles = StyleSheet.create({
   },
   featuresSection: {
     paddingHorizontal: spacing[4],
-    paddingBottom: spacing[3],
+    paddingBottom: spacing[8],
+    paddingTop: spacing[6],
   },
   featuresList: {
-    gap: spacing[3],
+    gap: spacing[1],
   },
   featureRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   checkIcon: {
-    marginRight: spacing[3],
+    marginRight: spacing[2],
   },
   featureText: {
     fontSize: 15,
@@ -749,6 +747,7 @@ const styles = StyleSheet.create({
   upgradeSection: {
     paddingHorizontal: spacing[4],
     paddingBottom: spacing[4],
+    paddingTop: spacing[6],
   },
   longPressTrack: {
     height: 56,
@@ -796,9 +795,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   longPressLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.3,
     marginBottom: spacing[1]/2,
     opacity: 0.7,
   },
@@ -837,5 +833,15 @@ const styles = StyleSheet.create({
     elevation: 6,
     // Tech-inspired inner glow
     position: 'relative',
+  },
+  badgeContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 80,
+    height: 32,
+  },
+  inlineBadge: {
+    alignSelf: 'center',
+    transform: [{ scale: 0.8 }],
   },
 });

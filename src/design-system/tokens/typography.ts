@@ -17,13 +17,28 @@ const getFontFamily = (fontName: string, fallback: string = 'System') => {
 export const typography = {
   // Font Family System - Unified font system
   fonts: {
-    // Crimson Pro for headers and titles (serif)
-    heading: 'CrimsonPro-Regular',
-    headingMedium: 'CrimsonPro-Medium',
-    headingSemiBold: 'CrimsonPro-SemiBold',
-    headingBold: 'CrimsonPro-Bold',
+    // Modern Sans-Serif for Chat - Ultra Clean & Readable
+    chatPrimary: 'Inter-Regular',           // Main chat text - designed for interfaces
+    chatPrimaryMedium: 'Inter-Medium',      // Chat emphasis text
+    chatPrimarySemiBold: 'Inter-SemiBold',  // Chat headers, usernames
+    chatPrimaryBold: 'Inter-Bold',          // Chat strong emphasis
     
-    // Nunito for reading and body text (sans-serif)
+    // Alternative Chat Fonts
+    chatSecondary: 'SF-Pro-Text',           // iOS system font alternative
+    chatTertiary: 'Roboto-Regular',         // Android-friendly alternative
+    chatTertiaryMedium: 'Roboto-Medium',    // Roboto emphasis
+    
+    // Humanist Sans-Serif for Warmth
+    chatWarm: 'SourceSans3-Regular',        // Warmer feel for friendly messages
+    chatWarmMedium: 'SourceSans3-Medium',   // Warm emphasis
+    
+    // Mozilla Text for headers and titles (clean monospace)
+    heading: 'MozillaText_400Regular',
+    headingMedium: 'MozillaText_500Medium',
+    headingSemiBold: 'MozillaText_600SemiBold',
+    headingBold: 'MozillaText_700Bold',
+    
+    // Nunito for reading and body text (sans-serif) - Legacy support
     body: 'Nunito-Regular',
     bodyMedium: 'Nunito-Medium',
     bodySemiBold: 'Nunito-SemiBold',
@@ -45,6 +60,12 @@ export const typography = {
     mozillaHeadlineMedium: 'MozillaHeadline_500Medium',
     mozillaHeadlineSemiBold: 'MozillaHeadline_600SemiBold',
     mozillaHeadlineBold: 'MozillaHeadline_700Bold',
+    
+    // Mozilla Text - clean monospace font with slashed zeros
+    mozillaText: 'MozillaText_400Regular',
+    mozillaTextMedium: 'MozillaText_500Medium',
+    mozillaTextSemiBold: 'MozillaText_600SemiBold',
+    mozillaTextBold: 'MozillaText_700Bold',
     
     // Fallback to system fonts
     system: 'System',
@@ -85,21 +106,21 @@ export const typography = {
     // Display Text (Large, impactful) - Crimson Pro - 20% smaller
     displayLarge: {
       fontSize: 38,
-      fontFamily: getFontFamily('CrimsonPro-Bold', 'serif'),
+      fontFamily: getFontFamily('MozillaText_700Bold', 'monospace'),
       fontWeight: '700' as const,
       lineHeight: 46,
       letterSpacing: -0.8,
     },
     displayMedium: {
       fontSize: 32,
-      fontFamily: getFontFamily('CrimsonPro-Bold', 'serif'),
+      fontFamily: getFontFamily('MozillaText_700Bold', 'monospace'),
       fontWeight: '700' as const,
       lineHeight: 38,
       letterSpacing: -0.4,
     },
     displaySmall: {
       fontSize: 26,
-      fontFamily: getFontFamily('CrimsonPro-SemiBold', 'serif'),
+      fontFamily: getFontFamily('MozillaText_600SemiBold', 'monospace'),
       fontWeight: '600' as const,
       lineHeight: 30,
       letterSpacing: -0.1,
@@ -108,21 +129,21 @@ export const typography = {
     // Headlines (Screen titles, section headers) - Crimson Pro - 20% smaller
     headlineLarge: {
       fontSize: 19,
-      fontFamily: getFontFamily('CrimsonPro-SemiBold', 'serif'),
+      fontFamily: getFontFamily('MozillaText_600SemiBold', 'monospace'),
       fontWeight: '600' as const,
       lineHeight: 25,
       letterSpacing: -0.1,
     },
     headlineMedium: {
       fontSize: 16,
-      fontFamily: getFontFamily('CrimsonPro-Medium', 'serif'),
+      fontFamily: getFontFamily('MozillaText_500Medium', 'monospace'),
       fontWeight: '500' as const,
       lineHeight: 21,
       letterSpacing: -0.1,
     },
     headlineSmall: {
       fontSize: 14,
-      fontFamily: getFontFamily('CrimsonPro-Medium', 'serif'),
+      fontFamily: getFontFamily('MozillaText_500Medium', 'monospace'),
       fontWeight: '500' as const,
       lineHeight: 20,
       letterSpacing: -0.1,
@@ -207,40 +228,108 @@ export const typography = {
       textTransform: 'uppercase' as const,
     },
     
-    // Special AI/Chat Text Styles - Nunito for reading (Increased for better readability)
+    // Enhanced Chat Text Styles - Modern, Clean & Highly Readable
     aiMessage: {
-      fontSize: 18,
-      fontFamily: getFontFamily('Nunito-Regular', 'sans-serif'),
+      fontSize: 16,
+      fontFamily: getFontFamily('Inter-Regular', 'sans-serif'),
       fontWeight: '400' as const,
-      lineHeight: 28,
+      lineHeight: 24,    // 1.5 ratio for optimal readability
+      letterSpacing: -0.1,
+    },
+    aiMessageEmphasis: {
+      fontSize: 16,
+      fontFamily: getFontFamily('Inter-Medium', 'sans-serif'),
+      fontWeight: '500' as const,
+      lineHeight: 24,
       letterSpacing: -0.1,
     },
     userMessage: {
-      fontSize: 18,
-      fontFamily: getFontFamily('Nunito-Regular', 'sans-serif'),
+      fontSize: 16,
+      fontFamily: getFontFamily('Inter-Regular', 'sans-serif'),
+      fontWeight: '400' as const,
+      lineHeight: 22,    // Slightly tighter for user bubbles
+      letterSpacing: -0.05,
+    },
+    userMessageLarge: {
+      fontSize: 17,
+      fontFamily: getFontFamily('Inter-Medium', 'sans-serif'),
+      fontWeight: '500' as const,
+      lineHeight: 24,
+      letterSpacing: -0.1,
+    },
+    // Modern chat alternatives
+    chatMessageModern: {
+      fontSize: 15,
+      fontFamily: getFontFamily('SF-Pro-Text', 'sans-serif'),
+      fontWeight: '400' as const,
+      lineHeight: 22,
+      letterSpacing: -0.05,
+    },
+    chatMessageWarm: {
+      fontSize: 16,
+      fontFamily: getFontFamily('SourceSans3-Regular', 'sans-serif'),
+      fontWeight: '400' as const,
+      lineHeight: 24,
+      letterSpacing: -0.05,
+    },
+    
+    // Responsive Chat Styles (for different screen sizes)
+    chatSmallScreen: {
+      fontSize: 15,  // Slightly smaller for small screens
+      fontFamily: getFontFamily('Inter-Regular', 'sans-serif'),
+      fontWeight: '400' as const,
+      lineHeight: 22,
+      letterSpacing: -0.05,
+    },
+    chatLargeScreen: {
+      fontSize: 17,  // Slightly larger for large screens
+      fontFamily: getFontFamily('Inter-Regular', 'sans-serif'),
       fontWeight: '400' as const,
       lineHeight: 26,
       letterSpacing: -0.1,
     },
+    userBubbleSmall: {
+      fontSize: 15,
+      fontFamily: getFontFamily('Inter-Regular', 'sans-serif'),
+      fontWeight: '400' as const,
+      lineHeight: 21,
+      letterSpacing: -0.03,
+    },
+    userBubbleLarge: {
+      fontSize: 17,
+      fontFamily: getFontFamily('Inter-Medium', 'sans-serif'),
+      fontWeight: '500' as const,
+      lineHeight: 24,
+      letterSpacing: -0.08,
+    },
     timestamp: {
+      fontSize: 12,
+      fontFamily: getFontFamily('Inter-Regular', 'sans-serif'),
+      fontWeight: '400' as const,
+      lineHeight: 16,
+      letterSpacing: 0.15,
+      opacity: 0.7,
+    },
+    timestampSmall: {
       fontSize: 11,
       fontFamily: getFontFamily('Inter-Regular', 'sans-serif'),
       fontWeight: '400' as const,
       lineHeight: 14,
-      letterSpacing: 0.1,
+      letterSpacing: 0.2,
+      opacity: 0.6,
     },
     
     // Connection/Friends Text Styles
     connectionTitle: {
       fontSize: 14,
-      fontFamily: getFontFamily('CrimsonPro-SemiBold', 'serif'),
+      fontFamily: getFontFamily('MozillaText_600SemiBold', 'monospace'),
       fontWeight: '600' as const,
       lineHeight: 18,
       letterSpacing: -0.1,
     },
     compatibilityScore: {
       fontSize: 19,
-      fontFamily: getFontFamily('CrimsonPro-Bold', 'serif'),
+      fontFamily: getFontFamily('MozillaText_700Bold', 'monospace'),
       fontWeight: '700' as const,
       lineHeight: 23,
       letterSpacing: -0.4,
@@ -249,7 +338,7 @@ export const typography = {
     // Analytics/Insights Text Styles
     metricValue: {
       fontSize: 22,
-      fontFamily: getFontFamily('CrimsonPro-Bold', 'serif'),
+      fontFamily: getFontFamily('MozillaText_700Bold', 'monospace'),
       fontWeight: '700' as const,
       lineHeight: 27,
       letterSpacing: -0.4,
@@ -306,13 +395,13 @@ export const typography = {
       letterSpacing: -0.2,
     },
     
-    // Username display style - Mozilla Headline for distinctive look
+    // Username display style - Inter for young, modern look
     username: {
-      fontSize: 20,
-      fontFamily: getFontFamily('MozillaHeadline_600SemiBold', 'monospace'),
+      fontSize: 14,
+      fontFamily: getFontFamily('Inter-SemiBold', 'sans-serif'),
       fontWeight: '600' as const,
-      lineHeight: 26,
-      letterSpacing: -0.3,
+      lineHeight: 18,
+      letterSpacing: -0.1,
     },
     
     // Profile field hierarchy styles
@@ -334,7 +423,7 @@ export const typography = {
     },
     profileFieldValuePrimary: {
       fontSize: 18,
-      fontFamily: getFontFamily('CrimsonPro-SemiBold', 'serif'),
+      fontFamily: getFontFamily('MozillaText_600SemiBold', 'monospace'),
       fontWeight: '600' as const,
       lineHeight: 24,
       letterSpacing: -0.2,
@@ -379,7 +468,7 @@ export const typography = {
   },
   h3: {
     fontSize: 18,
-    fontFamily: getFontFamily('CrimsonPro-SemiBold', 'serif'),
+    fontFamily: getFontFamily('CrimsonPro_600SemiBold', 'serif'),
     fontWeight: '600' as const,
     lineHeight: 24,
     letterSpacing: -0.1,
@@ -404,11 +493,8 @@ export const getTextStyle = (
 
 // Font loading configuration for Expo
 export const fontConfig = {
-  // Crimson Pro (serif) - for headers and titles
-  'CrimsonPro-Regular': require('../../../assets/fonts/CrimsonPro-Regular.ttf'),
-  'CrimsonPro-Medium': require('../../../assets/fonts/CrimsonPro-Medium.ttf'),
-  'CrimsonPro-SemiBold': require('../../../assets/fonts/CrimsonPro-SemiBold.ttf'),
-  'CrimsonPro-Bold': require('../../../assets/fonts/CrimsonPro-Bold.ttf'),
+  // Mozilla Text (monospace) - for headers and titles
+  // Note: Mozilla Text fonts are loaded via Expo Google Fonts
   
   // Nunito (sans-serif) - for reading and body text
   'Nunito-Regular': require('../../../assets/fonts/Nunito-Regular.ttf'),
@@ -432,6 +518,8 @@ export const fontConfig = {
   'MozillaHeadline_500Medium': require('../../../node_modules/@expo-google-fonts/mozilla-headline/500Medium/MozillaHeadline_500Medium.ttf'),
   'MozillaHeadline_600SemiBold': require('../../../node_modules/@expo-google-fonts/mozilla-headline/600SemiBold/MozillaHeadline_600SemiBold.ttf'),
   'MozillaHeadline_700Bold': require('../../../node_modules/@expo-google-fonts/mozilla-headline/700Bold/MozillaHeadline_700Bold.ttf'),
+  
+  // Mozilla Text fonts are loaded via Expo Google Fonts in App.tsx
 };
 
 export default typography;

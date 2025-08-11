@@ -7,6 +7,7 @@ import { API_BASE_URL } from '../core/client';
 import { TokenManager } from '../utils/storage';
 import type { ChatResponse } from '../core/types';
 import { logger } from '../../../utils/logger';
+import { openRouterService } from '../../openRouterService';
 
 export const ChatAPI = {
   // Non-streaming social chat for compatibility (when streaming isn't needed)
@@ -55,7 +56,7 @@ export const ChatAPI = {
         ...(conversationId && { conversationId })
       };
 
-      const response = await fetch(`${API_BASE_URL}/social-chat`, {
+      const response = await fetch(`${API_BASE_URL}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +106,7 @@ export const ChatAPI = {
   // Simple social chat for Aether Server - using original working implementation
   async socialChat(message: string, conversationId?: string): Promise<{ success: boolean; response: string; thinking?: string; model?: string; usage?: unknown }> {
     const { api } = await import('../core/client');
-    const response = await api.post('/social-chat', { 
+    const response = await api.post('/chat', { 
       message,
       ...(conversationId && { conversationId })
     });
@@ -160,7 +161,7 @@ export const ChatAPI = {
           let buffer = '';
           const allChunks: Array<string | { metadata: unknown }> = [];
 
-          xhr.open('POST', `${API_BASE_URL}/social-chat`, true);
+          xhr.open('POST', `${API_BASE_URL}/chat`, true);
           xhr.setRequestHeader('Content-Type', 'application/json');
           xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
@@ -265,5 +266,69 @@ export const ChatAPI = {
   async *streamMessageWords(prompt: string, attachments?: Array<{ uri: string; type: string; name?: string; mimeType?: string }>, conversationId?: string): AsyncGenerator<string | { text: string; metadata?: unknown }, void, unknown> {
     const { StreamEngine } = await import('../../StreamEngine');
     yield* StreamEngine.streamChat(prompt, '/social-chat', attachments, conversationId);
+  },
+
+  // AI-powered conversation title generation
+  async generateConversationTitle(firstMessage: string): Promise<string> {
+    try {
+      // Generate title using OpenRouter's cheap AI
+      const title = await openRouterService.generateConversationTitle(firstMessage);
+      logger.debug('Generated conversation title:', title);
+      return title;
+    } catch (error) {
+      logger.error('Failed to generate conversation title:', error);
+      // Fallback to local title generation
+      return this.createFallbackTitle(firstMessage);
+    }
+  },
+
+  // Local fallback title generation
+  createFallbackTitle(message: string): string {
+    if (message.length <= 40) {
+      return message.charAt(0).toUpperCase() + message.slice(1);
+    }
+    
+    // Take first few words up to 40 characters
+    const words = message.split(' ');
+    let title = '';
+    
+    for (const word of words) {
+      if ((title + ' ' + word).length > 37) break;
+      title += (title ? ' ' : '') + word;
+    }
+    
+    return title + '...';
+  },
+
+  // Update conversation title on the backend
+  async updateConversationTitle(conversationId: string, title: string): Promise<boolean> {
+    try {
+      const { api } = await import('../core/client');
+      const response = await api.put(`/conversations/${conversationId}/title`, { title });
+      return response.data.success;
+    } catch (error) {
+      logger.error('Failed to update conversation title:', error);
+      return false;
+    }
+  },
+
+  // Generate conversation title using backend AI service
+  async generateConversationTitleOnServer(conversationId: string, firstMessage: string): Promise<string | null> {
+    try {
+      const { api } = await import('../core/client');
+      const response = await api.post(`/conversations/${conversationId}/generate-title`, { 
+        firstMessage 
+      });
+      
+      if (response.data.success) {
+        logger.debug('Server generated title:', response.data.data.title);
+        return response.data.data.title;
+      }
+      
+      return null;
+    } catch (error) {
+      logger.error('Failed to generate title on server:', error);
+      return null;
+    }
   },
 };

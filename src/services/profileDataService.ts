@@ -7,6 +7,14 @@ import { UserAPI } from './apiModules/endpoints/user';
 import { UserBadgeType } from '../design-system/components/atoms';
 import { logger } from '../utils/logger';
 
+export interface SocialLinks {
+  instagram?: string;
+  x?: string; // formerly Twitter
+  spotify?: string;
+  facebook?: string;
+  website?: string;
+}
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -15,7 +23,8 @@ export interface UserProfile {
   displayName?: string;
   bio?: string;
   location?: string;
-  website?: string;
+  website?: string; // kept for backward compatibility
+  socialLinks?: SocialLinks;
   profilePicture?: string;
   bannerImage?: string;
   createdAt?: string;
@@ -83,6 +92,7 @@ export class ProfileDataService {
           bio: user.bio,
           location: user.location,
           website: user.website,
+          socialLinks: user.socialLinks || {},
           profilePicture: profileData.profilePicture?.url || user.profilePicture,
           bannerImage: profileData.bannerImage?.url || user.bannerImage,
           createdAt: user.createdAt,
@@ -109,7 +119,7 @@ export class ProfileDataService {
    * Update user profile data
    */
   static async updateProfile(
-    profileData: Partial<Pick<UserProfile, 'name' | 'bio' | 'location' | 'website'>>
+    profileData: Partial<Pick<UserProfile, 'name' | 'bio' | 'location' | 'website' | 'socialLinks'>>
   ): Promise<ProfileDataResult<UserProfile>> {
     try {
       const response = await UserAPI.updateProfile(profileData);
@@ -241,7 +251,9 @@ export class ProfileDataService {
       profile.location,
       profile.website,
       profile.profilePicture,
-      profile.bannerImage
+      profile.bannerImage,
+      // Count social links as one field if any are filled
+      profile.socialLinks && Object.values(profile.socialLinks).some(link => !!link)
     ];
 
     const completedFields = fields.filter(field => !!field).length;

@@ -5,4 +5,3 @@
 
 export { useSocialData } from './useSocialData';
 export { useRealTimeUpdates } from './useRealTimeUpdates';
-export { usePostActions } from './usePostActions';

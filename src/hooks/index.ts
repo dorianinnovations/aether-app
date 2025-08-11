@@ -8,6 +8,7 @@ export { useChatScrollManager } from './useChatScrollManager';
 export { useConversationEvents } from './useConversationEvents';
 export { useConversationTabs } from './useConversationTabs';
 export { useConversationData } from './useConversationData';
+export { useConversationTitleGeneration } from './useConversationTitleGeneration';
 export { useDrawerAnimation } from './useDrawerAnimation';
 export { useDynamicPrompts } from './useDynamicPrompts';
 export { useGhostTyping } from './useGhostTyping';
@@ -25,3 +26,4 @@ export { useTheme } from './useTheme';
 // Feature-specific hooks
 export { useMetrics } from './useMetrics';
 export { useWebSearch } from './useWebSearch';
+export { useToast } from './useToast';

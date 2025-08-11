@@ -1,6 +1,7 @@
 /**
- * ConversationList - Reusable conversation list component
- * Handles rendering of conversations with different types and actions
+ * ConversationList - Revolutionary Inbox-Style List Component
+ * Utility-focused rendering with exploration-encouraging patterns
+ * Supports Aether conversations, friend connections, and group chats
  */
 
 import React from 'react';
@@ -15,9 +16,8 @@ import {
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LottieLoader, ConversationSkeleton } from '../design-system/components/atoms';
-import { getThemeColors, designTokens } from '../design-system/tokens/colors';
+import { getThemeColors } from '../design-system/tokens/colors';
 import { spacing } from '../design-system/tokens/spacing';
-import { typography } from '../design-system/tokens/typography';
 import { Conversation } from '../hooks/useConversationData';
 import { TabConfig } from '../hooks/useConversationTabs';
 
@@ -41,18 +41,20 @@ interface ConversationListProps {
   currentConversationId?: string;
   theme: 'light' | 'dark';
   isLoading: boolean;
+  isLoadingMore?: boolean;
+  hasMoreConversations?: boolean;
   isRefreshing: boolean;
   isTabSwitching: boolean;
   isAnimating: boolean;
   longPressedId: string | null;
   onConversationSelect: (conversation: Conversation) => void;
   onDeleteConversation: (conversationId: string) => void;
-  onHeatmapLongPress: (friend: { username: string }, conversationId: string) => void;
-  onHeatmapPressOut: () => void;
+  onArtistListeningPress: (artist: { id: string; name: string }, itemId: string) => void;
+  onArtistListeningClose: () => void;
   onRefresh: () => void;
+  onLoadMore?: () => void;
   setLongPressedId: (id: string | null) => void;
   itemRefs: React.MutableRefObject<{ [key: string]: View }>;
-  // Friends list props
   friends?: Friend[];
   onFriendMessagePress?: (friendUsername: string) => void;
 }
@@ -64,15 +66,17 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   currentConversationId,
   theme,
   isLoading,
+  isLoadingMore = false,
+  hasMoreConversations = false,
   isRefreshing,
   isTabSwitching,
   isAnimating,
   longPressedId,
   onConversationSelect,
   onDeleteConversation,
-  onHeatmapLongPress,
-  onHeatmapPressOut,
+  onArtistListeningPress,
   onRefresh,
+  onLoadMore,
   setLongPressedId,
   itemRefs,
   friends = [],
@@ -80,286 +84,227 @@ export const ConversationList: React.FC<ConversationListProps> = ({
 }) => {
   const themeColors = getThemeColors(theme);
 
-  // Render friend item (similar to FriendsScreen FriendCard)
+  // Utility function to format relative time
+  const formatTimeAgo = (dateString?: string) => {
+    if (!dateString) return 'Recently';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays < 7) return `${diffDays}d`;
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
+
+  // Render utility-focused friend connection card
   const renderFriendItem = ({ item }: { item: Friend }) => {
+    
     return (
-      <View
+      <TouchableOpacity
         style={[
-          styles.friendCard,
-          {
-            backgroundColor: theme === 'dark' 
-              ? designTokens.surfaces.dark.elevated 
-              : designTokens.surfaces.light.elevated,
-            borderColor: theme === 'dark' 
-              ? designTokens.borders.dark.subtle 
-              : designTokens.borders.light.subtle,
-          }
+          styles.inboxItem,
+          styles.friendItem,
         ]}
+        onPress={() => onFriendMessagePress?.(item.username)}
+        activeOpacity={0.8}
       >
-        <View style={[
-          styles.avatar,
-          {
-            backgroundColor: theme === 'dark' 
-              ? designTokens.borders.dark.default 
-              : designTokens.borders.light.default,
-          }
-        ]} />
-        
-        <View style={styles.friendInfo}>
-          <Text style={[
-            styles.friendName,
-            { color: themeColors.text }
-          ]}>
-            {item.username}
-          </Text>
+        <View style={styles.inboxItemHeader}>
+          <View style={styles.inboxItemMeta}>
+            
+            <View style={styles.inboxItemInfo}>
+              <Text style={[
+                styles.inboxItemTitle,
+                { color: themeColors.text }
+              ]}>
+                {item.username}
+              </Text>
+              
+              
+            </View>
+          </View>
           
-          <View style={styles.statusContainer}>
-            <View style={[
-              styles.statusDot,
-              {
-                backgroundColor: item.status === 'online' 
-                  ? designTokens.semantic.success 
-                  : item.status === 'away' 
-                  ? designTokens.semantic.warning 
-                  : designTokens.text.muted
-              }
-            ]} />
-            <Text style={[
-              styles.statusText,
-              { color: themeColors.textSecondary }
-            ]}>
-              {item.status === 'online' ? 'Online' : 
-               item.status === 'away' ? 'Away' : 
-               item.lastSeen || 'Offline'}
-            </Text>
+          <View style={styles.friendActions}>
+            <TouchableOpacity
+              style={[
+                styles.inboxItemAction,
+                {
+                  backgroundColor: theme === 'dark' 
+                    ? 'rgba(29, 78, 216, 0.15)' 
+                    : 'rgba(59, 130, 246, 0.12)',
+                }
+              ]}
+              onPress={() => onArtistListeningPress(
+                { id: `spotify_${item.username}`, name: `${item.username}'s Music` }, 
+                `friend_${item.username}`
+              )}
+              activeOpacity={0.7}
+            >
+              <Feather name="music" size={12} color={themeColors.textSecondary} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.inboxItemAction,
+                {
+                  backgroundColor: theme === 'dark' 
+                    ? 'rgba(255, 107, 107, 0.15)' 
+                    : 'rgba(255, 107, 107, 0.12)',
+                }
+              ]}
+              onPress={() => onFriendMessagePress?.(item.username)}
+              activeOpacity={0.7}
+            >
+              <Feather name="message-circle" size={12} color={themeColors.textSecondary} />
+            </TouchableOpacity>
           </View>
         </View>
-
-        {/* Message Button */}
-        {onFriendMessagePress && (
-          <TouchableOpacity
-            style={[
-              styles.messageButton,
-              {
-                backgroundColor: theme === 'dark' 
-                  ? designTokens.brand.surfaceDark 
-                  : designTokens.brand.primary,
-                borderColor: theme === 'dark' 
-                  ? designTokens.borders.dark.default 
-                  : 'transparent',
-                borderWidth: theme === 'dark' ? 1 : 0,
-              }
-            ]}
-            onPress={() => {
-              if (isAnimating) return;
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onFriendMessagePress(item.username);
-            }}
-            activeOpacity={0.8}
-            disabled={isAnimating}
-          >
-            <Feather
-              name="message-circle"
-              size={16}
-              color={theme === 'dark' ? '#ffffff' : '#1a1a1a'}
-            />
-          </TouchableOpacity>
-        )}
-      </View>
+      </TouchableOpacity>
     );
   };
 
+  // Revolutionary utility-focused conversation item renderer
   const renderConversationItem = ({ item }: { item: Conversation }) => {
-    const tabConfig = tabs[currentTab];
-    const isSelected = item._id === currentConversationId;
     
-    const getTabSpecificStyling = () => {
+    // Get contextual styling based on channel type
+    const getChannelStyling = () => {
       switch (currentTab) {
-        case 0: // Aether - AI conversations
+        case 0: // Aether AI Channel
           return {
-            accentColor: tabConfig.color,
-            icon: 'message-circle',
-            badge: `${item.messageCount}`,
-            subtitle: item.summary || `${item.messageCount} messages`
+            channelColor: theme === 'dark' ? '#8B8B8B' : '#666666',
+            channelIcon: undefined,
+            channelBg: theme === 'dark' ? 'rgba(139, 139, 139, 0.08)' : 'rgba(102, 102, 102, 0.06)',
+            utilityText: `${item.messageCount} exchanges`,
+            statusText: item.summary || 'AI conversation',
+            timeAgo: formatTimeAgo(item.lastActivity),
           };
-        case 1: // Friends - People
-          const friendItem = item as Conversation & { streak?: number; lastMessage?: string | unknown };
-          let lastMessageText = '';
-          let lastMessageTime = '';
-          
-          if (typeof friendItem.lastMessage === 'string') {
-            lastMessageText = friendItem.lastMessage;
-          } else if (friendItem.lastMessage && typeof friendItem.lastMessage === 'object') {
-            const msgObj = friendItem.lastMessage as Record<string, unknown>;
-            lastMessageText = String(msgObj.content || msgObj.message || msgObj.text || '');
-          }
-          lastMessageText = String(lastMessageText || '').trim();
-          
-          // Format the last activity as a relative time
-          if (item.lastActivity && item.lastActivity !== 'No messages yet' && item.lastActivity !== 'Recently active') {
-            const lastDate = new Date(item.lastActivity);
-            const now = new Date();
-            const diffMs = now.getTime() - lastDate.getTime();
-            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-            const diffMins = Math.floor(diffMs / (1000 * 60));
-            
-            if (diffMins < 1) {
-              lastMessageTime = 'just now';
-            } else if (diffMins < 60) {
-              lastMessageTime = `${diffMins}m ago`;
-            } else if (diffHours < 24) {
-              lastMessageTime = `${diffHours}h ago`;
-            } else if (diffDays < 7) {
-              lastMessageTime = `${diffDays}d ago`;
-            } else {
-              lastMessageTime = lastDate.toLocaleDateString();
-            }
-          }
-          
-          let subtitle = '';
-          if (lastMessageText) {
-            subtitle = lastMessageText.length > 40 ? lastMessageText.substring(0, 40) + '...' : lastMessageText;
-            if (lastMessageTime) {
-              subtitle += ` • ${lastMessageTime}`;
-            }
-          } else if (friendItem.messageCount > 0) {
-            subtitle = `${friendItem.messageCount} messages`;
-            if (lastMessageTime) {
-              subtitle += ` • ${lastMessageTime}`;
-            }
-          } else {
-            subtitle = 'Tap to start chatting';
-          }
-          
+        case 1: // Friends Channel  
           return {
-            accentColor: tabConfig.color,
-            icon: 'user',
-            badge: friendItem.streak && friendItem.streak > 0 ? `🔥${friendItem.streak}` : '•',
-            subtitle: subtitle
-          };
-        case 2: // Orbit - Heatmap conversations
-          return {
-            accentColor: tabConfig.color,
-            icon: 'activity',
-            badge: '•',
-            subtitle: item.summary || 'Heatmap visualization'
+            channelColor: '#FF6B6B',
+            channelIcon: 'heart',
+            channelBg: theme === 'dark' ? 'rgba(255, 107, 107, 0.08)' : 'rgba(255, 107, 107, 0.06)',
+            utilityText: 'Friend connection',
+            statusText: 'Ready to chat',
+            timeAgo: formatTimeAgo(item.lastActivity),
           };
         default:
           return {
-            accentColor: '#666',
-            icon: 'file',
-            badge: `${item.messageCount}`,
-            subtitle: `${item.messageCount} messages`
+            channelColor: themeColors.textSecondary,
+            channelIcon: 'message-circle',
+            channelBg: 'transparent',
+            utilityText: 'Conversation',
+            statusText: 'Active',
+            timeAgo: formatTimeAgo(item.lastActivity),
           };
       }
     };
     
-    const styling = getTabSpecificStyling();
+    const styling = getChannelStyling();
     
     return (
-      <View
+      <TouchableOpacity
+        style={[
+          styles.inboxItem,
+          styles.conversationItem,
+          {
+            backgroundColor: 'transparent',
+          }
+        ]}
+        onPress={() => {
+          if (!isAnimating) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onConversationSelect(item);
+          }
+        }}
+        onLongPress={() => {
+          if (!isAnimating) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            setLongPressedId(item._id);
+          }
+        }}
+        activeOpacity={0.8}
+        disabled={isAnimating}
         ref={(ref) => {
           if (ref) {
             itemRefs.current[item._id] = ref;
           }
         }}
-        style={[
-          styles.conversationItem,
-          {
-            backgroundColor: isSelected
-              ? (theme === 'dark' ? themeColors.primary + '15' : themeColors.primary + '10')
-              : (theme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'),
-            borderTopWidth: 0.5,
-            borderRightWidth: 0.5,
-            borderBottomWidth: 0.5,
-            borderTopColor: theme === 'light' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)',
-            borderRightColor: theme === 'light' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)',
-            borderBottomColor: theme === 'light' ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)',
-          }
-        ]}
       >
-        <TouchableOpacity 
-          style={[
-            styles.conversationTouchable,
-            longPressedId === item._id && { 
-              backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
-              transform: [{ scale: 0.98 }]
-            }
-          ]}
-          onPress={() => {
-            if (isAnimating) return;
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            onConversationSelect(item);
-          }}
-          onLongPress={() => {
-            if (isAnimating) return;
-            if (currentTab === 1 && item.friendUsername) {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-              onHeatmapLongPress({ username: item.friendUsername }, item._id);
-            } else if (currentTab === 0) {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-              setLongPressedId(item._id);
-              setTimeout(() => {
-                setLongPressedId(null);
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                onDeleteConversation(item._id);
-              }, 200);
-            }
-          }}
-          onPressOut={() => {
-            if (currentTab === 1) {
-              onHeatmapPressOut();
-            }
-          }}
-          delayLongPress={500}
-          activeOpacity={0.85}
-          disabled={isAnimating}
-        >
-          <View style={styles.conversationContent}>
-            <View style={styles.conversationText}>
-              <Text style={[
-                styles.conversationTitle,
-                typography.textStyles.bodyMedium,
-                { color: themeColors.text }
-              ]}>
-                {currentTab === 1 && item.friendUsername && item.title 
-                  ? String(item.title) 
-                  : String(item.title || 'Untitled Conversation')}
-              </Text>
-              <Text style={[
-                styles.conversationMeta,
-                typography.textStyles.bodySmall,
-                { color: themeColors.textSecondary }
-              ]}>
-                {String(styling.subtitle || '')}
-              </Text>
-            </View>
+        <View style={styles.inboxItemHeader}>
+          <View style={styles.inboxItemMeta}>
             
-            <View style={styles.conversationActions}>
-              {isSelected && (
-                <View style={[
-                  styles.selectedDot,
-                  { backgroundColor: themeColors.primary }
-                ]} />
-              )}
-              <View style={[
-                styles.badgeContainer,
-                { 
-                  backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-                }
-              ]}>
+            <View style={styles.inboxItemInfo}>
+              <View style={styles.inboxItemTitleRow}>
                 <Text style={[
-                  styles.badgeText,
+                  styles.inboxItemTitle,
+                  { color: themeColors.text }
+                ]} numberOfLines={1}>
+                  {item.title || item.summary || (item.messages?.[0]?.content ? 
+                    item.messages[0].content.slice(0, 40) + (item.messages[0].content.length > 40 ? '...' : '') :
+                    `Chat ${formatTimeAgo(item.createdAt || item.lastActivity)}`
+                  )}
+                </Text>
+                
+                <Text style={[
+                  styles.inboxItemTime,
                   { color: themeColors.textSecondary }
                 ]}>
-                  {String(styling.badge || '')}
+                  {styling.timeAgo}
                 </Text>
               </View>
+              
+              
             </View>
           </View>
-        </TouchableOpacity>
-      </View>
+          
+          <View style={styles.inboxItemActions}>
+            {longPressedId === item._id && (
+              <TouchableOpacity
+                style={[
+                  styles.inboxItemAction,
+                  styles.deleteAction,
+                  {
+                    backgroundColor: theme === 'dark' 
+                      ? 'rgba(255, 59, 48, 0.15)' 
+                      : 'rgba(255, 59, 48, 0.12)',
+                  }
+                ]}
+                onPress={() => {
+                  onDeleteConversation(item._id);
+                  setLongPressedId(null);
+                }}
+                activeOpacity={0.7}
+              >
+                <Feather name="trash-2" size={14} color="#FF3B30" />
+              </TouchableOpacity>
+            )}
+            
+            <TouchableOpacity
+              style={[
+                styles.inboxItemAction,
+                {
+                  backgroundColor: 'transparent',
+                  borderWidth: 0,
+                }
+              ]}
+              onPress={() => {
+                if (!isAnimating) {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onConversationSelect(item);
+                }
+              }}
+              activeOpacity={0.7}
+            >
+              <Feather name="arrow-right" size={14} color={themeColors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -376,6 +321,39 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     );
   };
   
+  const renderLoadMoreButton = () => {
+    if (!hasMoreConversations || currentTab !== 0) return null;
+    
+    return (
+      <View style={styles.loadMoreContainer}>
+        <TouchableOpacity
+          style={[
+            styles.loadMoreButton,
+            {
+              backgroundColor: theme === 'dark' ? 'rgba(42, 42, 42, 0.8)' : 'rgba(248, 248, 248, 0.8)',
+              borderWidth: 1,
+              borderColor: theme === 'dark' ? '#3A3A3A' : '#E0E0E0',
+            }
+          ]}
+          onPress={onLoadMore}
+          disabled={isLoadingMore}
+          activeOpacity={0.7}
+        >
+          {isLoadingMore ? (
+            <LottieLoader size={16} style={{ width: 16, height: 16 }} />
+          ) : (
+            <Text style={[
+              styles.loadMoreText,
+              { color: themeColors.textSecondary }
+            ]}>
+              Load older conversations
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   const renderEmptyState = () => {
     const tabConfig = tabs[currentTab];
     const getEmptyMessage = () => {
@@ -384,7 +362,6 @@ export const ConversationList: React.FC<ConversationListProps> = ({
       switch (currentTab) {
         case 0: return 'Start your first conversation with Aether';
         case 1: return 'Add friends to start messaging';
-        case 2: return 'View messaging heatmaps with friends';
         default: return 'No conversations yet';
       }
     };
@@ -415,14 +392,8 @@ export const ConversationList: React.FC<ConversationListProps> = ({
               />
             </View>
             <Text style={[
-              styles.emptyTitle,
+              styles.emptyTitle, 
               { color: themeColors.text }
-            ]}>
-              {tabConfig.label}
-            </Text>
-            <Text style={[
-              styles.emptyText,
-              { color: themeColors.textSecondary }
             ]}>
               {emptyMessage}
             </Text>
@@ -432,51 +403,44 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     );
   };
 
+  // Data and render logic
+  const getData = () => {
+    return currentTab === 1 ? friends : conversations;
+  };
+  
+  const handleRenderItem = ({ item }: { item: Friend | Conversation }) => {
+    if (currentTab === 1) {
+      return renderFriendItem({ item: item as Friend });
+    } else {
+      return renderConversationItem({ item: item as Conversation });
+    }
+  };
+
   return (
     <View style={styles.container}>
       {isRefreshing && (
         <View style={styles.refreshIndicator}>
-          <LottieLoader
-            size={40}
-            style={{ width: 40, height: 40 }}
-          />
+          <LottieLoader size={24} style={{ width: 24, height: 24 }} />
         </View>
       )}
       
       {isTabSwitching ? (
         renderSkeletonLoader()
-      ) : currentTab === 1 ? (
-        // Friends tab
-        <FlatList
-          data={friends}
-          renderItem={renderFriendItem}
-          keyExtractor={(item: Friend) => item.username}
-          style={styles.list}
-          contentContainerStyle={[
-            styles.listContent,
-            isRefreshing && { paddingTop: 60 } 
-          ]}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={renderEmptyState}
-          scrollEnabled={!isAnimating}
-          ItemSeparatorComponent={() => <View style={{ height: spacing[2] }} />}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={onRefresh}
-              tintColor="transparent"
-              title=""
-              colors={['transparent']}
-              progressBackgroundColor="transparent"
-            />
-          }
-        />
       ) : (
-        // Conversations tabs
         <FlatList
-          data={conversations}
-          renderItem={renderConversationItem}
-          keyExtractor={(item: Conversation) => item._id}
+          data={getData()}
+          renderItem={handleRenderItem}
+          keyExtractor={(item: Friend | Conversation) => {
+            if (currentTab === 1) {
+              // Friends
+              const friend = item as Friend;
+              return friend.username || friend.friendId || Math.random().toString();
+            } else {
+              // Conversations
+              const conversation = item as Conversation;
+              return conversation._id || Math.random().toString();
+            }
+          }}
           style={styles.list}
           contentContainerStyle={[
             styles.listContent,
@@ -484,6 +448,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           ]}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={renderEmptyState}
+          ListFooterComponent={renderLoadMoreButton}
           scrollEnabled={!isAnimating}
           refreshControl={
             <RefreshControl
@@ -518,75 +483,177 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
+    paddingVertical: spacing[1],
+    paddingHorizontal: spacing[2],
+  },
+  
+  // Minimal Inbox Item Styles
+  inboxItem: {
+    marginVertical: spacing[2],
+    paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
   },
-  conversationItem: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginHorizontal: spacing[3],
-    marginVertical: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  conversationTouchable: {
-    flex: 1,
-  },
-  conversationContent: {
+  
+  inboxItemHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing[3],
+    justifyContent: 'space-between',
+  },
+  
+  inboxItemMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
     gap: spacing[2],
-    minHeight: 56,
   },
-  conversationText: {
-    flex: 1,
-    gap: 2,
-  },
-  conversationTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 22,
-    fontFamily: 'Inter-Medium',
-    letterSpacing: -0.2,
-  },
-  conversationMeta: {
-    fontSize: 14,
-    fontWeight: '400',
-    lineHeight: 18,
-    fontFamily: 'Inter-Regular',
-    opacity: 0.65,
-  },
-  conversationActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  selectedDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
-  },
-  badgeContainer: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    minWidth: 24,
+  
+  inboxAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '500',
-    fontFamily: 'JetBrainsMono-Medium',
-    letterSpacing: 0,
+  
+  friendAvatar: {
+    borderRadius: 16,
   },
+
+  friendProfileImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  
+  inboxItemInfo: {
+    flex: 1,
+    gap: spacing[1],
+  },
+  
+  inboxItemTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  
+  inboxItemTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
+    flex: 1,
+  },
+  
+  inboxItemTime: {
+    fontSize: 11,
+    fontWeight: '400',
+    fontFamily: 'Inter-Regular',
+    opacity: 0.6,
+    marginLeft: 16,
+  },
+  
+  inboxItemSubtitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  
+  statusIndicator: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+  },
+  
+  inboxItemStatus: {
+    fontSize: 12,
+    fontWeight: '400',
+    fontFamily: 'Nunito-Regular',
+    opacity: 0.7,
+  },
+  
+  utilityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing[1],
+  },
+  
+  utilityText: {
+    fontSize: 10,
+    fontWeight: '400',
+    fontFamily: 'Nunito-Regular',
+    opacity: 0.6,
+  },
+  
+  activityBadge: {
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  
+  activityBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'Inter-Bold',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  
+  inboxItemActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  
+  friendActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  
+  inboxItemAction: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  
+  deleteAction: {
+    borderColor: 'rgba(255, 59, 48, 0.2)',
+  },
+  
+  // Friend-specific styles
+  friendItem: {
+    borderRadius: 20,
+  },
+  
+  interestTags: {
+    flexDirection: 'row',
+    gap: spacing[1],
+    marginTop: spacing[1],
+  },
+  
+  interestTag: {
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 107, 107, 0.2)',
+  },
+  
+  interestTagText: {
+    fontSize: 10,
+    fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
+    letterSpacing: 0.3,
+  },
+  
+  // Conversation-specific styles
+  conversationItem: {
+    borderRadius: 16,
+  },
+  
+  // Legacy/Empty state styles
   emptyState: {
     flex: 1,
     alignItems: 'center',
@@ -596,103 +663,48 @@ const styles = StyleSheet.create({
     paddingBottom: 80,
     gap: 16,
   },
+  
   emptyIcon: {
     width: 64,
     height: 48,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    marginBottom: 4,
-    alignSelf: 'center',
   },
+  
   emptyTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'Poppins-SemiBold',
-    letterSpacing: -0.3,
-    marginBottom: 4,
+    fontSize: 16,
+    fontWeight: '500',
     textAlign: 'center',
-    alignSelf: 'center',
-  },
-  emptyText: {
-    fontSize: 11,
-    fontWeight: '400',
-    fontFamily: 'Poppins-Regular',
-    letterSpacing: -0.3,
-    textAlign: 'center',
-    lineHeight: 20,
-    alignSelf: 'center',
-    maxWidth: 200,
+    fontFamily: 'Inter-Medium',
   },
   
   skeletonContainer: {
-    flex: 1,
+    paddingHorizontal: spacing[2],
     paddingVertical: spacing[2],
+    gap: spacing[2],
+  },
+
+  // Load More Button styles
+  loadMoreContainer: {
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[3],
+    alignItems: 'center',
   },
   
-  // Friend card styles (from FriendsScreen)
-  friendCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 68,
-    paddingHorizontal: spacing[6],
-    paddingVertical: spacing[5],
-    borderRadius: 16,
-    borderWidth: 1,
-    marginHorizontal: spacing[3],
-    marginVertical: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  avatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    marginRight: spacing[3],
-  },
-  friendInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  friendName: {
-    fontSize: 14,
-    fontWeight: '500',
-    flex: 1,
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[1],
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '400',
-  },
-  messageButton: {
-    width: 84,
-    height: 36,
-    borderRadius: 8,
+  loadMoreButton: {
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: spacing[3],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
+    minWidth: 180,
+  },
+  
+  loadMoreText: {
+    fontSize: 13,
+    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
+    letterSpacing: -0.2,
   },
 });

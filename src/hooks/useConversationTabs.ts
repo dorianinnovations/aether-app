@@ -10,9 +10,9 @@ import { getThemeColors } from '../design-system/tokens/colors';
 
 export interface TabConfig {
   label: string;
-  icon: string;
+  icon: string | null;
   color: string;
-  iconColor: string;
+  iconColor: string | null;
 }
 
 export const useConversationTabs = (theme: 'light' | 'dark') => {
@@ -25,27 +25,20 @@ export const useConversationTabs = (theme: 'light' | 'dark') => {
   const tabAnimations = useRef([
     new Animated.Value(1), // Aether
     new Animated.Value(1), // Friends  
-    new Animated.Value(1), // Custom
   ]).current;
 
   const tabs: TabConfig[] = [
     { 
       label: 'Aether', 
-      icon: 'message-circle', 
-      color: themeColors.text,
-      iconColor: themeColors.text,
+      icon: null, 
+      color: theme === 'dark' ? '#8B8B8B' : '#666666',
+      iconColor: null,
     },
     { 
       label: 'Friends', 
-      icon: 'users', 
-      color: themeColors.textSecondary,
-      iconColor: themeColors.textSecondary,
-    },
-    { 
-      label: 'Orbit', 
-      icon: 'activity', 
-      color: themeColors.textSecondary,
-      iconColor: themeColors.textSecondary,
+      icon: 'heart', 
+      color: theme === 'dark' ? '#FF6B6B' : '#E84393',
+      iconColor: theme === 'dark' ? '#FF6B6B' : '#E84393',
     }
   ];
 

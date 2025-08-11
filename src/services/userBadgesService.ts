@@ -150,6 +150,7 @@ class UserBadgesService {
                      safeUserName.toLowerCase().includes('isaiah');
     
     if (isIsaiah) {
+      // Isaiah gets the two top tier badges as the founder
       badges.push({
         id: 'founder_isaiah',
         userId: safeUserId,
@@ -159,10 +160,10 @@ class UserBadgesService {
       });
       
       badges.push({
-        id: 'og_isaiah',
+        id: 'og_isaiah', 
         userId: safeUserId,
         badgeType: 'og',
-        awardedAt: '2025-01-01T00:00:00Z',
+        awardedAt: '2024-01-01T00:00:00Z',
         isVisible: true,
       });
       

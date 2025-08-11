@@ -4,11 +4,11 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Post } from '../types';
+import type { NewsPost } from '../types';
 
 export interface UseRealTimeUpdatesProps {
-  onPostAdded: (post: Post) => void;
-  onPostUpdated: (postId: string, updates: Partial<Post>) => void;
+  onPostAdded: (post: NewsPost) => void;
+  onPostUpdated: (postId: string, updates: Partial<NewsPost>) => void;
   onPostRemoved: (postId: string) => void;
   enabled?: boolean;
 }
@@ -110,7 +110,7 @@ export const useRealTimeUpdates = ({
         // Simulate like update
         const postId = `post-${Math.floor(Math.random() * 20) + 1}`;
         const likes = Math.floor(Math.random() * 100);
-        onPostUpdated(postId, { likes });
+        onPostUpdated(postId, { content: 'Updated post' });
         setLastUpdate(new Date());
       }
     }, 30000); // Every 30 seconds

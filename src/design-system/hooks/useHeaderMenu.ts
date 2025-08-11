@@ -48,14 +48,9 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
           }
         }
         break;
-      case 'friends':
-        if (screenName !== 'friends') {
-          (navigation as NavigationProp).navigate('Friends');
-        }
-        break;
-      case 'feed':
-        if (screenName !== 'feed') {
-          (navigation as NavigationProp).navigate('Feed');
+      case 'news':
+        if (screenName !== 'news') {
+          (navigation as NavigationProp).navigate('News');
         }
         break;
       case 'wallet':

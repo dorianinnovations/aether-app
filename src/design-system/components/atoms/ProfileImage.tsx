@@ -13,6 +13,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../../contexts/ThemeContext';
 
 export interface ProfileImageProps {
@@ -68,26 +69,73 @@ export const ProfileImage: React.FC<ProfileImageProps> = ({
   style,
   imageStyle,
 }) => {
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
   
   const imageSize = SIZES[size];
   const deleteButtonSize = DELETE_BUTTON_SIZES[size];
   const editOverlaySize = EDIT_OVERLAY_SIZES[size];
 
   const containerStyle: ViewStyle = {
+    width: imageSize + 8, // Add space for gradient border
+    height: imageSize + 8,
+    borderRadius: (imageSize + 8) / 2,
+    position: 'relative',
+    ...style,
+  };
+
+  // Neumorphic design with inset/outset shadows - thinner
+  const neumorphicContainerStyle: ViewStyle = {
+    width: imageSize + 8,
+    height: imageSize + 8,
+    borderRadius: (imageSize + 8) / 2,
+    backgroundColor: theme === 'dark' ? '#0F0F0F' : '#FAFAFA',
+    shadowColor: theme === 'dark' ? '#000000' : '#000000',
+    shadowOffset: {
+      width: -2,
+      height: -2,
+    },
+    shadowOpacity: theme === 'dark' ? 0.4 : 0.12,
+    shadowRadius: 6,
+    elevation: 0,
+  };
+
+  const innerShadowStyle: ViewStyle = {
+    width: imageSize + 4,
+    height: imageSize + 4,
+    borderRadius: (imageSize + 4) / 2,
+    backgroundColor: theme === 'dark' ? '#0F0F0F' : '#FAFAFA',
+    margin: 2,
+    shadowColor: theme === 'dark' ? '#FFFFFF' : '#FFFFFF',
+    shadowOffset: {
+      width: 2,
+      height: 2,
+    },
+    shadowOpacity: theme === 'dark' ? 0.02 : 0.6,
+    shadowRadius: 4,
+    elevation: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  };
+
+  const imageContainerStyle: ViewStyle = {
     width: imageSize,
     height: imageSize,
     borderRadius: imageSize / 2,
-    position: 'relative',
-    ...style,
+    overflow: 'hidden',
+    shadowColor: theme === 'dark' ? '#000000' : '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
   };
 
   const baseImageStyle: ImageStyle = {
     width: imageSize,
     height: imageSize,
     borderRadius: imageSize / 2,
-    borderWidth: 2,
-    borderColor: colors.borders.default,
     ...imageStyle,
   };
 
@@ -136,17 +184,26 @@ export const ProfileImage: React.FC<ProfileImageProps> = ({
       disabled={uploading || !editable}
       activeOpacity={editable ? 0.8 : 1}
     >
-      {imageUri ? (
-        <Image source={{ uri: imageUri }} style={baseImageStyle} />
-      ) : (
-        <View style={placeholderStyle}>
-          <Feather 
-            name="user" 
-            size={placeholderIconSize} 
-            color={colors.textSecondary} 
-          />
+      {/* Neumorphic Outer Container - Creates "pressed in" effect */}
+      <View style={neumorphicContainerStyle}>
+        {/* Inner Shadow Ring - Creates depth */}
+        <View style={innerShadowStyle}>
+          {/* Image Container with subtle elevation */}
+          <View style={imageContainerStyle}>
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={baseImageStyle} />
+            ) : (
+              <View style={placeholderStyle}>
+                <Feather 
+                  name="user" 
+                  size={placeholderIconSize} 
+                  color={colors.textSecondary} 
+                />
+              </View>
+            )}
+          </View>
         </View>
-      )}
+      </View>
 
       {/* Edit overlay for editable mode */}
       {editable && (
