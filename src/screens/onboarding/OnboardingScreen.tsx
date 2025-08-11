@@ -384,7 +384,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route: 
                   source={require('../../../assets/SwipeLeft.json')}
                   autoPlay
                   loop
-                  style={styles.swipeLottie}
+                  style={[styles.swipeLottie, { opacity: 0.2 }]}
                   resizeMode="contain"
                 />
               </Animated.View>

@@ -656,7 +656,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                                   styles.primaryButtonText, 
                                   { color: theme === 'dark' ? '#ffffff' : '#1a1a1a' }
                                 ]}>
-                                  Success!
+                                  Success
                                 </Text>
                               ) : (
                                 <Text style={[

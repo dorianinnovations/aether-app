@@ -16,6 +16,7 @@ export { ArtistListeningModal } from './ArtistListeningModal';
 export { default as SearchResultsModal } from './SearchResultsModal';
 export { ProfileInsights } from './ProfileInsights';
 export { ProfileCard } from './ProfileCard';
+export { PublicUserProfile } from './PublicUserProfile';
 export { PersonaModal } from './PersonaModal';
 export { WalletModal } from './WalletModal';
 export { ToastProvider } from './ToastProvider';

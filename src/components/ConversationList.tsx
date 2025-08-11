@@ -15,6 +15,18 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import {
+  PanGestureHandler,
+  State,
+  PanGestureHandlerGestureEvent,
+} from 'react-native-gesture-handler';
+import Animated, {
+  useAnimatedGestureHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  runOnJS,
+} from 'react-native-reanimated';
 import { LottieLoader, ConversationSkeleton } from '../design-system/components/atoms';
 import { getThemeColors } from '../design-system/tokens/colors';
 import { spacing } from '../design-system/tokens/spacing';
@@ -58,6 +70,91 @@ interface ConversationListProps {
   friends?: Friend[];
   onFriendMessagePress?: (friendUsername: string) => void;
 }
+
+// Swipeable conversation item wrapper component
+const SwipeableConversationItem: React.FC<{
+  children: React.ReactNode;
+  onDelete: () => void;
+  theme: 'light' | 'dark';
+  disabled?: boolean;
+}> = ({ children, onDelete, theme, disabled = false }) => {
+  const translateX = useSharedValue(0);
+  const opacity = useSharedValue(1);
+
+  const performDelete = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    onDelete();
+  };
+
+  const gestureHandler = useAnimatedGestureHandler<
+    PanGestureHandlerGestureEvent,
+    { startX: number }
+  >({
+    onStart: (_, context) => {
+      context.startX = translateX.value;
+    },
+    onActive: (event, context) => {
+      // Only allow left swipe (negative translation) with maximum limit
+      const maxSwipe = -60; // Limit how far left it can go
+      const newTranslateX = Math.max(maxSwipe, Math.min(0, context.startX + event.translationX));
+      translateX.value = newTranslateX;
+    },
+    onEnd: (event) => {
+      const swipeThreshold = -30;
+      const deleteThreshold = -50;
+
+      if (event.translationX < deleteThreshold) {
+        // Auto-delete
+        runOnJS(performDelete)();
+      } else if (event.translationX < swipeThreshold) {
+        // Snap to reveal delete action
+        translateX.value = withSpring(-60);
+        runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+      } else {
+        // Snap back to original position
+        translateX.value = withSpring(0);
+      }
+    },
+  });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+    opacity: opacity.value,
+  }));
+
+  const deleteButtonStyle = useAnimatedStyle(() => ({
+    opacity: translateX.value < -15 ? 1 : 0,
+    transform: [
+      { 
+        translateX: translateX.value < -15 
+          ? Math.max(-60, translateX.value + 60) 
+          : 0 
+      }
+    ],
+  }));
+
+  return (
+    <View style={styles.swipeContainer}>
+      {/* Delete button background */}
+      <Animated.View style={[styles.deleteBackground, deleteButtonStyle]}>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={performDelete}
+          activeOpacity={0.7}
+        >
+          <Feather name="trash-2" size={16} color="#FFFFFF" />
+        </TouchableOpacity>
+      </Animated.View>
+
+      {/* Main content */}
+      <PanGestureHandler onGestureEvent={gestureHandler} enabled={!disabled}>
+        <Animated.View style={animatedStyle}>
+          {children}
+        </Animated.View>
+      </PanGestureHandler>
+    </View>
+  );
+};
 
 export const ConversationList: React.FC<ConversationListProps> = ({
   conversations,
@@ -131,14 +228,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           
           <View style={styles.friendActions}>
             <TouchableOpacity
-              style={[
-                styles.inboxItemAction,
-                {
-                  backgroundColor: theme === 'dark' 
-                    ? 'rgba(16, 185, 129, 0.25)' 
-                    : 'rgba(16, 185, 129, 0.15)',
-                }
-              ]}
+              style={styles.friendActionButton}
               onPress={() => onArtistListeningPress(
                 { id: `spotify_${item.username}`, name: `${item.username}'s Music` }, 
                 `friend_${item.username}`
@@ -149,16 +239,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             </TouchableOpacity>
             
             <TouchableOpacity
-              style={[
-                styles.inboxItemAction,
-                {
-                  backgroundColor: theme === 'dark' 
-                    ? 'rgba(255, 255, 255, 0.25)' 
-                    : 'rgba(255, 255, 255, 0.9)',
-                  borderWidth: theme === 'dark' ? 1 : 0,
-                  borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'transparent',
-                }
-              ]}
+              style={styles.friendActionButton}
               onPress={() => onFriendMessagePress?.(item.username)}
               activeOpacity={0.7}
             >
@@ -208,7 +289,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     
     const styling = getChannelStyling();
     
-    return (
+    const conversationContent = (
       <TouchableOpacity
         style={[
           styles.inboxItem,
@@ -307,6 +388,17 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           </View>
         </View>
       </TouchableOpacity>
+    );
+
+    // Wrap conversation content with swipeable functionality
+    return (
+      <SwipeableConversationItem
+        onDelete={() => onDeleteConversation(item._id)}
+        theme={theme}
+        disabled={isAnimating}
+      >
+        {conversationContent}
+      </SwipeableConversationItem>
     );
   };
 
@@ -611,6 +703,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing[2],
   },
+
+  friendActionButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
   
   inboxItemAction: {
     width: 24,
@@ -708,5 +808,31 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontFamily: 'Inter-Medium',
     letterSpacing: -0.2,
+  },
+
+  // Swipe-to-delete styles
+  swipeContainer: {
+    position: 'relative',
+    overflow: 'hidden',
+  },
+
+  deleteBackground: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: 60,
+    backgroundColor: '#FF3B30',
+    borderRadius: 8,
+    marginVertical: spacing[2],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  deleteButton: {
+    width: 60,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
