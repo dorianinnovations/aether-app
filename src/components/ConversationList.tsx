@@ -12,6 +12,7 @@ import {
   FlatList,
   StyleSheet,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -69,6 +70,7 @@ interface ConversationListProps {
   itemRefs: React.MutableRefObject<{ [key: string]: View }>;
   friends?: Friend[];
   onFriendMessagePress?: (friendUsername: string) => void;
+  onFriendProfilePress?: (friendUsername: string) => void;
 }
 
 // Swipeable conversation item wrapper component
@@ -178,6 +180,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   itemRefs,
   friends = [],
   onFriendMessagePress,
+  onFriendProfilePress,
 }) => {
   const themeColors = getThemeColors(theme);
 
@@ -213,37 +216,55 @@ export const ConversationList: React.FC<ConversationListProps> = ({
       >
         <View style={styles.inboxItemHeader}>
           <View style={styles.inboxItemMeta}>
+            {/* Friend Avatar */}
+            <View style={[
+              styles.inboxAvatar,
+              styles.friendAvatar,
+              {
+                backgroundColor: theme === 'dark' 
+                  ? 'rgba(255, 107, 107, 0.12)' 
+                  : 'rgba(255, 107, 107, 0.08)',
+                borderWidth: item.avatar ? 0 : 1,
+                borderColor: theme === 'dark' 
+                  ? 'rgba(255, 107, 107, 0.2)' 
+                  : 'rgba(255, 107, 107, 0.15)',
+              }
+            ]}>
+              {item.avatar ? (
+                <Image
+                  source={{ uri: item.avatar }}
+                  style={styles.friendProfileImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Feather name="user" size={16} color="#FF6B6B" />
+              )}
+            </View>
             
             <View style={styles.inboxItemInfo}>
               <Text style={[
                 styles.inboxItemTitle,
                 { color: themeColors.text }
               ]}>
-                {item.username}
+                {item.name || item.username}
               </Text>
               
-              
+              <Text style={[
+                styles.inboxItemStatus,
+                { color: themeColors.textSecondary }
+              ]}>
+                @{item.username}
+              </Text>
             </View>
           </View>
           
           <View style={styles.friendActions}>
             <TouchableOpacity
               style={styles.friendActionButton}
-              onPress={() => onArtistListeningPress(
-                { id: `spotify_${item.username}`, name: `${item.username}'s Music` }, 
-                `friend_${item.username}`
-              )}
+              onPress={() => onFriendProfilePress?.(item.username)}
               activeOpacity={0.7}
             >
-              <Feather name="music" size={12} color="#10B981" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.friendActionButton}
-              onPress={() => onFriendMessagePress?.(item.username)}
-              activeOpacity={0.7}
-            >
-              <Feather name="message-circle" size={12} color={theme === 'dark' ? '#FFFFFF' : '#1F2937'} />
+              <Feather name="arrow-right" size={18} color="#6B7280" />
             </TouchableOpacity>
           </View>
         </View>
@@ -471,23 +492,16 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           />
         ) : (
           <>
-            <View style={[
-              styles.emptyIcon,
-              { 
-                backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.15)',
-                borderWidth: 1,
-                borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-              }
-            ]}>
+            <View style={styles.emptyIcon}>
               <Feather 
                 name={tabConfig.icon as FeatherIconNames} 
-                size={28} 
-                color={themeColors.text} 
+                size={20} 
+                color={themeColors.textSecondary} 
               />
             </View>
             <Text style={[
               styles.emptyTitle, 
-              { color: themeColors.text }
+              { color: themeColors.textSecondary }
             ]}>
               {emptyMessage}
             </Text>
@@ -767,18 +781,17 @@ const styles = StyleSheet.create({
   },
   
   emptyIcon: {
-    width: 64,
-    height: 48,
-    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 8,
   },
   
   emptyTitle: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 10,
+    fontWeight: '400',
     textAlign: 'center',
-    fontFamily: 'Inter-Medium',
+    fontFamily: 'Inter-Regular',
+    opacity: 0.6,
   },
   
   skeletonContainer: {

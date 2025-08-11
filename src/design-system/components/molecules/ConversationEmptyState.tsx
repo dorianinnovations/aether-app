@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { ConversationIcon } from '../atoms';
 import { spacing } from '../../tokens/spacing';
 import { designTokens } from '../../tokens/colors';
 
@@ -41,23 +40,11 @@ const ConversationEmptyState: React.FC<ConversationEmptyStateProps> = ({
 
   return (
     <View style={styles.emptyState}>
-      <View style={[
-        styles.emptyIcon,
-        { 
-          backgroundColor: theme === 'dark' 
-            ? 'rgba(0,0,0,0.4)' 
-            : 'rgba(0,0,0,0.15)',
-          borderWidth: 1,
-          borderColor: theme === 'dark' 
-            ? 'rgba(255,255,255,0.1)' 
-            : 'rgba(0,0,0,0.1)',
-        }
-      ]}>
-        <ConversationIcon 
-          icon={tab.icon}
-          theme={theme}
-          size={28}
-          color={themeColors.primary}
+      <View style={styles.emptyIcon}>
+        <Feather 
+          name={tab.icon}
+          size={24}
+          color={themeColors.secondary}
         />
       </View>
       <Text style={[
@@ -87,12 +74,8 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   emptyIcon: {
-    width: 64,
-    height: 48,
-    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
     marginBottom: 4,
     alignSelf: 'center',
   },
@@ -106,14 +89,15 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   emptyText: {
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '400',
     fontFamily: 'Nunito',
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 14,
     alignSelf: 'center',
     maxWidth: 200,
+    opacity: 0.7,
   },
 });
 

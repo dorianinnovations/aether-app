@@ -307,7 +307,7 @@ export const ChatAPI = {
   async updateConversationTitle(conversationId: string, title: string): Promise<boolean> {
     try {
       const { api } = await import('../core/client');
-      const response = await api.put(`/conversations/${conversationId}/title`, { title });
+      const response = await api.put(`/conversation/conversations/${conversationId}/title`, { title });
       return response.data.success;
     } catch (error) {
       logger.error('Failed to update conversation title:', error);
@@ -319,7 +319,7 @@ export const ChatAPI = {
   async generateConversationTitleOnServer(conversationId: string, firstMessage: string): Promise<string | null> {
     try {
       const { api } = await import('../core/client');
-      const response = await api.post(`/conversations/${conversationId}/generate-title`, { 
+      const response = await api.post(`/conversation/conversations/${conversationId}/generate-title`, { 
         firstMessage 
       });
       

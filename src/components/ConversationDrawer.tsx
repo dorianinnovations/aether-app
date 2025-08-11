@@ -15,12 +15,15 @@ import {
   Dimensions,
   Animated,
   Modal,
-  Alert,
   Image,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { ArtistListeningModal } from '../design-system/components/organisms/ArtistListeningModal';
+import { SignOutModal } from '../design-system/components/organisms/SignOutModal';
+import { PublicUserProfileModal } from '../design-system/components/organisms/PublicUserProfileModal';
 import { ConversationList } from './ConversationList';
+import { FadedBorder } from './FadedBorder';
 import {
   useConversationTabs,
   useConversationData,
@@ -33,6 +36,7 @@ import { getThemeColors } from '../design-system/tokens/colors';
 import { spacing, borderRadius, neumorphicSpacing } from '../design-system/tokens/spacing';
 import { log } from '../utils/logger';
 import { FriendsAPI } from '../services/api';
+import { UserAPI } from '../services/apiModules/endpoints/user';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -76,6 +80,12 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   // Friends state
   const [friends, setFriends] = useState<Friend[]>([]);
   const [friendsLoading, setFriendsLoading] = useState(false);
+
+  // Clear all modal state
+  const [clearAllModal, setClearAllModal] = useState<{ visible: boolean; type: 'conversations' | 'friends' } | null>(null);
+  
+  // Profile modal state
+  const [profileModal, setProfileModal] = useState<{ visible: boolean; username?: string } | null>(null);
 
   const themeColors = getThemeColors(theme);
   
@@ -289,61 +299,109 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const handleClearAllConversations = useCallback(() => {
     if (currentTab === 0) {
       // Clear Aether conversations
-      Alert.alert(
-        'Clear All Conversations',
-        'This will permanently delete all your conversations with Aether. This action cannot be undone.',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Clear All',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                const success = await handleDeleteAllConversations();
-                if (success) {
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                } else {
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-                }
-              } catch (error) {
-                log.error('Failed to clear all conversations:', error);
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              }
-            },
-          },
-        ]
-      );
+      setClearAllModal({ visible: true, type: 'conversations' });
     } else if (currentTab === 1) {
       // Clear friends list
-      Alert.alert(
-        'Clear All Friends',
-        'This will remove all friends from your list. This action cannot be undone.',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Clear All',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                // Clear local friends state
-                setFriends([]);
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              } catch (error) {
-                log.error('Failed to clear all friends:', error);
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              }
-            },
-          },
-        ]
-      );
+      setClearAllModal({ visible: true, type: 'friends' });
     }
-  }, [currentTab, handleDeleteAllConversations]);
+  }, [currentTab]);
+
+  const handleClearAllConfirm = useCallback(async () => {
+    if (!clearAllModal) return;
+
+    try {
+      if (clearAllModal.type === 'conversations') {
+        const success = await handleDeleteAllConversations();
+        if (success) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } else {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        }
+      } else if (clearAllModal.type === 'friends') {
+        // Clear local friends state
+        setFriends([]);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (error) {
+      log.error('Failed to clear all:', error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setClearAllModal(null);
+    }
+  }, [clearAllModal, handleDeleteAllConversations]);
+
+  const handleClearAllCancel = useCallback(() => {
+    setClearAllModal(null);
+  }, []);
+
+  const handleFriendProfilePress = useCallback((username: string) => {
+    setProfileModal({ visible: true, username });
+  }, []);
+
+  const handleProfileModalClose = useCallback(() => {
+    setProfileModal(null);
+  }, []);
+
+  const handleFetchProfile = useCallback(async (username: string) => {
+    try {
+      const response = await UserAPI.getPublicProfile(username);
+    
+    // Transform API response to match our component interface
+    if (response && typeof response === 'object' && 'data' in response) {
+      const data = (response as any).data;
+      return {
+        profile: {
+          email: data.user?.email || '',
+          username: data.user?.username || username,
+          displayName: data.user?.displayName || data.user?.name || username,
+          bio: data.user?.bio || '',
+          location: data.user?.location || '',
+          website: data.user?.website || '',
+          socialLinks: data.user?.socialLinks || {},
+          profilePicture: data.profilePicture,
+          bannerImage: data.bannerImage,
+          badges: data.user?.badges || [],
+        },
+        socialProfile: data.socialProfile || undefined,
+      };
+    }
+    
+    // Fallback transformation
+    return {
+      profile: {
+        email: '',
+        username: username,
+        displayName: username,
+        bio: '',
+        location: '',
+        website: '',
+        socialLinks: {},
+        profilePicture: undefined,
+        bannerImage: undefined,
+        badges: [],
+      },
+      socialProfile: undefined,
+    };
+    } catch (error: unknown) {
+      console.error('Error fetching profile:', error);
+      // Return basic profile data on error
+      return {
+        profile: {
+          email: '',
+          username: username,
+          displayName: username,
+          bio: 'Profile unavailable',
+          location: '',
+          website: '',
+          socialLinks: {},
+          profilePicture: undefined,
+          bannerImage: undefined,
+          badges: [],
+        },
+        socialProfile: undefined,
+      };
+    }
+  }, []);
   
   if (!isVisible) return null;
 
@@ -378,8 +436,8 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
             styles.drawer,
             {
               transform: [{ translateX: slideAnim }],
-              backgroundColor: theme === 'light' ? '#FFFFFF' : '#1A1A1A',
-              borderRightWidth: neumorphicSpacing.borderWidth.default,
+              backgroundColor: theme === 'light' ? '#F8F8F8' : '#151515',
+              borderRightWidth: 0.5,
               borderColor: theme === 'light' ? '#E0E0E0' : '#3A3A3A',
             }
           ]}
@@ -391,8 +449,6 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                 styles.inboxHeader,
                 {
                   backgroundColor: 'transparent',
-                  borderBottomWidth: 1,
-                  borderBottomColor: theme === 'light' ? '#F0F0F0' : '#2A2A2A',
                 }
               ]}>
                 {/* Minimal Title */}
@@ -434,9 +490,6 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                               backgroundColor: isActive
                                 ? (theme === 'dark' ? 'rgba(42, 42, 42, 0.3)' : 'rgba(248, 248, 248, 0.5)')
                                 : 'transparent',
-                              borderTopColor: isActive 
-                                ? (theme === 'dark' ? '#FFFFFF' : '#000000')
-                                : 'transparent',
                             }
                           ]}
                           onPress={() => handleTabTransitionWithAnimationState(index)}
@@ -475,6 +528,9 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                   })}
                 </View>
                 
+                {/* Faded Border Below Tabs */}
+                <FadedBorder theme={theme} />
+                
               </View>
           
               <ConversationList
@@ -500,6 +556,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                 itemRefs={itemRefs}
                 friends={friends}
                 onFriendMessagePress={onFriendMessagePress}
+                onFriendProfilePress={handleFriendProfilePress}
               />
               
               {/* Minimal Action Dock */}
@@ -507,8 +564,6 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                 styles.actionDock,
                 {
                   backgroundColor: 'transparent',
-                  borderTopWidth: 1,
-                  borderTopColor: theme === 'light' ? '#F0F0F0' : '#2A2A2A',
                 }
               ]}>
                 {/* Minimal primary action */}
@@ -604,6 +659,36 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
             onClose={handleArtistListeningClose}
           />
         )}
+
+        {clearAllModal && (
+          <SignOutModal
+            visible={clearAllModal.visible}
+            theme={theme}
+            title={clearAllModal.type === 'conversations' ? 'Clear All Conversations' : 'Clear All Friends'}
+            message={clearAllModal.type === 'conversations' 
+              ? 'This will permanently delete all your conversations with Aether. This action cannot be undone.'
+              : 'This will remove all friends from your list. This action cannot be undone.'
+            }
+            confirmText="Clear All"
+            cancelText="Cancel"
+            icon="trash"
+            iconLibrary="Feather"
+            variant="danger"
+            onConfirm={handleClearAllConfirm}
+            onClose={handleClearAllCancel}
+            loadingTitle=""
+            loadingMessage=""
+          />
+        )}
+
+        {profileModal && (
+          <PublicUserProfileModal
+            visible={profileModal.visible}
+            username={profileModal.username}
+            onClose={handleProfileModalClose}
+            onFetchProfile={handleFetchProfile}
+          />
+        )}
       </View>
     </Modal>
   );
@@ -684,8 +769,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: 32,
-    borderTopWidth: 1,
-    borderTopColor: 'transparent',
     marginHorizontal: spacing[1],
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,

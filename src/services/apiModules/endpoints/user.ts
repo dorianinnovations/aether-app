@@ -201,4 +201,16 @@ export const UserAPI = {
     const response = await api.delete('/user/delete');
     return response.data;
   },
+
+  async getPublicProfile(username: string): Promise<unknown> {
+    try {
+      const response = await api.get(`/user/${username}/profile`);
+      return response.data;
+    } catch (error: unknown) {
+      if ((error as any).response?.status === 404) {
+        throw new Error(`User '${username}' not found`);
+      }
+      throw error;
+    }
+  },
 };

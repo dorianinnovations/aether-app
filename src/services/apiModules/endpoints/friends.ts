@@ -36,15 +36,8 @@ export const FriendsAPI = {
     return response.data;
   },
 
-  async acceptFriendRequest(username: string): Promise<any> {
-    const response = await api.post('/friends/requests/accept', { username });
-    return response.data;
-  },
-
-  async declineFriendRequest(username: string): Promise<any> {
-    const response = await api.post('/friends/requests/decline', { username });
-    return response.data;
-  },
+  // Note: Accept/decline functionality would need to be implemented on backend
+  // For now, friend requests are handled through the add endpoint
 
   // Friend Messaging Endpoints
   async sendDirectMessage(friendUsername: string, message: string): Promise<any> {

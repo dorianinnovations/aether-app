@@ -3,7 +3,7 @@
  * Read-only profile display for viewing other users' public profiles
  */
 
-import React from 'react';
+import * as React from 'react';
 import {
   View,
   ScrollView,

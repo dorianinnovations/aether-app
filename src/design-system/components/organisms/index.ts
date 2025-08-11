@@ -17,6 +17,7 @@ export { default as SearchResultsModal } from './SearchResultsModal';
 export { ProfileInsights } from './ProfileInsights';
 export { ProfileCard } from './ProfileCard';
 export { PublicUserProfile } from './PublicUserProfile';
+export { PublicUserProfileModal } from './PublicUserProfileModal';
 export { PersonaModal } from './PersonaModal';
 export { WalletModal } from './WalletModal';
 export { ToastProvider } from './ToastProvider';

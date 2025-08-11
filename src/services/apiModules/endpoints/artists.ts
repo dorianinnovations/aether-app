@@ -159,7 +159,9 @@ export const ArtistAPI = {
     if (genre) queryParams.append('genre', genre);
     if (limit) queryParams.append('limit', limit.toString());
     
-    return await makeRequest<Artist[]>('GET', `/artists/trending?${queryParams.toString()}`);
+    // Use discover endpoint with trending-based discovery
+    queryParams.append('based_on', 'preferences');
+    return await makeRequest<Artist[]>('GET', `/artists/discover?${queryParams.toString()}`);
   },
 
   // Utility Methods

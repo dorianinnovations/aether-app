@@ -44,6 +44,8 @@ interface SignOutModalProps {
   iconLibrary?: 'FontAwesome5' | 'Feather';
   variant?: 'danger' | 'warning' | 'info' | 'success';
   showIcon?: boolean;
+  loadingTitle?: string;
+  loadingMessage?: string;
 }
 
 export const SignOutModal: React.FC<SignOutModalProps> = ({
@@ -59,6 +61,8 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
   iconLibrary = 'FontAwesome5',
   variant = 'danger',
   showIcon = true,
+  loadingTitle = 'Signing Out...',
+  loadingMessage = 'Please wait while we sign you out of your account.',
 }) => {
   const themeColors = getThemeColors(theme);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -198,22 +202,26 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
             )}
 
             {/* Title */}
-            <Text style={[
-              styles.title,
-              typography.textStyles.headlineSmall,
-              { color: themeColors.text }
-            ]}>
-              {isConfirming ? 'Signing Out...' : title}
-            </Text>
+            {(isConfirming ? loadingTitle : title) ? (
+              <Text style={[
+                styles.title,
+                typography.textStyles.headlineSmall,
+                { color: themeColors.text }
+              ]}>
+                {isConfirming ? loadingTitle : title}
+              </Text>
+            ) : null}
 
             {/* Message */}
-            <Text style={[
-              styles.message,
-              typography.textStyles.bodyMedium,
-              { color: themeColors.textSecondary }
-            ]}>
-              {isConfirming ? 'Please wait while we sign you out of your account.' : message}
-            </Text>
+            {(isConfirming ? loadingMessage : message) ? (
+              <Text style={[
+                styles.message,
+                typography.textStyles.bodyMedium,
+                { color: themeColors.textSecondary }
+              ]}>
+                {isConfirming ? loadingMessage : message}
+              </Text>
+            ) : null}
 
             {/* Buttons */}
             {!isConfirming && (

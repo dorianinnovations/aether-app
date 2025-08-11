@@ -50,58 +50,11 @@ export const SocialProxyAPI = {
     }
   },
 
-  // Get friend's social proxy
-  async getFriendProfile(username: string): Promise<any> {
-    try {
-      const response = await api.get(`/social-proxy/friend/${username}`);
-      return response.data;
-    } catch (error) {
-      logger.error('Failed to fetch friend profile:', error);
-      throw error;
-    }
-  },
-
-  // React to activity
-  async reactToActivity(activityId: string, type: 'like' | 'love' | 'laugh' | 'curious' | 'relate'): Promise<any> {
-    try {
-      const response = await api.post(`/social-proxy/activity/${activityId}/react`, { type });
-      return response.data;
-    } catch (error) {
-      logger.error('Failed to react to activity:', error);
-      throw error;
-    }
-  },
-
-  // Comment on activity
-  async commentOnActivity(activityId: string, text: string): Promise<any> {
-    try {
-      const response = await api.post(`/social-proxy/activity/${activityId}/comment`, { text });
-      return response.data;
-    } catch (error) {
-      logger.error('Failed to comment on activity:', error);
-      throw error;
-    }
-  },
-
-  // Create a new post
-  async createPost(text: string, visibility: 'public' | 'friends' | 'private' = 'friends'): Promise<any> {
-    try {
-      const response = await api.post('/social-proxy/posts', { text, visibility });
-      return response.data;
-    } catch (error) {
-      logger.error('Failed to create post:', error);
-      throw error;
-    }
-  },
-
-  // Delete a post
-  async deletePost(postId: string): Promise<any> {
-    try {
-      const response = await api.delete(`/social-proxy/posts/${postId}`);
-      return response.data;
-    } catch (error) {
-      logger.error('Failed to delete post:', error);
-      throw error;
-    }
-  }
+  // Note: The following endpoints are not yet implemented on backend:
+  // - getFriendProfile
+  // - reactToActivity  
+  // - commentOnActivity
+  // - createPost
+  // - deletePost
+  // They would need to be added to /routes/social-proxy.js
 };
