@@ -944,7 +944,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
           // Handle tier selection - could integrate with payment processing here
           console.log(`Selected tier: ${tier}`);
         }}
-        currentTier="free"
+        currentTier="standard"
         usage={{
           gpt4o: 45,
           gpt5: 120,

@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { PanGestureHandler, State, PanGestureHandlerGestureEvent, PanGestureHandlerStateChangeEvent } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
+import LottieView from 'lottie-react-native';
 import { PageBackground } from '../../design-system/components/atoms/PageBackground';
 import { RainbowShimmerText } from '../../design-system/components/atoms';
 import { designTokens, getThemeColors } from '../../design-system/tokens/colors';
@@ -47,31 +48,31 @@ interface OnboardingStep {
 
 const onboardingSteps: OnboardingStep[] = [
   {
-    title: "The Anti-Algorithm Introduction",
-    subtitle: "Your social life isn't a feed—it's a constellation",
-    description: "Instead of scrolling through everyone's highlight reel, you just... talk. Tell our AI what's new in your world, what you're into lately, or what random thought just crossed your mind. It listens, updates your profile, and quietly works its magic.",
-    accent: "AUTHENTIC",
+    title: "Figure Out Any Song",
+    subtitle: "That track stuck in your head? We got you",
+    description: "Take a pic of some random vinyl, scan whatever's playing, or just hum that melody you can't shake. The AI behind this thing is actually pretty wild - it'll tell you not just what song it is, but like, the whole story behind it.",
+    accent: "VIBES",
     category: "FOUNDATION"
   },
   {
-    title: "The Effortless Update", 
-    subtitle: "Just chat with your AI like texting a friend",
-    description: "Mention you're learning pottery, obsessing over that new sushi place, or finally reading that book everyone recommended. Your profile evolves as naturally as you do. This isn't social media; it's your social constellation, always current, never performative.",
-    accent: "NATURAL",
+    title: "Three Tiers. Your Choice.", 
+    subtitle: "Standard → Legendary → VIP",
+    description: "Start wherever. Standard gets you going. Legendary? Unlimited requests, that badge, the works. VIP is... well, it's VIP. You know what that means. Each tier unlocks more of the good stuff.",
+    accent: "TIERS",
     category: "CONNECTION"
   },
   {
-    title: "The Synchronicity Engine",
-    subtitle: "Life's best moments aren't scheduled—they're discovered", 
-    description: "While you're living your life, sharing random updates through voice notes or quick texts with your AI, something beautiful happens. When the stars align, you and your best friend from college both have time and happen to be in the same neighborhood.",
-    accent: "DISCOVERY",
+    title: "Badges That Actually Matter",
+    subtitle: "VIP for early believers. LEGEND for premium users.", 
+    description: "See that badge on someone's profile? They earned it. No participation trophies here - these mean you were here early or you upgraded because you get it. Rare stuff stays rare.",
+    accent: "STATUS",
     category: "EXPERIENCE"
   },
   {
-    title: "The Privacy-First Promise",
-    subtitle: "Your inner circle's digital living room",
-    description: "Every update you share stays within the network you build. Your AI companion learns your rhythms without selling them. Choose exactly who sees what. When connections happen, they're organic chemistry, not algorithmic manipulation.",
-    accent: "PRIVATE",
+    title: "Privacy? Obviously.",
+    subtitle: "Your data doesn't get sold or shared or whatever",
+    description: "AI learns your music taste to help you discover new stuff. That's it. No sketchy data selling, no random companies getting your info. Just you, the music, and recommendations that don't suck. Keep it simple.",
+    accent: "TRUST",
     category: "FRIENDS"
   }
 ];
@@ -82,32 +83,45 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route: 
   
   const [currentStep, setCurrentStep] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [showSwipeHint, setShowSwipeHint] = useState(true);
   
   // Animation refs
   const translateX = useRef(new Animated.Value(0)).current;
   const stepOpacity = useRef(new Animated.Value(0)).current;
-  const categoryOpacity = useRef(new Animated.Value(0)).current;
   const titleOpacity = useRef(new Animated.Value(0)).current;
   const subtitleOpacity = useRef(new Animated.Value(0)).current;
   const descriptionOpacity = useRef(new Animated.Value(0)).current;
-  const accentOpacity = useRef(new Animated.Value(0)).current;
   const borderOpacity = useRef(new Animated.Value(0)).current;
   const progressOpacity = useRef(new Animated.Value(0)).current;
+  const swipeHintOpacity = useRef(new Animated.Value(0)).current;
   
   const panRef = useRef<PanGestureHandler>(null);
 
   useEffect(() => {
     animateStepIn();
-  }, []);
+    
+    if (currentStep === 0) {
+      // Show swipe hint on first step
+      setShowSwipeHint(true);
+      swipeHintOpacity.setValue(1);
+    } else {
+      // Fade out hint when leaving first step
+      Animated.timing(swipeHintOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
+        setShowSwipeHint(false);
+      });
+    }
+  }, [currentStep]);
 
   const animateStepIn = () => {
     // Reset all animations
     stepOpacity.setValue(0);
-    categoryOpacity.setValue(0);
     titleOpacity.setValue(0);
     subtitleOpacity.setValue(0);
     descriptionOpacity.setValue(0);
-    accentOpacity.setValue(0);
     borderOpacity.setValue(0);
     progressOpacity.setValue(0);
 
@@ -121,11 +135,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route: 
         useNativeDriver: true,
       }),
       Animated.timing(borderOpacity, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      Animated.timing(categoryOpacity, {
         toValue: 1,
         duration: 400,
         useNativeDriver: true,
@@ -146,11 +155,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route: 
         duration: 400,
         useNativeDriver: true,
       }),
-      Animated.timing(accentOpacity, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
       Animated.timing(progressOpacity, {
         toValue: 1,
         duration: 400,
@@ -164,29 +168,23 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route: 
     
     const targetX = direction === 'left' ? -width : width;
     
-    Animated.parallel([
-      Animated.timing(translateX, {
-        toValue: targetX,
-        duration: 120,
-        useNativeDriver: true,
-      }),
-      Animated.timing(stepOpacity, {
-        toValue: 0,
-        duration: 120,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
+    // Just slide the current card out
+    Animated.timing(translateX, {
+      toValue: targetX,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      // Set up for next card to slide in from opposite side
       translateX.setValue(direction === 'left' ? width : -width);
       callback();
       
-      // Animate in from opposite side
+      // Animate new card in from opposite side
       Animated.timing(translateX, {
         toValue: 0,
-        duration: 150,
+        duration: 250,
         useNativeDriver: true,
       }).start(() => {
         setIsAnimating(false);
-        animateStepIn();
       });
     });
   };
@@ -209,11 +207,18 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route: 
         setCurrentStep(currentStep + 1);
       });
     } else {
-      // Final step - premium completion haptic
+      // Final step - smooth transition to signup
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setTimeout(() => {
+      
+      // Smooth slide out to the left
+      setIsAnimating(true);
+      Animated.timing(translateX, {
+        toValue: -width,
+        duration: 400,
+        useNativeDriver: true,
+      }).start(() => {
         navigation.replace('SignUp');
-      }, 200);
+      });
     }
   };
 
@@ -293,42 +298,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route: 
           failOffsetY={[-40, 40]}
         >
           <Animated.View style={styles.gestureContainer}>
-            
-            {/* Advanced Progress System */}
-            <Animated.View style={[styles.progressContainer, { opacity: progressOpacity }]}>
-              <View style={styles.progressTrack}>
-                {onboardingSteps.map((step, index) => (
-                  <View key={index} style={styles.progressSegment}>
-                    <View
-                      style={[
-                        styles.progressNode,
-                        {
-                          backgroundColor: index === currentStep 
-                            ? getStepColor(index, theme)
-                            : 'transparent',
-                          borderColor: index <= currentStep
-                            ? getStepColor(index, theme)
-                            : (theme === 'dark' ? '#333333' : '#e5e7eb'),
-                          borderWidth: 1,
-                        },
-                      ]}
-                    />
-                    {index < onboardingSteps.length - 1 && (
-                      <View
-                        style={[
-                          styles.progressConnector,
-                          {
-                            backgroundColor: index < currentStep
-                              ? getStepColor(index, theme)
-                              : (theme === 'dark' ? '#333333' : '#e5e7eb'),
-                          },
-                        ]}
-                      />
-                    )}
-                  </View>
-                ))}
-              </View>
-            </Animated.View>
 
             {/* Advanced Content Framework */}
             <Animated.View
@@ -357,21 +326,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route: 
                   }
                 ]}
               >
-                {/* Category Header */}
-                <Animated.View style={[styles.categoryHeader, { opacity: categoryOpacity }]}>
-                  <View style={styles.categoryIndicator}>
-                    <Text style={[
-                      styles.categoryText,
-                      { color: theme === 'dark' ? '#666666' : '#999999' }
-                    ]}>
-                      {currentStepData.category}
-                    </Text>
-                    <View style={[
-                      styles.categoryDivider,
-                      { backgroundColor: theme === 'dark' ? '#333333' : '#e5e7eb' }
-                    ]} />
-                  </View>
-                </Animated.View>
 
                 {/* Main Title */}
                 <Animated.View style={[styles.titleSection, { opacity: titleOpacity }]}>
@@ -419,42 +373,42 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route: 
                   </Text>
                 </Animated.View>
 
-                {/* Accent Footer */}
-                <Animated.View style={[styles.accentFooter, { opacity: accentOpacity }]}>
-                  <View style={[
-                    styles.accentLine,
-                    { backgroundColor: theme === 'dark' ? '#333333' : '#e5e7eb' }
-                  ]} />
-                  <Text style={[
-                    styles.accentText,
-                    { color: theme === 'dark' ? '#666666' : '#999999' }
-                  ]}>
-                    {currentStepData.accent}
-                  </Text>
-                </Animated.View>
 
               </Animated.View>
             </Animated.View>
 
-            {/* Navigation Hint */}
-            <Animated.View style={[styles.navigationHint, { opacity: progressOpacity }]}>
-              <View style={styles.hintIndicator}>
-                <View style={[
-                  styles.gestureIndicator,
-                  { backgroundColor: theme === 'dark' ? '#333333' : '#e5e7eb' }
-                ]} />
-                <Text
-                  style={[
-                    styles.hintText,
-                    { 
-                      color: theme === 'dark' ? '#666666' : '#999999',
-                    }
-                  ]}
-                >
-                  {currentStep === onboardingSteps.length - 1 ? 'Swipe to continue' : 'Swipe to continue'}
-                </Text>
+            {/* Navigation Hint - Fades out after first step */}
+            {showSwipeHint && (
+              <Animated.View style={[styles.navigationHint, { opacity: swipeHintOpacity }]}>
+                <LottieView
+                  source={require('../../../assets/SwipeLeft.json')}
+                  autoPlay
+                  loop
+                  style={styles.swipeLottie}
+                  resizeMode="contain"
+                />
+              </Animated.View>
+            )}
+
+            {/* Tiny Progress Dots at Bottom */}
+            <View style={styles.bottomProgressContainer}>
+              <View style={styles.bottomProgressTrack}>
+                {onboardingSteps.map((step, index) => (
+                  <View key={index} style={styles.bottomProgressSegment}>
+                    <View
+                      style={[
+                        styles.bottomProgressNode,
+                        {
+                          backgroundColor: index === currentStep 
+                            ? getStepColor(index, theme)
+                            : (theme === 'dark' ? '#333333' : '#e5e7eb'),
+                        },
+                      ]}
+                    />
+                  </View>
+                ))}
               </View>
-            </Animated.View>
+            </View>
 
           </Animated.View>
         </PanGestureHandler>
@@ -505,7 +459,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '400',
     letterSpacing: 1.2,
-    fontFamily: 'Nunito-Regular',
+    fontFamily: 'monospace',
   },
   
   // Futuristic Content Framework
@@ -538,7 +492,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0.8,
-    fontFamily: 'Nunito-SemiBold',
+    fontFamily: 'monospace',
   },
   categoryDivider: {
     height: 1,
@@ -557,7 +511,8 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     letterSpacing: -0.8,
     lineHeight: 28,
-    fontFamily: 'CrimsonPro-Bold',
+    fontFamily: 'System',
+    fontVariant: ['small-caps'],
   },
   subtitleSection: {
     alignItems: 'flex-start',
@@ -570,7 +525,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     letterSpacing: -0.2,
     lineHeight: 18,
-    fontFamily: 'Nunito-Medium',
+    fontFamily: 'monospace',
   },
   descriptionSection: {
     alignItems: 'flex-start',
@@ -583,7 +538,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     lineHeight: 24,
     letterSpacing: -0.1,
-    fontFamily: 'Nunito-Regular',
+    fontFamily: 'System',
   },
   
   // Accent Footer
@@ -602,28 +557,38 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     letterSpacing: 0.6,
-    fontFamily: 'Nunito-SemiBold',
+    fontFamily: 'monospace',
   },
   
   // Navigation System
   navigationHint: {
-    alignItems: 'center',
+    position: 'absolute',
+    bottom: 250, // Raised a bit more
+    right: 24,
+    zIndex: 10,
   },
-  hintIndicator: {
+  swipeLottie: {
+    width: 100,
+    height: 100,
+  },
+  
+  // Bottom Progress Indicator
+  bottomProgressContainer: {
+    alignItems: 'center',
+    paddingBottom: 40,
+  },
+  bottomProgressTrack: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  gestureIndicator: {
-    width: 32,
-    height: 2,
-    borderRadius: 1,
+  bottomProgressSegment: {
+    alignItems: 'center',
   },
-  hintText: {
-    ...typography.textStyles.bodyMedium,
-    fontSize: 11,
-    fontWeight: '500',
-    letterSpacing: 0.5,
-    fontFamily: 'Nunito-Medium',
+  bottomProgressNode: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
 });
 

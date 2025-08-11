@@ -588,9 +588,9 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                       color={featureColor}
                       style={styles.checkIcon}
                     />
-                    {typeof feature === 'object' && feature.parts ? (
+                    {typeof feature === 'object' && (feature as any).parts ? (
                       <View style={styles.featureTextContainer}>
-                        {feature.parts.map((part, partIndex) => (
+                        {(feature as any).parts.map((part: any, partIndex: number) => (
                           part.isClickable ? (
                             <TouchableOpacity key={partIndex} onPress={() => switchToTier('pro')}>
                               <Text style={[
@@ -863,7 +863,7 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                             flex: 1,
                           }
                         ]}>
-                          {benefit}
+                          {benefit as React.ReactNode}
                         </Text>
                       )}
                     </View>

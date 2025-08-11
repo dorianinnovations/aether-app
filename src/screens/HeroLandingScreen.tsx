@@ -268,7 +268,8 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                         theme === "dark"
                           ? "#ffffff"
                           : designTokens.text.secondary,
-                      fontFamily: "Nunito-SemiBold",
+                      fontFamily: "System",
+                      fontVariant: ['small-caps'],
                     },
                   ] as any
                 }
@@ -276,7 +277,7 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                 duration={3000}
                 delay={1000}
               >
-                Keeping you closer with those who matter
+                Discover authentic sounds
               </ShimmerText>
             </View>
 
@@ -300,9 +301,9 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                   letterSpacing: -5,
                   textAlign: "center",
                   fontFamily: "CrimsonPro_700Bold",
-                  textShadowColor: theme === "dark" ? 'rgba(255, 255, 255, 0.8)' : 'rgba(145, 145, 145, 0.9)',
+                  textShadowColor: theme === "dark" ? 'rgba(255, 255, 255, 0.5)' : 'rgba(145, 145, 145, 0.6)',
                   textShadowOffset: { width: 0, height: theme === "dark" ? 0 : 2 },
-                  textShadowRadius: theme === "dark" ? 12 : 6,
+                  textShadowRadius: theme === "dark" ? 6 : 3,
                   backgroundColor: 'transparent',
                   elevation: 12,
                   color: theme === "dark" ? "#ffffff" : "#4a4a4a",
@@ -373,7 +374,7 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                               theme === "dark"
                                 ? "#ffffff"
                                 : designTokens.text.primary,
-                            fontFamily: "Nunito-SemiBold",
+                            fontFamily: "System",
                           },
                         ]}
                       >
@@ -440,7 +441,7 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                               theme === "dark"
                                 ? "#cccccc"
                                 : colors.textSecondary,
-                            fontFamily: "Nunito-Medium",
+                            fontFamily: "monospace",
                           },
                         ]}
                       >
@@ -469,7 +470,7 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                     {
                       color:
                         theme === "dark" ? colors.textMuted : colors.textMuted,
-                      fontFamily: "Nunito-Regular",
+                      fontFamily: "monospace",
                     },
                   ]}
                 >
@@ -482,7 +483,7 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                           theme === "dark"
                             ? colors.textSecondary
                             : colors.textSecondary,
-                        fontFamily: "Nunito-SemiBold",
+                        fontFamily: "System",
                       },
                     ]}
                   >
