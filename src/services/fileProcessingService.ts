@@ -7,8 +7,8 @@ import { MessageAttachment } from '../types';
 
 // File processing configuration - Updated to match backend specification
 export const FILE_PROCESSING_CONFIG = {
-  maxFileSize: 10 * 1024 * 1024, // 10MB per file
-  maxTotalSize: 50 * 1024 * 1024, // 50MB total
+  maxFileSize: 100 * 1024 * 1024, // 100MB per file
+  maxTotalSize: 500 * 1024 * 1024, // 500MB total
   maxAttachments: 5,
   maxFileNameLength: 255,
   
@@ -106,7 +106,7 @@ export class FileProcessingService {
     if (attachment.size > FILE_PROCESSING_CONFIG.maxFileSize) {
       return {
         isValid: false,
-        error: `File "${attachment.name}" exceeds 10MB limit`
+        error: `File "${attachment.name}" exceeds 100MB limit`
       };
     }
 
@@ -152,7 +152,7 @@ export class FileProcessingService {
     // Check total size
     const totalSize = attachments.reduce((sum, att) => sum + att.size, 0);
     if (totalSize > FILE_PROCESSING_CONFIG.maxTotalSize) {
-      errors.push('Total file size exceeds 50MB limit');
+      errors.push('Total file size exceeds 500MB limit');
     }
 
     // Validate individual files
