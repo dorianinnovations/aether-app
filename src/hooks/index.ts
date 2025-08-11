@@ -18,6 +18,7 @@ export { useMessages } from './useMessages';
 // UI and interaction hooks
 export { useKeyboard } from './useKeyboard';
 export { useKeyboardAnimation } from './useKeyboardAnimation';
+export { useScrollToInput } from './useScrollToInput';
 
 // Application state hooks
 export { useSettings } from './useSettings';

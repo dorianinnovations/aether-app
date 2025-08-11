@@ -23,16 +23,13 @@ const SETTINGS_KEYS = {
   REDUCEMOTION: '@aether_reduce_motion',
   HIGHCONTRAST: '@aether_high_contrast',
   LARGETEXT: '@aether_large_text',
-  // Display
-  KEEPSCREENON: '@aether_keep_screen_on',
-  SHOWTIMESTAMPS: '@aether_show_timestamps',
   // System
   AUTOLOCK: '@aether_auto_lock',
   AUTOLOCKTIMEOUT: '@aether_auto_lock_timeout',
   // Background
   BACKGROUNDTYPE: '@aether_background_type',
-  // Dynamic Options
-  DYNAMICOPTIONS: '@aether_dynamic_options',
+  // Model Selection
+  SELECTEDMODELS: '@aether_selected_models',
 } as const;
 
 // Default Settings
@@ -53,20 +50,17 @@ export const DEFAULT_SETTINGS = {
   reduceMotion: false,
   highContrast: false,
   largeText: false,
-  // Display
-  keepScreenOn: false,
-  showTimestamps: true,
   // System
   autoLock: true,
   autoLockTimeout: 300, // 5 minutes in seconds
   // Background
   backgroundType: 'blue' as 'blue' | 'white' | 'sage' | 'lavender' | 'cream' | 'mint' | 'pearl',
-  // Dynamic Options
-  dynamicOptions: false,
+  // Model Selection
+  selectedModels: ['gpt5', 'gemini25pro', 'opus41'] as string[],
 };
 
 export type SettingsKey = keyof typeof DEFAULT_SETTINGS;
-export type SettingsValue = string | number | boolean;
+export type SettingsValue = string | number | boolean | string[];
 
 export class SettingsStorage {
   // Get a single setting
@@ -92,6 +86,8 @@ export class SettingsStorage {
         return (value === 'true') as T;
       } else if (typeof defaultVal === 'number') {
         return Number(value) as T;
+      } else if (Array.isArray(defaultVal)) {
+        return JSON.parse(value) as T;
       } else {
         return value as T;
       }
@@ -108,7 +104,8 @@ export class SettingsStorage {
       if (!storageKey) {
         throw new Error(`Invalid settings key: ${key}`);
       }
-      await AsyncStorage.setItem(storageKey, String(value));
+      const stringValue = Array.isArray(value) ? JSON.stringify(value) : String(value);
+      await AsyncStorage.setItem(storageKey, stringValue);
     } catch (error) {
       throw error;
     }

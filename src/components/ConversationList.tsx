@@ -135,8 +135,8 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                 styles.inboxItemAction,
                 {
                   backgroundColor: theme === 'dark' 
-                    ? 'rgba(29, 78, 216, 0.15)' 
-                    : 'rgba(59, 130, 246, 0.12)',
+                    ? 'rgba(16, 185, 129, 0.25)' 
+                    : 'rgba(16, 185, 129, 0.15)',
                 }
               ]}
               onPress={() => onArtistListeningPress(
@@ -145,7 +145,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
               )}
               activeOpacity={0.7}
             >
-              <Feather name="music" size={12} color={themeColors.textSecondary} />
+              <Feather name="music" size={12} color="#10B981" />
             </TouchableOpacity>
             
             <TouchableOpacity
@@ -153,14 +153,16 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                 styles.inboxItemAction,
                 {
                   backgroundColor: theme === 'dark' 
-                    ? 'rgba(255, 107, 107, 0.15)' 
-                    : 'rgba(255, 107, 107, 0.12)',
+                    ? 'rgba(255, 255, 255, 0.25)' 
+                    : 'rgba(255, 255, 255, 0.9)',
+                  borderWidth: theme === 'dark' ? 1 : 0,
+                  borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'transparent',
                 }
               ]}
               onPress={() => onFriendMessagePress?.(item.username)}
               activeOpacity={0.7}
             >
-              <Feather name="message-circle" size={12} color={themeColors.textSecondary} />
+              <Feather name="message-circle" size={12} color={theme === 'dark' ? '#FFFFFF' : '#1F2937'} />
             </TouchableOpacity>
           </View>
         </View>
@@ -613,7 +615,7 @@ const styles = StyleSheet.create({
   inboxItemAction: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -693,16 +695,16 @@ const styles = StyleSheet.create({
   },
   
   loadMoreButton: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    borderRadius: 20,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 180,
+    minWidth: 140,
   },
   
   loadMoreText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
     fontFamily: 'Inter-Medium',
     letterSpacing: -0.2,

@@ -25,8 +25,6 @@ import { designTokens, getThemeColors, getStandardBorder } from '../../tokens/co
 import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
 import { AnimatedHamburger } from '../atoms/AnimatedHamburger';
-import { PrestigiousBadge, mapDatabaseBadgeToPrestigious } from '../atoms/PrestigiousBadge';
-import { userBadgesService } from '../../../services/userBadgesService';
 import { authService } from '../../../services/authService';
 
 interface HeaderProps {
@@ -37,14 +35,12 @@ interface HeaderProps {
   showConversationsButton?: boolean;
   showQuickAnalyticsButton?: boolean;
   showSearchButton?: boolean;
-  showDynamicOptionsButton?: boolean;
   onBackPress?: () => void;
   onMenuPress?: () => void;
   onConversationsPress?: () => void;
   onQuickAnalyticsPress?: () => void;
   onTitlePress?: () => void;
   onSearchPress?: () => void;
-  onDynamicOptionsPress?: () => void;
   theme?: 'light' | 'dark';
   isVisible?: boolean;
   isMenuOpen?: boolean;
@@ -73,14 +69,12 @@ export const Header: React.FC<HeaderProps> = ({
   showConversationsButton = false,
   showQuickAnalyticsButton = false,
   showSearchButton = false,
-  showDynamicOptionsButton = false,
   onBackPress,
   onMenuPress,
   onConversationsPress,
   onQuickAnalyticsPress,
   onTitlePress,
   onSearchPress,
-  onDynamicOptionsPress,
   theme = 'light',
   _isVisible = true,
   isMenuOpen = false,
@@ -101,71 +95,11 @@ export const Header: React.FC<HeaderProps> = ({
   const [backPressed] = useState(false);
   // Removed unused _menuPressed
   const [conversationsPressed] = useState(false);
-  const [prestigiousBadge, setPrestigiousBadge] = useState<string | null>(null);
   const [analyticsPressed] = useState(false);
 
   // All animations removed to prevent useInsertionEffect warnings
   const [searchPressed] = useState(false);
 
-  // Badge ranking system (most prestigious first)
-  const badgeRanking = ['legend', 'vip'];
-
-  // Fetch user's most prestigious badge
-  useEffect(() => {
-    const fetchPrestigiousBadge = async () => {
-      try {
-        // Get current authenticated user
-        const currentUser = authService.getCurrentUser();
-        
-        // Only fetch badges if user is authenticated
-        if (!currentUser || !currentUser.id) {
-          setPrestigiousBadge(null);
-          return;
-        }
-        
-        // Get current user's badges using their actual user ID
-        const userBadges = await userBadgesService.getUserBadges(
-          currentUser.id, 
-          currentUser.email, 
-          currentUser.username
-        );
-        
-        // Clear badge by default
-        setPrestigiousBadge(null);
-        
-        // Only proceed if we have valid badges array and it's not empty
-        if (Array.isArray(userBadges) && userBadges.length > 0) {
-          // Keep only visible badges
-          const validBadges = userBadges.filter(badge => badge && badge.isVisible === true);
-          
-          // Only proceed if we have visible badges
-          if (validBadges.length > 0) {
-            // Find the most prestigious badge based on ranking
-            for (const rankBadge of badgeRanking) {
-              const hasBadge = validBadges.find(badge => {
-                const displayType = mapDatabaseBadgeToPrestigious(badge.badgeType);
-                return displayType === rankBadge;
-              });
-              
-              if (hasBadge) {
-                const displayBadge = mapDatabaseBadgeToPrestigious(hasBadge.badgeType);
-                if (displayBadge) {
-                  setPrestigiousBadge(displayBadge);
-                  break;
-                }
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.warn('Failed to fetch prestigious badge:', error);
-        setPrestigiousBadge(null);
-      }
-    };
-
-    fetchPrestigiousBadge();
-  }, []);
-  const [dynamicOptionsPressed] = useState(false);
 
   // Timeout refs for cleanup
   const buttonTimeoutRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
@@ -214,9 +148,6 @@ export const Header: React.FC<HeaderProps> = ({
     onSearchPress?.();
   };
   
-  const handleDynamicOptionsPress = () => {
-    onDynamicOptionsPress?.();
-  };
 
   // Logo press handler - navigate to main chat screen
   const handleLogoPress = () => {
@@ -270,7 +201,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   // Count total buttons (INCLUDING menu button since it affects layout)
-  const nonMenuButtonCount = [showBackButton, showConversationsButton, showQuickAnalyticsButton, showSearchButton, showDynamicOptionsButton].filter(Boolean).length;
+  const nonMenuButtonCount = [showBackButton, showConversationsButton, showQuickAnalyticsButton, showSearchButton].filter(Boolean).length;
   const totalButtons = showMenuButton ? nonMenuButtonCount + 1 : nonMenuButtonCount;
   const shouldSplit = totalButtons >= 2;
 
@@ -308,13 +239,6 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </TouchableOpacity>
       )}
-      {shouldSplit && showDynamicOptionsButton && renderButton(
-        'layers',
-        'Feather',
-        theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary,
-        handleDynamicOptionsPress,
-        dynamicOptionsPressed
-      )}
       {shouldSplit && showSearchButton && renderButton(
         'search',
         'Feather',
@@ -328,19 +252,6 @@ export const Header: React.FC<HeaderProps> = ({
   );
 
   // Right buttons (always includes menu, plus others when not splitting)
-  // Helper function for tiny badge styling
-  const getTinyBadgeStyle = (theme: 'light' | 'dark') => ({
-    position: 'absolute' as const,
-    top: 18,
-    left: 85,
-    transform: [{ scale: 0.5 }],
-    zIndex: 1,
-    shadowColor: '#B91C1C',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: theme === 'dark' ? 1.0 : 0.4,
-    shadowRadius: theme === 'dark' ? 15 : 6,
-    elevation: theme === 'dark' ? 20 : 8,
-  });
 
   const rightButtonsRender = (
     <View style={styles.rightSection}>
@@ -352,13 +263,6 @@ export const Header: React.FC<HeaderProps> = ({
         conversationsPressed
       )}
 
-      {!shouldSplit && showDynamicOptionsButton && renderButton(
-        'layers',
-        'Feather',
-        theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary,
-        handleDynamicOptionsPress,
-        dynamicOptionsPressed
-      )}
 
       {!shouldSplit && showSearchButton && renderButton(
         'search',
@@ -488,17 +392,6 @@ export const Header: React.FC<HeaderProps> = ({
                       }]}
                       resizeMode="contain"
                     />
-                    {/* Tiny Prestigious Badge */}
-                    {prestigiousBadge && (
-                      <View style={getTinyBadgeStyle(theme)}>
-                        <PrestigiousBadge
-                          type={prestigiousBadge as any}
-                          theme={theme}
-                          showTooltip={false}
-                          size="small"
-                        />
-                      </View>
-                    )}
                   </View>
                 ) : (
                   <Text style={[

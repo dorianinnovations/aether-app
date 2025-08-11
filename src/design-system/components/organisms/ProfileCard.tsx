@@ -10,6 +10,7 @@ import {
   RefreshControl,
   StyleSheet,
   ViewStyle,
+  TextInput,
 } from 'react-native';
 import { ProfileHeader, ProfileFieldsGroup, SocialProfileSection, SpotifyIntegration, SocialStats } from '../molecules';
 import { LottieLoader, UserBadgeType, InteractiveBadge, AdvancedBadge } from '../atoms';
@@ -96,12 +97,13 @@ export interface ProfileCardProps {
   onSpotifyStatusChange?: () => void;
   onConfigurePress?: () => void;
   onUsernamePress?: () => void;
+  onInputFocus?: (inputRef: TextInput) => void;
   /** Whether configure mode is active */
   configureMode?: boolean;
   /** Custom styles */
   style?: ViewStyle;
   /** Scroll view ref */
-  scrollRef?: React.RefObject<ScrollView>;
+  scrollRef?: React.RefObject<ScrollView | null>;
 }
 
 export const ProfileCard: React.FC<ProfileCardProps> = ({
@@ -121,6 +123,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   onSpotifyStatusChange,
   onConfigurePress,
   onUsernamePress,
+  onInputFocus,
   configureMode = false,
   style,
   scrollRef,
@@ -180,6 +183,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         editable={editMode}
         viewMode={viewMode}
         onFieldChange={onFieldChange}
+        onInputFocus={onInputFocus}
       />
 
       {/* Social Stats - Full Width Above Spotify */}

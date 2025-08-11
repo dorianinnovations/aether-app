@@ -142,14 +142,13 @@ export const useProfileData = (): UseProfileDataReturn => {
       const response = await UserAPI.updateProfile(profileData);
       
       if ((response as any).status === 'success' || (response as any).success) {
-        // Update local profile state immediately
-        setProfile(prev => prev ? { ...prev, ...profileData } : null);
+        // Update local profile state immediately with the saved data
+        const updatedProfile = { ...profile, ...profileData };
+        setProfile(updatedProfile);
         
-        // Refresh data to ensure server sync
-        await Promise.all([
-          loadProfile(),
-          fetchSocialProfile() // Refresh social proxy in case server updated personality analysis
-        ]);
+        // Skip background refresh - let the calling component handle its own state
+        // The ProfileScreen component will maintain its own local state after save
+        // to prevent data overwriting issues
         
         // Profile updated
       } else {

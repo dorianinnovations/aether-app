@@ -45,12 +45,6 @@ interface ChatModalsManagerProps {
   onCloseArtistModal: () => void;
   artistData?: { id: string; name: string };
 
-  // Dynamic Options Modal
-  showDynamicOptionsModal: boolean;
-  onCloseDynamicOptionsModal: () => void;
-  dynamicPrompts: any[];
-  onExecuteDynamicPrompt: (prompt: string) => void;
-  isAnalyzingContext: boolean;
 
   // Modal positioning
   addFriendModalPosition?: { top: number; left: number };
@@ -88,12 +82,6 @@ export const ChatModalsManager: React.FC<ChatModalsManagerProps> = ({
   onCloseArtistModal,
   artistData,
 
-  // Dynamic Options Modal (if implemented)
-  showDynamicOptionsModal,
-  onCloseDynamicOptionsModal,
-  dynamicPrompts,
-  onExecuteDynamicPrompt,
-  isAnalyzingContext,
 
   // Modal positioning
   addFriendModalPosition,
@@ -151,13 +139,6 @@ export const ChatModalsManager: React.FC<ChatModalsManagerProps> = ({
         theme={theme}
       />
 
-      {/* Dynamic Options Modal - Placeholder for future implementation */}
-      {showDynamicOptionsModal && (
-        <View>
-          {/* TODO: Implement DynamicOptionsModal component */}
-          {/* This would show AI-generated contextual prompts */}
-        </View>
-      )}
     </View>
   );
 };

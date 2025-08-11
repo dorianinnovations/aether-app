@@ -632,17 +632,17 @@ const styles = StyleSheet.create({
     gap: spacing[6],
   },
   inboxTitleSection: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[1],
+    justifyContent: 'flex-start',
+    gap: spacing[2],
   },
   inboxTitle: {
     fontSize: 24,
     fontWeight: '600',
     fontFamily: 'MozillaText_600SemiBold',
     letterSpacing: -1.2,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   inboxCount: {
     fontSize: 14,

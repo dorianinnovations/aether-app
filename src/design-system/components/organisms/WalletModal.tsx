@@ -20,20 +20,22 @@ interface WalletModalProps {
   visible: boolean;
   onClose: () => void;
   onTierSelect: (tier: 'pro' | 'elite') => void;
-  currentTier?: 'free' | 'pro' | 'elite';
+  currentTier?: 'standard' | 'pro' | 'elite';
   usage?: {
     gpt4o: number;
     gpt5: number;
     gpt5Limit?: number;
   };
+  userBadges?: string[];
 }
 
 export const WalletModal: React.FC<WalletModalProps> = ({
   visible,
   onClose,
   onTierSelect,
-  currentTier = 'free',
+  currentTier = 'standard',
   usage,
+  userBadges,
 }) => {
   // Animation values
   const overlayOpacity = useSharedValue(0);
@@ -103,6 +105,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
           <WalletCard 
             currentTier={currentTier}
             usage={usage}
+            userBadges={userBadges}
             onUpgrade={handleTierSelect}
           />
         </Animated.View>
@@ -122,13 +125,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   backgroundTouchable: {
     flex: 1,
   },
   modalContainer: {
-    height: screenHeight * 0.45,
+    height: screenHeight * 0.54,
     // Enhanced shadows for depth
     shadowColor: '#000000',
     shadowOffset: {

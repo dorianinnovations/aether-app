@@ -34,10 +34,11 @@ import SettingsModal from './chat/SettingsModal';
 import { useTheme } from '../contexts/ThemeContext';
 import { useHeaderMenu } from '../design-system/hooks';
 import { useProfileData } from '../hooks/useProfileData';
-import { useToast } from '../hooks';
+import { useToast, useScrollToInput } from '../hooks';
 
 // Services
 import { AuthAPI } from '../services/api';
+import { UserAPI } from '../services/apiModules/endpoints/user';
 import { ProfileImageService } from '../services/profileImageService';
 import { ProfileDataService, UserProfile } from '../services/profileDataService';
 
@@ -72,18 +73,22 @@ export const ProfileScreen: React.FC = () => {
   const [showPersonaModal, setShowPersonaModal] = useState(false);
 
   // Refs
-  const scrollViewRef = useRef<any>(null);
   const qualiaViewRef = useRef<View>(null);
+  
+  // Scroll to input hook for keyboard handling
+  const { scrollViewRef, handleInputFocus } = useScrollToInput();
   
   // Local editable profile state
   const [profile, setProfile] = useState<UserProfile | null>(null);
   
-  // Sync local profile with base profile from hook
+  // Sync local profile with base profile from hook - ONLY on initial load
   useEffect(() => {
-    if (baseProfile && (!profile || !editMode)) {
+    if (baseProfile && !profile) {
+      // ONLY set profile on initial load when profile is null
       setProfile(baseProfile);
     }
-  }, [baseProfile, editMode]);
+    // Never overwrite profile after initial load to prevent data loss
+  }, [baseProfile, profile]);
 
 
   // Header menu hook
@@ -129,6 +134,8 @@ export const ProfileScreen: React.FC = () => {
     setRefreshing(true);
     try {
       await refreshAllData();
+      // Reset local profile to null so it gets refreshed from the hook
+      setProfile(null);
     } catch (error) {
       logger.error('Error refreshing profile data:', error);
     } finally {
@@ -219,23 +226,23 @@ export const ProfileScreen: React.FC = () => {
     
     try {
       const profileData = {
-        name: profile.displayName || profile.name,
+        displayName: profile.displayName,
         bio: profile.bio,
         location: profile.location,
         website: profile.website,
         socialLinks: profile.socialLinks,
       };
       
-      // Try using the hook's save function first
-      if (saveProfileData && typeof saveProfileData === 'function') {
-        await saveProfileData(profileData);
-      } else {
-        // Fallback to direct service call
-        const result = await ProfileDataService.updateProfile(profileData);
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to save profile');
-        }
-      }
+      // Use direct API call instead of the hook to avoid background refresh issues
+      const response = await UserAPI.updateProfile(profileData);
+      console.log('Profile save response:', response);
+      
+      // Immediately update local profile state with the saved data
+      // This ensures the data persists regardless of what the hook does
+      setProfile(prev => prev ? {
+        ...prev,
+        ...profileData
+      } : null);
       
       showSuccess('Profile saved successfully!');
       setEditMode(false);
@@ -493,6 +500,7 @@ export const ProfileScreen: React.FC = () => {
           onBannerPress={handleBannerImageUpload}
           onDeleteProfileImage={handleDeleteProfileImage}
           onDeleteBanner={handleDeleteBannerImage}
+          onInputFocus={handleInputFocus}
           onSpotifyStatusChange={() => {
             refreshAllData();
           }}

@@ -36,10 +36,14 @@ export const SocialProxyAPI = {
   // Get friend timeline
   async getTimeline(page: number = 1, limit: number = 20): Promise<any> {
     try {
-      const response = await api.get('/social-proxy/timeline', {
-        params: { page, limit }
-      });
-      return response.data;
+      // Note: Timeline endpoint not yet implemented on server
+      // Returning mock success response to prevent 404 errors
+      logger.info('Timeline endpoint not implemented on server, falling back to mock response');
+      return {
+        success: false,
+        message: 'Timeline endpoint not available',
+        data: []
+      };
     } catch (error) {
       logger.error('Failed to fetch timeline:', error);
       throw error;

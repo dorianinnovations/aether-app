@@ -39,6 +39,8 @@ export interface ProfileFieldProps {
   autoCapitalize?: TextInputProps['autoCapitalize'];
   /** Callback when value changes */
   onChangeText?: (text: string) => void;
+  /** Callback when input is focused */
+  onInputFocus?: (inputRef: TextInput) => void;
   /** Custom styling for the container */
   style?: ViewStyle;
   /** Custom styling for the label */
@@ -64,6 +66,7 @@ export const ProfileField: React.FC<ProfileFieldProps> = ({
   keyboardType = 'default',
   autoCapitalize = 'sentences',
   onChangeText,
+  onInputFocus,
   style,
   labelStyle,
   valueStyle,
@@ -72,6 +75,7 @@ export const ProfileField: React.FC<ProfileFieldProps> = ({
   icon,
 }) => {
   const { colors } = useTheme();
+  const inputRef = React.useRef<TextInput>(null);
 
   // Don't render empty fields unless explicitly told to or in edit mode
   if (!value && !showWhenEmpty && !editable) {
@@ -125,9 +129,15 @@ export const ProfileField: React.FC<ProfileFieldProps> = ({
       
       {editable ? (
         <TextInput
+          ref={inputRef}
           style={inputStyle}
           value={value || ''}
           onChangeText={onChangeText}
+          onFocus={() => {
+            if (inputRef.current) {
+              onInputFocus?.(inputRef.current);
+            }
+          }}
           placeholder={placeholder}
           placeholderTextColor={colors.textSecondary}
           multiline={multiline}

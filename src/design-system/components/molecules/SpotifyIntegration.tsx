@@ -430,12 +430,6 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       color: colors.textSecondary,
       marginLeft: spacing[1],
     },
-    spotifyCredit: {
-      fontSize: 10,
-      fontWeight: '400',
-      color: colors.textMuted,
-      fontStyle: 'italic',
-    },
     liveHeaderIndicator: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -834,25 +828,25 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
   return (
     <>
       <View style={styles.container}>
-        <View style={styles.headerContainer}>
-          <View style={styles.header}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="musical-notes" size={14} color={colors.textSecondary} />
+        {/* Only show header when Spotify is connected */}
+        {hasConnectedProperty(spotify) && spotify.connected && (
+          <View style={styles.headerContainer}>
+            <View style={styles.header}>
               <Text style={styles.title}>Playing Now</Text>
+              <FontAwesome name="spotify" size={14} color="#1DB954" />
             </View>
-            <Text style={styles.spotifyCredit}>via Spotify</Text>
+            <LinearGradient
+              colors={[
+                theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+                theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                'transparent'
+              ]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.gradientBorder}
+            />
           </View>
-          <LinearGradient
-            colors={[
-              theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
-              theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
-              'transparent'
-            ]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.gradientBorder}
-          />
-        </View>
+        )}
 
       {!hasConnectedProperty(spotify) || !spotify.connected ? (
         <TouchableOpacity

@@ -12,11 +12,11 @@ export const shadows = {
       // Elevated surfaces (buttons, cards floating above background)
       elevated: {
         shadowColor: designTokens.surfaces.light.shadow,
-        shadowOffset: { width: 4, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
+        shadowOffset: { width: 4, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
         elevation: 8, // Android
-        // CSS equivalent: '4px 4px 8px rgba(224, 224, 224, 0.15), -4px -4px 8px rgba(255, 255, 255, 0.7)'
+        // CSS equivalent: '4px 2px 6px rgba(224, 224, 224, 0.2), -4px -2px 6px rgba(255, 255, 255, 0.7)'
       },
       
       // Subtle elevation (list items, nav elements)

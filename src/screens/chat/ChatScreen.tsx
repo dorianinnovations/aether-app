@@ -124,7 +124,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   const [inputText, setInputText] = useState('');
   // Removed unused copy tooltip state
   const [, setShowTestTooltip] = useState(true);
-  const [showDynamicOptionsModal, setShowDynamicOptionsModal] = useState(false);
   const [headerVisible] = useState(true);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [, setIsVoiceRecording] = useState(false);
@@ -249,7 +248,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       // Execute the hidden prompt directly
       handleMessageSend(promptText);
       // Hide the modal after execution
-      hideModalAnimation(modalAnimationRefs, () => setShowDynamicOptionsModal(false));
+      // Modal handling removed
     },
     enabled: true,
     refreshInterval: 3
@@ -682,11 +681,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
 
   // Removed unused dynamic options handler
 
-  // Modal hide handler
-  const handleHideModal = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    hideModalAnimation(modalAnimationRefs, () => setShowDynamicOptionsModal(false));
-  };
 
   // Handle creating a new conversation
   const handleStartNewChat = async () => {
@@ -1039,7 +1033,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       
       
       {/* Dynamic Options Modal */}
-      {showDynamicOptionsModal && (
+      {false && (
         <Animated.View 
           style={[
             styles.modalOverlay,
@@ -1050,7 +1044,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         >
           <TouchableOpacity 
             style={styles.modalBackdrop}
-            onPress={handleHideModal}
+            onPress={() => {}}
             activeOpacity={1}
           />
           <View style={styles.modalPositioner}>
@@ -1157,7 +1151,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
                     borderColor: colors.borders?.default || (theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'),
                   }
                 ]}
-                onPress={handleHideModal}
+                onPress={() => {}}
                 activeOpacity={0.8}
               >
                 <Text style={[
@@ -1429,9 +1423,9 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 0, // Keep bottom square to extend off screen
     borderBottomRightRadius: 0,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -12 },
+    shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.4,
-    shadowRadius: 24,
+    shadowRadius: 4,
     elevation: 16,
   },
 

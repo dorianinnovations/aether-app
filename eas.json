@@ -25,6 +25,13 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {},
+    "testflight": {
+      "ios": {
+        "appleId": "ichpbusiness@gmail.com",
+        "ascAppId": "6504119095",
+        "appleTeamId": "L4V6639488"
+      }
+    }
   }
 }

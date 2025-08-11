@@ -37,10 +37,19 @@ export const UserAPI = {
 
   async updateProfile(profileData: Record<string, unknown>): Promise<unknown> {
     try {
+      console.log('UserAPI.updateProfile: Attempting server request with data:', profileData);
       const response = await api.put('/user/profile', profileData);
+      console.log('UserAPI.updateProfile: Server response:', response.data);
       return response.data;
     } catch (error: unknown) {
-      if ((error as any).status === 404) {
+      console.log('UserAPI.updateProfile: Server request failed:', {
+        status: (error as any).response?.status,
+        message: (error as any).response?.data?.message || (error as any).message,
+        data: (error as any).response?.data
+      });
+      
+      if ((error as any).response?.status === 404) {
+        console.log('UserAPI.updateProfile: Using fallback local storage');
         // Profile update endpoint not available yet
         // For now, just update local storage and return success
         const currentUserData = await TokenManager.getUserData();

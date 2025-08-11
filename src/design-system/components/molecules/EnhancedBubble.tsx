@@ -692,9 +692,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   botTextWrapper: {
-    maxWidth: width * 0.85,  // Better constraint for readability
+    maxWidth: width * 0.92,  // Increased to allow more width
     alignSelf: 'flex-start',
-    paddingRight: 20,        // More breathing room
+    paddingRight: 12,        // Reduced right padding for more space
     paddingLeft: 2,          // Subtle left padding
   },
   botTextContainer: {

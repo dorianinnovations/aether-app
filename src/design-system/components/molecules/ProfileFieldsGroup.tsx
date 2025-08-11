@@ -8,6 +8,7 @@ import {
   View,
   StyleSheet,
   ViewStyle,
+  TextInput,
 } from 'react-native';
 import { ProfileField } from '../atoms';
 import { UserBadgeType } from '../atoms/UserBadge';
@@ -45,6 +46,8 @@ export interface ProfileFieldsGroupProps {
   viewMode?: 'basic' | 'busy';
   /** Callback when field value changes */
   onFieldChange?: (field: keyof UserProfile, value: string | SocialLinks) => void;
+  /** Callback when input is focused */
+  onInputFocus?: (inputRef: TextInput) => void;
   /** Custom styles */
   style?: ViewStyle;
 }
@@ -54,6 +57,7 @@ export const ProfileFieldsGroup: React.FC<ProfileFieldsGroupProps> = ({
   editable = false,
   viewMode = 'basic',
   onFieldChange,
+  onInputFocus,
   style,
 }) => {
   // Helper function to handle social link changes
@@ -66,16 +70,28 @@ export const ProfileFieldsGroup: React.FC<ProfileFieldsGroupProps> = ({
   };
   return (
     <View style={[styles.container, style]}>
+      {/* Display Name */}
+      <ProfileField
+        label="Display Name"
+        value={profile.displayName}
+        placeholder="Your display name"
+        editable={editable}
+        showWhenEmpty={editable}
+        onChangeText={(text) => onFieldChange?.('displayName', text)}
+        onInputFocus={onInputFocus}
+      />
+
       {/* Bio */}
       <ProfileField
         label="Bio"
         value={profile.bio}
-        placeholder="Tell us about yourself..."
+        placeholder="Bio"
         editable={editable}
         showWhenEmpty={editable}
         multiline={true}
         numberOfLines={4}
         onChangeText={(text) => onFieldChange?.('bio', text)}
+        onInputFocus={onInputFocus}
       />
 
       {/* Location - conditional display based on view mode */}
@@ -83,10 +99,11 @@ export const ProfileFieldsGroup: React.FC<ProfileFieldsGroupProps> = ({
         <ProfileField
           label="Location"
           value={profile.location}
-          placeholder="Enter your location"
+          placeholder="Location"
           editable={editable}
           showWhenEmpty={viewMode === 'busy' || editable}
           onChangeText={(text) => onFieldChange?.('location', text)}
+          onInputFocus={onInputFocus}
         />
       )}
 
@@ -102,13 +119,14 @@ export const ProfileFieldsGroup: React.FC<ProfileFieldsGroupProps> = ({
             <ProfileField
               label="Instagram"
               value={profile.socialLinks?.instagram}
-              placeholder="Enter Instagram username"
+              placeholder="username"
               editable={editable}
               showWhenEmpty={viewMode === 'busy' || editable}
               keyboardType="default"
               autoCapitalize="none"
               icon="instagram"
               onChangeText={(text) => handleSocialLinkChange('instagram', text)}
+              onInputFocus={onInputFocus}
             />
           )}
           
@@ -117,13 +135,14 @@ export const ProfileFieldsGroup: React.FC<ProfileFieldsGroupProps> = ({
             <ProfileField
               label="X (Twitter)"
               value={profile.socialLinks?.x}
-              placeholder="Enter X username"
+              placeholder="username"
               editable={editable}
               showWhenEmpty={viewMode === 'busy' || editable}
               keyboardType="default"
               autoCapitalize="none"
               icon="twitter"
               onChangeText={(text) => handleSocialLinkChange('x', text)}
+              onInputFocus={onInputFocus}
             />
           )}
           
@@ -132,13 +151,14 @@ export const ProfileFieldsGroup: React.FC<ProfileFieldsGroupProps> = ({
             <ProfileField
               label="Spotify"
               value={profile.socialLinks?.spotify}
-              placeholder="Enter Spotify profile URL"
+              placeholder="url"
               editable={editable}
               showWhenEmpty={viewMode === 'busy' || editable}
               keyboardType="url"
               autoCapitalize="none"
               icon="music"
               onChangeText={(text) => handleSocialLinkChange('spotify', text)}
+              onInputFocus={onInputFocus}
             />
           )}
           
@@ -147,13 +167,14 @@ export const ProfileFieldsGroup: React.FC<ProfileFieldsGroupProps> = ({
             <ProfileField
               label="Facebook"
               value={profile.socialLinks?.facebook}
-              placeholder="Enter Facebook username"
+              placeholder="username"
               editable={editable}
               showWhenEmpty={viewMode === 'busy' || editable}
               keyboardType="default"
               autoCapitalize="none"
               icon="facebook"
               onChangeText={(text) => handleSocialLinkChange('facebook', text)}
+              onInputFocus={onInputFocus}
             />
           )}
           
@@ -162,13 +183,14 @@ export const ProfileFieldsGroup: React.FC<ProfileFieldsGroupProps> = ({
             <ProfileField
               label="Website"
               value={profile.socialLinks?.website || profile.website}
-              placeholder="Enter your website URL"
+              placeholder="url"
               editable={editable}
               showWhenEmpty={viewMode === 'busy' || editable}
               keyboardType="url"
               autoCapitalize="none"
               icon="globe"
               onChangeText={(text) => handleSocialLinkChange('website', text)}
+              onInputFocus={onInputFocus}
             />
           )}
         </View>

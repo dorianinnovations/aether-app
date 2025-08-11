@@ -175,11 +175,15 @@ export const useSocialProxy = (): UseSocialProxyReturn => {
       setLoading(true);
       setError(null);
       const response = await SocialProxyAPI.getTimeline(1, 20);
-      if (response.success) {
+      if (response.success && response.timeline) {
         setTimeline(response.timeline);
+      } else {
+        // Timeline endpoint not available, use empty timeline
+        setTimeline([]);
       }
     } catch (err: unknown) {
-      setError((err as any).message || 'Failed to load timeline');
+      // Timeline endpoint not implemented yet, gracefully handle
+      setTimeline([]);
     } finally {
       setLoading(false);
     }

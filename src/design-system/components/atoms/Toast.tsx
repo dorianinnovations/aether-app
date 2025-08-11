@@ -12,6 +12,7 @@ import {
   Dimensions,
   Platform,
   TouchableOpacity,
+  StatusBar,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -51,12 +52,12 @@ export const Toast: React.FC<ToastProps> = ({
       Animated.parallel([
         Animated.timing(translateY, {
           toValue: 0,
-          duration: 300,
+          duration: 150,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 1,
-          duration: 300,
+          duration: 150,
           useNativeDriver: true,
         }),
       ]).start();
@@ -78,12 +79,12 @@ export const Toast: React.FC<ToastProps> = ({
     Animated.parallel([
       Animated.timing(translateY, {
         toValue: position === 'top' ? -100 : 100,
-        duration: 250,
+        duration: 125,
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 250,
+        duration: 125,
         useNativeDriver: true,
       }),
     ]).start(() => {
@@ -162,57 +163,51 @@ export const Toast: React.FC<ToastProps> = ({
   }
 
   return (
-    <View style={[styles.container, { [position]: position === 'top' ? 60 : 100 }]} pointerEvents="box-none">
-      <Animated.View
-        style={[
-          styles.toast,
-          getToastStyles(),
-          {
-            transform: [{ translateY }],
-            opacity,
-            shadowColor: colors.surfaces?.shadow || colors.textSecondary,
-          },
-        ]}
-      >
-        <View style={styles.content}>
-          <Feather
-            name={getIconName()}
-            size={20}
-            color={getIconColor()}
-            style={styles.icon}
-          />
-          <Text style={[styles.message, { color: colors.text }]} numberOfLines={3}>
-            {message}
-          </Text>
-          {showCloseButton && (
-            <TouchableOpacity
-              onPress={dismissToast}
-              style={styles.closeButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Feather name="x" size={18} color={colors.textSecondary} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </Animated.View>
-    </View>
+    <Animated.View
+      style={[
+        styles.toast,
+        getToastStyles(),
+        {
+          transform: [{ translateY }],
+          opacity,
+          shadowColor: colors.surfaces?.shadow || colors.textSecondary,
+        },
+      ]}
+      pointerEvents="box-none"
+    >
+      <View style={styles.content}>
+        <Feather
+          name={getIconName()}
+          size={20}
+          color={getIconColor()}
+          style={styles.icon}
+        />
+        <Text style={[styles.message, { color: colors.text }]} numberOfLines={3}>
+          {message}
+        </Text>
+        {showCloseButton && (
+          <TouchableOpacity
+            onPress={dismissToast}
+            style={styles.closeButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Feather name="x" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
+      </View>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    zIndex: 9999,
-    alignItems: 'center',
-    paddingHorizontal: spacing[4],
-  },
   toast: {
-    borderRadius: 12,
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : (StatusBar.currentHeight || 0) + 20,
+    left: spacing[5],
+    right: spacing[5],
+    zIndex: 100,
+    borderRadius: 10,
     borderWidth: 1,
-    maxWidth: screenWidth - spacing[8],
-    minWidth: 280,
     ...Platform.select({
       ios: {
         shadowOffset: {
@@ -230,9 +225,10 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing[4],
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing[2],
     paddingVertical: spacing[3],
-    minHeight: 56,
+    minHeight: 48,
   },
   icon: {
     marginRight: spacing[3],

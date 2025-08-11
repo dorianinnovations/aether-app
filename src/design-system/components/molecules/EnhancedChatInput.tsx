@@ -60,7 +60,6 @@ interface ChatInputProps {
   onFocus?: () => void;
   onBlur?: () => void;
   onSwipeUp?: () => void;
-  onDynamicOptionsPress?: () => void;
 }
 
 export const EnhancedChatInput: React.FC<ChatInputProps> = ({
@@ -84,7 +83,6 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
   onFocus,
   onBlur,
   onSwipeUp,
-  onDynamicOptionsPress,
 }) => {
   const themeColors = getThemeColors(theme);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
@@ -654,23 +652,6 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
               </Animated.View>
             )}
 
-            {/* Dynamic Options Button */}
-            {onDynamicOptionsPress && (
-              <TouchableOpacity
-                style={styles.dynamicOptionsButton}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onDynamicOptionsPress();
-                }}
-                activeOpacity={0.7}
-              >
-                <Feather 
-                  name="layers" 
-                  size={16} 
-                  color={themeColors.textSecondary} 
-                />
-              </TouchableOpacity>
-            )}
 
             {/* Voice Button */}
             {voiceEnabled && isInputEmpty && !hasAttachments && (
@@ -910,13 +891,6 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  dynamicOptionsButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: -10,
   },
   voiceButton: {
     marginLeft: -15,
