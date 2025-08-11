@@ -12,20 +12,20 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Header, HeaderMenu } from '../design-system/components/organisms';
-import { PageBackground } from '../design-system/components/atoms/PageBackground';
-import { LottieLoader } from '../design-system/components/atoms/LottieLoader';
-import { logger } from '../utils/logger';
+import { Header, HeaderMenu } from '../../design-system/components/organisms';
+import { PageBackground } from '../../design-system/components/atoms/PageBackground';
+import { LottieLoader } from '../../design-system/components/atoms/LottieLoader';
+import { logger } from '../../utils/logger';
 // import { getGlassmorphicStyle } from '../design-system/tokens/glassmorphism';
-import { getHeaderMenuShadow } from '../design-system/tokens/shadows';
-import { designTokens, getThemeColors } from '../design-system/tokens/colors';
-import { spacing } from '../design-system/tokens/spacing';
-import { useTheme } from '../hooks/useTheme';
-import { useGhostTyping } from '../hooks/useGhostTyping';
-import { useHeaderMenu } from '../design-system/hooks';
-import SettingsModal from './chat/SettingsModal';
+import { getHeaderMenuShadow } from '../../design-system/tokens/shadows';
+import { designTokens, getThemeColors } from '../../design-system/tokens/colors';
+import { spacing } from '../../design-system/tokens/spacing';
+import { useTheme } from '../../hooks/useTheme';
+import { useGhostTyping } from '../../hooks/useGhostTyping';
+import { useHeaderMenu } from '../../design-system/hooks';
+import SettingsModal from '../chat/SettingsModal';
 import * as Haptics from 'expo-haptics';
-import { FriendsAPI } from '../services/api';
+import { FriendsAPI } from '../../services/api';
 
 // Removed unused screenWidth
 
@@ -176,7 +176,7 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
   useEffect(() => {
     const initializeFriends = async () => {
       // Check if authenticated before making API calls
-      const { TokenManager } = await import('../services/api');
+      const { TokenManager } = await import('../../services/api');
       const token = await TokenManager.getToken();
       if (token) {
         fetchFriends();
@@ -194,7 +194,7 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
 
   const fetchFriends = async (isRefresh = false) => {
     // Check authentication first
-    const { TokenManager } = await import('../services/api');
+    const { TokenManager } = await import('../../services/api');
     const token = await TokenManager.getToken();
     if (!token) {
       if (isRefresh) {

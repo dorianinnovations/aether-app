@@ -9,12 +9,12 @@ import { Animated, Dimensions, Easing } from 'react-native';
 const { width: screenWidth } = Dimensions.get('window');
 
 export const useDrawerAnimation = () => {
-  const slideAnim = useRef(new Animated.Value(-screenWidth * 0.9)).current;
+  const slideAnim = useRef(new Animated.Value(-screenWidth * 0.85)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
 
   // Cleanup function to reset all animations
   const resetAnimations = useCallback(() => {
-    slideAnim.setValue(-screenWidth * 0.9);
+    slideAnim.setValue(-screenWidth * 0.85);
     overlayOpacity.setValue(0);
   }, [slideAnim, overlayOpacity]);
 
@@ -40,7 +40,7 @@ export const useDrawerAnimation = () => {
   const hideDrawer = useCallback((onComplete?: () => void) => {
     Animated.parallel([
       Animated.timing(slideAnim, {
-        toValue: -screenWidth * 0.9,
+        toValue: -screenWidth * 0.85,
         duration: 300,
         easing: Easing.in(Easing.quad),
         useNativeDriver: true,

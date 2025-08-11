@@ -23,7 +23,7 @@ interface UseMessagesReturn {
   flatListRef: React.RefObject<FlatList | null>;
 }
 
-export const useMessages = (onHideGreeting?: () => void, conversationId?: string, friendUsername?: string, externalFlatListRef?: React.RefObject<FlatList>): UseMessagesReturn => {
+export const useMessages = (onHideGreeting?: () => void, conversationId?: string, friendUsername?: string, externalFlatListRef?: React.RefObject<FlatList | null>): UseMessagesReturn => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -260,20 +260,8 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
       } else {
-        // Handle AI chat with streaming
+        // Handle AI chat with streaming - let server handle conversation creation
         let activeConversationId = conversationId;
-        if (!activeConversationId) {
-          // Creating new conversation
-          try {
-            const newConversationResponse = await ConversationAPI.createConversation('New Chat');
-            if (newConversationResponse.success && newConversationResponse.data) {
-              activeConversationId = newConversationResponse.data._id;
-              // New conversation created
-            }
-          } catch (error) {
-            logger.error('❌ Error creating conversation:', error);
-          }
-        }
 
         // Prepare prompt for API (include default prompt for attachment-only messages)
         const apiPrompt = displayText || (attachments.length > 0 ? "Please analyze this content." : "");
@@ -302,7 +290,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         // Start streaming with word animation
         let accumulatedText = '';
         let wordCount = 0;
-        let messageMetadata: { toolResults?: unknown[]; toolUsed?: string; thinking?: string } | undefined = undefined;
+        let messageMetadata: { toolResults?: unknown[]; toolUsed?: string; thinking?: string; conversationId?: string } | undefined = undefined;
         
         // Use the ChatAPI streaming method directly
         console.log('🎯 Sending message with conversationId:', activeConversationId);
@@ -318,9 +306,15 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
             (chunk as any).toolResults || 
             (chunk as any).sources || 
             (chunk as any).searchResults ||
-            (chunk as any).query
+            (chunk as any).query ||
+            (chunk as any).conversationId
           )) {
             messageMetadata = chunk as Record<string, unknown>;
+            // Update active conversation ID if server provides one
+            if ((chunk as any).conversationId && !activeConversationId) {
+              activeConversationId = (chunk as any).conversationId;
+              console.log('🎯 Server provided conversationId:', activeConversationId);
+            }
             continue;
           }
           
@@ -330,6 +324,11 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
               const parsed = JSON.parse(chunk);
               if (parsed.metadata) {
                 messageMetadata = parsed.metadata;
+                // Update active conversation ID if server provides one
+                if (parsed.metadata.conversationId && !activeConversationId) {
+                  activeConversationId = parsed.metadata.conversationId;
+                  console.log('🎯 Server provided conversationId in metadata:', activeConversationId);
+                }
                 continue;
               }
             } catch {
@@ -338,11 +337,16 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
           }
           
           // Check if chunk is stringified object that should be metadata
-          if (typeof chunk === 'string' && (chunk.includes('toolResults') || chunk.includes('searchResults') || chunk.includes('sources'))) {
+          if (typeof chunk === 'string' && (chunk.includes('toolResults') || chunk.includes('searchResults') || chunk.includes('sources') || chunk.includes('conversationId'))) {
             try {
               const parsed = JSON.parse(chunk);
-              if (parsed.toolResults || parsed.searchResults || parsed.sources) {
+              if (parsed.toolResults || parsed.searchResults || parsed.sources || parsed.conversationId) {
                 messageMetadata = parsed;
+                // Update active conversation ID if server provides one
+                if (parsed.conversationId && !activeConversationId) {
+                  activeConversationId = parsed.conversationId;
+                  console.log('🎯 Server provided conversationId in stringified metadata:', activeConversationId);
+                }
                 continue;
               }
             } catch {

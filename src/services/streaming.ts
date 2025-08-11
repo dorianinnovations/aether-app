@@ -66,11 +66,18 @@ export class StreamingService {
                 const parsed = JSON.parse(data);
                 if (parsed.content) {
                   chunks.push(parsed.content);
-                } else if (parsed.metadata) {
-                  // Handle tool results/metadata - store for later access
-                  chunks.push({ metadata: parsed.metadata });
+                } else if (parsed.metadata || parsed.conversationId || parsed.toolResults || parsed.sources) {
+                  // Handle tool results/metadata/conversationId - store for later access
+                  const metadata = {
+                    ...parsed.metadata,
+                    ...(parsed.conversationId && { conversationId: parsed.conversationId }),
+                    ...(parsed.toolResults && { toolResults: parsed.toolResults }),
+                    ...(parsed.sources && { sources: parsed.sources })
+                  };
+                  chunks.push({ metadata });
                 }
-              } catch (e) {
+              } catch {
+                // Failed to parse JSON, treat as regular content
               }
             }
           }

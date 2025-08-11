@@ -18,10 +18,10 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 // import { Header, HeaderMenu } from "../design-system/components/organisms";
-import { ShimmerText } from "../design-system/components/atoms";
-import { designTokens } from "../design-system/tokens/colors";
-import { useTheme } from "../contexts/ThemeContext";
-import { useSettings } from "../contexts/SettingsContext";
+import { ShimmerText } from "../../design-system/components/atoms";
+import { designTokens } from "../../design-system/tokens/colors";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useSettings } from "../../contexts/SettingsContext";
 // import { typography } from "../design-system/tokens/typography";
 // import { spacing } from "../design-system/tokens/spacing";
 import type { NavigationProp } from '@react-navigation/native';

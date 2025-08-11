@@ -157,14 +157,17 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   conversationTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     lineHeight: 18,
+    fontFamily: 'Inter-Medium',
   },
   conversationMeta: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '400',
-    lineHeight: 14,
+    lineHeight: 13,
+    fontFamily: 'Inter-Regular',
+    opacity: 0.5,
   },
 });
 

@@ -74,9 +74,9 @@ const getBadgeConfig = (theme: 'light' | 'dark' = 'light') => ({
   },
   verified: {
     text: 'VIP',
-    color: theme === 'light' ? '#3B82F6' : '#60A5FA',
+    color: theme === 'light' ? '#D97706' : '#F59E0B',
     backgroundColor: 'transparent',
-    borderColor: theme === 'light' ? '#3B82F6' : '#60A5FA',
+    borderColor: theme === 'light' ? '#D97706' : '#F59E0B',
     fontFamily: 'Inter-ExtraBold',
     hasSwirl: false,
     textShadow: null,
@@ -220,13 +220,13 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 8,
     fontWeight: '900',
-    letterSpacing: 0.5,
+    letterSpacing: -0.2,
     textTransform: 'uppercase',
   },
   premiumText: {
     fontSize: 8,
     fontWeight: '900',
-    letterSpacing: 0.5,
+    letterSpacing: -0.2,
     textTransform: 'uppercase',
   },
 });

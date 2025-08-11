@@ -29,6 +29,19 @@ export const SpotifyAPI = {
     }
   },
 
+  // Handle OAuth callback (alias for handleMobileCallback)
+  async handleCallback(code: string): Promise<any> {
+    try {
+      const response = await api.post('/spotify/mobile-callback', {
+        code,
+        state: 'mobile'
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   // Disconnect Spotify
   async disconnect(): Promise<any> {
     try {
@@ -41,6 +54,16 @@ export const SpotifyAPI = {
 
   // Get Spotify status
   async getStatus(): Promise<any> {
+    try {
+      const response = await api.get('/spotify/status');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get current track (alias for getStatus)
+  async getCurrentTrack(): Promise<any> {
     try {
       const response = await api.get('/spotify/status');
       return response.data;

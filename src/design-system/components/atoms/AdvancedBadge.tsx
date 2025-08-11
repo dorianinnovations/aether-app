@@ -317,8 +317,8 @@ const getBadgeConfig = (type: BadgeType, theme: 'light' | 'dark') => {
     },
     vip: {
       text: 'VIP',
-      primaryColor: theme === 'light' ? '#06B6D4' : '#67E8F9',
-      secondaryColor: theme === 'light' ? '#67E8F9' : '#A5F3FC',
+      primaryColor: theme === 'light' ? '#D97706' : '#F59E0B',
+      secondaryColor: theme === 'light' ? '#F59E0B' : '#FCD34D',
       style: 'crystalline' as BadgeStyle,
       animation: 'breathe' as BadgeAnimation,
       tooltip: 'VIP member with exclusive access',
@@ -326,7 +326,7 @@ const getBadgeConfig = (type: BadgeType, theme: 'light' | 'dark') => {
         count: 8,
         size: 1.5,
         speed: 0.8,
-        colors: ['#06B6D4', '#67E8F9', '#A5F3FC'],
+        colors: ['#D97706', '#F59E0B', '#FCD34D'],
         opacity: 0.6,
       },
     },
@@ -571,7 +571,7 @@ export const AdvancedBadge: React.FC<AdvancedBadgeProps> = ({
                 textShadowOffset: { width: 0, height: 0 },
                 textShadowRadius: intensity === 'subtle' ? 0 : (type === 'founder' || type === 'legend' ? (theme === 'dark' ? 8 : 4) : (3 * intensityMultiplier)),
                 zIndex: 10,
-                letterSpacing: 0.2,
+                letterSpacing: -0.2,
               },
             ]}
           >
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontFamily: 'Inter-ExtraBold',
-    letterSpacing: 0.5,
+    letterSpacing: -0.2,
     textTransform: 'uppercase',
     textAlign: 'center',
   },

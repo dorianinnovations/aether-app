@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, Animated, View } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, Animated, View, Image } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { spacing } from '../../tokens/spacing';
 import { designTokens } from '../../tokens/colors';
@@ -8,7 +8,8 @@ type FeatherIconNames = keyof typeof Feather.glyphMap;
 
 interface TabButtonProps {
   label: string;
-  icon: FeatherIconNames;
+  icon?: FeatherIconNames;
+  logo?: any;
   isActive: boolean;
   theme: 'light' | 'dark';
   onPress: () => void;
@@ -18,6 +19,7 @@ interface TabButtonProps {
 const TabButton: React.FC<TabButtonProps> = ({
   label,
   icon,
+  logo,
   isActive,
   theme,
   onPress,
@@ -87,21 +89,50 @@ const TabButton: React.FC<TabButtonProps> = ({
         />
         
         <View style={styles.content}>
-          <Feather 
-            name={icon} 
-            size={16} 
-            color={textColor}
-          />
-          
-          <Text style={[
-            styles.tabText,
-            {
-              color: textColor,
-              fontWeight: isActive ? '600' : '500',
-            }
-          ]}>
-            {label}
-          </Text>
+          {logo ? (
+            <Image 
+              source={logo}
+              style={[
+                styles.logoImage,
+                { opacity: isActive ? 1 : 0.7 }
+              ]}
+              resizeMode="contain"
+            />
+          ) : icon && !label.includes('Friends') ? (
+            <>
+              <Feather 
+                name={icon} 
+                size={16} 
+                color={textColor}
+              />
+              
+              <Text style={[
+                styles.tabText,
+                {
+                  color: textColor,
+                  fontWeight: isActive ? '600' : '500',
+                }
+              ]}>
+                {label}
+              </Text>
+            </>
+          ) : icon ? (
+            <Feather 
+              name={icon} 
+              size={18} 
+              color={textColor}
+            />
+          ) : (
+            <Text style={[
+              styles.tabText,
+              {
+                color: textColor,
+                fontWeight: isActive ? '600' : '500',
+              }
+            ]}>
+              {label}
+            </Text>
+          )}
         </View>
       </Animated.View>
     </TouchableOpacity>
@@ -129,10 +160,14 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 12,
-    fontWeight: '400',
-    letterSpacing: -0.3,
-    fontFamily: 'Nunito',
+    fontWeight: '500',
+    letterSpacing: -0.2,
+    fontFamily: 'Inter-Medium',
     textAlign: 'center',
+  },
+  logoImage: {
+    width: 32,
+    height: 16,
   },
 });
 

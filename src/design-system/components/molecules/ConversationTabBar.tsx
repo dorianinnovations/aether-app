@@ -7,7 +7,8 @@ type FeatherIconNames = keyof typeof Feather.glyphMap;
 
 interface Tab {
   label: string;
-  icon: FeatherIconNames;
+  icon?: FeatherIconNames;
+  logo?: any;
 }
 
 interface ConversationTabBarProps {
@@ -32,6 +33,7 @@ const ConversationTabBar: React.FC<ConversationTabBarProps> = ({
           <TabButton
             label={tab.label}
             icon={tab.icon}
+            logo={tab.logo}
             isActive={index === currentTab}
             theme={theme}
             onPress={() => onTabPress(index)}

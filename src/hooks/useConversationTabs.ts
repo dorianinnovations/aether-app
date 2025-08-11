@@ -11,6 +11,7 @@ import { getThemeColors } from '../design-system/tokens/colors';
 export interface TabConfig {
   label: string;
   icon: string | null;
+  logo?: any;
   color: string;
   iconColor: string | null;
 }
@@ -30,13 +31,16 @@ export const useConversationTabs = (theme: 'light' | 'dark') => {
   const tabs: TabConfig[] = [
     { 
       label: 'Aether', 
-      icon: null, 
+      icon: null,
+      logo: theme === 'dark'
+        ? require('../../assets/images/aether-brand-logo-dark.webp')
+        : require('../../assets/images/aether-brand-logo-light.webp'),
       color: theme === 'dark' ? '#8B8B8B' : '#666666',
       iconColor: null,
     },
     { 
       label: 'Friends', 
-      icon: 'heart', 
+      icon: 'users', 
       color: theme === 'dark' ? '#FF6B6B' : '#E84393',
       iconColor: theme === 'dark' ? '#FF6B6B' : '#E84393',
     }

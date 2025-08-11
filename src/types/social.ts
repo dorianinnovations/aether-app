@@ -94,6 +94,7 @@ export interface WorkSchedule {
 }
 
 export interface SpotifyData {
+  connected?: boolean;
   recentTracks: {
     name: string;
     artist: string;
@@ -102,6 +103,11 @@ export interface SpotifyData {
   }[];
   topArtistsThisWeek: string[];
   currentlyPlaying?: {
+    name: string;
+    artist: string;
+    isPlaying: boolean;
+  };
+  currentTrack?: {
     name: string;
     artist: string;
     isPlaying: boolean;

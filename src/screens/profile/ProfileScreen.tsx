@@ -18,33 +18,34 @@ import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 
 // Design System
-import { PageBackground } from '../design-system/components/atoms/PageBackground';
-import { LottieLoader } from '../design-system/components/atoms/LottieLoader';
-import { PersonaModal } from '../design-system/components/organisms/PersonaModal';
+import { PageBackground } from '../../design-system/components/atoms/PageBackground';
+import { LottieLoader } from '../../design-system/components/atoms/LottieLoader';
+import { PersonaModal } from '../../design-system/components/organisms/PersonaModal';
 import { 
   Header, 
   HeaderMenu, 
   SignOutModal, 
   ProfileSuccessModal,
-  ProfileCard 
-} from '../design-system/components/organisms';
-import SettingsModal from './chat/SettingsModal';
+  ProfileCard,
+  WalletModal
+} from '../../design-system/components/organisms';
+import SettingsModal from '../chat/SettingsModal';
 
 // Hooks and Context
-import { useTheme } from '../contexts/ThemeContext';
-import { useHeaderMenu } from '../design-system/hooks';
-import { useProfileData } from '../hooks/useProfileData';
-import { useToast, useScrollToInput } from '../hooks';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useHeaderMenu } from '../../design-system/hooks';
+import { useProfileData } from '../../hooks/useProfileData';
+import { useToast, useScrollToInput } from '../../hooks';
 
 // Services
-import { AuthAPI } from '../services/api';
-import { UserAPI } from '../services/apiModules/endpoints/user';
-import { ProfileImageService } from '../services/profileImageService';
-import { ProfileDataService, UserProfile } from '../services/profileDataService';
+import { AuthAPI } from '../../services/api';
+import { UserAPI } from '../../services/apiModules/endpoints/user';
+import { ProfileImageService } from '../../services/profileImageService';
+import { ProfileDataService, UserProfile } from '../../services/profileDataService';
 
 // Utils
-import { logger } from '../utils/logger';
-import { spacing } from '../design-system/tokens/spacing';
+import { logger } from '../../utils/logger';
+import { spacing } from '../../design-system/tokens/spacing';
 
 export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -71,6 +72,7 @@ export const ProfileScreen: React.FC = () => {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showPersonaModal, setShowPersonaModal] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
 
   // Refs
   const qualiaViewRef = useRef<View>(null);
@@ -485,6 +487,15 @@ export const ProfileScreen: React.FC = () => {
           theme={theme}
         />
 
+        {/* Wallet Icon - positioned to the right of back arrow in header */}
+        <TouchableOpacity
+          style={styles.walletIcon}
+          onPress={() => setShowWalletModal(true)}
+          activeOpacity={0.7}
+        >
+          <Feather name="credit-card" size={23} color={colors.text} />
+        </TouchableOpacity>
+
         {/* Profile Card */}
         <ProfileCard
           profile={profile}
@@ -553,6 +564,16 @@ export const ProfileScreen: React.FC = () => {
           onClose={() => setShowPersonaModal(false)}
         />
 
+        {/* Wallet Modal */}
+        <WalletModal
+          visible={showWalletModal}
+          onClose={() => setShowWalletModal(false)}
+          onTierSelect={(tier) => {
+            console.log('Selected tier:', tier);
+            // TODO: Implement tier selection logic
+          }}
+        />
+
         {/* Floating Edit Icon */}
         <TouchableOpacity
           onPress={editMode ? handleSaveProfile : () => setEditMode(true)}
@@ -598,6 +619,16 @@ const styles = StyleSheet.create({
     bottom: 25,
     right: 25,
     padding: spacing[2],
+  },
+  walletIcon: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 69 : 49,
+    left: 75,
+    width: 35,
+    height: 35,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
 });
 

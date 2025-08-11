@@ -106,7 +106,7 @@ export interface ChatResponse extends StandardAPIResponse<{
   // Legacy support properties for backward compatibility
   content?: string; // Alternative property name for response text
   response?: string; // Direct response property
-  metadata?: Record<string, unknown>; // Metadata property for additional response data
+  metadata?: Record<string, unknown> & { conversationId?: string }; // Metadata property for additional response data including conversationId
 }
 
 export interface Message {

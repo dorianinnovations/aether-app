@@ -221,7 +221,7 @@ export class FileProcessingService {
   }
 
   /**
-   * Backend file processing integration - Now connected to /social-chat-with-files
+   * Backend file processing integration - Connected to /chat endpoint
    */
   static async processWithBackendService(
     message: string, 

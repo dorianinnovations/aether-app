@@ -103,10 +103,12 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 11,
     fontWeight: '500',
+    letterSpacing: -0.2,
   },
   smallBadgeText: {
     fontSize: 9,
     fontWeight: '400',
+    letterSpacing: -0.2,
   },
 });
 

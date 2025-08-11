@@ -83,6 +83,7 @@ export const ChatAPI = {
           tier: data.tier || 'social',
           responseTime: data.responseTime || 0,
           toolResults: data.toolResults,
+          conversationId: data.conversationId,
         },
         content: data.response || data.content || '',
         metadata: {
@@ -90,6 +91,7 @@ export const ChatAPI = {
           usage: data.usage,
           thinking: data.thinking,
           toolResults: data.toolResults,
+          conversationId: data.conversationId,
         }
       };
       
@@ -196,8 +198,8 @@ export const ChatAPI = {
                           allChunks.push(parsed.content);
                         }
                         
-                        // Handle metadata (tool results, search results, etc.)
-                        if (parsed.metadata || parsed.toolResults || parsed.sources || parsed.searchResults) {
+                        // Handle metadata (tool results, search results, conversationId, etc.)
+                        if (parsed.metadata || parsed.toolResults || parsed.sources || parsed.searchResults || parsed.conversationId) {
                           const metadata = {
                             ...parsed.metadata,
                             ...(parsed.toolResults && { toolResults: parsed.toolResults }),
@@ -205,6 +207,7 @@ export const ChatAPI = {
                             ...(parsed.searchResults && { searchResults: parsed.searchResults }),
                             ...(parsed.query && { query: parsed.query }),
                             ...(parsed.thinking && { thinking: parsed.thinking }),
+                            ...(parsed.conversationId && { conversationId: parsed.conversationId }),
                           };
                           allChunks.push({ metadata });
                         }

@@ -58,6 +58,7 @@ import { useDynamicPrompts } from '../../hooks/useDynamicPrompts';
 import { useWebSearch } from '../../hooks/useWebSearch';
 import { useGhostTyping } from '../../hooks/useGhostTyping';
 import { useRealTimeMessaging } from '../../hooks/useRealTimeMessaging';
+import { useFriendRequest } from '../../hooks/useFriendRequest';
 
 // Types
 import type { Message } from '../../types/chat';
@@ -72,6 +73,7 @@ import {
   hideModalAnimation,
   type ModalAnimationRefs 
 } from '../../utils/animations';
+import { validateUsername, isValidMessageInput, formatMessageText, shouldStartTyping, shouldStopTyping } from '../../utils/chatUtils';
 
 
 
@@ -152,27 +154,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   // Conversation drawer state
   const [showConversationDrawer, setShowConversationDrawer] = useState(false);
   
-  // Add Friend modal state
-  const [showAddFriendModal, setShowAddFriendModal] = useState(false);
-  const [shouldRenderAddFriendModal, setShouldRenderAddFriendModal] = useState(false);
-  const [friendUsername, setFriendUsername] = useState('');
-  const [isInputFocused, setIsInputFocused] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('');
-  const [statusType, setStatusType] = useState<'success' | 'error' | 'warning' | 'loading' | null>(null);
-  const [isSubmittingFriendRequest, setIsSubmittingFriendRequest] = useState(false);
-  const [validationError, setValidationError] = useState('');
-  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const shakeAnim = useRef<Animated.Value>(new Animated.Value(0)).current;
-  const addFriendModalOpacity = useRef<Animated.Value>(new Animated.Value(1)).current;
+  // Friend request management
+  const friendRequest = useFriendRequest();
   
   const { ghostText } = useGhostTyping({
-    isInputFocused,
-    inputText: friendUsername,
+    isInputFocused: friendRequest.isInputFocused,
+    inputText: friendRequest.friendUsername,
   });
   
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(undefined);
   const [currentFriendUsername, setCurrentFriendUsername] = useState<string | undefined>(
-    route?.params?.friendUsername
+    route?.params?.friendUsername || undefined
   );
   const [showArtistModal, setShowArtistModal] = useState(false);
   const [artistData, setArtistData] = useState<{ id: string; name: string } | undefined>(undefined);
@@ -276,17 +268,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
 
   // Add Friend modal visibility effect - fixed to prevent useInsertionEffect warnings
   useEffect(() => {
-    if (showAddFriendModal && !shouldRenderAddFriendModal) {
-      setShouldRenderAddFriendModal(true);
+    if (friendRequest.showAddFriendModal && !friendRequest.shouldRenderAddFriendModal) {
+      friendRequest.setShouldRenderAddFriendModal(true);
       // Fade in
-      Animated.timing(addFriendModalOpacity, {
+      Animated.timing(friendRequest.addFriendModalOpacity, {
         toValue: 1,
         duration: 150,
         useNativeDriver: true,
       }).start();
-    } else if (!showAddFriendModal && shouldRenderAddFriendModal) {
+    } else if (!friendRequest.showAddFriendModal && friendRequest.shouldRenderAddFriendModal) {
       // Fade out animation
-      Animated.timing(addFriendModalOpacity, {
+      Animated.timing(friendRequest.addFriendModalOpacity, {
         toValue: 0,
         duration: 300,
         easing: Easing.out(Easing.quad),
@@ -295,11 +287,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       
       // Delay unmounting to allow fade-out animation
       const timer = setTimeout(() => {
-        setShouldRenderAddFriendModal(false);
+        friendRequest.setShouldRenderAddFriendModal(false);
       }, 300); // Match fade duration
       return () => clearTimeout(timer);
     }
-  }, [showAddFriendModal, shouldRenderAddFriendModal]);
+  }, [friendRequest.showAddFriendModal, friendRequest.shouldRenderAddFriendModal]);
 
   // Settings modal logic removed - just use showSettings directly
 
@@ -363,180 +355,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   // Cleanup effect for rotation stability
   useEffect(() => {
     return () => {
-      // Clear any pending timeouts
-      if (statusTimeoutRef.current) {
-        clearTimeout(statusTimeoutRef.current);
-      }
+      // Cleanup is now handled by the useFriendRequest hook
     };
   }, []);
 
   // Removed unused handlers and suggestions
 
-  // Handle Add Friend press
-  const handleAddFriendPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setShowAddFriendModal(true);
-  };
 
-  // Username validation function
-  const validateUsername = (username: string): string | null => {
-    if (!username.trim()) {
-      return 'Username is required';
-    }
-    
-    if (username.trim().length < 3) {
-      return 'Username must be at least 3 characters';
-    }
-    
-    if (username.trim().length > 20) {
-      return 'Username cannot exceed 20 characters';
-    }
-    
-    // Check for valid username pattern (alphanumeric, underscores, hyphens)
-    const usernameRegex = /^[a-zA-Z0-9_-]+$/;
-    if (!usernameRegex.test(username.trim())) {
-      return 'Username can only contain letters, numbers, underscores, and hyphens';
-    }
-    
-    return null; // Valid
-  };
-
-  // Clear status function
-  const clearStatus = () => {
-    if (statusTimeoutRef.current) {
-      clearTimeout(statusTimeoutRef.current);
-      statusTimeoutRef.current = null;
-    }
-    setStatusMessage('');
-    setStatusType(null);
-    setValidationError('');
-  };
-
-  // Enhanced status display function
-  const showStatus = (message: string, type: 'success' | 'error' | 'warning' | 'loading', duration: number = 3000) => {
-    clearStatus();
-    setStatusMessage(message);
-    setStatusType(type);
-    
-    if (type !== 'loading' && duration > 0) {
-      statusTimeoutRef.current = setTimeout(() => {
-        clearStatus();
-      }, duration);
-    }
-  };
-
-  // Enhanced shake animation
-  const performShakeAnimation = () => {
-    Animated.sequence([
-      Animated.timing(shakeAnim, { toValue: 12, duration: 75, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -12, duration: 75, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 8, duration: 75, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: -8, duration: 75, useNativeDriver: true }),
-      Animated.timing(shakeAnim, { toValue: 0, duration: 75, useNativeDriver: true }),
-    ]).start();
-  };
-
-  // Handle Add Friend submission with comprehensive error handling
-  const handleAddFriendSubmit = async () => {
-    const username = friendUsername.trim();
-    
-    // Client-side validation
-    const validationError = validateUsername(username);
-    if (validationError) {
-      setValidationError(validationError);
-      performShakeAnimation();
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
-
-    // Clear any previous validation errors
-    setValidationError('');
-    setIsSubmittingFriendRequest(true);
-    showStatus('Sending friend request...', 'loading');
-    
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
-    try {
-      const result = await FriendsAPI.addFriend(username);
-      
-      if (result && result.success) {
-        // Success scenario
-        setTimeout(async () => {
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }, 150);
-        
-        showStatus('Friend request sent successfully!', 'success', 2000);
-        setFriendUsername('');
-        
-        // Auto-hide modal after success
-        statusTimeoutRef.current = setTimeout(() => {
-          setShowAddFriendModal(false);
-          clearStatus();
-        }, 1500);
-        
-      } else {
-        // Handle various API error responses
-        performShakeAnimation();
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        
-        let errorMessage = 'Failed to send friend request';
-        
-        if (result?.error) {
-          const error = result.error.toLowerCase();
-          
-          if (error.includes('already friends') || error.includes('friend already exists')) {
-            errorMessage = 'You are already friends with this user';
-            showStatus(errorMessage, 'warning', 4000);
-          } else if (error.includes('request already sent') || error.includes('pending')) {
-            errorMessage = 'Friend request already sent';
-            showStatus(errorMessage, 'warning', 4000);
-          } else if (error.includes('user not found') || error.includes('does not exist')) {
-            errorMessage = 'User not found. Check the username and try again';
-            showStatus(errorMessage, 'error', 4000);
-          } else if (error.includes('cannot add yourself') || error.includes('self')) {
-            errorMessage = 'You cannot add yourself as a friend';
-            showStatus(errorMessage, 'warning', 3000);
-          } else if (error.includes('blocked') || error.includes('restricted')) {
-            errorMessage = 'Unable to send request to this user';
-            showStatus(errorMessage, 'error', 4000);
-          } else if (error.includes('limit') || error.includes('maximum')) {
-            errorMessage = 'Friend request limit reached. Try again later';
-            showStatus(errorMessage, 'warning', 4000);
-          } else {
-            errorMessage = result.error;
-            showStatus(errorMessage, 'error', 4000);
-          }
-        } else {
-          showStatus(errorMessage, 'error', 3000);
-        }
-      }
-    } catch (error: unknown) {
-      // Network and other errors
-      performShakeAnimation();
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      
-      let errorMessage = 'Network error. Please try again.';
-      
-      const errorObj = error as { code?: string; message?: string; response?: { status: number } };
-      if (errorObj.code === 'ECONNABORTED' || errorObj.message?.includes('timeout')) {
-        errorMessage = 'Network error, try again in a few minutes';
-      } else if (errorObj.code === 'NETWORK_ERROR' || errorObj.message?.includes('network')) {
-        errorMessage = 'Network error, try again in a few minutes';
-      } else if (errorObj.response?.status === 401) {
-        errorMessage = 'Authentication failed. Please sign in again.';
-      } else if (errorObj.response?.status === 429) {
-        errorMessage = 'Too many requests. Please wait and try again.';
-      } else if (errorObj.response?.status && errorObj.response.status >= 500) {
-        errorMessage = 'Server error. Please try again later.';
-      } else if (errorObj.message) {
-        errorMessage = `Error: ${errorObj.message}`;
-      }
-      
-      showStatus(errorMessage, 'error', 4000);
-    } finally {
-      setIsSubmittingFriendRequest(false);
-    }
-  };
 
 
   // Removed unused message press handler
@@ -557,7 +382,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   };
 
   const handleEnhancedSend = () => {
-    if (!inputText.trim() && attachments.length === 0) return;
+    if (!isValidMessageInput(inputText, attachments)) return;
     
     // Store current values before clearing
     const currentText = inputText;
@@ -577,11 +402,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     
     if (currentAttachments.length > 0) {
       // Handle attachments - send message with attachments
-      const messageText = currentText.trim() || "";
+      const messageText = formatMessageText(currentText) || "";
       handleMessageSend(messageText, currentAttachments);
     } else {
       // Send the message with the current input text
-      handleMessageSend(currentText);
+      handleMessageSend(formatMessageText(currentText));
     }
     
     // Adjust padding based on message length and account for loading state
@@ -672,9 +497,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     setInputText(text);
     
     // Send typing indicators for friend conversations
-    if (currentFriendUsername && text.trim() && isRealTimeConnected) {
+    if (shouldStartTyping(text, isRealTimeConnected, !!currentFriendUsername)) {
       startRealTimeTyping();
-    } else if (currentFriendUsername && !text.trim()) {
+    } else if (shouldStopTyping(text, !!currentFriendUsername)) {
       stopRealTimeTyping();
     }
   };
@@ -1012,7 +837,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         leftIcon="user-plus"
         onMenuPress={toggleHeaderMenu}
         onConversationsPress={() => setShowConversationDrawer(true)}
-        onLeftPress={handleAddFriendPress}
+        onLeftPress={friendRequest.handleAddFriendPress}
         theme={theme}
         isVisible={headerVisible}
         isMenuOpen={showHeaderMenu}
@@ -1169,18 +994,18 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       )}
 
       {/* Add Friend Dropdown */}
-      {shouldRenderAddFriendModal && (
+      {friendRequest.shouldRenderAddFriendModal && (
       <Modal
-        visible={shouldRenderAddFriendModal}
+        visible={friendRequest.shouldRenderAddFriendModal}
         transparent={true}
         animationType="none"
-        onRequestClose={() => setShowAddFriendModal(false)}
+        onRequestClose={() => friendRequest.setShowAddFriendModal(false)}
       >
-        <Animated.View style={[styles.overlay, { opacity: addFriendModalOpacity }]}>
+        <Animated.View style={[styles.overlay, { opacity: friendRequest.addFriendModalOpacity }]}>
           <TouchableOpacity 
             style={StyleSheet.absoluteFillObject}
             activeOpacity={1}
-            onPress={() => setShowAddFriendModal(false)}
+            onPress={() => friendRequest.setShowAddFriendModal(false)}
           />
           
           <Animated.View style={[
@@ -1235,59 +1060,59 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
               
               <Animated.View
                 style={{
-                  transform: [{ translateX: shakeAnim }]
+                  transform: [{ translateX: friendRequest.shakeAnim }]
                 }}
               >
                 <TextInput
                   style={[
                     styles.friendInput,
                     {
-                      color: validationError 
+                      color: friendRequest.validationError 
                         ? '#FF6B6B' 
-                        : statusType === 'error' 
+                        : friendRequest.statusType === 'error' 
                           ? '#FF4444' 
-                          : statusType === 'success' 
+                          : friendRequest.statusType === 'success' 
                             ? '#00DD44' 
-                            : statusType === 'warning'
+                            : friendRequest.statusType === 'warning'
                               ? '#FFB366'
                               : (theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.primary),
-                      backgroundColor: isSubmittingFriendRequest 
+                      backgroundColor: friendRequest.isSubmittingFriendRequest 
                         ? (theme === 'dark' ? '#2a2a2a' : '#f0f0f0')
                         : (theme === 'dark' ? '#1a1a1a' : '#f8f8f8'),
-                      borderColor: validationError
+                      borderColor: friendRequest.validationError
                         ? '#FF6B6B'
-                        : statusType === 'error' 
+                        : friendRequest.statusType === 'error' 
                           ? '#FF4444' 
-                          : statusType === 'success' 
+                          : friendRequest.statusType === 'success' 
                             ? '#00DD44'
-                            : statusType === 'warning'
+                            : friendRequest.statusType === 'warning'
                               ? '#FFB366'
-                              : statusType === 'loading'
+                              : friendRequest.statusType === 'loading'
                                 ? '#4A90E2'
                                 : (theme === 'dark' ? designTokens.borders.dark.default : designTokens.borders.light.default),
-                      borderWidth: (validationError || statusType) ? 2 : 1,
+                      borderWidth: (friendRequest.validationError || friendRequest.statusType) ? 2 : 1,
                     }
                   ]}
-                  placeholder={validationError || statusMessage || ghostText}
+                  placeholder={friendRequest.validationError || friendRequest.statusMessage || ghostText}
                   placeholderTextColor={
-                    validationError 
+                    friendRequest.validationError 
                       ? '#FF6B6B' 
-                      : statusType === 'error' 
+                      : friendRequest.statusType === 'error' 
                         ? '#FF4444' 
-                        : statusType === 'success' 
+                        : friendRequest.statusType === 'success' 
                           ? '#00BB44' 
-                          : statusType === 'warning'
+                          : friendRequest.statusType === 'warning'
                             ? '#FF9933'
-                            : statusType === 'loading'
+                            : friendRequest.statusType === 'loading'
                               ? '#4A90E2'
                               : (theme === 'dark' ? designTokens.text.mutedDark : designTokens.text.muted)
                   }
-                  value={friendUsername}
+                  value={friendRequest.friendUsername}
                   onChangeText={(text) => {
-                    setFriendUsername(text);
+                    friendRequest.setFriendUsername(text);
                     // Clear status and validation errors when user starts typing
-                    if (statusMessage || validationError) {
-                      clearStatus();
+                    if (friendRequest.statusMessage || friendRequest.validationError) {
+                      friendRequest.clearStatus();
                     }
                     
                     // Real-time validation (only show after user stops typing)
@@ -1295,23 +1120,23 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
                       const validation = validateUsername(text);
                       if (validation && text.trim().length >= 3) {
                         // Only show validation error for longer inputs to avoid annoying users
-                        setValidationError(validation);
+                        friendRequest.setValidationError(validation);
                       } else {
-                        setValidationError('');
+                        friendRequest.setValidationError('');
                       }
                     } else {
-                      setValidationError('');
+                      friendRequest.setValidationError('');
                     }
                   }}
-                  onFocus={() => setIsInputFocused(true)}
-                  onBlur={() => setIsInputFocused(false)}
+                  onFocus={() => friendRequest.setIsInputFocused(true)}
+                  onBlur={() => friendRequest.setIsInputFocused(false)}
                   autoCapitalize="none"
                   autoCorrect={false}
                   keyboardAppearance={theme === 'dark' ? 'dark' : 'light'}
                   selectionColor={theme === 'dark' ? '#ffffff' : '#007AFF'}
                   cursorColor={theme === 'dark' ? '#ffffff' : '#007AFF'}
                   textAlign="center"
-                  editable={!isSubmittingFriendRequest && !statusMessage} // Disable input while submitting or showing status
+                  editable={!friendRequest.isSubmittingFriendRequest && !friendRequest.statusMessage} // Disable input while submitting or showing status
                 />
               </Animated.View>
               
@@ -1319,20 +1144,20 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
                 style={[
                   styles.addButton,
                   {
-                    backgroundColor: isSubmittingFriendRequest 
+                    backgroundColor: friendRequest.isSubmittingFriendRequest 
                       ? (theme === 'dark' ? '#333333' : '#cccccc')
-                      : statusType === 'success'
+                      : friendRequest.statusType === 'success'
                         ? '#00AA44'
-                        : statusType === 'error' || validationError
+                        : friendRequest.statusType === 'error' || friendRequest.validationError
                           ? '#FF4444'
-                          : statusType === 'warning'
+                          : friendRequest.statusType === 'warning'
                             ? '#FF9933'
                             : (theme === 'dark' ? '#0d0d0d' : designTokens.brand.primary),
-                    borderColor: isSubmittingFriendRequest
+                    borderColor: friendRequest.isSubmittingFriendRequest
                       ? (theme === 'dark' ? '#555555' : '#aaaaaa')
                       : (theme === 'dark' ? '#262626' : 'transparent'),
                     borderWidth: theme === 'dark' ? 1 : 0,
-                    opacity: isSubmittingFriendRequest ? 0.7 : 1,
+                    opacity: friendRequest.isSubmittingFriendRequest ? 0.7 : 1,
                     // Strong tight glow for dark mode, shadow for light mode
                     shadowColor: theme === 'dark' ? '#ffffff' : '#000000',
                     shadowOffset: { width: 0, height: theme === 'dark' ? 0 : 2 },
@@ -1341,9 +1166,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
                     elevation: theme === 'dark' ? 0 : 4,
                   }
                 ]}
-                onPress={handleAddFriendSubmit}
+                onPress={friendRequest.handleAddFriendSubmit}
                 activeOpacity={0.8}
-                disabled={isSubmittingFriendRequest || !!validationError}
+                disabled={friendRequest.isSubmittingFriendRequest || !!friendRequest.validationError}
               >
                 <Text style={[
                   styles.addButtonText,
@@ -1353,11 +1178,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
                     letterSpacing: -0.3,
                   }
                 ]}>
-                  {isSubmittingFriendRequest 
+                  {friendRequest.isSubmittingFriendRequest 
                     ? 'Sending...' 
-                    : statusType === 'success'
+                    : friendRequest.statusType === 'success'
                       ? 'Sent!'
-                      : statusType === 'error' || validationError
+                      : friendRequest.statusType === 'error' || friendRequest.validationError
                         ? 'Try Again'
                         : 'Add Friend'
                   }

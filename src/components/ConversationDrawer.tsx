@@ -16,6 +16,7 @@ import {
   Animated,
   Modal,
   Alert,
+  Image,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { ArtistListeningModal } from '../design-system/components/organisms/ArtistListeningModal';
@@ -433,8 +434,8 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                               backgroundColor: isActive
                                 ? (theme === 'dark' ? 'rgba(42, 42, 42, 0.3)' : 'rgba(248, 248, 248, 0.5)')
                                 : 'transparent',
-                              borderBottomColor: isActive 
-                                ? themeColors.primary
+                              borderTopColor: isActive 
+                                ? (theme === 'dark' ? '#FFFFFF' : '#000000')
                                 : 'transparent',
                             }
                           ]}
@@ -442,15 +443,32 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                           activeOpacity={0.7}
                           disabled={isAnimating}
                         >
-                          <Text style={[
-                            styles.channelTabText,
-                            {
-                              color: isActive ? themeColors.text : themeColors.textSecondary,
-                              fontWeight: isActive ? '600' : '400',
-                            }
-                          ]}>
-                            {tab.label}
-                          </Text>
+                          {tab.logo ? (
+                            <Image 
+                              source={tab.logo}
+                              style={[
+                                styles.tabLogo,
+                                { opacity: isActive ? 1 : 0.7 }
+                              ]}
+                              resizeMode="contain"
+                            />
+                          ) : tab.icon ? (
+                            <Feather 
+                              name={tab.icon as any}
+                              size={18}
+                              color={isActive ? themeColors.text : themeColors.textSecondary}
+                            />
+                          ) : (
+                            <Text style={[
+                              styles.channelTabText,
+                              {
+                                color: isActive ? themeColors.text : themeColors.textSecondary,
+                                fontWeight: isActive ? '600' : '400',
+                              }
+                            ]}>
+                              {tab.label}
+                            </Text>
+                          )}
                         </TouchableOpacity>
                       </Animated.View>
                     );
@@ -608,7 +626,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     bottom: 0,
-    width: screenWidth * 0.75,
+    width: screenWidth * 0.85,
     overflow: 'visible',
     shadowColor: '#000',
     shadowOffset: { width: 2, height: 0 },
@@ -638,16 +656,17 @@ const styles = StyleSheet.create({
     gap: spacing[2],
   },
   inboxTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '600',
     fontFamily: 'MozillaText_600SemiBold',
-    letterSpacing: -1.2,
+    letterSpacing: -0.8,
     textAlign: 'left',
   },
   inboxCount: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '400',
     fontFamily: 'Inter-Regular',
+    opacity: 0.6,
   },
   // Badge text styling handled by getTextStyle
   
@@ -664,25 +683,30 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[2],
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 32,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    height: 32,
+    borderTopWidth: 1,
+    borderTopColor: 'transparent',
     marginHorizontal: spacing[1],
-    borderTopLeftRadius: borderRadius.md,
-    borderTopRightRadius: borderRadius.lg,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
   },
   channelTabText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: 'Inter-Medium',
     textAlign: 'center',
-    letterSpacing: -0.5,
+    letterSpacing: -0.2,
+  },
+  tabLogo: {
+    width: 84,
+    height: 28,
+    marginTop: 4,
   },
   
   // Minimal Action Dock
   actionDock: {
     paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    gap: spacing[2],
+    paddingVertical: spacing[3],
+    gap: spacing[3],
   },
   primaryAction: {
     alignItems: 'center',

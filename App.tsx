@@ -28,13 +28,13 @@ import { View, StyleSheet, Dimensions, Image } from 'react-native';
 import { LottieLoader } from './src/design-system/components/atoms';
 
 // Screens
-import HeroLandingScreen from './src/screens/HeroLandingScreen';
+import HeroLandingScreen from './src/screens/landing/HeroLandingScreen';
 import OnboardingScreen from './src/screens/onboarding/OnboardingScreen';
 import SignInScreen from './src/screens/auth/SignInScreen';
 import SignUpScreen from './src/screens/auth/SignUpScreen';
 import ChatScreen from './src/screens/chat/ChatScreen';
-import ProfileScreen from './src/screens/ProfileScreen';
-import NewsScreen from './src/screens/NewsScreen';
+import ProfileScreen from './src/screens/profile/ProfileScreen';
+import NewsScreen from './src/screens/news/NewsScreen';
 
 // Services
 import { TokenManager } from './src/services/api';
