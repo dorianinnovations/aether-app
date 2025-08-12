@@ -1,5 +1,5 @@
 /**
- * NewsScreen - Artist Discovery & Personalized Feed
+ * BuzzScreen - Artist Discovery & Personalized Feed
  * Displays artist updates, releases, news, and personalized recommendations
  */
 
@@ -15,6 +15,8 @@ import {
   Image,
   ScrollView,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
 
 // Contexts
 import { useTheme } from '../../contexts/ThemeContext';
@@ -41,12 +43,13 @@ import type { FeedItem } from '../../services/apiModules/endpoints/feed';
 import type { Artist } from '../../services/apiModules/endpoints/artists';
 import type { InteractionTrackingData } from '../../services/apiModules/endpoints/analytics';
 
-interface NewsScreenProps {}
+interface BuzzScreenProps {}
 
-const NewsScreen: React.FC<NewsScreenProps> = () => {
+const BuzzScreen: React.FC<BuzzScreenProps> = () => {
   const { theme } = useTheme();
   const { settings } = useSettings();
   const colors = getThemeColors(theme);
+  const navigation = useNavigation();
   
   // Artist Feed State
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
@@ -55,10 +58,12 @@ const NewsScreen: React.FC<NewsScreenProps> = () => {
   const [loading, setLoading] = useState(true);
   const [feedType, setFeedType] = useState<'timeline' | 'releases' | 'news' | 'tours'>('timeline');
   const [error, setError] = useState<string | null>(null);
+  const [isLiveData, setIsLiveData] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   // Header menu integration
   const { showHeaderMenu, setShowHeaderMenu, handleMenuAction, toggleHeaderMenu } = useHeaderMenu({
-    screenName: 'news',
+    screenName: 'buzz',
   });
 
   // Load personalized artist feed
@@ -90,6 +95,12 @@ const NewsScreen: React.FC<NewsScreenProps> = () => {
       if (response.success && response.data) {
         setFeedItems(response.data);
         
+        // Check if this is live data from new endpoints
+        if ((response as any).meta?.isLive) {
+          setIsLiveData(true);
+          setLastUpdated((response as any).meta.lastUpdated);
+        }
+        
         // Track feed view
         await AnalyticsAPI.trackInteraction({
           type: 'content_view',
@@ -98,7 +109,7 @@ const NewsScreen: React.FC<NewsScreenProps> = () => {
           context: feedType
         });
       } else {
-        setError('Failed to load feed');
+        setError(response?.message || 'Failed to load feed');
       }
     } catch (err) {
       console.error('Error loading feed:', err);
@@ -158,7 +169,7 @@ const NewsScreen: React.FC<NewsScreenProps> = () => {
       // Track interaction with FeedAPI
       await FeedAPI.interactWithUpdate(item.id, {
         type: interactionType as any,
-        context: 'news_feed'
+        context: 'buzz_feed'
       });
       
       // Track interaction with Analytics
@@ -172,6 +183,20 @@ const NewsScreen: React.FC<NewsScreenProps> = () => {
       console.error('Error tracking interaction:', err);
     }
   }, [feedType]);
+
+  // Quick function to follow test artists for demo
+  const followTestArtists = useCallback(async () => {
+    const testArtists = ['Drake', 'J. Cole', 'Kendrick Lamar', 'Travis Scott'];
+    try {
+      for (const artistName of testArtists) {
+        await FeedAPI.followArtist(artistName);
+      }
+      // Refresh feed after following artists
+      await loadFeedData();
+    } catch (err) {
+      console.error('Error following test artists:', err);
+    }
+  }, [loadFeedData]);
 
   const renderFeedItem = ({ item }: { item: FeedItem }) => (
     <TouchableOpacity 
@@ -317,28 +342,32 @@ const NewsScreen: React.FC<NewsScreenProps> = () => {
       contentContainerStyle={styles.feedTypeSelectorContent}
     >
       {[
-        { key: 'timeline', label: 'For You', icon: '🎵' },
-        { key: 'releases', label: 'New Releases', icon: '🎶' },
-        { key: 'news', label: 'Artist News', icon: '📰' },
-        { key: 'tours', label: 'Tours & Events', icon: '🎤' },
-      ].map(({ key, label, icon }) => (
+        { key: 'timeline', label: 'For You', icon: '', color: theme === 'dark' ? '#FF6B6B' : '#FF3333' },
+        { key: 'releases', label: 'New Releases', icon: '', color: theme === 'dark' ? '#FFB347' : '#FF8C00' },
+        { key: 'news', label: 'Artist News', icon: '', color: theme === 'dark' ? '#4ECDC4' : '#00CED1' },
+        { key: 'tours', label: 'Tours & Events', icon: '', color: theme === 'dark' ? '#A855F7' : '#8A2BE2' },
+      ].map(({ key, label, icon, color }) => (
         <TouchableOpacity
           key={key}
           style={[
             styles.feedTypeButton,
             {
-              backgroundColor: feedType === key ? colors.primary : colors.surface,
-              borderColor: colors.borders.default,
+              backgroundColor: feedType === key ? color + '20' : 'transparent',
+              borderColor: color,
+              borderWidth: feedType === key ? 2 : 1,
             }
           ]}
-          onPress={() => setFeedType(key as any)}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setFeedType(key as any);
+          }}
         >
-          <Text style={styles.feedTypeIcon}>{icon}</Text>
+          {icon && <Text style={styles.feedTypeIcon}>{icon}</Text>}
           <Text style={[
             styles.feedTypeLabel,
             {
-              color: feedType === key ? colors.background : colors.text,
-              fontWeight: feedType === key ? '600' : 'normal'
+              color: color,
+              fontWeight: feedType === key ? '600' : '500'
             }
           ]}>
             {label}
@@ -396,12 +425,14 @@ const NewsScreen: React.FC<NewsScreenProps> = () => {
 
   return (
     <SwipeToMenu onSwipeToMenu={toggleHeaderMenu}>
-      <PageBackground theme={theme} variant="news">
+      <PageBackground theme={theme} variant="buzz">
       <SafeAreaView style={styles.container}>
         {/* Header with menu functionality */}
         <Header
-          title="Artist Feed"
+          title="Buzz Feed"
+          showBackButton={true}
           showMenuButton={true}
+          onBackPress={() => navigation.goBack()}
           onMenuPress={toggleHeaderMenu}
           theme={theme}
           isMenuOpen={showHeaderMenu}
@@ -489,7 +520,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: spacing[4],
-    paddingTop: 120, // Account for header
+    paddingTop: 80, // Account for header
     paddingBottom: spacing[6],
     flexGrow: 1,
   },
@@ -499,14 +530,17 @@ const styles = StyleSheet.create({
   },
   feedTypeSelectorContent: {
     paddingHorizontal: spacing[2],
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexGrow: 1,
   },
   feedTypeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
     marginHorizontal: spacing[1],
-    borderRadius: 20,
+    borderRadius: 6,
     borderWidth: 1,
   },
   feedTypeIcon: {
@@ -514,7 +548,7 @@ const styles = StyleSheet.create({
     marginRight: spacing[1],
   },
   feedTypeLabel: {
-    fontSize: 14,
+    fontSize: 12,
   },
   // Discovery Section
   discoverySection: {
@@ -635,7 +669,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export default NewsScreen;
+export default BuzzScreen;
 
 // Re-export types for external use
 export type { FeedItem, Artist };

@@ -73,7 +73,7 @@ export interface InteractionData {
 }
 
 export const FeedAPI = {
-  // Main Feed Content
+  // Main Feed Content - Now using LIVE endpoints
   async getTimeline(params?: FeedTimelineParams): Promise<StandardAPIResponse<FeedItem[]>> {
     const queryParams = new URLSearchParams();
     if (params) {
@@ -84,7 +84,7 @@ export const FeedAPI = {
       });
     }
     
-    return await makeRequest<FeedItem[]>('GET', `/feed/timeline?${queryParams.toString()}`);
+    return await makeRequest<FeedItem[]>('GET', `/live-feed/timeline?${queryParams.toString()}`);
   },
 
   async getReleases(limit?: number, since?: string): Promise<StandardAPIResponse<FeedItem[]>> {
@@ -92,7 +92,7 @@ export const FeedAPI = {
     if (limit) queryParams.append('limit', limit.toString());
     if (since) queryParams.append('since', since);
     
-    return await makeRequest<FeedItem[]>('GET', `/feed/releases?${queryParams.toString()}`);
+    return await makeRequest<FeedItem[]>('GET', `/live-feed/releases?${queryParams.toString()}`);
   },
 
   async getNews(limit?: number, since?: string): Promise<StandardAPIResponse<FeedItem[]>> {
@@ -100,7 +100,7 @@ export const FeedAPI = {
     if (limit) queryParams.append('limit', limit.toString());
     if (since) queryParams.append('since', since);
     
-    return await makeRequest<FeedItem[]>('GET', `/feed/news?${queryParams.toString()}`);
+    return await makeRequest<FeedItem[]>('GET', `/live-feed/news?${queryParams.toString()}`);
   },
 
   async getTours(limit?: number, since?: string): Promise<StandardAPIResponse<FeedItem[]>> {
@@ -108,12 +108,17 @@ export const FeedAPI = {
     if (limit) queryParams.append('limit', limit.toString());
     if (since) queryParams.append('since', since);
     
-    return await makeRequest<FeedItem[]>('GET', `/feed/tours?${queryParams.toString()}`);
+    return await makeRequest<FeedItem[]>('GET', `/live-feed/tours?${queryParams.toString()}`);
   },
 
   async getTrendingContent(timeframe?: '1h' | '24h' | '7d'): Promise<StandardAPIResponse<TrendingContent[]>> {
     const queryParams = timeframe ? `?timeframe=${timeframe}` : '';
-    return await makeRequest<TrendingContent[]>('GET', `/feed/trending${queryParams}`);
+    return await makeRequest<TrendingContent[]>('GET', `/live-feed/trending${queryParams}`);
+  },
+
+  // Quick artist follow for testing
+  async followArtist(artistName: string): Promise<StandardAPIResponse<any>> {
+    return await makeRequest<any>('POST', '/live-feed/follow-artist', { artistName });
   },
 
   // Feed Interactions
