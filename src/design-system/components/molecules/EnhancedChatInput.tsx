@@ -102,6 +102,8 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
   const cameraSlideAnim = useRef(new Animated.Value(-50)).current;
   const gallerySlideAnim = useRef(new Animated.Value(-50)).current;
   const documentSlideAnim = useRef(new Animated.Value(-50)).current;
+  // Icon morphing animation for + to x transition
+  const iconMorphAnim = useRef(new Animated.Value(0)).current;
 
   // Swipe up gesture handler
   const handleSwipeUp = (event: Parameters<NonNullable<React.ComponentProps<typeof PanGestureHandler>['onHandlerStateChange']>>[0]) => {
@@ -432,6 +434,13 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
           duration: 50,
           useNativeDriver: true,
         }),
+        // Smooth + to x morphing animation
+        Animated.timing(iconMorphAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94), // Google Material easing
+        }),
         // Container animation
         Animated.timing(attachmentButtonsAnim, {
           toValue: 1,
@@ -498,6 +507,13 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
           toValue: 1,
           duration: 50,
           useNativeDriver: true,
+        }),
+        // Smooth x to + morphing animation
+        Animated.timing(iconMorphAnim, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94), // Google Material easing
         }),
         Animated.timing(attachmentButtonsAnim, {
           toValue: 0,
@@ -643,11 +659,69 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
                   onPress={toggleAttachmentButtons}
                   activeOpacity={0.7}
                 >
-                  <Feather 
-                    name={attachmentButtonsVisible ? "x" : "plus"} 
-                    size={18} 
-                    color={themeColors.textSecondary} 
-                  />
+                  <View style={styles.iconMorphContainer}>
+                    {/* Plus Icon */}
+                    <Animated.View style={[
+                      styles.morphingIcon,
+                      {
+                        opacity: iconMorphAnim.interpolate({
+                          inputRange: [0, 0.5, 1],
+                          outputRange: [1, 0, 0],
+                        }),
+                        transform: [
+                          {
+                            rotate: iconMorphAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: ['0deg', '90deg'],
+                            })
+                          },
+                          {
+                            scale: iconMorphAnim.interpolate({
+                              inputRange: [0, 0.3, 0.7, 1],
+                              outputRange: [1, 1.1, 0.9, 0],
+                            })
+                          }
+                        ],
+                      }
+                    ]}>
+                      <Feather 
+                        name="plus" 
+                        size={18} 
+                        color={themeColors.textSecondary} 
+                      />
+                    </Animated.View>
+                    
+                    {/* X Icon */}
+                    <Animated.View style={[
+                      styles.morphingIcon,
+                      {
+                        opacity: iconMorphAnim.interpolate({
+                          inputRange: [0, 0.5, 1],
+                          outputRange: [0, 0, 1],
+                        }),
+                        transform: [
+                          {
+                            rotate: iconMorphAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: ['-90deg', '0deg'],
+                            })
+                          },
+                          {
+                            scale: iconMorphAnim.interpolate({
+                              inputRange: [0, 0.3, 0.7, 1],
+                              outputRange: [0, 0.9, 1.1, 1],
+                            })
+                          }
+                        ],
+                      }
+                    ]}>
+                      <Feather 
+                        name="x" 
+                        size={18} 
+                        color={themeColors.textSecondary} 
+                      />
+                    </Animated.View>
+                  </View>
                 </TouchableOpacity>
               </Animated.View>
             )}
@@ -862,8 +936,8 @@ const styles = StyleSheet.create({
   inputContainer: {
     flex: 1,
     borderRadius: 8,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[1],
+    paddingHorizontal: spacing[2],
+    paddingVertical: 0,
     minHeight: 19,
     maxHeight: 100,
     justifyContent: 'flex-start',
@@ -871,8 +945,8 @@ const styles = StyleSheet.create({
   textInput: {
     minHeight: 19,
     maxHeight: 100,
-    paddingTop: 4,
-    paddingBottom: 4,
+    paddingTop: 0,
+    paddingBottom: 0,
     fontSize: 16,
     lineHeight: 20,
     letterSpacing: -0.2,
@@ -950,6 +1024,18 @@ const styles = StyleSheet.create({
   attachmentIconButton: {
     width: 40,
     height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconMorphContainer: {
+    width: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  morphingIcon: {
+    position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -79,7 +79,7 @@ const StreamingText: React.FC<{
     fontSize: 16,
     lineHeight: 24,
     letterSpacing: -0.1,
-    fontFamily: 'Inter-Regular', // Ultra-clean modern font for AI messages
+    fontFamily: 'mozilla text', // Mozilla text font for AI messages
     fontWeight: '400' as '400',
     color: theme === 'dark' ? '#ffffff' : '#1a1a1a',
   };
@@ -589,7 +589,7 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
                   typography.textStyles.timestampSmall,
                   { 
                     color: theme === 'dark' ? '#888888' : '#666666',
-                    fontFamily: 'Inter-Regular',
+                    fontFamily: 'mozilla text',
                     fontSize: 11,
                     letterSpacing: 0.2,
                     opacity: 0.6,
@@ -703,7 +703,7 @@ const styles = StyleSheet.create({
   },
   messageText: {
     // Enhanced typography for chat messages
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'mozilla text',
     fontSize: 16,
     fontWeight: '400',
     lineHeight: 22,
@@ -715,7 +715,7 @@ const styles = StyleSheet.create({
     // Empty style for TouchableOpacity optimization
   },
   userMessageText: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'mozilla text',
     fontSize: 16,
     fontWeight: '400',
     lineHeight: 22,          // Better line height for readability
@@ -834,7 +834,7 @@ const styles = StyleSheet.create({
   },
   sourceDomain: {
     fontSize: 11,
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'mozilla text',
     letterSpacing: 0.1,
     opacity: 0.65,
     lineHeight: 14,
@@ -862,7 +862,7 @@ const styles = StyleSheet.create({
   },
   toolCallResult: {
     fontSize: 13,
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'mozilla text',
     lineHeight: 19,
     letterSpacing: -0.02,
   },
@@ -890,14 +890,14 @@ const styles = StyleSheet.create({
   },
   searchResultSnippet: {
     fontSize: 13,
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'mozilla text',
     lineHeight: 19,
     letterSpacing: -0.02,
     marginBottom: spacing[1],
   },
   searchResultLink: {
     fontSize: 12,
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'mozilla text',
     letterSpacing: 0.1,
     textDecorationLine: 'underline',
     opacity: 0.75,
@@ -921,7 +921,7 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: 11,
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'mozilla text',
     fontWeight: '400',
     letterSpacing: 0.2,
     opacity: 0.6,

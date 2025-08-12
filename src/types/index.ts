@@ -19,5 +19,5 @@ export type { Message, MessageAttachment, Conversation, ToolCall, MessageMetadat
 export type { APIResponse, AuthResponse, ChatResponse, APIError } from './api';
 export type { ThemeContextType, ThemeColors, IconName, IconSize } from './ui';
 export type { RootStackParamList, NavigationProps, ScreenName } from './navigation';
-export type { NewsPost, Community } from './social';
+export type { Community } from './social';
 export type { MetricEvent, UserJourneyStep, ChokePoint, RateLimitInfo } from './analytics';

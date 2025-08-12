@@ -52,12 +52,12 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
           }
         }
         break;
-      case 'news':
-        if (screenName !== 'news') {
+      case 'buzz':
+        if (screenName !== 'buzz') {
           try {
-            navigation.navigate('News' as never);
+            navigation.navigate('Buzz' as never);
           } catch (error) {
-            console.log('News navigation failed:', error);
+            console.log('Buzz navigation failed:', error);
           }
         }
         break;
@@ -95,11 +95,21 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
     setShowHeaderMenu(!showHeaderMenu);
   };
 
+  const open = () => {
+    setShowHeaderMenu(true);
+  };
+
+  const close = () => {
+    setShowHeaderMenu(false);
+  };
+
   return {
     showHeaderMenu,
     setShowHeaderMenu,
     handleMenuAction,
     toggleHeaderMenu,
+    open,
+    close,
   };
 };
 

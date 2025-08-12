@@ -23,7 +23,6 @@ export interface ArtistDetails extends Artist {
   topTracks?: any[];
   relatedArtists?: Artist[];
   upcomingEvents?: any[];
-  recentNews?: any[];
   socialMedia?: {
     twitter?: string;
     instagram?: string;
@@ -38,7 +37,6 @@ export interface Following {
   artist: Artist;
   notificationPreferences: {
     releases: boolean;
-    news: boolean;
     tours: boolean;
     social: boolean;
   };
@@ -50,7 +48,7 @@ export interface ArtistUpdate {
   id: string;
   artistId: string;
   artist: Artist;
-  type: 'release' | 'news' | 'tour' | 'social';
+  type: 'release' | 'tour' | 'social';
   title: string;
   content: string;
   url?: string;
@@ -115,7 +113,6 @@ export const ArtistAPI = {
       artistId,
       notificationPreferences: notificationPreferences || {
         releases: true,
-        news: true,
         tours: true,
         social: false
       }

@@ -16,19 +16,20 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 
 // Design System
 import { PageBackground, SwipeToMenu } from '../../design-system/components/atoms';
 import { LottieLoader } from '../../design-system/components/atoms/LottieLoader';
 import { PersonaModal } from '../../design-system/components/organisms/PersonaModal';
 import { 
-  Header, 
   HeaderMenu, 
   SignOutModal, 
   ProfileSuccessModal,
   ProfileCard,
   WalletModal
 } from '../../design-system/components/organisms';
+import { AnimatedHamburger } from '../../design-system/components/atoms';
 import SettingsModal from '../chat/SettingsModal';
 
 // Hooks and Context
@@ -74,6 +75,7 @@ export const ProfileScreen: React.FC = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showPersonaModal, setShowPersonaModal] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [hamburgerOpen, setHamburgerOpen] = useState(false);
 
   // Refs
   const qualiaViewRef = useRef<View>(null);
@@ -97,7 +99,6 @@ export const ProfileScreen: React.FC = () => {
   // Header menu hook
   const { showHeaderMenu, setShowHeaderMenu, handleMenuAction, toggleHeaderMenu } = useHeaderMenu({
     screenName: 'profile',
-    onSettingsPress: () => setShowSettingsModal(true),
     onSignOut: () => setShowSignOutModal(true)
   });
 
@@ -113,14 +114,12 @@ export const ProfileScreen: React.FC = () => {
     }
   }, [showSignOutModal, shouldRenderSignOutModal]);
 
-  // Navigation handlers
-  const handleNavigateBack = () => {
-    navigation.goBack();
-  };
-
-  const handleMenuPress = () => {
-    toggleHeaderMenu();
-  };
+  // Reset hamburger animation when header menu closes
+  useEffect(() => {
+    if (!showHeaderMenu) {
+      setHamburgerOpen(false);
+    }
+  }, [showHeaderMenu]);
 
   // Auth handlers
   const handleSignOut = async () => {
@@ -434,15 +433,6 @@ export const ProfileScreen: React.FC = () => {
             backgroundColor="transparent"
             translucent={true}
           />
-          <Header 
-            title="Aether"
-            showBackButton={true}
-            showMenuButton={true}
-            onBackPress={handleNavigateBack}
-            onMenuPress={handleMenuPress}
-            isMenuOpen={showHeaderMenu}
-            theme={theme}
-          />
           <View style={styles.loadingContainer}>
             <LottieLoader size="large" />
           </View>
@@ -460,15 +450,6 @@ export const ProfileScreen: React.FC = () => {
             barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} 
             backgroundColor="transparent"
             translucent={true}
-          />
-          <Header 
-            title="Aether"
-            showBackButton={true}
-            showMenuButton={true}
-            onBackPress={handleNavigateBack}
-            onMenuPress={handleMenuPress}
-            isMenuOpen={showHeaderMenu}
-            theme={theme}
           />
           <View style={styles.errorContainer}>
             <TouchableOpacity 
@@ -493,24 +474,6 @@ export const ProfileScreen: React.FC = () => {
           translucent={true}
         />
         
-        <Header 
-          title="Aether"
-          showBackButton={true}
-          showMenuButton={true}
-          onBackPress={handleNavigateBack}
-          onMenuPress={handleMenuPress}
-          isMenuOpen={showHeaderMenu}
-          theme={theme}
-        />
-
-        {/* Wallet Icon - positioned to the right of back arrow in header */}
-        <TouchableOpacity
-          style={styles.walletIcon}
-          onPress={() => setShowWalletModal(true)}
-          activeOpacity={0.7}
-        >
-          <Feather name="credit-card" size={23} color={colors.text} />
-        </TouchableOpacity>
 
         {/* Profile Card */}
         <ProfileCard
@@ -538,6 +501,83 @@ export const ProfileScreen: React.FC = () => {
           scrollRef={scrollViewRef}
         />
 
+        {/* Floating Action Button Card */}
+        {!showHeaderMenu && (
+          <View style={[
+            styles.floatingButtonCard,
+            {
+              backgroundColor: theme === 'dark' ? colors.surface : colors.surface,
+              borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+            }
+          ]}>
+            {/* Wallet Button */}
+            <TouchableOpacity
+              style={styles.floatingButtonItem}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowWalletModal(true);
+              }}
+              activeOpacity={0.8}
+            >
+              <Feather
+                name="credit-card"
+                size={22}
+                color={colors.text}
+              />
+            </TouchableOpacity>
+
+            {/* Separator */}
+            <View style={[
+              styles.floatingButtonSeparator,
+              {
+                backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+              }
+            ]} />
+
+            {/* Edit Button */}
+            <TouchableOpacity
+              style={styles.floatingButtonItem}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                editMode ? handleSaveProfile() : setEditMode(true);
+              }}
+              activeOpacity={0.8}
+            >
+              <Feather
+                name={editMode ? 'check' : 'edit-3'}
+                size={22}
+                color={editMode ? '#4CAF50' : colors.text}
+              />
+            </TouchableOpacity>
+
+            {/* Separator */}
+            <View style={[
+              styles.floatingButtonSeparator,
+              {
+                backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+              }
+            ]} />
+
+            {/* Menu Button */}
+            <TouchableOpacity
+              style={styles.floatingButtonItem}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setHamburgerOpen(!hamburgerOpen);
+                setTimeout(() => {
+                  toggleHeaderMenu();
+                }, 150); // Small delay to show animation before hiding buttons
+              }}
+              activeOpacity={0.8}
+            >
+              <AnimatedHamburger
+                isOpen={hamburgerOpen}
+                color={colors.text}
+                size={22}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Header Menu */}
         <HeaderMenu
@@ -590,18 +630,6 @@ export const ProfileScreen: React.FC = () => {
           }}
         />
 
-        {/* Floating Edit Icon */}
-        <TouchableOpacity
-          onPress={editMode ? handleSaveProfile : () => setEditMode(true)}
-          activeOpacity={0.7}
-          style={styles.floatingEditIcon}
-        >
-          <Feather 
-            name={editMode ? 'check' : 'edit-3'} 
-            size={24} 
-            color={editMode ? '#4CAF50' : colors.text}
-          />
-        </TouchableOpacity>
       </SafeAreaView>
     </PageBackground>
     </SwipeToMenu>
@@ -616,7 +644,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 100,
+    paddingTop: 20, // Much tighter spacing
     gap: spacing[3],
   },
   errorContainer: {
@@ -624,28 +652,39 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing[5],
-    paddingTop: 100,
+    paddingTop: 20, // Much tighter spacing
   },
   retryButton: {
     paddingHorizontal: spacing[6],
     paddingVertical: spacing[3],
     borderRadius: 12,
   },
-  floatingEditIcon: {
+  
+  // Floating Action Button Card
+  floatingButtonCard: {
     position: 'absolute',
-    bottom: 25,
-    right: 25,
-    padding: spacing[2],
+    bottom: 120, // Position above input area
+    right: spacing[2], // Positioned on the right
+    flexDirection: 'column',
+    borderRadius: 12, // Less round corners
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    zIndex: 1000,
+    overflow: 'hidden',
   },
-  walletIcon: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 69 : 49,
-    left: 75,
-    width: 35,
-    height: 35,
+  floatingButtonItem: {
+    width: 50,
+    height: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1000,
+  },
+  floatingButtonSeparator: {
+    height: 1,
+    width: '100%',
   },
 });
 

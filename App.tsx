@@ -37,7 +37,7 @@ import SignInScreen from './src/screens/auth/SignInScreen';
 import SignUpScreen from './src/screens/auth/SignUpScreen';
 import ChatScreen from './src/screens/chat/ChatScreen';
 import ProfileScreen from './src/screens/profile/ProfileScreen';
-import NewsScreen from './src/screens/news/NewsScreen';
+import BuzzScreen from './src/screens/buzz/BuzzScreen';
 
 // Services
 import { TokenManager } from './src/services/api';
@@ -80,7 +80,7 @@ export type AuthStackParamList = {
 export type MainStackParamList = {
   Chat: undefined;
   Profile: undefined;
-  News: undefined;
+  Buzz: undefined;
 };
 
 // Create navigators
@@ -138,7 +138,7 @@ const MainStackNavigator = () => {
     >
       <MainStack.Screen name="Chat" component={ChatScreen} />
       <MainStack.Screen name="Profile" component={ProfileScreen} />
-      <MainStack.Screen name="News" component={NewsScreen} />
+      <MainStack.Screen name="Buzz" component={BuzzScreen} />
     </MainStack.Navigator>
   );
 };

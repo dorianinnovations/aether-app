@@ -15,7 +15,7 @@ import { useSettings } from '../../../hooks/useSettings';
 interface PageBackgroundProps {
   theme?: 'light' | 'dark';
   children: React.ReactNode;
-  variant?: 'default' | 'auth' | 'hero' | 'profile' | 'chat' | 'friends' | 'dashboard' | 'onboarding' | 'social' | 'insights' | 'news';
+  variant?: 'default' | 'auth' | 'hero' | 'profile' | 'chat' | 'friends' | 'dashboard' | 'onboarding' | 'social' | 'insights' | 'buzz';
   style?: ViewStyle;
 }
 
@@ -30,8 +30,8 @@ export const PageBackground: React.FC<PageBackgroundProps> = ({
   // The dreamy baby blue gradient colors - brighter (closer to white)!
   const dreamyGradientColors = ['#ffffff', '#f2f8ff', '#e2f0ff', '#eaf4ff', '#f4faff'];
   
-  // Consistent dark grey background
-  const darkGrey = '#0F0F0F';
+  // Consistent dark grey background (slightly brightened)
+  const darkGrey = '#1A1A1A';
 
   const getGradientColors = (): string[] => {
     // If white background is selected and it's light theme, use pure white
@@ -85,7 +85,7 @@ export const PageBackground: React.FC<PageBackgroundProps> = ({
           ? ['#fffffe', '#fffffe', '#fffffe'] // Very light cream
           : [darkGrey, '#1A1A1A', darkGrey]; // Consistent dark
       
-      case 'news':
+      case 'buzz':
         return theme === 'light'
           ? ['#fefefe', '#fdfdfd', '#fefefe'] // Very light pearl
           : [darkGrey, '#1A1A1A', darkGrey]; // Consistent dark

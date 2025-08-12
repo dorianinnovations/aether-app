@@ -2,7 +2,7 @@
  * Custom hook for managing keyboard animations and state
  */
 import { useState, useEffect, useRef } from 'react';
-import { Keyboard, Animated, Easing } from 'react-native';
+import { Keyboard, Animated, Easing, Platform } from 'react-native';
 
 interface UseKeyboardAnimationReturn {
   keyboardHeight: number;
@@ -16,47 +16,51 @@ export const useKeyboardAnimation = (): UseKeyboardAnimationReturn => {
   const greetingOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    const keyboardWillShow = Keyboard.addListener('keyboardWillShow', (event) => {
+    // Use appropriate events based on platform
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    
+    const keyboardShowListener = Keyboard.addListener(showEvent, (event) => {
       setKeyboardHeight(event.endCoordinates.height);
-      // Ultra-smooth spring animation for 120fps-like movement
+      // Silky smooth upward movement with refined physics
       Animated.parallel([
-        Animated.spring(greetingAnimY, {
-          toValue: -120,
-          tension: 300,
-          friction: 25,
+        Animated.timing(greetingAnimY, {
+          toValue: -80, // Reduced from -120 for subtler movement
+          duration: 350, // Faster but still smooth
+          easing: Easing.bezier(0.33, 1, 0.68, 1), // Custom smooth curve (ease-out-cubic)
           useNativeDriver: true,
         }),
         Animated.timing(greetingOpacity, {
-          toValue: 0.7,
-          duration: 200,
-          easing: Easing.bezier(0.23, 1, 0.32, 1), // Ultra-smooth easeOutQuart
+          toValue: 0.75, // Slightly more visible
+          duration: 300,
+          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94), // Smooth ease-out
           useNativeDriver: true,
         })
       ]).start();
     });
 
-    const keyboardWillHide = Keyboard.addListener('keyboardWillHide', () => {
+    const keyboardHideListener = Keyboard.addListener(hideEvent, () => {
       setKeyboardHeight(0);
-      // Faster, more responsive animation to prevent input suspension
+      // Smooth return animation
       Animated.parallel([
-        Animated.spring(greetingAnimY, {
+        Animated.timing(greetingAnimY, {
           toValue: 0,
-          tension: 320,
-          friction: 28,
+          duration: 300,
+          easing: Easing.bezier(0.33, 1, 0.68, 1), // Matching smooth curve
           useNativeDriver: true,
         }),
         Animated.timing(greetingOpacity, {
           toValue: 1,
-          duration: 180, // Reduced from 250ms to prevent conflicts
-          easing: Easing.bezier(0.165, 0.84, 0.44, 1), // Ultra-smooth easeOutQuart
+          duration: 250,
+          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94), // Smooth ease-out
           useNativeDriver: true,
         })
       ]).start();
     });
 
     return () => {
-      keyboardWillShow.remove();
-      keyboardWillHide.remove();
+      keyboardShowListener.remove();
+      keyboardHideListener.remove();
     };
   }, [greetingAnimY, greetingOpacity]);
 

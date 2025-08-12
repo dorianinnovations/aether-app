@@ -322,7 +322,7 @@ export const Header: React.FC<HeaderProps> = ({
         styles.header,
         {
           ...getStandardBorder(theme),
-          backgroundColor: theme === 'dark' ? designTokens.brand.surfaceDark : designTokens.brand.surface,
+          backgroundColor: theme === 'dark' ? designTokens.surfaces.dark.base : designTokens.brand.surface,
         },
         style,
       ]}
@@ -369,39 +369,6 @@ export const Header: React.FC<HeaderProps> = ({
               disabled={showSearch}
             >
               <View style={styles.titleRow}>
-                {title === 'Aether' ? (
-                  <View style={styles.logoContainer}>
-                    <Image
-                      source={theme === 'dark' 
-                        ? require('../../../../assets/images/aether-logo-dark-mode.webp')
-                        : require('../../../../assets/images/aether-logo-light-mode.webp')
-                      }
-                      style={[styles.logo, { 
-                        opacity: theme === 'dark' ? 0.15 : 0.08, 
-                        transform: [{ rotate: '25deg' }, { scaleX: 2.0 }] 
-                      }]}
-                      resizeMode="contain"
-                    />
-                    <Image
-                      source={theme === 'dark' 
-                        ? require('../../../../assets/images/aether-brand-logo-dark.webp')
-                        : require('../../../../assets/images/aether-brand-logo-light.webp')
-                      }
-                      style={[styles.brandLogoOverlay, { 
-                        opacity: theme === 'dark' ? 0.15 : 0.08 
-                      }]}
-                      resizeMode="contain"
-                    />
-                  </View>
-                ) : (
-                  <Text style={[
-                    styles.title,
-                    typography.textStyles.headlineMedium,
-                    { color: themeColors.text }
-                  ]}>
-                    {title}
-                  </Text>
-                )}
               </View>
               {subtitle && (
                 <Text style={[

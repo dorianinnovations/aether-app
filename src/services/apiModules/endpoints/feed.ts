@@ -1,17 +1,20 @@
 /**
  * Artist Feed API Endpoints
- * Personalized artist timeline, releases, news, and content feeds
+ * Personalized artist timeline, releases, and content feeds
  */
 
 import { makeRequest } from '../utils/request';
 import type { StandardAPIResponse } from '../core/types';
 import type { Artist, ArtistUpdate } from './artists';
 
-export interface FeedItem extends ArtistUpdate {
+export interface FeedItem {
   id: string;
   artistId: string;
-  artist: Artist;
-  type: 'release' | 'news' | 'tour' | 'social';
+  artist: {
+    name: string;
+    image?: string;
+  };
+  type: 'release' | 'tour' | 'social' | 'news' | 'trending';
   title: string;
   content: string;
   url?: string;
@@ -26,7 +29,6 @@ export interface FeedItem extends ArtistUpdate {
 
 export interface FeedPreferences {
   showReleases: boolean;
-  showNews: boolean;
   showTours: boolean;
   showSocial: boolean;
   prioritizeFollowedArtists: boolean;
@@ -48,19 +50,14 @@ export interface FeedStats {
   averageTimeSpent: number;
 }
 
-export interface TrendingContent {
-  id: string;
-  title: string;
-  type: 'artist' | 'release' | 'news' | 'genre';
-  data: any;
+export interface TrendingContent extends FeedItem {
   trendScore: number;
-  timeframe: '1h' | '24h' | '7d';
 }
 
 export interface FeedTimelineParams {
   limit?: number;
   offset?: number;
-  type?: 'release' | 'news' | 'tour' | 'social';
+  type?: 'release' | 'tour' | 'social';
   artistId?: string;
   since?: string;
   priority?: 'low' | 'medium' | 'high';
@@ -84,7 +81,7 @@ export const FeedAPI = {
       });
     }
     
-    return await makeRequest<FeedItem[]>('GET', `/live-feed/timeline?${queryParams.toString()}`);
+    return await makeRequest<FeedItem[]>('GET', `/api/live-feed/timeline?${queryParams.toString()}`);
   },
 
   async getReleases(limit?: number, since?: string): Promise<StandardAPIResponse<FeedItem[]>> {
@@ -92,7 +89,7 @@ export const FeedAPI = {
     if (limit) queryParams.append('limit', limit.toString());
     if (since) queryParams.append('since', since);
     
-    return await makeRequest<FeedItem[]>('GET', `/live-feed/releases?${queryParams.toString()}`);
+    return await makeRequest<FeedItem[]>('GET', `/api/live-feed/releases?${queryParams.toString()}`);
   },
 
   async getNews(limit?: number, since?: string): Promise<StandardAPIResponse<FeedItem[]>> {
@@ -100,25 +97,26 @@ export const FeedAPI = {
     if (limit) queryParams.append('limit', limit.toString());
     if (since) queryParams.append('since', since);
     
-    return await makeRequest<FeedItem[]>('GET', `/live-feed/news?${queryParams.toString()}`);
+    return await makeRequest<FeedItem[]>('GET', `/api/live-feed/news?${queryParams.toString()}`);
   },
+
 
   async getTours(limit?: number, since?: string): Promise<StandardAPIResponse<FeedItem[]>> {
     const queryParams = new URLSearchParams();
     if (limit) queryParams.append('limit', limit.toString());
     if (since) queryParams.append('since', since);
     
-    return await makeRequest<FeedItem[]>('GET', `/live-feed/tours?${queryParams.toString()}`);
+    return await makeRequest<FeedItem[]>('GET', `/api/live-feed/tours?${queryParams.toString()}`);
   },
 
   async getTrendingContent(timeframe?: '1h' | '24h' | '7d'): Promise<StandardAPIResponse<TrendingContent[]>> {
     const queryParams = timeframe ? `?timeframe=${timeframe}` : '';
-    return await makeRequest<TrendingContent[]>('GET', `/live-feed/trending${queryParams}`);
+    return await makeRequest<TrendingContent[]>('GET', `/api/live-feed/trending${queryParams}`);
   },
 
   // Quick artist follow for testing
   async followArtist(artistName: string): Promise<StandardAPIResponse<any>> {
-    return await makeRequest<any>('POST', '/live-feed/follow-artist', { artistName });
+    return await makeRequest<any>('POST', '/api/live-feed/follow-artist', { artistName });
   },
 
   // Feed Interactions

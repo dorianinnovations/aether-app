@@ -109,6 +109,13 @@ export const iconMap: Record<string, { family: IconFamily; name: string }> = {
   'skip-back': { family: 'Feather', name: 'skip-back' },
   'skip-forward': { family: 'Feather', name: 'skip-forward' },
   
+  // Music & Audio
+  'music': { family: 'Feather', name: 'music' },
+  'headphones': { family: 'Feather', name: 'headphones' },
+  'radio': { family: 'Feather', name: 'radio' },
+  'disc': { family: 'MaterialIcons', name: 'album' },
+  'trending': { family: 'Feather', name: 'trending-up' },
+  
   // Files & Data
   'file': { family: 'Feather', name: 'file' },
   'file-text': { family: 'Feather', name: 'file-text' },

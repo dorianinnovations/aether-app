@@ -245,14 +245,14 @@ export const typography = {
     },
     userMessage: {
       fontSize: 16,
-      fontFamily: getFontFamily('Inter-Regular', 'sans-serif'),
+      fontFamily: getFontFamily('mozilla text', 'sans-serif'),
       fontWeight: '400' as const,
       lineHeight: 22,    // Slightly tighter for user bubbles
       letterSpacing: -0.05,
     },
     userMessageLarge: {
       fontSize: 17,
-      fontFamily: getFontFamily('Inter-Medium', 'sans-serif'),
+      fontFamily: getFontFamily('mozilla text', 'sans-serif'),
       fontWeight: '500' as const,
       lineHeight: 24,
       letterSpacing: -0.1,
@@ -493,10 +493,8 @@ export const getTextStyle = (
 
 // Font loading configuration for Expo
 export const fontConfig = {
-  // Mozilla Text (monospace) - for headers and titles
-  // Note: Mozilla Text fonts are loaded via Expo Google Fonts
   
-  // Nunito (sans-serif) - for reading and body text
+  // Nunito (sans-serif) - (Not being used as frequenly as of Aug, 12 2025)
   'Nunito-Regular': require('../../../assets/fonts/Nunito-Regular.ttf'),
   'Nunito-Medium': require('../../../assets/fonts/Nunito-Medium.ttf'),
   'Nunito-SemiBold': require('../../../assets/fonts/Nunito-SemiBold.ttf'),

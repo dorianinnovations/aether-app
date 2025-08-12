@@ -3,16 +3,6 @@
  * Types for living profiles, social cards, and life coordination
  */
 
-// News/Event-driven posts
-export interface NewsPost {
-  id: string;
-  title: string;
-  content: string;
-  timestamp: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  category?: string;
-  tags?: string[];
-}
 
 export interface Community {
   id: string;
@@ -23,7 +13,7 @@ export interface Community {
   isJoined?: boolean;
 }
 
-export type SocialTab = 'news' | 'groups' | 'strategize' | 'collaborate';
+export type SocialTab = 'buzz' | 'groups' | 'strategize' | 'collaborate';
 
 // Feed & Living Profiles
 export interface SocialCard {

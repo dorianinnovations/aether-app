@@ -37,8 +37,29 @@ export const UserAPI = {
 
   async updateProfile(profileData: Record<string, unknown>): Promise<unknown> {
     try {
-      console.log('UserAPI.updateProfile: Attempting server request with data:', profileData);
-      const response = await api.put('/user/profile', profileData);
+      const cleanedData = { ...profileData };
+      
+      // Only include badges if they're valid - don't strip them entirely since they're a paid feature
+      if (cleanedData.badges && Array.isArray(cleanedData.badges)) {
+        const validBadges = (cleanedData.badges as any[]).filter((badge: any) => 
+          badge && 
+          typeof badge === 'object' &&
+          badge.id && 
+          badge.badgeType &&
+          typeof badge.id === 'string' &&
+          typeof badge.badgeType === 'string'
+        );
+        
+        // Only send badges if we have valid ones, otherwise omit the field
+        if (validBadges.length > 0) {
+          cleanedData.badges = validBadges;
+        } else {
+          delete cleanedData.badges;
+        }
+      }
+      
+      console.log('UserAPI.updateProfile: Attempting server request with data:', cleanedData);
+      const response = await api.put('/user/profile', cleanedData);
       console.log('UserAPI.updateProfile: Server response:', response.data);
       return response.data;
     } catch (error: unknown) {

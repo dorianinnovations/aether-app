@@ -26,6 +26,7 @@ interface SettingItemProps {
   };
   onSwitchPress: (key: string, value: boolean) => void;
   onActionPress: (key: string) => void;
+  onCheckboxPress?: (key: string, value: boolean) => void;
   children?: React.ReactNode; // For custom content like background selector
 }
 
@@ -36,9 +37,34 @@ export const SettingItemComponent: React.FC<SettingItemProps> = ({
   colors,
   onSwitchPress,
   onActionPress,
+  onCheckboxPress,
   children,
 }) => {
   const isBackgroundSelector = item.key === 'backgroundType';
+  const isCheckboxOnly = item.type === 'checkbox';
+  
+  // Simple checkbox-only layout
+  if (isCheckboxOnly) {
+    return (
+      <TouchableOpacity 
+        style={styles.checkboxOnlyItem}
+        activeOpacity={0.8}
+        onPress={() => onCheckboxPress?.(item.key, !item.value)}
+      >
+        <Text style={[styles.checkboxOnlyLabel, { color: colors.text }]}>
+          {item.label}
+        </Text>
+        <TouchableOpacity
+          style={styles.checkOnlyContainer}
+          onPress={() => onCheckboxPress?.(item.key, !item.value)}
+        >
+          {item.value && (
+            <Feather name="check" size={16} color={itemColor} />
+          )}
+        </TouchableOpacity>
+      </TouchableOpacity>
+    );
+  }
   
   return (
     <TouchableOpacity 
@@ -52,10 +78,12 @@ export const SettingItemComponent: React.FC<SettingItemProps> = ({
         }
       ]}
       activeOpacity={0.8}
-      onPress={item.type === 'switch' ? () => onSwitchPress(item.key, !item.value) : undefined}
+      onPress={item.type === 'switch' ? () => onSwitchPress(item.key, !item.value) : 
+               item.type === 'checkbox' ? () => onCheckboxPress?.(item.key, !item.value) : undefined}
     >
       <View style={styles.iconContainer}>
         {item.type === 'switch' && <Feather name="toggle-left" size={16} color={itemColor} />}
+        {item.type === 'checkbox' && <Feather name="cpu" size={16} color={itemColor} />}
         {item.type === 'action' && <Feather name={(item as any).destructive ? "trash-2" : "download"} size={16} color={itemColor} />}
         {item.type === 'selector' && <Feather name="layers" size={16} color={itemColor} />}
       </View>
@@ -72,6 +100,23 @@ export const SettingItemComponent: React.FC<SettingItemProps> = ({
             trackColor={{ false: colors.surfaces.sunken, true: itemColor }}
             thumbColor={colors.surface}
           />
+        )}
+        
+        {item.type === 'checkbox' && (
+          <TouchableOpacity
+            style={[
+              styles.checkboxContainer,
+              {
+                borderColor: item.value ? itemColor : colors.textMuted,
+                backgroundColor: item.value ? `${itemColor}20` : 'transparent',
+              }
+            ]}
+            onPress={() => onCheckboxPress?.(item.key, !item.value)}
+          >
+            {item.value && (
+              <Feather name="check" size={14} color={itemColor} />
+            )}
+          </TouchableOpacity>
         )}
         
         {item.type === 'action' && (
@@ -162,5 +207,33 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     letterSpacing: -0.1,
+  },
+  checkboxContainer: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxOnlyItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[1],
+  },
+  checkboxOnlyLabel: {
+    fontFamily: typography.fonts.body,
+    fontSize: 15,
+    fontWeight: '500',
+    letterSpacing: -0.1,
+    flex: 1,
+  },
+  checkOnlyContainer: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

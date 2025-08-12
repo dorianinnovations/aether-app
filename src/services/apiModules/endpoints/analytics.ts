@@ -49,7 +49,6 @@ export interface ArtistAnalytics {
   }>;
   engagementTypes: {
     releases: number;
-    news: number;
     tours: number;
     social: number;
   };
@@ -124,7 +123,7 @@ export interface EngagementAnalytics {
     percentage: number;
   }>;
   contentEngagement: Array<{
-    contentType: 'release' | 'news' | 'tour' | 'social';
+    contentType: 'release' | 'tour' | 'social';
     engagementRate: number;
     totalInteractions: number;
   }>;

@@ -6,11 +6,13 @@
 export { default as Button } from './Button';
 export { default as Input } from './Input';
 export { default as Icon } from './Icon';
+export { default as FeatherIcon } from './FeatherIcon';
 export { default as BasicMarkdown } from './BasicMarkdown';
 export { default as DismissibleBanner } from './DismissibleBanner';
 export { ChatMessage } from './ChatMessage';
 export { ConnectionStatusIndicator } from './ConnectionStatusIndicator';
 export { default as LottieLoader } from './LottieLoader';
+export { LottieRefreshFlatList, createLottieRefreshControl } from './LottieRefreshControl';
 export { default as ShimmerText } from './ShimmerText';
 export { default as RainbowShimmerText } from './RainbowShimmerText';
 export { default as ShineEffect } from './ShineEffect';

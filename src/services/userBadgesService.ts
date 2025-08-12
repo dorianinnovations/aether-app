@@ -44,10 +44,33 @@ class UserBadgesService {
       try {
         const response = await api.get('/badges/my-badges');
         if (response.data && Array.isArray(response.data.badges)) {
-          const badges = response.data.badges;
-          this.badgesCache.set(userId, badges);
-          logger.info('User badges retrieved from API:', { userId, badgeCount: badges.length });
-          return badges;
+          const rawBadges = response.data.badges;
+          // Filter out any badges that are missing required fields
+          const validBadges = rawBadges.filter((badge: any) => 
+            badge && 
+            typeof badge === 'object' &&
+            badge.id && 
+            badge.badgeType &&
+            typeof badge.id === 'string' &&
+            typeof badge.badgeType === 'string'
+          );
+          
+          this.badgesCache.set(userId, validBadges);
+          logger.info('User badges retrieved from API:', { 
+            userId, 
+            totalBadges: rawBadges.length,
+            validBadges: validBadges.length
+          });
+          
+          if (rawBadges.length !== validBadges.length) {
+            logger.warn('Some badges were filtered out due to missing required fields:', {
+              totalBadges: rawBadges.length,
+              validBadges: validBadges.length,
+              invalidBadges: rawBadges.filter((badge: any) => !validBadges.includes(badge))
+            });
+          }
+          
+          return validBadges;
         }
       } catch (apiError) {
         logger.warn('Failed to fetch badges from API, falling back to hardcoded:', apiError);

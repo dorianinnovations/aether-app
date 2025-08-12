@@ -7,7 +7,7 @@ export interface SettingItem {
   key: string;
   label: string;
   value?: any;
-  type: 'switch' | 'selector' | 'action';
+  type: 'switch' | 'selector' | 'action' | 'checkbox';
   destructive?: boolean;
 }
 
@@ -106,11 +106,21 @@ export const createSettingsSections = (settings: {
     icon: 'cpu',
     description: 'Select and prioritize AI models for different tasks',
     items: [
-      { key: 'gpt5', label: 'GPT-5 - Latest OpenAI flagship model', value: settings.selectedModels?.includes('gpt5') ?? true, type: 'switch' },
-      { key: 'gemini25pro', label: 'Gemini 2.5 Pro - Advanced reasoning model', value: settings.selectedModels?.includes('gemini25pro') ?? true, type: 'switch' },
-      { key: 'opus41', label: 'Claude Opus 4.1 - Superior language understanding', value: settings.selectedModels?.includes('opus41') ?? true, type: 'switch' },
-      { key: 'sonnetthinking', label: 'Sonnet Thinking - Enhanced logical reasoning', value: settings.selectedModels?.includes('sonnetthinking') ?? false, type: 'switch' },
-      { key: 'llama3', label: 'Llama 3 - Open-source efficiency model', value: settings.selectedModels?.includes('llama3') ?? false, type: 'switch' },
+      { key: 'autoCheck', label: 'Auto-select optimal models', value: settings.selectedModels?.includes('autoCheck') ?? false, type: 'switch' },
+      { key: 'gpt5', label: 'GPT-5', value: settings.selectedModels?.includes('gpt5') ?? true, type: 'checkbox' },
+      { key: 'gemini25pro', label: 'Gemini 2.5 Pro', value: settings.selectedModels?.includes('gemini25pro') ?? true, type: 'checkbox' },
+      { key: 'opus41', label: 'Claude Opus 4.1 (20250805)', value: settings.selectedModels?.includes('opus41') ?? true, type: 'checkbox' },
+      { key: 'sonnetthinking', label: 'Claude Sonnet 4', value: settings.selectedModels?.includes('sonnetthinking') ?? false, type: 'checkbox' },
+      { key: 'llama4', label: 'Llama 4', value: settings.selectedModels?.includes('llama4') ?? false, type: 'checkbox' },
+      { key: 'grok3', label: 'Grok 3', value: settings.selectedModels?.includes('grok3') ?? false, type: 'checkbox' },
+      { key: 'deepseekr1', label: 'DeepSeek R1 (0528)', value: settings.selectedModels?.includes('deepseekr1') ?? false, type: 'checkbox' },
+      { key: 'mistralLarge2', label: 'Mistral Large 2', value: settings.selectedModels?.includes('mistralLarge2') ?? false, type: 'checkbox' },
+      { key: 'commandrplus', label: 'Command R+', value: settings.selectedModels?.includes('commandrplus') ?? false, type: 'checkbox' },
+      { key: 'qwen25max', label: 'Qwen 2.5 Max', value: settings.selectedModels?.includes('qwen25max') ?? false, type: 'checkbox' },
+      { key: 'pixtralLarge', label: 'Pixtral Large', value: settings.selectedModels?.includes('pixtralLarge') ?? false, type: 'checkbox' },
+      { key: 'gpt4o', label: 'GPT-4o', value: settings.selectedModels?.includes('gpt4o') ?? false, type: 'checkbox' },
+      { key: 'claude35sonnet', label: 'Claude 3.5 Sonnet', value: settings.selectedModels?.includes('claude35sonnet') ?? false, type: 'checkbox' },
+      { key: 'gemini15pro', label: 'Gemini 1.5 Pro', value: settings.selectedModels?.includes('gemini15pro') ?? false, type: 'checkbox' },
     ]
   },
   privacy: {

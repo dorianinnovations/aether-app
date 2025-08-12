@@ -167,9 +167,11 @@ export const SpotifyAPI = {
   // Save user's grails (favorite songs and albums)
   async saveGrails(grails: any): Promise<any> {
     try {
+      console.log('SpotifyAPI.saveGrails: Sending grails data:', grails);
       const response = await api.post('/spotify/grails', grails);
       return response.data;
     } catch (error) {
+      console.error('SpotifyAPI.saveGrails: Error details:', error);
       throw error;
     }
   }

@@ -29,7 +29,8 @@ import { Ionicons } from '@expo/vector-icons';
 // Enhanced Components
 import { EnhancedChatInput } from '../../design-system/components/molecules';
 import EnhancedBubble from '../../design-system/components/molecules/EnhancedBubble';
-import { Header, HeaderMenu, SignOutModal, ArtistListeningModal, WalletModal, SwipeTutorialOverlay } from '../../design-system/components/organisms';
+import { HeaderMenu, SignOutModal, ArtistListeningModal, WalletModal, SwipeTutorialOverlay } from '../../design-system/components/organisms';
+import { AnimatedHamburger } from '../../design-system/components/atoms';
 import { PageBackground, SwipeToMenu } from '../../design-system/components/atoms';
 import SettingsModal from './SettingsModal';
 import ConversationDrawer from '../../components/ConversationDrawer';
@@ -128,7 +129,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   // Removed unused copy tooltip state
   const [, setShowTestTooltip] = useState(true);
   const [showSwipeTutorial, setShowSwipeTutorial] = useState(false);
-  const [headerVisible] = useState(true);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [, setIsVoiceRecording] = useState(false);
   const [isChatInputFocused, setIsChatInputFocused] = useState(false);
@@ -155,6 +155,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   
   // Conversation drawer state
   const [showConversationDrawer, setShowConversationDrawer] = useState(false);
+  
+  // Hamburger animation state
+  const [hamburgerOpen, setHamburgerOpen] = useState(false);
   
   // Friend request management
   const friendRequest = useFriendRequest();
@@ -269,6 +272,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     }
   }, [route?.params?.friendUsername, currentFriendUsername, setMessages]);
 
+  // Reset hamburger animation when header menu closes
+  useEffect(() => {
+    if (!showHeaderMenu) {
+      setHamburgerOpen(false);
+    }
+  }, [showHeaderMenu]);
+
   // Check if user should see swipe tutorial (new users only)
   useEffect(() => {
     const checkSwipeTutorial = async () => {
@@ -335,36 +345,40 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
 
   // Keyboard event listeners for proper scroll behavior (only for chat input)
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
+    // Use keyboardWillShow/Hide for iOS for instant response, fallback to Did events for Android
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    
+    const keyboardShowListener = Keyboard.addListener(showEvent, (e) => {
       setIsKeyboardVisible(true);
       setKeyboardHeight(e.endCoordinates.height);
       
-      // Animate to keyboard position using native driver
-      Animated.timing(inputContainerAnim, {
+      // Animate to keyboard position using native driver with faster animation
+      Animated.spring(inputContainerAnim, {
         toValue: -(e.endCoordinates.height - 20),
-        duration: 200,
-        easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+        tension: 400, // Higher tension for snappier response
+        friction: 30, // Higher friction for less bounce
         useNativeDriver: true,
       }).start();
       
     });
 
-    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+    const keyboardHideListener = Keyboard.addListener(hideEvent, () => {
       setIsKeyboardVisible(false);
       setKeyboardHeight(0);
       
-      // Animate to hidden position using native driver
-      Animated.timing(inputContainerAnim, {
+      // Animate to hidden position using native driver with faster animation
+      Animated.spring(inputContainerAnim, {
         toValue: 0,
-        duration: 200,
-        easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+        tension: 400, // Higher tension for snappier response
+        friction: 30, // Higher friction for less bounce
         useNativeDriver: true,
       }).start();
     });
 
     return () => {
-      keyboardDidShowListener?.remove();
-      keyboardDidHideListener?.remove();
+      keyboardShowListener?.remove();
+      keyboardHideListener?.remove();
     };
   }, [isChatInputFocused]);
 
@@ -867,18 +881,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         theme={theme}
       />
       
-      {/* Enhanced Header */}
-      <Header
-        title={currentFriendUsername ? currentFriendUsername : "Aether"}
-        showMenuButton={true}
-        showConversationsButton={true}
-        onMenuPress={toggleHeaderMenu}
-        onConversationsPress={() => setShowConversationDrawer(true)}
-        theme={theme}
-        isVisible={headerVisible}
-        isMenuOpen={showHeaderMenu}
-      />
-      
       {/* Header Menu */}
       <HeaderMenu
         visible={showHeaderMenu}
@@ -1219,6 +1221,60 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         theme={theme}
       />
 
+      {/* Floating Action Buttons */}
+      {!showHeaderMenu && (
+        <View style={[
+          styles.floatingButtonBar,
+          {
+            backgroundColor: theme === 'dark' ? designTokens.surfaces.dark.elevated : designTokens.brand.surface,
+            borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+          }
+        ]}>
+          {/* Conversations Button */}
+          <TouchableOpacity
+            style={styles.floatingButtonItem}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowConversationDrawer(true);
+            }}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="chatbubbles-outline"
+              size={22}
+              color={theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary}
+            />
+          </TouchableOpacity>
+
+          {/* Separator */}
+          <View style={[
+            styles.floatingButtonSeparator,
+            {
+              backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+            }
+          ]} />
+
+          {/* Menu Button */}
+          <TouchableOpacity
+            style={styles.floatingButtonItem}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setHamburgerOpen(!hamburgerOpen);
+              setTimeout(() => {
+                toggleHeaderMenu();
+              }, 150); // Small delay to show animation before hiding buttons
+            }}
+            activeOpacity={0.8}
+          >
+            <AnimatedHamburger
+              isOpen={hamburgerOpen}
+              color={theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary}
+              size={22}
+            />
+          </TouchableOpacity>
+        </View>
+      )}
+
       </SafeAreaView>
     </PageBackground>
     </SwipeToMenu>
@@ -1299,7 +1355,7 @@ const styles = StyleSheet.create({
   greetingText: {
     fontSize: 16,
     fontWeight: '400', // Regular weight for Poppins balance
-    fontFamily: 'Poppins-Regular', // Poppins for luxury + readability balance
+    fontFamily: 'mozilla text', // Mozilla text font
     letterSpacing: -0.2, // Adjusted for Poppins geometric spacing
     textAlign: 'center',
     maxWidth: 280,
@@ -1503,6 +1559,33 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
     zIndex: 1000,
+  },
+
+  // Floating Action Button Bar
+  floatingButtonBar: {
+    position: 'absolute',
+    bottom: 120, // Position above input area
+    right: spacing[2], // Moved more to the right
+    flexDirection: 'column',
+    borderRadius: 12, // Less round corners
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    zIndex: 1000,
+    overflow: 'hidden',
+  },
+  floatingButtonItem: {
+    width: 50, // Larger size
+    height: 50, // Larger size
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  floatingButtonSeparator: {
+    height: 1,
+    width: '100%',
   },
 });
 

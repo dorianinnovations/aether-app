@@ -285,7 +285,7 @@ export const getCyclingPastelColor = (index: number, theme: 'light' | 'dark' = '
 
 export const getUserMessageColor = (messageIndex: number, theme: 'light' | 'dark' = 'light'): string => {
   const themeColors = getThemeColors(theme);
-  return theme === 'light' ? '#F0F0F0' : themeColors.surface;
+  return theme === 'light' ? '#F0F0F0' : '#404040';
 };
 
 export const iconColors = {

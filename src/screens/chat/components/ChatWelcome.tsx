@@ -33,6 +33,12 @@ export const ChatWelcome: React.FC<ChatWelcomeProps> = ({
         {
           transform: [{ translateY: greetingAnimY }],
           opacity: greetingOpacity,
+          // Container shadow as backup
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: theme === 'dark' ? 0.6 : 0.25,
+          shadowRadius: 4,
+          elevation: 4, // Android shadow
         }
       ]}
     >
@@ -40,6 +46,10 @@ export const ChatWelcome: React.FC<ChatWelcomeProps> = ({
         style={{
           ...styles.greetingText,
           color: theme === 'dark' ? '#4d4d4dff' : '#8a8a8a',
+          // Stronger text shadow
+          textShadowColor: theme === 'dark' ? 'rgba(0, 0, 0, 1)' : 'rgba(0, 0, 0, 0.6)',
+          textShadowOffset: { width: 0, height: 3 },
+          textShadowRadius: 6,
         }}
         intensity="subtle"
         duration={3000}
@@ -68,7 +78,7 @@ const styles = StyleSheet.create({
   greetingText: {
     fontSize: 16,
     fontWeight: '400',
-    fontFamily: 'Poppins-Regular',
+    fontFamily: 'mozilla text',
     letterSpacing: -0.2,
     textAlign: 'center',
     lineHeight: 24,

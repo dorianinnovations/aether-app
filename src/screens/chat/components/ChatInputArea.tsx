@@ -133,8 +133,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   inputWrapper: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     paddingBottom: 34, // Account for safe area
   },
 });

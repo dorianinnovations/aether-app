@@ -237,11 +237,29 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           await SettingsStorage.setSetting('autoLock', value);
           break;
         // Model settings
+        case 'autoCheck':
+          setSelectedModels(prevModels => {
+            const updatedModels = value 
+              ? [...prevModels.filter(m => m !== 'autoCheck'), 'autoCheck']
+              : prevModels.filter(m => m !== 'autoCheck');
+            SettingsStorage.setSetting('selectedModels', updatedModels);
+            return updatedModels;
+          });
+          break;
         case 'gpt5':
         case 'gemini25pro':
         case 'opus41':
         case 'sonnetthinking':
-        case 'llama3':
+        case 'llama4':
+        case 'grok3':
+        case 'deepseekr1':
+        case 'mistralLarge2':
+        case 'commandrplus':
+        case 'qwen25max':
+        case 'pixtralLarge':
+        case 'gpt4o':
+        case 'claude35sonnet':
+        case 'gemini15pro':
           handleModelToggle(setting, value);
           break;
       }
@@ -494,6 +512,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 colors={colors}
                 onSwitchPress={handleSwitchPress}
                 onActionPress={handleActionPress}
+                onCheckboxPress={handleSwitchPress}
               >
                 {/* Background selector - preserving critical background logic */}
                 {item.type === 'selector' && item.key === 'backgroundType' && (
@@ -504,29 +523,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     theme={theme}
                     colors={colors}
                   />
-                )}
-                
-                {/* Models section with sequential opacity effects */}
-                {activeSubDrawer === 'models' && item.type === 'switch' && (
-                  <View style={styles.modelItemContainer}>
-                    <Animated.View
-                      style={[
-                        styles.modelChevron,
-                        {
-                          opacity: item.value ? 1 : 0.3,
-                          transform: [{ 
-                            rotate: item.value ? '0deg' : '-90deg' 
-                          }]
-                        }
-                      ]}
-                    >
-                      <Feather 
-                        name="chevron-right" 
-                        size={16} 
-                        color={itemColor} 
-                      />
-                    </Animated.View>
-                  </View>
                 )}
               </SettingItemComponent>
             );
@@ -790,10 +786,10 @@ const styles = StyleSheet.create({
   accountItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 48,
+    height: 40,
     borderRadius: 12,
-    marginHorizontal: spacing[1],
-    marginVertical: 2,
+    marginHorizontal: 0,
+    marginVertical: 4,
     paddingHorizontal: spacing[4],
     borderWidth: 1,
   },
@@ -831,10 +827,10 @@ const styles = StyleSheet.create({
   settingsItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 48,
+    height: 40,
     borderRadius: 12,
-    marginHorizontal: spacing[1],
-    marginVertical: 2,
+    marginHorizontal: 0,
+    marginVertical: 4,
     paddingHorizontal: spacing[4],
     borderWidth: 1,
   },
@@ -901,10 +897,10 @@ const styles = StyleSheet.create({
   quickAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 48,
+    height: 40,
     borderRadius: 12,
-    marginHorizontal: spacing[1],
-    marginVertical: 2,
+    marginHorizontal: 0,
+    marginVertical: 4,
     paddingHorizontal: spacing[4],
     borderWidth: 1,
   },

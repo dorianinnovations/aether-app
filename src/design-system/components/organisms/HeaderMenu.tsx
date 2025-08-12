@@ -46,8 +46,8 @@ const getAllMenuActions = (theme: 'light' | 'dark'): MenuAction[] => [
   },
   { 
     icon: <Feather name="rss" size={16} color={getIconColor('feed', theme)} />, 
-    label: 'News', 
-    key: 'news', 
+    label: 'Buzz', 
+    key: 'buzz', 
     requiresAuth: false 
   },
   { 

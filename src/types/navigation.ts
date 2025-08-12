@@ -9,6 +9,7 @@ export type RootStackParamList = {
   Chat: undefined;
   Profile: undefined;
   Feed: undefined;
+  Buzz: undefined;
   Insights: undefined;
   SignIn: undefined;
   SignUp: undefined;

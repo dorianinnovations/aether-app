@@ -16,6 +16,9 @@ import {
   Animated,
   Modal,
   Image,
+  TextInput,
+  Keyboard,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -71,6 +74,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   onFriendMessagePress,
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
+  const [modalVisible, setModalVisible] = useState(isVisible);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [longPressedId, setLongPressedId] = useState<string | null>(null);
   
@@ -80,6 +84,12 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   // Friends state
   const [friends, setFriends] = useState<Friend[]>([]);
   const [friendsLoading, setFriendsLoading] = useState(false);
+  
+  // Add friend input state
+  const [showAddFriendInput, setShowAddFriendInput] = useState(false);
+  const [addFriendUsername, setAddFriendUsername] = useState('');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const actionDockAnim = useRef(new Animated.Value(0)).current;
 
   // Clear all modal state
   const [clearAllModal, setClearAllModal] = useState<{ visible: boolean; type: 'conversations' | 'friends' } | null>(null);
@@ -88,6 +98,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const [profileModal, setProfileModal] = useState<{ visible: boolean; username?: string } | null>(null);
 
   const themeColors = getThemeColors(theme);
+  
   
   const {
     currentTab,
@@ -254,9 +265,13 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
 
   useEffect(() => {
     if (isVisible) {
+      setModalVisible(true);
       showDrawer(() => setIsAnimating(false));
     } else {
-      hideDrawer(() => setIsAnimating(false));
+      hideDrawer(() => {
+        setIsAnimating(false);
+        setModalVisible(false);
+      });
     }
   }, [isVisible, showDrawer, hideDrawer]);
 
@@ -266,6 +281,39 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
       resetTabAnimations();
     };
   }, [resetAnimations, resetTabAnimations]);
+
+  // Keyboard handling for add friend input
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    
+    const keyboardShowListener = Keyboard.addListener(showEvent, (e) => {
+      if (showAddFriendInput) {
+        setKeyboardHeight(e.endCoordinates.height);
+        Animated.spring(actionDockAnim, {
+          toValue: -e.endCoordinates.height + 20, // Move up by keyboard height minus some padding
+          tension: 400,
+          friction: 30,
+          useNativeDriver: true,
+        }).start();
+      }
+    });
+
+    const keyboardHideListener = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+      Animated.spring(actionDockAnim, {
+        toValue: 0,
+        tension: 400,
+        friction: 30,
+        useNativeDriver: true,
+      }).start();
+    });
+
+    return () => {
+      keyboardShowListener?.remove();
+      keyboardHideListener?.remove();
+    };
+  }, [showAddFriendInput, actionDockAnim]);
   
   const handleClose = useCallback(() => {
     if (isAnimating) return;
@@ -340,6 +388,40 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
 
   const handleProfileModalClose = useCallback(() => {
     setProfileModal(null);
+  }, []);
+
+  const handleAddFriendPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowAddFriendInput(true);
+  }, []);
+
+  const handleAddFriendSubmit = useCallback(async () => {
+    const username = addFriendUsername.trim();
+    if (!username) return;
+
+    try {
+      const response = await FriendsAPI.addFriend(username);
+      if (response.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Keyboard.dismiss();
+        setAddFriendUsername('');
+        setShowAddFriendInput(false);
+        // Refresh friends list
+        fetchFriends();
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        log.error('Add friend failed:', response.message);
+      }
+    } catch (error) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      log.error('Add friend error:', error);
+    }
+  }, [addFriendUsername, fetchFriends]);
+
+  const handleAddFriendCancel = useCallback(() => {
+    Keyboard.dismiss();
+    setAddFriendUsername('');
+    setShowAddFriendInput(false);
   }, []);
 
   const handleFetchProfile = useCallback(async (username: string) => {
@@ -419,11 +501,10 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     }
   }, []);
   
-  if (!isVisible) return null;
 
   return (
     <Modal
-      visible={isVisible}
+      visible={modalVisible}
       transparent={true}
       animationType="none"
       onRequestClose={handleClose}
@@ -576,10 +657,11 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
               />
               
               {/* Minimal Action Dock */}
-              <View style={[
+              <Animated.View style={[
                 styles.actionDock,
                 {
                   backgroundColor: 'transparent',
+                  transform: [{ translateY: actionDockAnim }],
                 }
               ]}>
                 {/* Minimal primary action */}
@@ -605,25 +687,55 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                     </Text>
                   </TouchableOpacity>
                 ) : currentTab === 1 ? (
-                  <TouchableOpacity
-                    style={[
+                  showAddFriendInput ? (
+                    <View style={[
                       styles.primaryAction,
+                      styles.addFriendInputContainer,
                       {
                         backgroundColor: theme === 'dark' ? '#2A2A2A' : '#F8F8F8',
                         borderWidth: 1,
                         borderColor: theme === 'dark' ? '#3A3A3A' : '#E0E0E0',
                       }
-                    ]}
-                    activeOpacity={0.7}
-                    disabled={isAnimating}
-                  >
-                    <Text style={[
-                      styles.primaryActionText,
-                      { color: themeColors.text }
                     ]}>
-                      Friends
-                    </Text>
-                  </TouchableOpacity>
+                      <TextInput
+                        style={[
+                          styles.addFriendInput,
+                          { color: themeColors.text }
+                        ]}
+                        placeholder="Enter username..."
+                        placeholderTextColor={themeColors.textSecondary}
+                        value={addFriendUsername}
+                        onChangeText={setAddFriendUsername}
+                        onSubmitEditing={handleAddFriendSubmit}
+                        onBlur={handleAddFriendCancel}
+                        autoFocus={true}
+                        returnKeyType="done"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={[
+                        styles.primaryAction,
+                        {
+                          backgroundColor: theme === 'dark' ? '#2A2A2A' : '#F8F8F8',
+                          borderWidth: 1,
+                          borderColor: theme === 'dark' ? '#3A3A3A' : '#E0E0E0',
+                        }
+                      ]}
+                      onPress={handleAddFriendPress}
+                      activeOpacity={0.7}
+                      disabled={isAnimating}
+                    >
+                      <Text style={[
+                        styles.primaryActionText,
+                        { color: themeColors.text }
+                      ]}>
+                        +
+                      </Text>
+                    </TouchableOpacity>
+                  )
                 ) : null}
                 
                 {/* Minimal secondary actions */}
@@ -661,7 +773,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                     </Text>
                   </TouchableOpacity>
                 </View>
-              </View>
+              </Animated.View>
             </View>
           </SafeAreaView>
         </Animated.View>
@@ -705,6 +817,8 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
             onFetchProfile={handleFetchProfile}
           />
         )}
+
+
       </View>
     </Modal>
   );
@@ -837,6 +951,19 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     fontFamily: 'Inter-Regular',
     letterSpacing: -0.3,
+  },
+  addFriendInputContainer: {
+    paddingHorizontal: 0,
+  },
+  addFriendInput: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
+    letterSpacing: -0.4,
+    paddingHorizontal: spacing[3],
+    paddingVertical: 0,
+    textAlign: 'center',
   },
 });
 
