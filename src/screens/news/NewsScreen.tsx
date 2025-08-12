@@ -101,13 +101,17 @@ const BuzzScreen: React.FC<BuzzScreenProps> = () => {
           setLastUpdated((response as any).meta.lastUpdated);
         }
         
-        // Track feed view
-        await AnalyticsAPI.trackInteraction({
-          type: 'content_view',
-          entityId: 'artist_feed',
-          entityType: 'content',
-          context: feedType
-        });
+        // Track feed view (optional - don't fail if analytics fails)
+        try {
+          await AnalyticsAPI.trackInteraction({
+            type: 'content_view',
+            entityId: 'artist_feed',
+            entityType: 'content',
+            context: feedType
+          });
+        } catch (analyticsError) {
+          console.warn('Analytics tracking failed (non-critical):', analyticsError);
+        }
       } else {
         setError(response?.message || 'Failed to load feed');
       }
@@ -415,6 +419,17 @@ const BuzzScreen: React.FC<BuzzScreenProps> = () => {
       ]}>
         {error ? 'Pull down to try again' : 'Follow some artists to see their latest updates here'}
       </Text>
+      
+      {!error && (
+        <TouchableOpacity
+          style={[styles.followButton, { backgroundColor: colors.primary }]}
+          onPress={followTestArtists}
+        >
+          <Text style={[styles.followButtonText, { color: colors.surface }]}>
+            Follow Top Artists (Drake, J. Cole, Kendrick)
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -666,6 +681,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 280,
     lineHeight: 22,
+    marginBottom: spacing[4],
+  },
+  followButton: {
+    paddingHorizontal: spacing[6],
+    paddingVertical: spacing[3],
+    borderRadius: 12,
+    marginTop: spacing[2],
+  },
+  followButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 
