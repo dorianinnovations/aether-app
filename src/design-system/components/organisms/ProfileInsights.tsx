@@ -92,9 +92,7 @@ export const ProfileInsights: React.FC<ProfileInsightsProps> = ({
   };
 
   const handleToggle = () => {
-    console.log('ProfileInsights handleToggle called, current isExpanded:', isExpanded);
     const newExpanded = !isExpanded;
-    console.log('ProfileInsights setting newExpanded to:', newExpanded);
     setIsExpanded(newExpanded);
     onToggle?.(newExpanded);
 

@@ -102,6 +102,11 @@ export const AuthAPI = {
 
   async logout(): Promise<void> {
     await TokenManager.removeToken();
+    
+    // Also trigger the global auth state clear to immediately update App.tsx
+    if ((global as any).clearAuthState) {
+      await (global as any).clearAuthState();
+    }
   },
 
   async refreshToken(): Promise<AuthResponse> {

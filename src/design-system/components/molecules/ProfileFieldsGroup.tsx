@@ -10,7 +10,7 @@ import {
   ViewStyle,
   TextInput,
 } from 'react-native';
-import { ProfileField } from '../atoms';
+import { ProfileField, ProfileFieldType, SocialLinksBar } from '../atoms';
 import { UserBadgeType } from '../atoms/UserBadge';
 import { spacing } from '../../tokens/spacing';
 
@@ -74,7 +74,7 @@ export const ProfileFieldsGroup: React.FC<ProfileFieldsGroupProps> = ({
       <ProfileField
         label="Display Name"
         value={profile.displayName}
-        placeholder="Your display name"
+        fieldType="displayName"
         editable={editable}
         showWhenEmpty={editable}
         onChangeText={(text) => onFieldChange?.('displayName', text)}
@@ -85,7 +85,7 @@ export const ProfileFieldsGroup: React.FC<ProfileFieldsGroupProps> = ({
       <ProfileField
         label="Bio"
         value={profile.bio}
-        placeholder="Bio"
+        fieldType="bio"
         editable={editable}
         showWhenEmpty={editable}
         multiline={true}
@@ -99,7 +99,7 @@ export const ProfileFieldsGroup: React.FC<ProfileFieldsGroupProps> = ({
         <ProfileField
           label="Location"
           value={profile.location}
-          placeholder="Location"
+          fieldType="location"
           editable={editable}
           showWhenEmpty={viewMode === 'busy' || editable}
           onChangeText={(text) => onFieldChange?.('location', text)}
@@ -107,93 +107,86 @@ export const ProfileFieldsGroup: React.FC<ProfileFieldsGroupProps> = ({
         />
       )}
 
-      {/* Social Links Section */}
-      {(viewMode === 'busy' || profile.socialLinks || profile.website || editable) && (
-        <View style={styles.linksSection}>
-          <View style={styles.linksSectionHeader}>
-            {/* Links header could be added here if needed */}
+      {/* Social Links - Compact Bar or Edit Fields */}
+      {editable ? (
+        // Show individual fields in edit mode
+        (viewMode === 'busy' || profile.socialLinks || profile.website || editable) && (
+          <View style={styles.linksSection}>
+            {/* Instagram */}
+            {(viewMode === 'busy' || profile.socialLinks?.instagram || editable) && (
+              <ProfileField
+                label="Instagram"
+                value={profile.socialLinks?.instagram}
+                fieldType="instagram"
+                editable={editable}
+                showWhenEmpty={viewMode === 'busy' || editable}
+                onChangeText={(text) => handleSocialLinkChange('instagram', text)}
+                onInputFocus={onInputFocus}
+              />
+            )}
+            
+            {/* X (Twitter) */}
+            {(viewMode === 'busy' || profile.socialLinks?.x || editable) && (
+              <ProfileField
+                label="X (Twitter)"
+                value={profile.socialLinks?.x}
+                fieldType="twitter"
+                editable={editable}
+                showWhenEmpty={viewMode === 'busy' || editable}
+                onChangeText={(text) => handleSocialLinkChange('x', text)}
+                onInputFocus={onInputFocus}
+              />
+            )}
+            
+            {/* Spotify */}
+            {(viewMode === 'busy' || profile.socialLinks?.spotify || editable) && (
+              <ProfileField
+                label="Spotify"
+                value={profile.socialLinks?.spotify}
+                fieldType="spotify"
+                editable={editable}
+                showWhenEmpty={viewMode === 'busy' || editable}
+                onChangeText={(text) => handleSocialLinkChange('spotify', text)}
+                onInputFocus={onInputFocus}
+              />
+            )}
+            
+            {/* Facebook */}
+            {(viewMode === 'busy' || profile.socialLinks?.facebook || editable) && (
+              <ProfileField
+                label="Facebook"
+                value={profile.socialLinks?.facebook}
+                fieldType="facebook"
+                editable={editable}
+                showWhenEmpty={viewMode === 'busy' || editable}
+                onChangeText={(text) => handleSocialLinkChange('facebook', text)}
+                onInputFocus={onInputFocus}
+              />
+            )}
+            
+            {/* Website */}
+            {(viewMode === 'busy' || profile.website || profile.socialLinks?.website || editable) && (
+              <ProfileField
+                label="Website"
+                value={profile.socialLinks?.website || profile.website}
+                fieldType="url"
+                editable={editable}
+                showWhenEmpty={viewMode === 'busy' || editable}
+                onChangeText={(text) => handleSocialLinkChange('website', text)}
+                onInputFocus={onInputFocus}
+              />
+            )}
           </View>
-          
-          {/* Instagram */}
-          {(viewMode === 'busy' || profile.socialLinks?.instagram || editable) && (
-            <ProfileField
-              label="Instagram"
-              value={profile.socialLinks?.instagram}
-              placeholder="username"
-              editable={editable}
-              showWhenEmpty={viewMode === 'busy' || editable}
-              keyboardType="default"
-              autoCapitalize="none"
-              icon="instagram"
-              onChangeText={(text) => handleSocialLinkChange('instagram', text)}
-              onInputFocus={onInputFocus}
-            />
-          )}
-          
-          {/* X (Twitter) */}
-          {(viewMode === 'busy' || profile.socialLinks?.x || editable) && (
-            <ProfileField
-              label="X (Twitter)"
-              value={profile.socialLinks?.x}
-              placeholder="username"
-              editable={editable}
-              showWhenEmpty={viewMode === 'busy' || editable}
-              keyboardType="default"
-              autoCapitalize="none"
-              icon="twitter"
-              onChangeText={(text) => handleSocialLinkChange('x', text)}
-              onInputFocus={onInputFocus}
-            />
-          )}
-          
-          {/* Spotify */}
-          {(viewMode === 'busy' || profile.socialLinks?.spotify || editable) && (
-            <ProfileField
-              label="Spotify"
-              value={profile.socialLinks?.spotify}
-              placeholder="url"
-              editable={editable}
-              showWhenEmpty={viewMode === 'busy' || editable}
-              keyboardType="url"
-              autoCapitalize="none"
-              icon="music"
-              onChangeText={(text) => handleSocialLinkChange('spotify', text)}
-              onInputFocus={onInputFocus}
-            />
-          )}
-          
-          {/* Facebook */}
-          {(viewMode === 'busy' || profile.socialLinks?.facebook || editable) && (
-            <ProfileField
-              label="Facebook"
-              value={profile.socialLinks?.facebook}
-              placeholder="username"
-              editable={editable}
-              showWhenEmpty={viewMode === 'busy' || editable}
-              keyboardType="default"
-              autoCapitalize="none"
-              icon="facebook"
-              onChangeText={(text) => handleSocialLinkChange('facebook', text)}
-              onInputFocus={onInputFocus}
-            />
-          )}
-          
-          {/* Website - kept for general website links */}
-          {(viewMode === 'busy' || profile.website || profile.socialLinks?.website || editable) && (
-            <ProfileField
-              label="Website"
-              value={profile.socialLinks?.website || profile.website}
-              placeholder="url"
-              editable={editable}
-              showWhenEmpty={viewMode === 'busy' || editable}
-              keyboardType="url"
-              autoCapitalize="none"
-              icon="globe"
-              onChangeText={(text) => handleSocialLinkChange('website', text)}
-              onInputFocus={onInputFocus}
-            />
-          )}
-        </View>
+        )
+      ) : (
+        // Show compact social links bar in view mode
+        <SocialLinksBar
+          socialLinks={{
+            ...profile.socialLinks,
+            website: profile.socialLinks?.website || profile.website
+          }}
+          style={styles.socialLinksBar}
+        />
       )}
     </View>
   );
@@ -203,12 +196,19 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: spacing[5],
     paddingTop: 40, // Reduced space since no prominent display
+    position: 'relative',
   },
   linksSection: {
     marginTop: spacing[4],
   },
   linksSectionHeader: {
     marginBottom: spacing[2],
+  },
+  socialLinksBar: {
+    position: 'absolute',
+    right: spacing[3],
+    top: spacing[6],
+    zIndex: 1,
   },
 });
 

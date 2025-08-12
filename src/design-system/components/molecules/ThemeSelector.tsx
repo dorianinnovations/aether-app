@@ -12,7 +12,7 @@ import { designTokens } from '../../tokens/colors';
 // import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
 
-type ThemeMode = 'light' | 'system' | 'dark';
+type ThemeMode = 'light' | 'dark';
 
 interface ThemeSelectorProps {
   style?: ViewStyle;
@@ -28,20 +28,19 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ style: _style, onT
 
   const options: { mode: ThemeMode; label: string; icon: string }[] = [
     { mode: 'light', label: 'Light', icon: 'sun' },
-    { mode: 'system', label: 'Auto', icon: 'smartphone' },
     { mode: 'dark', label: 'Dark', icon: 'moon' },
   ];
 
   const [containerWidth, setContainerWidth] = useState(0);
   const selectedIndicator = useRef(new Animated.Value(0)).current;
 
-  const segmentWidth = containerWidth / 3;
+  const segmentWidth = containerWidth / 2;
 
   useEffect(() => {
     const selectedIndex = options.findIndex(option => option.mode === themeMode);
     
     Animated.spring(selectedIndicator, {
-      toValue: selectedIndex * segmentWidth + 2,
+      toValue: selectedIndex * segmentWidth + 3,
       tension: 200,
       friction: 20,
       useNativeDriver: false,

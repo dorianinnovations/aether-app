@@ -14,6 +14,7 @@ import {
   RefreshControl,
   Image,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import {
@@ -202,69 +203,99 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   };
 
-  // Render utility-focused friend connection card
+  // Modern friend card with clean, contemporary design
   const renderFriendItem = ({ item }: { item: Friend }) => {
+    const formatLastSeen = (lastSeen?: string) => {
+      if (!lastSeen) return 'Online';
+      const date = new Date(lastSeen);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      
+      if (diffHours < 1) return 'Online';
+      if (diffHours < 24) return `${diffHours}h ago`;
+      return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    };
     
     return (
       <TouchableOpacity
         style={[
-          styles.inboxItem,
-          styles.friendItem,
+          styles.modernFriendCard,
+          {
+            backgroundColor: theme === 'dark' 
+              ? 'rgba(255, 255, 255, 0.03)' 
+              : 'rgba(255, 255, 255, 0.4)',
+            borderWidth: 0.8,
+            borderColor: theme === 'dark' 
+              ? 'rgba(255, 255, 255, 0.08)' 
+              : 'rgba(0, 0, 0, 0.05)',
+            shadowColor: theme === 'dark' ? '#000000' : '#000000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: theme === 'dark' ? 0.2 : 0.05,
+            shadowRadius: 4,
+            elevation: 2,
+          }
         ]}
         onPress={() => onFriendMessagePress?.(item.username)}
-        activeOpacity={0.8}
+        activeOpacity={0.7}
       >
-        <View style={styles.inboxItemHeader}>
-          <View style={styles.inboxItemMeta}>
-            {/* Friend Avatar */}
-            <View style={[
-              styles.inboxAvatar,
-              styles.friendAvatar,
-              {
-                backgroundColor: theme === 'dark' 
-                  ? 'rgba(255, 107, 107, 0.12)' 
-                  : 'rgba(255, 107, 107, 0.08)',
-                borderWidth: item.avatar ? 0 : 1,
-                borderColor: theme === 'dark' 
-                  ? 'rgba(255, 107, 107, 0.2)' 
-                  : 'rgba(255, 107, 107, 0.15)',
-              }
-            ]}>
-              {item.avatar ? (
-                <Image
-                  source={{ uri: item.avatar }}
-                  style={styles.friendProfileImage}
-                  resizeMode="cover"
+        <View style={styles.modernFriendContent}>
+          {/* Compact Avatar */}
+          <View style={styles.compactAvatarContainer}>
+            {item.avatar ? (
+              <Image
+                source={{ uri: item.avatar }}
+                style={styles.compactAvatar}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[
+                styles.compactAvatarPlaceholder,
+                {
+                  backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+                  borderWidth: 0.8,
+                  borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)',
+                }
+              ]}>
+                <Feather 
+                  name="user" 
+                  size={12} 
+                  color={theme === 'dark' ? '#888' : '#666'} 
                 />
-              ) : (
-                <Feather name="user" size={16} color="#FF6B6B" />
-              )}
-            </View>
-            
-            <View style={styles.inboxItemInfo}>
-              <Text style={[
-                styles.inboxItemTitle,
-                { color: themeColors.text }
-              ]}>
-                {item.name || item.username}
-              </Text>
-              
-              <Text style={[
-                styles.inboxItemStatus,
-                { color: themeColors.textSecondary }
-              ]}>
-                @{item.username}
-              </Text>
-            </View>
+              </View>
+            )}
           </View>
           
-          <View style={styles.friendActions}>
+          {/* Compact Friend info */}
+          <View style={styles.compactFriendInfo}>
+            <Text style={[
+              styles.compactFriendName,
+              { color: themeColors.text }
+            ]} numberOfLines={1}>
+              {item.name || item.username}
+            </Text>
+            <Text style={[
+              styles.compactFriendHandle,
+              { color: themeColors.textSecondary }
+            ]} numberOfLines={1}>
+              @{item.username}
+            </Text>
+            
+          </View>
+          
+          {/* Single Action button */}
+          <View style={styles.compactFriendActions}>
             <TouchableOpacity
-              style={styles.friendActionButton}
+              style={[
+                styles.compactActionButton,
+                {
+                  backgroundColor: 'transparent',
+                }
+              ]}
               onPress={() => onFriendProfilePress?.(item.username)}
-              activeOpacity={0.7}
+              activeOpacity={0.6}
             >
-              <Feather name="arrow-right" size={18} color="#6B7280" />
+              <Feather name="user" size={18} color={themeColors.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -592,7 +623,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingVertical: spacing[1],
-    paddingHorizontal: spacing[2],
+    paddingHorizontal: 0,
   },
   
   // Minimal Inbox Item Styles
@@ -616,21 +647,21 @@ const styles = StyleSheet.create({
   },
   
   inboxAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
   
   friendAvatar: {
-    borderRadius: 16,
+    borderRadius: 36,
   },
 
   friendProfileImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
   },
   
   inboxItemInfo: {
@@ -719,8 +750,8 @@ const styles = StyleSheet.create({
   },
 
   friendActionButton: {
-    width: 24,
-    height: 24,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
@@ -738,30 +769,112 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 59, 48, 0.2)',
   },
   
-  // Friend-specific styles
-  friendItem: {
-    borderRadius: 20,
+  // Full width rounded friend card styles
+  modernFriendCard: {
+    marginHorizontal: spacing[2],
+    marginVertical: spacing[1],
+    borderRadius: 12,
+    overflow: 'hidden',
+    height: 48,
   },
-  
-  interestTags: {
+
+  modernFriendContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    gap: spacing[3],
+    height: 48,
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+
+  compactAvatarContainer: {
+    position: 'relative',
+  },
+
+  compactAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+
+  compactAvatarPlaceholder: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  statusIndicatorModern: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+  },
+
+  compactFriendInfo: {
+    flex: 1,
+    justifyContent: 'center',
+    marginLeft: spacing[1],
+  },
+
+  compactFriendName: {
+    fontSize: 13,
+    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
+    letterSpacing: -0.1,
+    lineHeight: 16,
+  },
+
+  compactFriendHandle: {
+    fontSize: 11,
+    fontWeight: '400',
+    fontFamily: 'Inter-Regular',
+    opacity: 0.6,
+    lineHeight: 13,
+    marginTop: 1,
+  },
+
+  modernInterestTags: {
     flexDirection: 'row',
     gap: spacing[1],
     marginTop: spacing[1],
   },
-  
-  interestTag: {
+
+  modernInterestTag: {
     paddingHorizontal: spacing[2],
     paddingVertical: 2,
-    borderRadius: 10,
+    borderRadius: 6,
     borderWidth: 0.5,
-    borderColor: 'rgba(255, 107, 107, 0.2)',
   },
-  
-  interestTagText: {
+
+  modernInterestText: {
     fontSize: 10,
-    fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
-    letterSpacing: 0.3,
+    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
+    letterSpacing: 0.1,
+  },
+
+  compactFriendActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginLeft: 'auto',
+  },
+
+  compactActionButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   
   // Conversation-specific styles

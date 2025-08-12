@@ -12,10 +12,12 @@ import {
   ViewStyle,
   TextInput,
 } from 'react-native';
-import { ProfileHeader, ProfileFieldsGroup, SocialProfileSection, SpotifyIntegration, SocialStats } from '../molecules';
+import { ProfileHeader, ProfileFieldsGroup, SocialProfileSection, SpotifyIntegration, SocialStats, GrailsSection } from '../molecules';
 import { LottieLoader, UserBadgeType, InteractiveBadge, AdvancedBadge } from '../atoms';
 import { spacing } from '../../tokens/spacing';
 import { OnlineStatusType } from '../atoms/OnlineStatus';
+import { GrailsData } from '../molecules/GrailsSection';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 export interface SocialLinks {
   instagram?: string;
@@ -48,6 +50,7 @@ export interface SocialProfile {
   currentPlans?: string;
   friendsCount?: number;
   followersCount?: number;
+  grails?: GrailsData;
   spotify?: {
     connected: boolean;
     currentTrack?: {
@@ -98,6 +101,7 @@ export interface ProfileCardProps {
   onConfigurePress?: () => void;
   onUsernamePress?: () => void;
   onInputFocus?: (inputRef: TextInput) => void;
+  onGrailsChange?: (grails: GrailsData) => void;
   /** Whether configure mode is active */
   configureMode?: boolean;
   /** Custom styles */
@@ -124,10 +128,12 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   onConfigurePress,
   onUsernamePress,
   onInputFocus,
+  onGrailsChange,
   configureMode = false,
   style,
   scrollRef,
 }) => {
+  const { theme } = useTheme();
 
   return (
     <ScrollView
@@ -203,6 +209,15 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
             } : undefined
           } : { connected: false }}
           onStatusChange={onSpotifyStatusChange}
+        />
+        
+        {/* Grails Section */}
+        <GrailsSection
+          grailsData={socialProfile?.grails}
+          editable={editMode}
+          onGrailsChange={onGrailsChange}
+          theme={theme}
+          spotifyConnected={socialProfile?.spotify?.connected || false}
         />
       </View>
 

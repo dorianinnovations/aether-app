@@ -50,10 +50,52 @@ export const SocialProxyAPI = {
     }
   },
 
-  // Note: The following endpoints are not yet implemented on backend:
-  // - getFriendProfile
-  // - reactToActivity  
-  // - commentOnActivity
+  // Get friend's profile (placeholder until backend implemented)
+  async getFriendProfile(username: string): Promise<any> {
+    try {
+      logger.info('getFriendProfile endpoint not implemented on server');
+      return {
+        success: false,
+        message: 'getFriendProfile endpoint not available',
+        data: null
+      };
+    } catch (error) {
+      logger.error('Failed to fetch friend profile:', error);
+      throw error;
+    }
+  },
+
+  // React to activity (placeholder until backend implemented)
+  async reactToActivity(activityId: string, reactionType: string): Promise<any> {
+    try {
+      logger.info('reactToActivity endpoint not implemented on server');
+      return {
+        success: false,
+        message: 'reactToActivity endpoint not available',
+        data: null
+      };
+    } catch (error) {
+      logger.error('Failed to react to activity:', error);
+      throw error;
+    }
+  },
+
+  // Comment on activity (placeholder until backend implemented)
+  async commentOnActivity(activityId: string, comment: string): Promise<any> {
+    try {
+      logger.info('commentOnActivity endpoint not implemented on server');
+      return {
+        success: false,
+        message: 'commentOnActivity endpoint not available',
+        data: null
+      };
+    } catch (error) {
+      logger.error('Failed to comment on activity:', error);
+      throw error;
+    }
+  },
+
+  // Note: The following endpoints are also not yet implemented on backend:
   // - createPost
   // - deletePost
   // They would need to be added to /routes/social-proxy.js

@@ -31,6 +31,7 @@ export { ThemeSelector } from './ThemeSelector';
 export { SpotifyIntegration } from './SpotifyIntegration';
 export { DynamicProfileDisplay } from './DynamicProfileDisplay';
 export { LiveSpotifyStatus } from './LiveSpotifyStatus';
+export { GrailsSection } from './GrailsSection';
 
 // Conversation components
 export { default as ConversationTabBar } from './ConversationTabBar';

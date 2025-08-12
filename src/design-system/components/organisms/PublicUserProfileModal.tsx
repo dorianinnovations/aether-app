@@ -25,7 +25,7 @@ import { useTheme } from '../../../contexts/ThemeContext';
 import { spacing } from '../../tokens/spacing';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const MODAL_HEIGHT = SCREEN_HEIGHT * 0.9;
+const MODAL_HEIGHT = SCREEN_HEIGHT * 0.75; // Reduced from 0.9 to 0.75 for lower positioning
 
 export interface PublicUserProfileModalProps {
   /** Whether the modal is visible */
@@ -59,23 +59,40 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Scroll ref for scroll-to-dismiss functionality
+  const scrollViewRef = React.useRef<any>(null);
+  const [isAtTop, setIsAtTop] = useState(true);
+
   // Pan responder for swipe-to-dismiss
   const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => false,
+    onStartShouldSetPanResponderCapture: () => false,
     onMoveShouldSetPanResponder: (_, gestureState) => {
-      return Math.abs(gestureState.dy) > Math.abs(gestureState.dx) && Math.abs(gestureState.dy) > 10;
+      // More sensitive threshold - 10px instead of 20px
+      // Allow dismissal if scrolled to top or dragging down
+      return (gestureState.dy > 10 || isAtTop) && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+    },
+    onMoveShouldSetPanResponderCapture: (_, gestureState) => {
+      // Capture gesture if at top and dragging down
+      return isAtTop && gestureState.dy > 5;
+    },
+    onPanResponderGrant: () => {
+      slideAnim.stopAnimation();
     },
     onPanResponderMove: (_, gestureState) => {
-      if (gestureState.dy > 0) {
+      if (gestureState.dy >= 0) {
         slideAnim.setValue(gestureState.dy);
       }
     },
     onPanResponderRelease: (_, gestureState) => {
-      if (gestureState.dy > 100 || gestureState.vy > 0.5) {
+      // Lower thresholds for easier dismissal - 80px instead of 100px, 0.3 instead of 0.5
+      if (gestureState.dy > 80 || gestureState.vy > 0.3) {
         handleClose();
       } else {
-        // Snap back to position
         Animated.spring(slideAnim, {
           toValue: 0,
+          tension: 65,
+          friction: 10,
           useNativeDriver: true,
         }).start();
       }
@@ -136,12 +153,12 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: MODAL_HEIGHT,
-        duration: 250,
+        duration: 200, // Faster close animation
         useNativeDriver: true,
       }),
       Animated.timing(backdropAnim, {
         toValue: 0,
-        duration: 250,
+        duration: 200, // Faster backdrop fade
         useNativeDriver: true,
       }),
     ]).start(() => {
@@ -151,6 +168,15 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
 
   const handleBackdropPress = () => {
     handleClose();
+  };
+
+  // Handle scroll position changes for scroll-to-dismiss
+  const handleScroll = (event: any) => {
+    const { contentOffset } = event.nativeEvent;
+    const newIsAtTop = contentOffset.y <= 10; // Allow 10px buffer
+    if (newIsAtTop !== isAtTop) {
+      setIsAtTop(newIsAtTop);
+    }
   };
 
   if (!visible) {
@@ -195,25 +221,6 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
           ]}
           {...panResponder.panHandlers}
         >
-          {/* Handle Bar */}
-          <View style={styles.handle}>
-            <View style={[styles.handleBar, { backgroundColor: colors.borders.default }]} />
-          </View>
-
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerTitle}>
-              {/* Empty space for centering */}
-            </View>
-            <TouchableOpacity
-              onPress={handleClose}
-              style={styles.closeButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Feather name="x" size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-
           {/* Content */}
           <SafeAreaView style={styles.content}>
             {loading ? (
@@ -243,6 +250,9 @@ export const PublicUserProfileModal: React.FC<PublicUserProfileModalProps> = ({
                 loading={false}
                 viewMode="basic"
                 onlineStatus="online" // Could be dynamic based on real online status
+                showGripBar={true}
+                scrollRef={scrollViewRef}
+                onScroll={handleScroll}
               />
             ) : null}
           </SafeAreaView>
@@ -264,43 +274,13 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 1, // Ensure backdrop is behind modal but above everything else
   },
   modal: {
     height: MODAL_HEIGHT,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  handle: {
-    alignItems: 'center',
-    paddingVertical: spacing[2],
-  },
-  handleBar: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing[4],
-    paddingBottom: spacing[2],
-  },
-  headerTitle: {
-    flex: 1,
-  },
-  closeButton: {
-    padding: spacing[1],
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    zIndex: 2, // Ensure modal is above backdrop
   },
   content: {
     flex: 1,

@@ -136,5 +136,41 @@ export const SpotifyAPI = {
     } catch (error) {
       throw error;
     }
+  },
+
+  // Search for tracks, albums, artists
+  async search(query: string, type: 'track' | 'album' | 'artist' | 'playlist' = 'track', limit: number = 20): Promise<any> {
+    try {
+      const response = await api.get('/spotify/search', {
+        params: {
+          q: query,
+          type: type,
+          limit
+        }
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get user's grails (favorite songs and albums)
+  async getGrails(): Promise<any> {
+    try {
+      const response = await api.get('/spotify/grails');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Save user's grails (favorite songs and albums)
+  async saveGrails(grails: any): Promise<any> {
+    try {
+      const response = await api.post('/spotify/grails', grails);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 };

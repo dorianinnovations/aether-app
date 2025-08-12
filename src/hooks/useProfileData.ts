@@ -14,11 +14,19 @@ interface UserProfile {
   profilePicture?: string;
   bannerImage?: string;
   name?: string;
+  displayName?: string;
   email: string;
   id: string;
   bio?: string;
   location?: string;
   website?: string;
+  socialLinks?: {
+    instagram?: string;
+    x?: string;
+    spotify?: string;
+    facebook?: string;
+    website?: string;
+  };
   username?: string;
   createdAt?: string;
   badges?: UserBadge[];
@@ -101,9 +109,11 @@ export const useProfileData = (): UseProfileDataReturn => {
           id: userId, // Use resolved userId instead of userData.id
           email: userData.email,
           name: userData.name,
+          displayName: userData.displayName,
           bio: userData.bio,
           location: userData.location,
           website: userData.website,
+          socialLinks: userData.socialLinks,
           profilePicture: profileImages.profilePhoto?.url,
           bannerImage: profileImages.bannerImage?.url,
           username: usernameResponse.username || userData.username,

@@ -9,6 +9,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   MozillaText_400Regular,
   MozillaText_500Medium,
@@ -25,7 +26,9 @@ import {
 import { View, StyleSheet, Dimensions, Image } from 'react-native';
 
 // Enhanced Components
-import { LottieLoader } from './src/design-system/components/atoms';
+import { LottieLoader, SwipeToMenu } from './src/design-system/components/atoms';
+import { HeaderMenu } from './src/design-system/components/organisms';
+import { useHeaderMenu } from './src/design-system/hooks';
 
 // Screens
 import HeroLandingScreen from './src/screens/landing/HeroLandingScreen';
@@ -110,7 +113,7 @@ const AuthNavigator = () => {
   );
 };
 
-// Main Stack Navigator
+// Main Stack Navigator with Swipe-to-Menu
 const MainStackNavigator = () => {
   return (
     <MainStack.Navigator
@@ -229,13 +232,15 @@ export default function App() {
 
     initializeApp();
 
-    // Listen for auth state changes by checking periodically (optimized frequency)
-    const authCheckInterval = setInterval(checkAuthStatus, 5000);
+    // Listen for auth state changes by checking periodically (reduced frequency since logout now calls clearAuthState directly)
+    const authCheckInterval = setInterval(checkAuthStatus, 10000);
     
-    (global as typeof globalThis & { clearAuthState?: () => Promise<void> }).clearAuthState = async () => {
+    (global as typeof globalThis & { clearAuthState?: () => Promise<void>; checkAuthState?: () => Promise<void> }).clearAuthState = async () => {
       await TokenManager.removeToken();
       setIsAuthenticated(false);
     };
+    
+    (global as typeof globalThis & { clearAuthState?: () => Promise<void>; checkAuthState?: () => Promise<void> }).checkAuthState = checkAuthStatus;
     
     return () => clearInterval(authCheckInterval);
   }, []);
@@ -245,31 +250,33 @@ export default function App() {
   }
 
   return (
-    <SettingsProvider>
-      <ThemeProvider>
-        <ToastProvider>
-        <NavigationContainer>
-        <StatusBar style="auto" />
-        <RootStack.Navigator
-          screenOptions={{
-            headerShown: false,
-            cardStyleInterpolator: ({ current }) => ({
-              cardStyle: {
-                opacity: current.progress,
-              },
-            }),
-          }}
-        >
-          {isAuthenticated ? (
-            <RootStack.Screen name="MainStack" component={MainStackNavigator} />
-          ) : (
-            <RootStack.Screen name="Auth" component={AuthNavigator} />
-          )}
-        </RootStack.Navigator>
-        </NavigationContainer>
-        </ToastProvider>
-      </ThemeProvider>
-    </SettingsProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SettingsProvider>
+        <ThemeProvider>
+          <ToastProvider>
+          <NavigationContainer>
+          <StatusBar style="auto" />
+          <RootStack.Navigator
+            screenOptions={{
+              headerShown: false,
+              cardStyleInterpolator: ({ current }) => ({
+                cardStyle: {
+                  opacity: current.progress,
+                },
+              }),
+            }}
+          >
+            {isAuthenticated ? (
+              <RootStack.Screen name="MainStack" component={MainStackNavigator} />
+            ) : (
+              <RootStack.Screen name="Auth" component={AuthNavigator} />
+            )}
+          </RootStack.Navigator>
+          </NavigationContainer>
+          </ToastProvider>
+        </ThemeProvider>
+      </SettingsProvider>
+    </GestureHandlerRootView>
   );
 }
 

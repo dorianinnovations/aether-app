@@ -21,6 +21,7 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,8 +29,8 @@ import { Ionicons } from '@expo/vector-icons';
 // Enhanced Components
 import { EnhancedChatInput } from '../../design-system/components/molecules';
 import EnhancedBubble from '../../design-system/components/molecules/EnhancedBubble';
-import { Header, HeaderMenu, SignOutModal, ArtistListeningModal, WalletModal } from '../../design-system/components/organisms';
-import { PageBackground } from '../../design-system/components/atoms/PageBackground';
+import { Header, HeaderMenu, SignOutModal, ArtistListeningModal, WalletModal, SwipeTutorialOverlay } from '../../design-system/components/organisms';
+import { PageBackground, SwipeToMenu } from '../../design-system/components/atoms';
 import SettingsModal from './SettingsModal';
 import ConversationDrawer from '../../components/ConversationDrawer';
 import { ShimmerText } from '../../design-system/components/atoms/ShimmerText';
@@ -126,6 +127,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   const [inputText, setInputText] = useState('');
   // Removed unused copy tooltip state
   const [, setShowTestTooltip] = useState(true);
+  const [showSwipeTutorial, setShowSwipeTutorial] = useState(false);
   const [headerVisible] = useState(true);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [, setIsVoiceRecording] = useState(false);
@@ -253,7 +255,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       setShowSettings(true);
     },
     onSignOut: () => setShowSignOutModal(true),
-    onWalletPress: () => setShowWalletModal(true)
+    onWalletPress: () => setShowWalletModal(true),
+    onAddFriend: friendRequest.handleAddFriendPress
   });
 
   // Handle route parameter changes for friend username
@@ -265,6 +268,40 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       setCurrentConversationId(undefined);
     }
   }, [route?.params?.friendUsername, currentFriendUsername, setMessages]);
+
+  // Check if user should see swipe tutorial (new users only)
+  useEffect(() => {
+    const checkSwipeTutorial = async () => {
+      try {
+        const isNewUser = await AsyncStorage.getItem('isNewUser');
+        const hasSeenTutorial = await AsyncStorage.getItem('hasSeenSwipeTutorial');
+        
+        // Show tutorial for new users who haven't seen it yet
+        if (isNewUser === 'true' && !hasSeenTutorial) {
+          // Show tutorial after a short delay for better UX
+          setTimeout(() => {
+            setShowSwipeTutorial(true);
+          }, 1000);
+        }
+      } catch (error) {
+        console.error('Error checking swipe tutorial status:', error);
+      }
+    };
+
+    checkSwipeTutorial();
+  }, []);
+
+  // Handle tutorial completion
+  const handleTutorialComplete = async () => {
+    try {
+      await AsyncStorage.setItem('hasSeenSwipeTutorial', 'true');
+      await AsyncStorage.removeItem('isNewUser'); // Clear new user flag
+      setShowSwipeTutorial(false);
+    } catch (error) {
+      console.error('Error saving swipe tutorial status:', error);
+      setShowSwipeTutorial(false);
+    }
+  };
 
   // Add Friend modal visibility effect - fixed to prevent useInsertionEffect warnings
   useEffect(() => {
@@ -561,7 +598,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   };
 
   return (
-    <PageBackground theme={theme} variant="chat">
+    <SwipeToMenu onSwipeToMenu={toggleHeaderMenu}>
+      <PageBackground theme={theme} variant="chat">
       <SafeAreaView style={styles.container}>
         <StatusBar 
           barStyle={theme === 'light' ? 'dark-content' : 'light-content'}
@@ -834,10 +872,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         title={currentFriendUsername ? currentFriendUsername : "Aether"}
         showMenuButton={true}
         showConversationsButton={true}
-        leftIcon="user-plus"
         onMenuPress={toggleHeaderMenu}
         onConversationsPress={() => setShowConversationDrawer(true)}
-        onLeftPress={friendRequest.handleAddFriendPress}
         theme={theme}
         isVisible={headerVisible}
         isMenuOpen={showHeaderMenu}
@@ -1009,42 +1045,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
           />
           
           <Animated.View style={[
-            styles.dropdown,
+            styles.addFriendOverlay,
             {
-              left: 24,
-              top: 123,
               backgroundColor: theme === 'light' ? '#ffffff' : designTokens.brand.surfaceDark,
               borderWidth: 1,
               borderColor: theme === 'dark' ? designTokens.borders.dark.default : designTokens.borders.light.default,
               ...getHeaderMenuShadow(theme),
             }
           ]}>
-            {/* Arrow pointing to header button with border */}
-            <View style={{ position: 'absolute', top: -9, left: 60 }}>
-              {/* Border triangle (slightly larger) */}
-              <View style={[
-                styles.arrow,
-                {
-                  borderBottomColor: theme === 'dark' ? designTokens.borders.dark.default : designTokens.borders.light.default,
-                  borderLeftWidth: 9,
-                  borderRightWidth: 9,
-                  borderBottomWidth: 9,
-                }
-              ]} />
-              {/* Fill triangle (smaller, on top) */}
-              <View style={[
-                styles.arrow,
-                {
-                  borderBottomColor: theme === 'light' ? '#ffffff' : designTokens.brand.surfaceDark,
-                  position: 'absolute',
-                  top: 1,
-                  left: -0.5,
-                  borderLeftWidth: 8,
-                  borderRightWidth: 8,
-                  borderBottomWidth: 8,
-                }
-              ]} />
-            </View>
             
             <View style={styles.dropdownContent}>
               <Text style={[
@@ -1132,6 +1140,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
                   onBlur={() => friendRequest.setIsInputFocused(false)}
                   autoCapitalize="none"
                   autoCorrect={false}
+                  autoFocus={true}
                   keyboardAppearance={theme === 'dark' ? 'dark' : 'light'}
                   selectionColor={theme === 'dark' ? '#ffffff' : '#007AFF'}
                   cursorColor={theme === 'dark' ? '#ffffff' : '#007AFF'}
@@ -1203,8 +1212,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         theme={theme}
       />
 
+      {/* Swipe Tutorial Overlay for new users */}
+      <SwipeTutorialOverlay
+        visible={showSwipeTutorial}
+        onClose={handleTutorialComplete}
+        theme={theme}
+      />
+
       </SafeAreaView>
     </PageBackground>
+    </SwipeToMenu>
   );
 };
 
@@ -1406,12 +1423,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[2],
     overflow: 'visible',
   },
+  addFriendOverlay: {
+    position: 'absolute',
+    width: 320,
+    borderRadius: 16,
+    paddingVertical: spacing[4],
+    paddingHorizontal: spacing[3],
+    top: '30%',
+    left: '50%',
+    marginLeft: -160, // Half of width to center
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
   arrow: {
     width: 0,
     height: 0,
     borderStyle: 'solid',
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
+  },
+  arrowUp: {
+    width: 0,
+    height: 0,
+    borderStyle: 'solid',
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: 'transparent',
   },
   dropdownContent: {
     paddingTop: spacing[2],

@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 
 // Design System
-import { PageBackground } from '../../design-system/components/atoms/PageBackground';
+import { PageBackground, SwipeToMenu } from '../../design-system/components/atoms';
 import { LottieLoader } from '../../design-system/components/atoms/LottieLoader';
 import { PersonaModal } from '../../design-system/components/organisms/PersonaModal';
 import { 
@@ -38,10 +38,11 @@ import { useProfileData } from '../../hooks/useProfileData';
 import { useToast, useScrollToInput } from '../../hooks';
 
 // Services
-import { AuthAPI } from '../../services/api';
+import { AuthAPI, SpotifyAPI } from '../../services/api';
 import { UserAPI } from '../../services/apiModules/endpoints/user';
 import { ProfileImageService } from '../../services/profileImageService';
 import { ProfileDataService, UserProfile } from '../../services/profileDataService';
+import { GrailsData } from '../../design-system/components/molecules/GrailsSection';
 
 // Utils
 import { logger } from '../../utils/logger';
@@ -237,7 +238,6 @@ export const ProfileScreen: React.FC = () => {
       
       // Use direct API call instead of the hook to avoid background refresh issues
       const response = await UserAPI.updateProfile(profileData);
-      console.log('Profile save response:', response);
       
       // Immediately update local profile state with the saved data
       // This ensures the data persists regardless of what the hook does
@@ -408,6 +408,21 @@ export const ProfileScreen: React.FC = () => {
     setShowPersonaModal(true);
   };
 
+  const handleGrailsChange = async (grails: GrailsData) => {
+    try {
+      await SpotifyAPI.saveGrails(grails);
+      // Update socialProfile with new grails
+      if (socialProfile) {
+        // This would typically be handled by the useProfileData hook
+        // For now, we'll rely on the next refresh to show the updated data
+      }
+      showSuccess('Grails updated successfully!');
+    } catch (error) {
+      logger.error('Error saving grails:', error);
+      showError('Failed to save grails. Please try again.');
+    }
+  };
+
 
   // Loading state
   if (loading) {
@@ -469,7 +484,8 @@ export const ProfileScreen: React.FC = () => {
   }
 
   return (
-    <PageBackground theme={theme} variant="profile">
+    <SwipeToMenu onSwipeToMenu={toggleHeaderMenu}>
+      <PageBackground theme={theme} variant="profile">
       <SafeAreaView style={styles.container}>
         <StatusBar 
           barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} 
@@ -517,6 +533,7 @@ export const ProfileScreen: React.FC = () => {
           }}
           onConfigurePress={handleConfigurePress}
           onUsernamePress={handleUsernamePress}
+          onGrailsChange={handleGrailsChange}
           configureMode={configureMode}
           scrollRef={scrollViewRef}
         />
@@ -569,7 +586,6 @@ export const ProfileScreen: React.FC = () => {
           visible={showWalletModal}
           onClose={() => setShowWalletModal(false)}
           onTierSelect={(tier) => {
-            console.log('Selected tier:', tier);
             // TODO: Implement tier selection logic
           }}
         />
@@ -588,6 +604,7 @@ export const ProfileScreen: React.FC = () => {
         </TouchableOpacity>
       </SafeAreaView>
     </PageBackground>
+    </SwipeToMenu>
   );
 };
 

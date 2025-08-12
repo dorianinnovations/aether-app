@@ -124,7 +124,6 @@ export const SocialProfileSection: React.FC<SocialProfileSectionProps> = ({
     
     setExpandedField(expandedField === fieldName ? null : fieldName);
     // TODO: Could show a modal or expanded view here
-    console.log(`Pressed ${fieldName}:`, value);
   };
 
   const profileFields = [

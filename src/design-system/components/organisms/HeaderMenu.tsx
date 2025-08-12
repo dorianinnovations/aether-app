@@ -11,16 +11,14 @@ import {
   StyleSheet, 
   Animated, 
   Dimensions, 
-  Modal 
+  Modal,
+  Easing
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { designTokens, getIconColor } from '../../tokens/colors';
-import { getHeaderMenuShadow } from '../../tokens/shadows';
-import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
 import { useTheme } from '../../../contexts/ThemeContext';
-import { ThemeSelector } from '../molecules/ThemeSelector';
 import { NotificationDot } from '../atoms/NotificationDot';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -65,11 +63,17 @@ const getAllMenuActions = (theme: 'light' | 'dark'): MenuAction[] => [
     requiresAuth: false 
   },
   { 
-    icon: <Feather name="log-out" size={16} color={getIconColor('signout', theme)} />, 
-    label: 'Sign Out', 
-    key: 'sign_out', 
+    icon: <Feather name="user-plus" size={16} color={getIconColor('profile', theme)} />, 
+    label: 'Add Friend', 
+    key: 'add_friend', 
     requiresAuth: true,
-    isAuthAction: true
+    isAuthAction: false
+  },
+  { 
+    icon: theme === 'dark' ? <Feather name="sun" size={16} color="#ffffff" /> : <Feather name="moon" size={16} color="#ffffff" />, 
+    label: theme === 'dark' ? 'Light' : 'Dark', 
+    key: 'theme_toggle', 
+    requiresAuth: false 
   },
 ];
 
@@ -112,142 +116,40 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
   potentialMatches = 0,
 }) => {
   const { theme, colors } = useTheme();
-  const menuActions = getMenuActions(theme, showAuthOptions, showBackButton);
+  
+  // Memoize menu actions to prevent recalculation on every render
+  const menuActions = React.useMemo(() => 
+    getMenuActions(theme, showAuthOptions, showBackButton), 
+    [theme, showAuthOptions, showBackButton]
+  );
   
   // State to prevent multiple rapid presses
-  const [isAnimating, setIsAnimating] = useState(false);
   const [pressedIndex, setPressedIndex] = useState<number | null>(null);
-  
-  // Main menu animations
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-  const translateYAnim = useRef(new Animated.Value(-8)).current;
-  
-  // Simple opacity animations for items
-  const totalItems = menuActions.length + 1; // +1 for theme selector
-  const itemAnims = useRef(Array.from({ length: totalItems }, () => ({
-    opacity: new Animated.Value(0),
-  }))).current;
-  
-  // Dynamic button press animations
-  const buttonAnims = useRef(Array.from({ length: menuActions.length }, () => ({
-    scale: new Animated.Value(1),
-    opacity: new Animated.Value(1),
-  }))).current;
-
-  // Cleanup function to reset all animations
-  const resetAnimations = useCallback(() => {
-    scaleAnim.setValue(0);
-    opacityAnim.setValue(0);
-    translateYAnim.setValue(-8);
-    
-    itemAnims.forEach(anim => {
-      anim.opacity.setValue(0);
-    });
-    
-    buttonAnims.forEach(anim => {
-      anim.scale.setValue(1);
-      anim.opacity.setValue(1);
-    });
-    
-    setIsAnimating(false);
-    setPressedIndex(null);
-  }, []);
-
-  // Sequential fade-in animation
-  const showMenu = useCallback(() => {
-    if (isAnimating) return;
-    
-    setIsAnimating(true);
-    resetAnimations();
-    
-    // Show menu container instantly
-    scaleAnim.setValue(1);
-    opacityAnim.setValue(1);
-    translateYAnim.setValue(0);
-    
-    // Sequential fade-in for each menu item (top to bottom)
-    const animations = itemAnims.map((anim, index) => 
-      Animated.timing(anim.opacity, {
-        toValue: 1,
-        duration: 120,
-        delay: index * 40, // 40ms delay between each item
-        useNativeDriver: true,
-      })
-    );
-    
-    // Start all animations simultaneously with their delays
-    Animated.parallel(animations).start(() => {
-      setIsAnimating(false);
-    });
-    
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, []);
-
-  // Simplified hide animation
-  const hideMenu = useCallback(() => {
-    if (isAnimating) return;
-    
-    setIsAnimating(true);
-    
-    // Instant hide
-    opacityAnim.setValue(0);
-    resetAnimations();
-  }, []);
-
-  // Ultra-simplified visibility handling
-  useEffect(() => {
-    if (visible) {
-      showMenu();
-    } else {
-      hideMenu();  
-    }
-  }, [visible]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      resetAnimations();
-    };
-  }, []);
 
   // Simplified button press handler
   const handleMenuButtonPress = useCallback((actionKey: string, index: number) => {
-    if (isAnimating || pressedIndex !== null) return;
+    if (pressedIndex !== null) return;
     
     setPressedIndex(index);
     
     // Haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // Call action immediately without animations
+    // Call action immediately
     setPressedIndex(null);
     onAction(actionKey);
   }, [onAction]);
 
   // Always render, use visible prop to control Modal visibility
 
-  // Calculate position based on menu button and header layout
-  const menuWidth = 280;
-  
-  let menuRight, menuTop;
-  
-  // Normal positioning for other screens
-  const rightMargin = 24;
-  const topMargin = 123;
-  
-  menuRight = menuButtonPosition?.x 
-    ? screenWidth - menuButtonPosition.x - menuButtonPosition.width + 10
-    : rightMargin;
-  menuTop = menuButtonPosition?.y 
-    ? menuButtonPosition.y + menuButtonPosition.height + 10
-    : topMargin;
+  // Position menu on right side of screen
+  const rightMargin = 16;
 
   return (
     <Modal
       visible={visible}
       transparent={true}
-      animationType="none"
+      animationType="fade"
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
@@ -256,113 +158,59 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
           style={styles.backgroundOverlay}
           activeOpacity={1} 
           onPress={onClose}
-          disabled={isAnimating}
         >
-          <Animated.View
+          <View
             style={[
               StyleSheet.absoluteFillObject,
               {
-                opacity: opacityAnim,
-                backgroundColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.2)',
+                backgroundColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.7)',
               }
             ]}
           />
         </TouchableOpacity>
         
-        {/* Menu container positioned above overlay */}
-        <Animated.View
+        {/* Minimal vertical menu aligned to right */}
+        <View
           style={[
             styles.menuContainer,
             {
-              backgroundColor: theme === 'light' ? designTokens.brand.surface : designTokens.brand.surfaceDark,
-              borderWidth: 1,
-              borderColor: theme === 'light' ? designTokens.borders.light.default : designTokens.borders.dark.default,
-              ...getHeaderMenuShadow(theme),
               position: 'absolute',
-              top: menuTop, right: menuRight,
-              width: menuWidth,
-              opacity: opacityAnim,
-              transform: [
-                { scale: scaleAnim },
-                { translateY: translateYAnim }
-              ],
+              right: rightMargin,
+              bottom: 200,
             }
           ]}
         >
-        {/* Arrow pointing to menu button */}
-        <View style={[
-          styles.arrow,
-          {
-            borderBottomColor: theme === 'light' ? '#ffffff' : designTokens.brand.surfaceDark,
-          }
-        ]} />
-        
-        <View style={styles.menuContent}>
-          {menuActions.map((action, index) => {
-            return (
-            <Animated.View
+          {menuActions.map((action, index) => (
+            <View
               key={action.key}
-              style={[
-                styles.menuButton,
-                {
-                  backgroundColor: pressedIndex === index 
-                    ? (theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0, 0, 0, 0.08)')
-                    : (theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0, 0, 0, 0.03)'),
-                  borderColor: theme === 'dark' 
-                    ? 'rgba(255,255,255,0.1)' 
-                    : 'rgba(0, 0, 0, 0.08)',
-                  opacity: itemAnims[index]?.opacity || 1,
-                  transform: [
-                    { scale: buttonAnims[index]?.scale || 1 },
-                  ],
-                }
-              ]}
+              style={styles.menuItem}
             >
               <TouchableOpacity
-                style={styles.buttonTouchable}
+                style={styles.menuItemTouchable}
                 onPress={() => handleMenuButtonPress(action.key, index)}
-                activeOpacity={0.8}
-                disabled={isAnimating || pressedIndex !== null}
+                activeOpacity={0.7}
+                disabled={pressedIndex !== null}
               >
-                <View style={styles.iconContainer}>
-                  {action.icon}
-                  {/* Notification dot for connections */}
-                  <NotificationDot 
-                    visible={action.key === 'feed' && potentialMatches > 0}
-                    color={designTokens.pastels.coral}
-                    size={10}
-                    glowIntensity="high"
-                  />
-                </View>
                 <Text style={[
-                  styles.menuButtonText,
-                  typography.textStyles.bodyMedium,
-                  { color: colors.text }
+                  styles.menuLabel,
+                  { color: '#ffffff' }
                 ]}>
                   {action.label}
                 </Text>
+                <View style={styles.iconWrapper}>
+                  {action.icon}
+                  <NotificationDot 
+                    visible={action.key === 'feed' && potentialMatches > 0}
+                    color={designTokens.pastels.coral}
+                    size={8}
+                    glowIntensity="high"
+                  />
+                </View>
               </TouchableOpacity>
-            </Animated.View>
-            );
-          })}
+            </View>
+          ))}
           
-          {/* Theme Selector as Menu Button */}
-          <Animated.View
-            style={[
-              styles.menuButton,
-              {
-                backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0, 0, 0, 0.03)',
-                borderColor: theme === 'dark' 
-                  ? 'rgba(255,255,255,0.1)' 
-                  : 'rgba(0, 0, 0, 0.08)',
-                opacity: itemAnims[menuActions.length] ? itemAnims[menuActions.length].opacity : 1,
-              }
-            ]}
-          >
-            <ThemeSelector />
-          </Animated.View>
         </View>
-        </Animated.View>
       </View>
     </Modal>
   );
@@ -380,54 +228,34 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   menuContainer: {
-    borderRadius: 16,
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[2],
-    overflow: 'visible',
+    alignItems: 'flex-end',
   },
-  arrow: {
-    position: 'absolute',
-    top: -8,
-    right: 16,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
-    borderBottomWidth: 8,
-    borderStyle: 'solid',
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
+  menuItem: {
+    marginVertical: spacing[2],
   },
-  menuContent: {
-    paddingTop: spacing[2],
-  },
-  menuButton: {
+  menuItemTouchable: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 48,
-    borderRadius: 12,
-    marginHorizontal: spacing[1],
-    marginVertical: 2,
-    paddingHorizontal: spacing[4],
-    borderWidth: 1,
+    paddingVertical: spacing[2],
+    paddingLeft: spacing[3],
   },
-  buttonTouchable: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    height: '100%',
-  },
-  iconContainer: {
-    width: 24,
-    alignItems: 'center',
-    marginRight: spacing[3],
-    position: 'relative',
-    justifyContent: 'center',
-  },
-  menuButtonText: {
-    fontSize: 12,
+  menuLabel: {
+    fontSize: 14,
     fontWeight: '600',
     letterSpacing: -0.1,
+    marginRight: spacing[3],
+    textAlign: 'right',
+  },
+  iconWrapper: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  themeSelectorWrapper: {
+    paddingVertical: spacing[2],
+    paddingLeft: spacing[3],
   },
 });
 

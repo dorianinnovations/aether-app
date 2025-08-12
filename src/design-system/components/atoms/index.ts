@@ -41,6 +41,8 @@ export { OnlineStatus } from './OnlineStatus';
 export { SubscriptionTierCard } from './SubscriptionTierCard';
 export { NowPlayingIndicator } from './NowPlayingIndicator';
 export { Toast } from './Toast';
+export { SocialLinksBar } from './SocialLinksBar';
+export { SwipeToMenu } from './SwipeToMenu';
 
 // Re-export types
 export type { IconName, IconSize } from './Icon';
@@ -49,7 +51,8 @@ export type { BadgeType, BadgeStyle, BadgeAnimation } from './AdvancedBadge';
 export type { PrestigiousBadgeType, PrestigiousBadgeProps } from './PrestigiousBadge';
 export type { ProfileImageProps } from './ProfileImage';
 export type { BannerImageProps } from './BannerImage';
-export type { ProfileFieldProps } from './ProfileField';
+export type { ProfileFieldProps, ProfileFieldType } from './ProfileField';
 export type { ProminentUserDisplayProps } from './ProminentUserDisplay';
 export type { OnlineStatusProps, OnlineStatusType } from './OnlineStatus';
 export type { ToastType } from './Toast';
+export type { SocialLinksBarProps, SocialLinks } from './SocialLinksBar';

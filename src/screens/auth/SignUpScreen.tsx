@@ -20,6 +20,7 @@ import {
   TouchableWithoutFeedback,
   Easing,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { PageBackground } from '../../design-system/components/atoms/PageBackground';
 import { LottieLoader } from '../../design-system/components/atoms/LottieLoader';
@@ -209,37 +210,22 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
         const token = await TokenManager.getToken();
         if (token) {
           try {
-            // Try to navigate to the root and reset to MainStack directly
-            const rootNavigation = navigation.getParent()?.getParent();
-            if (rootNavigation) {
-              rootNavigation.reset({
-                index: 0,
-                routes: [{ name: 'MainStack' }],
-              });
-            } else {
-              // Fallback: reset to MainStack
-              (global as any).clearAuthState = null;
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'MainStack' }],
-              });
+            // Mark as new user to show tutorial
+            await AsyncStorage.setItem('isNewUser', 'true');
+            
+            // Trigger immediate auth check in App.tsx
+            if ((global as any).checkAuthState) {
+              await (global as any).checkAuthState();
             }
+            
           } catch (error) {
             console.error('Navigation error after signup:', error);
-            // Final fallback: reset to MainStack
-            (global as any).clearAuthState = null;
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'MainStack' }],
-            });
+            navigation.replace('SignIn');
           }
         } else {
           // Token not found, reset to sign in
           console.error('No token found after successful signup');
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'SignIn' }],
-          });
+          navigation.replace('SignIn');
         }
       }, 1500);
     }

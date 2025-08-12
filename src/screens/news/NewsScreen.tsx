@@ -21,7 +21,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useSettings } from '../../contexts/SettingsContext';
 
 // Design System Components
-import { PageBackground } from '../../design-system/components/atoms/PageBackground';
+import { PageBackground, SwipeToMenu } from '../../design-system/components/atoms';
 import { Header, HeaderMenu } from '../../design-system/components/organisms';
 
 // Design System Tokens
@@ -395,7 +395,8 @@ const NewsScreen: React.FC<NewsScreenProps> = () => {
   }, [loadFeedData]);
 
   return (
-    <PageBackground theme={theme} variant="news">
+    <SwipeToMenu onSwipeToMenu={toggleHeaderMenu}>
+      <PageBackground theme={theme} variant="news">
       <SafeAreaView style={styles.container}>
         {/* Header with menu functionality */}
         <Header
@@ -439,6 +440,7 @@ const NewsScreen: React.FC<NewsScreenProps> = () => {
         />
       </SafeAreaView>
     </PageBackground>
+    </SwipeToMenu>
   );
 };
 

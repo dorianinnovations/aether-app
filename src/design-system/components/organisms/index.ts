@@ -21,3 +21,6 @@ export { PublicUserProfileModal } from './PublicUserProfileModal';
 export { PersonaModal } from './PersonaModal';
 export { WalletModal } from './WalletModal';
 export { ToastProvider } from './ToastProvider';
+export { FloatingButtonProvider } from './FloatingButtonContainer';
+export { SwipeTutorialOverlay } from './SwipeTutorialOverlay';
+export * from './FloatingButtonContainer';

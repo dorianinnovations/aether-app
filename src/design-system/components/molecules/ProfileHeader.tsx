@@ -62,6 +62,8 @@ export interface ProfileHeaderProps {
   configureMode?: boolean;
   /** Callback when username is pressed */
   onUsernamePress?: () => void;
+  /** Whether to show grip bar overlay */
+  showGripBar?: boolean;
 }
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
@@ -81,6 +83,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onDeleteProfileImage,
   onDeleteBanner,
   onUsernamePress,
+  showGripBar = false,
   style,
 }) => {
   const { colors, theme } = useTheme();
@@ -107,6 +110,12 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         addBottomFade={true}
         theme={theme}
       >
+        {/* Grip Bar Overlay */}
+        {showGripBar && (
+          <View style={styles.gripBarOverlay}>
+            <View style={[styles.gripHandle, { backgroundColor: colors.borders.default }]} />
+          </View>
+        )}
 
         {/* Profile Image Container */}
         <View style={styles.profileImageContainer}>
@@ -152,21 +161,30 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                   .map(badge => {
                     const displayType = mapDatabaseBadgeToPrestigious(badge.badgeType);
                     
-                    // Only show prestigious badges (VIP and LEGEND)
-                    if (!displayType) return null;
+                    // Show prestigious badges (VIP and LEGEND) if they exist
+                    if (displayType) {
+                      return (
+                        <PrestigiousBadge 
+                          key={badge.id}
+                          badgeKey={badge.id}
+                          type={displayType}
+                          theme={theme}
+                          showTooltip={true}
+                          size="small"
+                        />
+                      );
+                    }
                     
+                    // Show standard badges for all other types
                     return (
-                      <PrestigiousBadge 
+                      <UserBadge 
                         key={badge.id}
-                        badgeKey={badge.id}
-                        type={displayType}
+                        type={badge.badgeType}
                         theme={theme}
-                        showTooltip={true}
-                        size="small"
+                        visible={true}
                       />
                     );
-                  })
-                  .filter(Boolean)}
+                  })}
               </View>
             )}
           </View>
@@ -290,6 +308,20 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 13,
     opacity: 0.8,
+  },
+  gripBarOverlay: {
+    position: 'absolute',
+    top: 12,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  gripHandle: {
+    width: 100,
+    height: 3,
+    borderRadius: 2,
+    opacity: 0.7,
   },
 });
 

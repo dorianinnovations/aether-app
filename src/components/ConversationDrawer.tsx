@@ -345,10 +345,26 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const handleFetchProfile = useCallback(async (username: string) => {
     try {
       const response = await UserAPI.getPublicProfile(username);
+      console.log('Public profile API response structure:', JSON.stringify(response, null, 2));
     
     // Transform API response to match our component interface
     if (response && typeof response === 'object' && 'data' in response) {
       const data = (response as any).data;
+      
+      // Backend returns badges directly in data.badges
+      const badges = data.badges || [];
+      
+      console.log('Extracted badges from backend:', badges);
+      
+      // Transform badges to ensure proper structure
+      const transformedBadges = badges.map((badge: any) => ({
+        id: badge.id || badge._id || Math.random().toString(),
+        badgeType: badge.badgeType,
+        isVisible: badge.isVisible !== false
+      }));
+      
+      console.log('Final transformed badges:', transformedBadges);
+      
       return {
         profile: {
           email: data.user?.email || '',
@@ -360,7 +376,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
           socialLinks: data.user?.socialLinks || {},
           profilePicture: data.profilePicture,
           bannerImage: data.bannerImage,
-          badges: data.user?.badges || [],
+          badges: transformedBadges,
         },
         socialProfile: data.socialProfile || undefined,
       };
@@ -605,7 +621,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                       styles.primaryActionText,
                       { color: themeColors.text }
                     ]}>
-                      Add Friend
+                      Friends
                     </Text>
                   </TouchableOpacity>
                 ) : null}
@@ -719,7 +735,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
     borderTopRightRadius: borderRadius.xl,
-    borderBottomRightRadius: borderRadius.xl,
+    borderBottomRightRadius: 12,
   },
   drawerContent: {
     flex: 1,

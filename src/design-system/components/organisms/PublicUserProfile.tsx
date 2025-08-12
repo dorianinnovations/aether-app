@@ -10,10 +10,11 @@ import {
   StyleSheet,
   ViewStyle,
 } from 'react-native';
-import { ProfileHeader, ProfileFieldsGroup, SocialProfileSection, SpotifyIntegration, SocialStats } from '../molecules';
+import { ProfileHeader, ProfileFieldsGroup, SpotifyIntegration, SocialStats, GrailsSection } from '../molecules';
 import { LottieLoader, UserBadgeType } from '../atoms';
 import { spacing } from '../../tokens/spacing';
 import { OnlineStatusType } from '../atoms/OnlineStatus';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 export interface SocialLinks {
   instagram?: string;
@@ -46,6 +47,24 @@ export interface SocialProfile {
   currentPlans?: string;
   friendsCount?: number;
   followersCount?: number;
+  grails?: {
+    topTracks: Array<{
+      id: string;
+      name: string;
+      artist: string;
+      album: string;
+      imageUrl?: string;
+      spotifyUrl?: string;
+    }>;
+    topAlbums: Array<{
+      id: string;
+      name: string;
+      artist: string;
+      imageUrl?: string;
+      spotifyUrl?: string;
+      releaseDate?: string;
+    }>;
+  };
   spotify?: {
     connected: boolean;
     currentTrack?: {
@@ -85,6 +104,10 @@ export interface PublicUserProfileProps {
   style?: ViewStyle;
   /** Scroll view ref */
   scrollRef?: React.RefObject<ScrollView | null>;
+  /** Whether to show grip bar overlay */
+  showGripBar?: boolean;
+  /** Scroll event handler */
+  onScroll?: (event: any) => void;
 }
 
 export const PublicUserProfile: React.FC<PublicUserProfileProps> = ({
@@ -95,7 +118,10 @@ export const PublicUserProfile: React.FC<PublicUserProfileProps> = ({
   onlineStatus = 'offline', // Default to offline for other users
   style,
   scrollRef,
+  showGripBar = false,
+  onScroll,
 }) => {
+  const { theme } = useTheme();
 
   if (loading) {
     return (
@@ -111,6 +137,8 @@ export const PublicUserProfile: React.FC<PublicUserProfileProps> = ({
       style={[styles.container, style]}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
     >
       {/* Profile Header - Read Only */}
       <ProfileHeader
@@ -126,6 +154,7 @@ export const PublicUserProfile: React.FC<PublicUserProfileProps> = ({
         showDetailedStatus={viewMode === 'busy'}
         friendsCount={socialProfile?.friendsCount}
         followersCount={socialProfile?.followersCount}
+        showGripBar={showGripBar}
         // No editing callbacks
         configureMode={false}
       />
@@ -156,6 +185,14 @@ export const PublicUserProfile: React.FC<PublicUserProfileProps> = ({
           } : { connected: false }}
           // No status change callback - read only
         />
+        
+        {/* Grails Section - Read Only */}
+        <GrailsSection
+          grailsData={socialProfile?.grails}
+          editable={false} // Always read-only for public profiles
+          theme={theme}
+          spotifyConnected={socialProfile?.spotify?.connected || false}
+        />
       </View>
 
       {/* Bottom spacing */}
@@ -169,7 +206,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    paddingTop: 120,
+    paddingTop: 0,
     paddingBottom: 40,
   },
   loadingContainer: {

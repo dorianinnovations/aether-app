@@ -10,7 +10,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 // Navigation type
 type NavigationProp = {
   goBack: () => void;
-  navigate: (screen: string) => void;
+  navigate: (screen: string, params?: any) => void;
 };
 
 interface UseHeaderMenuOptions {
@@ -18,10 +18,11 @@ interface UseHeaderMenuOptions {
   onSettingsPress?: () => void;
   onSignOut?: () => void;
   onWalletPress?: () => void;
+  onAddFriend?: () => void;
 }
 
 export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
-  const { screenName, onSettingsPress, onSignOut, onWalletPress } = options;
+  const { screenName, onSettingsPress, onSignOut, onWalletPress, onAddFriend } = options;
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
   const navigation = useNavigation();
   const { toggleTheme } = useTheme();
@@ -35,22 +36,29 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
         break;
       case 'profile':
         if (screenName !== 'profile') {
-          (navigation as NavigationProp).navigate('Profile');
+          try {
+            navigation.navigate('Profile' as never);
+          } catch (error) {
+            console.log('Profile navigation failed:', error);
+          }
         }
         break;
       case 'chat':
         if (screenName !== 'chat') {
           try {
-            (navigation as NavigationProp).navigate('Chat');
-          } catch {
-            // Navigation failed - might be in wrong navigator context
-            console.log('Chat navigation failed - wrong navigator context');
+            navigation.navigate('Chat' as never);
+          } catch (error) {
+            console.log('Chat navigation failed:', error);
           }
         }
         break;
       case 'news':
         if (screenName !== 'news') {
-          (navigation as NavigationProp).navigate('News');
+          try {
+            navigation.navigate('News' as never);
+          } catch (error) {
+            console.log('News navigation failed:', error);
+          }
         }
         break;
       case 'wallet':
@@ -70,6 +78,12 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
         // Defer to avoid useInsertionEffect warnings
         requestAnimationFrame(() => {
           onSignOut?.();
+        });
+        break;
+      case 'add_friend':
+        // Defer to avoid useInsertionEffect warnings
+        requestAnimationFrame(() => {
+          onAddFriend?.();
         });
         break;
       default:

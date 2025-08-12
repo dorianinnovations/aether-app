@@ -62,9 +62,9 @@ export const BannerImage: React.FC<BannerImageProps> = ({
     width: '100%',
     height,
     position: 'relative',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    backgroundColor: '#F8F9FA',
+    borderTopLeftRadius: 17,
+    borderTopRightRadius: 17,
+    backgroundColor: theme === 'dark' ? '#1A1A1A' : '#F8F9FA',
     borderWidth: 3,
     borderBottomWidth: 0, // No border at bottom since it fades
     borderColor: 'transparent',
@@ -114,8 +114,8 @@ export const BannerImage: React.FC<BannerImageProps> = ({
       {/* Neumorphic Banner Container - thinner */}
       <View style={{
         backgroundColor: theme === 'dark' ? '#0F0F0F' : '#FAFAFA',
-        borderTopLeftRadius: 27,
-        borderTopRightRadius: 27,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
         padding: 3,
         shadowColor: theme === 'dark' ? '#000000' : '#000000',
         shadowOffset: {
@@ -128,8 +128,8 @@ export const BannerImage: React.FC<BannerImageProps> = ({
       }}>
         {/* Inner Elevated Banner */}
         <View style={{
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
+          borderTopLeftRadius: 17,
+          borderTopRightRadius: 17,
           shadowColor: theme === 'dark' ? '#FFFFFF' : '#FFFFFF',
           shadowOffset: {
             width: 1,

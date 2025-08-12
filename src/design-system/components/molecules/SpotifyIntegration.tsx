@@ -29,12 +29,14 @@ import { WebView } from 'react-native-webview';
 // import * as AuthSession from 'expo-auth-session';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { logger } from '../../../utils/logger';
+import LottieView from 'lottie-react-native';
 
 // Design System
 import { useTheme } from '../../../contexts/ThemeContext';
 // import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
 import { NowPlayingIndicator } from '../atoms';
+import { FadedBorder } from '../../../components/FadedBorder';
 
 // API
 import { SpotifyAPI } from '../../../services/api';
@@ -208,7 +210,10 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
   // Load initial status and set up live updates
   useEffect(() => {
     loadSpotifyStatus();
-    loadTopTracks();
+    // Only load top tracks if we have the onStatusChange callback (user's own profile)
+    if (onStatusChange) {
+      loadTopTracks();
+    }
     
     // Set up live polling for connected users
     const startLiveUpdates = () => {
@@ -260,7 +265,9 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
             // Refresh status after successful auth
             setTimeout(async () => {
               await loadSpotifyStatus();
-              await loadTopTracks();
+              if (onStatusChange) {
+                await loadTopTracks();
+              }
               onStatusChange?.();
               Alert.alert('Success!', 'Spotify account connected successfully');
             }, 1000);
@@ -275,7 +282,9 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
           // Still refresh status in case it worked
           setTimeout(async () => {
             await loadSpotifyStatus();
-            await loadTopTracks();
+            if (onStatusChange) {
+              await loadTopTracks();
+            }
             onStatusChange?.();
           }, 1000);
         }
@@ -377,7 +386,9 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       const response = await SpotifyAPI.refresh();
       if (response.success) {
         await loadSpotifyStatus();
-        await loadTopTracks();
+        if (onStatusChange) {
+          await loadTopTracks();
+        }
         Alert.alert('Success', 'Spotify data refreshed');
       }
     } catch (err: unknown) {
@@ -423,6 +434,11 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       height: 1,
       width: '100%',
       marginTop: spacing[1],
+    },
+    titleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[1],
     },
     title: {
       fontSize: 12,
@@ -799,7 +815,9 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       // Refresh status after successful connection
       setTimeout(async () => {
         await loadSpotifyStatus();
-        await loadTopTracks();
+        if (onStatusChange) {
+          await loadTopTracks();
+        }
         onStatusChange?.();
         Alert.alert('Success!', 'Spotify account connected successfully');
       }, 1000);
@@ -817,7 +835,9 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         // Refresh status
         setTimeout(async () => {
           await loadSpotifyStatus();
-          await loadTopTracks();
+          if (onStatusChange) {
+            await loadTopTracks();
+          }
           onStatusChange?.();
           Alert.alert('Success!', 'Spotify account connected successfully');
         }, 1000);
@@ -832,23 +852,22 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
         {hasConnectedProperty(spotify) && spotify.connected && (
           <View style={styles.headerContainer}>
             <View style={styles.header}>
-              <Text style={styles.title}>Playing Now</Text>
+              <View style={styles.titleContainer}>
+                <Text style={styles.title}>Playing Now</Text>
+                <LottieView
+                  source={require('../../../../assets/AetherLiveStatusGreen.json')}
+                  autoPlay
+                  loop
+                  style={{ width: 16, height: 16 }}
+                />
+              </View>
               <FontAwesome name="spotify" size={14} color="#1DB954" />
             </View>
-            <LinearGradient
-              colors={[
-                theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
-                theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
-                'transparent'
-              ]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.gradientBorder}
-            />
+            <FadedBorder theme={theme} />
           </View>
         )}
 
-      {!hasConnectedProperty(spotify) || !spotify.connected ? (
+      {(!hasConnectedProperty(spotify) || !spotify.connected) && onStatusChange ? (
         <TouchableOpacity
           style={styles.connectButton}
           onPress={handleConnect}
@@ -863,7 +882,7 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
             </>
           )}
         </TouchableOpacity>
-      ) : (
+      ) : (!hasConnectedProperty(spotify) || !spotify.connected) && !onStatusChange ? null : (
         <View style={styles.connectedContent}>
           {getCurrentTrack(spotify) ? (
             <TouchableOpacity
