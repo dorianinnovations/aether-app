@@ -170,7 +170,14 @@ const BuzzScreen: React.FC<BuzzScreenProps> = () => {
 
   const handleInteraction = useCallback(async (item: FeedItem, interactionType: string) => {
     try {
-      // Track interaction with FeedAPI
+      // For live content, don't try to interact with stored data
+      if (isLiveData) {
+        console.log(`Live content interaction: ${interactionType} on ${item.title}`);
+        // Could add haptic feedback here
+        return;
+      }
+      
+      // Track interaction with FeedAPI (only for stored content)
       await FeedAPI.interactWithUpdate(item.id, {
         type: interactionType as any,
         context: 'buzz_feed'
@@ -186,7 +193,7 @@ const BuzzScreen: React.FC<BuzzScreenProps> = () => {
     } catch (err) {
       console.error('Error tracking interaction:', err);
     }
-  }, [feedType]);
+  }, [feedType, isLiveData]);
 
   // Quick function to follow test artists for demo
   const followTestArtists = useCallback(async () => {
@@ -202,10 +209,22 @@ const BuzzScreen: React.FC<BuzzScreenProps> = () => {
     }
   }, [loadFeedData]);
 
-  const renderFeedItem = ({ item }: { item: FeedItem }) => (
+  const renderFeedItem = ({ item }: { item: FeedItem }) => {
+    // Calculate dynamic properties based on content
+    const hasLongTitle = (item.title?.length || 0) > 50;
+    const hasLongContent = (item.content?.length || 0) > 150;
+    const hasVeryLongContent = (item.content?.length || 0) > 250;
+    
+    // Dynamic card styling based on content length
+    const dynamicCardStyle = {
+      minHeight: hasVeryLongContent ? 180 : hasLongContent ? 150 : 120,
+    };
+    
+    return (
     <TouchableOpacity 
       style={[
         styles.feedCard,
+        dynamicCardStyle,
         {
           backgroundColor: colors.surface,
           borderColor: colors.borders.default,
@@ -244,18 +263,26 @@ const BuzzScreen: React.FC<BuzzScreenProps> = () => {
         
         <Text style={[
           styles.feedTitle,
-          typography.textStyles.headlineSmall,
-          { color: colors.text }
-        ]}>
+          hasLongTitle ? typography.textStyles.bodyLarge : typography.textStyles.headlineSmall,
+          { 
+            color: colors.text,
+            lineHeight: hasLongTitle ? 20 : 24,
+          }
+        ]}
+        numberOfLines={hasLongTitle ? 2 : 1} // Allow 2 lines for long titles
+        >
           {item.title}
         </Text>
         
         <Text style={[
           styles.feedText,
           typography.textStyles.bodyMedium,
-          { color: colors.textSecondary }
+          { 
+            color: colors.textSecondary,
+            lineHeight: hasLongContent ? 20 : 22, // Tighter line height for long content
+          }
         ]} 
-        numberOfLines={3}
+        numberOfLines={hasVeryLongContent ? 5 : hasLongContent ? 4 : 3} // More lines for longer content
         >
           {item.content}
         </Text>
@@ -306,9 +333,13 @@ const BuzzScreen: React.FC<BuzzScreenProps> = () => {
         </View>
       </View>
     </TouchableOpacity>
-  );
+    );
+  };
 
-  const renderDiscoveredArtist = ({ item }: { item: Artist }) => (
+  const renderDiscoveredArtist = ({ item }: { item: Artist }) => {
+    const hasLongName = (item.name?.length || 0) > 15;
+    
+    return (
     <TouchableOpacity 
       style={[
         styles.artistCard,
@@ -321,9 +352,11 @@ const BuzzScreen: React.FC<BuzzScreenProps> = () => {
       )}
       <Text style={[
         styles.discoveryArtistName,
-        typography.textStyles.labelMedium,
+        hasLongName ? typography.textStyles.labelSmall : typography.textStyles.labelMedium,
         { color: colors.text }
-      ]}>
+      ]}
+      numberOfLines={hasLongName ? 2 : 1}
+      >
         {item.name}
       </Text>
       {item.genre && item.genre.length > 0 && (
@@ -336,7 +369,8 @@ const BuzzScreen: React.FC<BuzzScreenProps> = () => {
         </Text>
       )}
     </TouchableOpacity>
-  );
+    );
+  };
 
   const renderFeedTypeSelector = () => (
     <ScrollView 
@@ -577,12 +611,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[2],
   },
   artistCard: {
-    width: 120,
+    minWidth: 120,
+    maxWidth: 140, // Allow slight expansion for longer names
     marginRight: spacing[3],
     padding: spacing[3],
     borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 140, // Ensure consistent minimum height
   },
   discoveryArtistImage: {
     width: 60,
@@ -593,6 +630,8 @@ const styles = StyleSheet.create({
   discoveryArtistName: {
     textAlign: 'center',
     marginBottom: spacing[1],
+    flexShrink: 1,
+    lineHeight: 18,
   },
   discoveryGenre: {
     textAlign: 'center',
@@ -609,6 +648,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 6,
     elevation: 3,
+    minHeight: 120, // Minimum height
+    alignItems: 'flex-start', // Align items to top for better layout
   },
   priorityIndicator: {
     width: 4,
@@ -619,11 +660,14 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 8,
     margin: spacing[3],
+    flexShrink: 0, // Prevent image from shrinking
   },
   feedContent: {
     flex: 1,
     padding: spacing[4],
     paddingLeft: spacing[2],
+    minHeight: 100, // Ensure minimum content height
+    justifyContent: 'space-between', // Distribute content evenly
   },
   artistName: {
     marginBottom: spacing[1],
@@ -631,10 +675,12 @@ const styles = StyleSheet.create({
   },
   feedTitle: {
     marginBottom: spacing[2],
+    flexShrink: 1, // Allow title to shrink if needed
   },
   feedText: {
     marginBottom: spacing[3],
     lineHeight: 22,
+    flexShrink: 1, // Allow text to shrink if needed
   },
   feedMeta: {
     flexDirection: 'row',
