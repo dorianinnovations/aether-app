@@ -60,6 +60,7 @@ interface ChatInputProps {
   onFocus?: () => void;
   onBlur?: () => void;
   onSwipeUp?: () => void;
+  onAttachmentToggle?: (visible: boolean) => void;
 }
 
 export const EnhancedChatInput: React.FC<ChatInputProps> = ({
@@ -83,6 +84,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
   onFocus,
   onBlur,
   onSwipeUp,
+  onAttachmentToggle,
 }) => {
   const themeColors = getThemeColors(theme);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
@@ -424,6 +426,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     setAttachmentButtonsVisible(newVisibility);
+    onAttachmentToggle?.(newVisibility);
     
     if (newVisibility) {
       // Opening: slide in from left with staggered timing

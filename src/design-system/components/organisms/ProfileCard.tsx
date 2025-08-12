@@ -102,6 +102,7 @@ export interface ProfileCardProps {
   onUsernamePress?: () => void;
   onInputFocus?: (inputRef: TextInput) => void;
   onGrailsChange?: (grails: GrailsData) => void;
+  onEnableEditMode?: () => void;
   /** Whether configure mode is active */
   configureMode?: boolean;
   /** Custom styles */
@@ -129,6 +130,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   onUsernamePress,
   onInputFocus,
   onGrailsChange,
+  onEnableEditMode,
   configureMode = false,
   style,
   scrollRef,
@@ -216,6 +218,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
           grailsData={socialProfile?.grails}
           editable={editMode}
           onGrailsChange={onGrailsChange}
+          onEnableEditMode={onEnableEditMode}
           theme={theme}
           spotifyConnected={socialProfile?.spotify?.connected || false}
         />

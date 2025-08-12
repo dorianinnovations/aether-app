@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
+import { CarouselText } from "../../design-system/components/atoms/CarouselText";
 // import { Header, HeaderMenu } from "../design-system/components/organisms";
 import { ShimmerText } from "../../design-system/components/atoms";
 import { designTokens } from "../../design-system/tokens/colors";
@@ -58,6 +59,12 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
   const signInButtonPressScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    // Reset animation values when component mounts or navigation focuses
+    titleOpacity.setValue(0.1);
+    brandOpacity.setValue(0.1);
+    exploreButtonOpacity.setValue(0.1);
+    signInButtonOpacity.setValue(0.1);
+
     // Use Animated.stagger for better performance
     const staggeredAnimations = Animated.stagger(300, [
       Animated.timing(titleOpacity, {
@@ -89,12 +96,12 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
       // Cleanup animations on unmount
       staggeredAnimations.stop();
     };
-  }, []);
+  }, [navigation]);
 
   // Use static glow colors instead of animated ones
   const getStaticGlowColor = () => {
     if (theme === "dark") {
-      return "rgba(255, 255, 255, 0.2)";
+      return "rgba(100, 100, 100, 0.6)";
     } else {
       return "rgba(230, 243, 255, 0.8)";
     }
@@ -238,8 +245,11 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
         {theme === "dark" && (
           <View
             style={[styles.darkModeOverlay, { backgroundColor: "#0a0a0a" }]}
+            pointerEvents="none"
           ></View>
         )}
+
+
 
         {/* Main Content */}
         <View style={styles.content}>
@@ -268,8 +278,8 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                         theme === "dark"
                           ? "#ffffff"
                           : designTokens.text.secondary,
-                      fontFamily: "System",
-                      fontVariant: ['small-caps'],
+                      fontFamily: "Nunito",
+                      fontSize: 14,
                     },
                   ] as any
                 }
@@ -277,7 +287,7 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                 duration={3000}
                 delay={1000}
               >
-                Discover authentic sounds
+                music + ai + you = fun
               </ShimmerText>
             </View>
 
@@ -319,16 +329,12 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
             {/* Button Row */}
             <View style={styles.buttonRow}>
               {/* Sign Up Button */}
-              <Animated.View
+              <View
                 style={[
                   styles.halfWidth,
-                  {
-                    opacity: exploreButtonOpacity,
-                    transform: [{ scale: exploreButtonPressScale }],
-                  },
                 ]}
               >
-                <Animated.View
+                <View
                   style={[
                     styles.primaryButtonContainer,
                     {
@@ -382,8 +388,8 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                       </Text>
                     </View>
                   </TouchableOpacity>
-                </Animated.View>
-              </Animated.View>
+                </View>
+              </View>
 
               {/* Try Demo Button */}
               <Animated.View
@@ -399,11 +405,11 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                   style={[
                     styles.primaryButtonContainer,
                     {
-                      shadowColor: getStaticGlowColor(),
-                      shadowOpacity: 0.4,
-                      shadowRadius: 4,
+                      shadowColor: theme === "dark" ? "#ffffff" : getStaticGlowColor(),
+                      shadowOpacity: theme === "dark" ? 0.6 : 0.4,
+                      shadowRadius: theme === "dark" ? 8 : 4,
                       shadowOffset: { width: 0, height: 0 },
-                      elevation: 6,
+                      elevation: theme === "dark" ? 8 : 6,
                     },
                   ]}
                 >
@@ -416,20 +422,17 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                       style={[
                         styles.primaryButton,
                         {
-                          backgroundColor:
-                            theme === "dark"
-                              ? "rgba(26, 26, 26, 0.8)"
-                              : "rgba(255, 255, 255, 0.9)",
+                          backgroundColor: "rgba(255, 255, 255, 0.85)",
                           borderColor:
                             theme === "dark"
-                              ? "rgba(51, 51, 51, 0.6)"
-                              : "rgba(203, 213, 225, 0.5)",
-                          borderWidth: theme === "dark" ? 1 : 0.5,
-                          shadowColor: theme === "dark" ? "#000000" : "#000000",
-                          shadowOpacity: theme === "dark" ? 0.15 : 0.08,
-                          shadowRadius: 2,
-                          shadowOffset: { width: 0, height: 1 },
-                          elevation: 2,
+                              ? "rgba(255, 255, 255, 0.8)"
+                              : "rgba(220, 220, 220, 0.3)",
+                          borderWidth: 1,
+                          shadowColor: theme === "dark" ? "#ffffff" : "#000000",
+                          shadowOpacity: theme === "dark" ? 0.4 : 0.15,
+                          shadowRadius: theme === "dark" ? 8 : 6,
+                          shadowOffset: theme === "dark" ? { width: 0, height: 0 } : { width: 2, height: 4 },
+                          elevation: theme === "dark" ? 6 : 4,
                         },
                       ]}
                     >
@@ -439,7 +442,7 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                           {
                             color:
                               theme === "dark"
-                                ? "#cccccc"
+                                ? "#2a2a2a"
                                 : colors.textSecondary,
                             fontFamily: "monospace",
                           },

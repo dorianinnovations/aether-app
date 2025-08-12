@@ -45,11 +45,11 @@ import { useFeedData } from './hooks/useFeedData';
 
 // Types
 import type { ThemeColors } from '../../types';
-import type { FeedItem } from '../../services/apiModules/endpoints/feed';
+import type { FeedItem } from './hooks/useFeedData';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-type FeedTab = 'timeline' | 'releases' | 'news' | 'tours' | 'trending';
+type FeedTab = 'looped' | 'releases' | 'custom';
 
 const BuzzScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -78,7 +78,7 @@ const BuzzScreen: React.FC = () => {
   };
   
   // State
-  const [activeTab, setActiveTab] = useState<FeedTab>('timeline');
+  const [activeTab, setActiveTab] = useState<FeedTab>('looped');
   const [selectedItem, setSelectedItem] = useState<FeedItem | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [hamburgerOpen, setHamburgerOpen] = useState(false);
@@ -176,8 +176,13 @@ const BuzzScreen: React.FC = () => {
       );
     }
 
-    return <EmptyFeedState colors={colors} isDarkMode={isDarkMode} />;
-  }, [hasSpotifyConnected, loading, colors, isDarkMode]);
+    // Only show empty state if no feed items AND not loading
+    if (feedItems.length === 0 && !loading) {
+      return <EmptyFeedState colors={colors} isDarkMode={isDarkMode} />;
+    }
+
+    return null;
+  }, [hasSpotifyConnected, loading, feedItems.length, colors, isDarkMode]);
 
   // List footer component
   const ListFooterComponent = useMemo(() => {
@@ -185,7 +190,7 @@ const BuzzScreen: React.FC = () => {
       return (
         <View style={styles.footerContainer}>
           <Text style={[styles.footerText, { color: colors.textMuted }]}>
-            You're all caught up! 🎵
+            You're all caught up!
           </Text>
         </View>
       );

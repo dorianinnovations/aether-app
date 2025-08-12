@@ -23,10 +23,12 @@ import {
 import * as Haptics from 'expo-haptics';
 import { PageBackground } from '../../design-system/components/atoms/PageBackground';
 import { AnimatedAuthStatus } from '../../design-system/components/atoms/AnimatedAuthStatus';
+import { AnimatedHamburger } from '../../design-system/components/atoms';
 import { Header, HeaderMenu } from '../../design-system/components/organisms';
 import { designTokens } from '../../design-system/tokens/colors';
 import { useTheme } from '../../contexts/ThemeContext';
 import { typography } from '../../design-system/tokens/typography';
+import { spacing } from '../../design-system/tokens/spacing';
 import { AuthAPI, TokenManager } from '../../services/api';
 import { logger } from '../../utils/logger';
 import type { NavigationProp } from '@react-navigation/native';
@@ -312,7 +314,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
   // Static minimal glow color for Sign In button
   const getMinimalGlowColor = () => {
     return theme === 'dark' 
-      ? 'rgba(173, 213, 250, 0.15)'  // Very subtle light blue glow in dark mode
+      ? 'rgba(255, 255, 255, 0.6)'  // White glow in dark mode
       : 'rgba(26, 26, 26, 0.08)';    // Extremely subtle dark glow in light mode
   };
 
@@ -347,27 +349,30 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
           backgroundColor="transparent"
           translucent={true}
         />
+
+        {/* Dark mode overlay effect */}
+        {theme === "dark" && (
+          <View
+            style={[styles.darkModeOverlay, { backgroundColor: "#0a0a0a" }]}
+            pointerEvents="none"
+          ></View>
+        )}
       
-      {/* Header */}
-      <Animated.View style={[styles.headerContainer, { opacity: headerOpacityAnim }]}>
-        <Header 
-          title="Aether"
-          showBackButton={true}
-          showMenuButton={true}
-          onBackPress={() => {
-            if (navigation.canGoBack()) {
-              navigation.goBack();
-            } else {
-              // If no previous screen, navigate to SignUp as an alternative
-              navigation.navigate('SignUp');
-            }
-          }}
-          onTitlePress={undefined}
-          onMenuPress={() => setShowHeaderMenu(!showHeaderMenu)}
-          theme={theme}
-          isMenuOpen={showHeaderMenu}
+      {/* Centered bottom menu button */}
+      <TouchableOpacity
+        style={styles.centerMenuButton}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setShowHeaderMenu(!showHeaderMenu);
+        }}
+        activeOpacity={0.8}
+      >
+        <AnimatedHamburger
+          isOpen={showHeaderMenu}
+          color={theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary}
+          size={22}
         />
-      </Animated.View>
+      </TouchableOpacity>
 
       {/* Header Menu */}
       <HeaderMenu
@@ -627,15 +632,15 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                           style={[
                             styles.primaryButton,
                             {
-                              backgroundColor: theme === 'dark' ? '#0d0d0d' : designTokens.brand.primary,
+                              backgroundColor: 'rgba(255, 255, 255, 0.85)',
                               opacity: (loading || isSignInSuccess) ? 0.9 : 1,
-                              borderColor: theme === 'dark' ? '#262626' : 'transparent',
-                              borderWidth: theme === 'dark' ? 1 : 0,
-                              shadowColor: '#ffffff',
-                              shadowOffset: { width: 2, height: 2 },
-                              shadowOpacity: theme === 'dark' ? 0.15 : 0.1,
-                              shadowRadius: 4,
-                              elevation: theme === 'dark' ? 3 : 2,
+                              borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(220, 220, 220, 0.3)',
+                              borderWidth: 1,
+                              shadowColor: theme === 'dark' ? '#ffffff' : '#000000',
+                              shadowOffset: theme === 'dark' ? { width: 0, height: 0 } : { width: 2, height: 4 },
+                              shadowOpacity: theme === 'dark' ? 0.4 : 0.15,
+                              shadowRadius: theme === 'dark' ? 8 : 6,
+                              elevation: theme === 'dark' ? 6 : 4,
                             }
                           ]}
                           onPress={handleSubmit}
@@ -647,21 +652,21 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                               {loading ? (
                                 <Text style={[
                                   styles.primaryButtonText, 
-                                  { color: theme === 'dark' ? '#ffffff' : '#1a1a1a' }
+                                  { color: theme === 'dark' ? '#2a2a2a' : '#1a1a1a' }
                                 ]}>
                                   Signing In
                                 </Text>
                               ) : isSignInSuccess ? (
                                 <Text style={[
                                   styles.primaryButtonText, 
-                                  { color: theme === 'dark' ? '#ffffff' : '#1a1a1a' }
+                                  { color: theme === 'dark' ? '#2a2a2a' : '#1a1a1a' }
                                 ]}>
                                   Success
                                 </Text>
                               ) : (
                                 <Text style={[
                                   styles.primaryButtonText, 
-                                  { color: theme === 'dark' ? '#ffffff' : '#1a1a1a' }
+                                  { color: theme === 'dark' ? '#2a2a2a' : '#1a1a1a' }
                                 ]}>
                                   Sign In
                                 </Text>
@@ -671,7 +676,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                               <View style={styles.spinnerContainer}>
                                 <AnimatedAuthStatus
                                   status={authStatus}
-                                  color={theme === 'dark' ? '#ffffff' : '#1a1a1a'}
+                                  color={theme === 'dark' ? '#2a2a2a' : '#1a1a1a'}
                                   size={16}
                                   onAnimationComplete={() => {
                                     if (authStatus === 'error') {
@@ -757,11 +762,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  headerContainer: {
+  darkModeOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  centerMenuButton: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
+    bottom: 40,
+    left: '50%',
+    marginLeft: -25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
     zIndex: 1000,
   },
   keyboardAvoid: {

@@ -32,6 +32,9 @@ export const PageBackground: React.FC<PageBackgroundProps> = ({
   
   // Consistent dark grey background (slightly brightened)
   const darkGrey = '#1A1A1A';
+  
+  // Darker background for chat screen specifically
+  const chatDarkGrey = '#0F0F0F';
 
   const getGradientColors = (): string[] => {
     // If white background is selected and it's light theme, use pure white
@@ -58,7 +61,7 @@ export const PageBackground: React.FC<PageBackgroundProps> = ({
       case 'chat':
         return theme === 'light'
           ? dreamyGradientColors // Keep blue as is
-          : [darkGrey, '#1A1A1A', darkGrey];
+          : [chatDarkGrey, chatDarkGrey, chatDarkGrey];
       
       case 'friends':
         return theme === 'light'
@@ -114,11 +117,12 @@ export const PageBackground: React.FC<PageBackgroundProps> = ({
 
   // For dark mode, use solid charcoal (matching aether-mobile exactly)
   if (theme === 'dark') {
+    const backgroundColor = variant === 'chat' ? chatDarkGrey : darkGrey;
     return (
       <View 
         style={[
           styles.container,
-          { backgroundColor: darkGrey },
+          { backgroundColor },
           style,
         ]}
       >

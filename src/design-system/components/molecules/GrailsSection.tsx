@@ -61,6 +61,7 @@ interface GrailsSectionProps {
   grailsData?: GrailsData;
   editable?: boolean;
   onGrailsChange?: (grails: GrailsData) => void;
+  onEnableEditMode?: () => void;
   theme: 'light' | 'dark';
   spotifyConnected?: boolean;
 }
@@ -69,6 +70,7 @@ export const GrailsSection: React.FC<GrailsSectionProps> = ({
   grailsData,
   editable = false,
   onGrailsChange,
+  onEnableEditMode,
   theme,
   spotifyConnected = false,
 }) => {
@@ -191,6 +193,12 @@ export const GrailsSection: React.FC<GrailsSectionProps> = ({
   };
 
   const openSearch = (type: 'track' | 'album', slotIndex: number) => {
+    if (!editable && onEnableEditMode) {
+      // If not in edit mode, enable edit mode first
+      onEnableEditMode();
+      return;
+    }
+    
     setSearchModal({ visible: true, type, slotIndex });
     setSearchQuery('');
     setSearchResults([]);
@@ -212,9 +220,8 @@ export const GrailsSection: React.FC<GrailsSectionProps> = ({
             isEmpty && styles.emptyGrailCard,
             { backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)' }
           ]}
-          onPress={() => editable && openSearch(type, index)}
+          onPress={() => openSearch(type, index)}
           activeOpacity={0.7}
-          disabled={!editable}
         >
           {isEmpty ? (
             <View style={styles.emptySlot}>
@@ -236,11 +243,11 @@ export const GrailsSection: React.FC<GrailsSectionProps> = ({
                 
                 {editable && (
                   <TouchableOpacity
-                    style={styles.removeButton}
+                    style={[styles.removeButton, { backgroundColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.4)' }]}
                     onPress={() => handleRemoveItem(type, index)}
                     activeOpacity={0.7}
                   >
-                    <Feather name="x" size={12} color="white" />
+                    <Feather name="x" size={10} color={theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.9)'} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -506,12 +513,11 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: 'rgba(255, 59, 48, 0.9)',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
+    top: -2,
+    right: -2,
+    borderRadius: 8,
+    width: 16,
+    height: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },

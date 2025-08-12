@@ -59,6 +59,7 @@ interface HeaderProps {
   _isVisible?: boolean;
   _scrollY?: Animated.Value;
   _isScrolled?: boolean;
+  isAttachmentExpanded?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -89,6 +90,7 @@ export const Header: React.FC<HeaderProps> = ({
   onRightPress,
   _scrollY,
   _isScrolled = false,
+  isAttachmentExpanded = false,
 }) => {
   const themeColors = getThemeColors(theme as 'light' | 'dark');
   const navigation = useNavigation<any>();
@@ -100,6 +102,9 @@ export const Header: React.FC<HeaderProps> = ({
   // All animations removed to prevent useInsertionEffect warnings
   const [searchPressed] = useState(false);
 
+  // Animation for header offset when attachment is expanded
+  const headerOffsetAnim = useRef(new Animated.Value(0)).current;
+
 
   // Timeout refs for cleanup
   const buttonTimeoutRefs = useRef<Map<string, NodeJS.Timeout>>(new Map());
@@ -108,6 +113,15 @@ export const Header: React.FC<HeaderProps> = ({
   // Removed visibility animation
 
   // All header animations removed
+
+  // Animate header position when attachment is expanded
+  useEffect(() => {
+    Animated.timing(headerOffsetAnim, {
+      toValue: isAttachmentExpanded ? -20 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [isAttachmentExpanded, headerOffsetAnim]);
 
   // Cleanup all timeouts on unmount
   useEffect(() => {
@@ -317,12 +331,13 @@ export const Header: React.FC<HeaderProps> = ({
   );
 
   return (
-    <View
+    <Animated.View
       style={[
         styles.header,
         {
           ...getStandardBorder(theme),
           backgroundColor: theme === 'dark' ? designTokens.surfaces.dark.base : designTokens.brand.surface,
+          transform: [{ translateY: headerOffsetAnim }],
         },
         style,
       ]}
@@ -388,7 +403,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right Section */}
         {rightButtonsRender}
       </View>
-    </View>
+    </Animated.View>
   );
 };
 

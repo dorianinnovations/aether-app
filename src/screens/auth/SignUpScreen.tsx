@@ -24,6 +24,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { PageBackground } from '../../design-system/components/atoms/PageBackground';
 import { LottieLoader } from '../../design-system/components/atoms/LottieLoader';
+import { AnimatedHamburger } from '../../design-system/components/atoms';
 import { Header, HeaderMenu } from '../../design-system/components/organisms';
 import { PasswordStrengthIndicator } from '../../design-system/components/molecules/PasswordStrengthIndicator';
 import { UsernameStatusIndicator } from '../../design-system/components/molecules/UsernameStatusIndicator';
@@ -31,6 +32,8 @@ import { AuthButton } from '../../design-system/components/molecules/AuthButton'
 // Removed unused getThemeColors import
 import { useTheme } from '../../contexts/ThemeContext';
 import { typography } from '../../design-system/tokens/typography';
+import { spacing } from '../../design-system/tokens/spacing';
+import { designTokens } from '../../design-system/tokens/colors';
 import { useSignUpForm } from '../../hooks/useSignUpForm';
 import { usePasswordStrength } from '../../hooks/usePasswordStrength';
 import { useUsernameValidation } from '../../hooks/useUsernameValidation';
@@ -275,27 +278,30 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
           backgroundColor="transparent"
           translucent={true}
         />
+
+        {/* Dark mode overlay effect */}
+        {theme === "dark" && (
+          <View
+            style={[styles.darkModeOverlay, { backgroundColor: "#0a0a0a" }]}
+            pointerEvents="none"
+          ></View>
+        )}
       
-      {/* Header */}
-      <Animated.View style={[styles.headerContainer, { opacity: headerOpacityAnim }]}>
-        <Header 
-          title="Aether"
-          showBackButton={true}
-          showMenuButton={true}
-          onBackPress={() => {
-            if (navigation.canGoBack()) {
-              navigation.goBack();
-            } else {
-              // If no previous screen, navigate to Hero as fallback
-              navigation.navigate('Hero');
-            }
-          }}
-          onTitlePress={() => navigation.navigate('Hero')}
-          onMenuPress={() => setShowHeaderMenu(!showHeaderMenu)}
-          theme={theme}
-          isMenuOpen={showHeaderMenu}
+      {/* Centered bottom menu button */}
+      <TouchableOpacity
+        style={styles.centerMenuButton}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setShowHeaderMenu(!showHeaderMenu);
+        }}
+        activeOpacity={0.8}
+      >
+        <AnimatedHamburger
+          isOpen={showHeaderMenu}
+          color={theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary}
+          size={22}
         />
-      </Animated.View>
+      </TouchableOpacity>
 
       {/* Header Menu */}
       <HeaderMenu
@@ -886,11 +892,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  headerContainer: {
+  darkModeOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  centerMenuButton: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
+    bottom: 40,
+    left: '50%',
+    marginLeft: -25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
     zIndex: 1000,
   },
   keyboardAvoid: {

@@ -290,6 +290,14 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route: 
           translucent={true}
         />
 
+        {/* Dark mode overlay effect */}
+        {theme === "dark" && (
+          <View
+            style={[styles.darkModeOverlay, { backgroundColor: "#0a0a0a" }]}
+            pointerEvents="none"
+          ></View>
+        )}
+
         <PanGestureHandler
           ref={panRef}
           onGestureEvent={onGestureEvent}
@@ -420,6 +428,11 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route: 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  darkModeOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
   },
   gestureContainer: {
     flex: 1,

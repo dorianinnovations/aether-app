@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 18,
-    fontFamily: 'Inter-Medium',
+    fontFamily: 'Mozilla-Headline',
   },
   conversationMeta: {
     fontSize: 11,

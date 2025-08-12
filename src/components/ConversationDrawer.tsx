@@ -564,66 +564,6 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                   </Text>
                 </View>
                 
-                {/* Minimal Tab System */}
-                <View style={styles.channelTabs}>
-                  {tabs.map((tab, index) => {
-                    const isActive = index === currentTab;
-                    const tabProgress = tabAnimations[index];
-                    
-                    return (
-                      <Animated.View
-                        key={tab.label}
-                        style={[
-                          styles.channelTab,
-                          {
-                            opacity: tabProgress,
-                          }
-                        ]}
-                      >
-                        <TouchableOpacity
-                          style={[
-                            styles.channelTabButton,
-                            {
-                              backgroundColor: isActive
-                                ? (theme === 'dark' ? 'rgba(42, 42, 42, 0.3)' : 'rgba(248, 248, 248, 0.5)')
-                                : 'transparent',
-                            }
-                          ]}
-                          onPress={() => handleTabTransitionWithAnimationState(index)}
-                          activeOpacity={0.7}
-                          disabled={isAnimating}
-                        >
-                          {tab.logo ? (
-                            <Image 
-                              source={tab.logo}
-                              style={[
-                                styles.tabLogo,
-                                { opacity: isActive ? 1 : 0.7 }
-                              ]}
-                              resizeMode="contain"
-                            />
-                          ) : tab.icon ? (
-                            <Feather 
-                              name={tab.icon as any}
-                              size={18}
-                              color={isActive ? themeColors.text : themeColors.textSecondary}
-                            />
-                          ) : (
-                            <Text style={[
-                              styles.channelTabText,
-                              {
-                                color: isActive ? themeColors.text : themeColors.textSecondary,
-                                fontWeight: isActive ? '600' : '400',
-                              }
-                            ]}>
-                              {tab.label}
-                            </Text>
-                          )}
-                        </TouchableOpacity>
-                      </Animated.View>
-                    );
-                  })}
-                </View>
                 
                 {/* Faded Border Below Tabs */}
                 <FadedBorder theme={theme} />
@@ -656,121 +596,181 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                 onFriendProfilePress={handleFriendProfilePress}
               />
               
-              {/* Minimal Action Dock */}
+              {/* Button Stack - Right Edge */}
               <Animated.View style={[
-                styles.actionDock,
+                styles.buttonStack,
                 {
-                  backgroundColor: 'transparent',
                   transform: [{ translateY: actionDockAnim }],
                 }
               ]}>
-                {/* Minimal primary action */}
-                {currentTab === 0 ? (
-                  <TouchableOpacity
-                    style={[
-                      styles.primaryAction,
-                      {
-                        backgroundColor: theme === 'dark' ? '#2A2A2A' : '#F8F8F8',
-                        borderWidth: 1,
-                        borderColor: theme === 'dark' ? '#3A3A3A' : '#E0E0E0',
-                      }
-                    ]}
-                    onPress={handleNewChat}
-                    activeOpacity={0.7}
-                    disabled={isAnimating}
-                  >
-                    <Text style={[
-                      styles.primaryActionText,
-                      { color: themeColors.text }
-                    ]}>
-                      New Chat
-                    </Text>
-                  </TouchableOpacity>
-                ) : currentTab === 1 ? (
-                  showAddFriendInput ? (
-                    <View style={[
-                      styles.primaryAction,
-                      styles.addFriendInputContainer,
-                      {
-                        backgroundColor: theme === 'dark' ? '#2A2A2A' : '#F8F8F8',
-                        borderWidth: 1,
-                        borderColor: theme === 'dark' ? '#3A3A3A' : '#E0E0E0',
-                      }
-                    ]}>
-                      <TextInput
+                {/* Tab Buttons */}
+                <View style={styles.tabButtonsContainer}>
+                  {tabs.map((tab, index) => {
+                    const isActive = index === currentTab;
+                    const tabProgress = tabAnimations[index];
+                    
+                    return (
+                      <Animated.View
+                        key={tab.label}
                         style={[
-                          styles.addFriendInput,
-                          { color: themeColors.text }
+                          styles.tabButtonWrapper,
+                          { opacity: tabProgress }
                         ]}
-                        placeholder="Enter username..."
-                        placeholderTextColor={themeColors.textSecondary}
-                        value={addFriendUsername}
-                        onChangeText={setAddFriendUsername}
-                        onSubmitEditing={handleAddFriendSubmit}
-                        onBlur={handleAddFriendCancel}
-                        autoFocus={true}
-                        returnKeyType="done"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                      />
-                    </View>
-                  ) : (
+                      >
+                        <TouchableOpacity
+                          style={[
+                            styles.tabButton,
+                            {
+                              backgroundColor: isActive
+                                ? (theme === 'dark' ? 'rgba(42, 42, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)')
+                                : (theme === 'dark' ? 'rgba(25, 25, 25, 0.8)' : 'rgba(240, 240, 240, 0.9)'),
+                              borderWidth: isActive ? 0.5 : 0,
+                              borderColor: isActive ? (theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)') : 'transparent',
+                            }
+                          ]}
+                          onPress={() => handleTabTransitionWithAnimationState(index)}
+                          activeOpacity={0.7}
+                          disabled={isAnimating}
+                        >
+                          {tab.logo ? (
+                            <Image 
+                              source={tab.logo}
+                              style={[
+                                styles.tabLogo,
+                                { opacity: isActive ? 1 : 0.7 }
+                              ]}
+                              resizeMode="contain"
+                            />
+                          ) : tab.icon ? (
+                            <Feather 
+                              name={tab.icon as any}
+                              size={18}
+                              color={isActive ? themeColors.text : themeColors.textSecondary}
+                            />
+                          ) : (
+                            <Text style={[
+                              styles.tabText,
+                              {
+                                color: isActive ? themeColors.text : themeColors.textSecondary,
+                                fontWeight: isActive ? '600' : '400',
+                              }
+                            ]}>
+                              {tab.label}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      </Animated.View>
+                    );
+                  })}
+                </View>
+
+                {/* Action Buttons */}
+                <View style={styles.actionButtonsContainer}>
+                  {/* Primary action */}
+                  {currentTab === 0 ? (
                     <TouchableOpacity
                       style={[
-                        styles.primaryAction,
+                        styles.actionButton,
+                        styles.primaryActionButton,
                         {
-                          backgroundColor: theme === 'dark' ? '#2A2A2A' : '#F8F8F8',
-                          borderWidth: 1,
-                          borderColor: theme === 'dark' ? '#3A3A3A' : '#E0E0E0',
+                          backgroundColor: theme === 'dark' ? 'rgba(42, 42, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)',
                         }
                       ]}
-                      onPress={handleAddFriendPress}
+                      onPress={handleNewChat}
                       activeOpacity={0.7}
                       disabled={isAnimating}
                     >
-                      <Text style={[
-                        styles.primaryActionText,
-                        { color: themeColors.text }
-                      ]}>
-                        +
-                      </Text>
+                      <Feather name="plus" size={18} color={themeColors.text} />
                     </TouchableOpacity>
-                  )
-                ) : null}
-                
-                {/* Minimal secondary actions */}
-                <View style={styles.secondaryActions}>
+                  ) : currentTab === 1 ? (
+                    showAddFriendInput ? (
+                      <View style={[
+                        styles.actionButton,
+                        styles.primaryActionButton,
+                        styles.addFriendInput,
+                        {
+                          backgroundColor: theme === 'dark' ? 'rgba(42, 42, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+                        }
+                      ]}>
+                        <TextInput
+                          style={[
+                            styles.addFriendInputText,
+                            { color: themeColors.text }
+                          ]}
+                          placeholder="..."
+                          placeholderTextColor={themeColors.textSecondary}
+                          value={addFriendUsername}
+                          onChangeText={setAddFriendUsername}
+                          onSubmitEditing={handleAddFriendSubmit}
+                          onBlur={handleAddFriendCancel}
+                          autoFocus={true}
+                          returnKeyType="done"
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          maxLength={12}
+                        />
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={[
+                          styles.actionButton,
+                          styles.primaryActionButton,
+                          {
+                            backgroundColor: theme === 'dark' ? 'rgba(42, 42, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+                          }
+                        ]}
+                        onPress={handleAddFriendPress}
+                        activeOpacity={0.7}
+                        disabled={isAnimating}
+                      >
+                        <Feather name="user-plus" size={18} color={themeColors.text} />
+                      </TouchableOpacity>
+                    )
+                  ) : null}
+
+                  {/* Refresh */}
                   <TouchableOpacity
-                    style={styles.secondaryAction}
+                    style={[
+                      styles.actionButton,
+                      {
+                        backgroundColor: theme === 'dark' ? 'rgba(25, 25, 25, 0.8)' : 'rgba(240, 240, 240, 0.9)',
+                      }
+                    ]}
                     onPress={handleRefresh}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.secondaryActionText, { color: themeColors.textSecondary }]}>
-                      Refresh
-                    </Text>
+                    <Feather name="refresh-cw" size={16} color={themeColors.textSecondary} />
                   </TouchableOpacity>
-                  
+
+                  {/* Trash */}
                   {(currentTab === 0 && conversations.length > 0) || (currentTab === 1 && friends.length > 0) ? (
                     <TouchableOpacity
-                      style={styles.secondaryAction}
+                      style={[
+                        styles.actionButton,
+                        {
+                          backgroundColor: theme === 'dark' ? 'rgba(25, 25, 25, 0.8)' : 'rgba(240, 240, 240, 0.9)',
+                        }
+                      ]}
                       onPress={handleClearAllConversations}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.secondaryActionText, { color: '#FF6B6B' }]}>
-                        Clear All
-                      </Text>
+                      <Feather name="trash-2" size={16} color="#FF6B6B" />
                     </TouchableOpacity>
                   ) : null}
-                  
+
+                  {/* Close */}
                   <TouchableOpacity
-                    style={styles.secondaryAction}
+                    style={[
+                      styles.actionButton,
+                      {
+                        backgroundColor: theme === 'dark' ? 'rgba(25, 25, 25, 0.8)' : 'rgba(240, 240, 240, 0.9)',
+                      }
+                    ]}
                     onPress={handleClose}
                     activeOpacity={0.7}
                     disabled={isAnimating}
                   >
-                    <Text style={[styles.secondaryActionText, { color: themeColors.textSecondary }]}>
-                      Close
-                    </Text>
+                    <Feather name="x" size={16} color={themeColors.textSecondary} />
                   </TouchableOpacity>
                 </View>
               </Animated.View>
@@ -885,85 +885,85 @@ const styles = StyleSheet.create({
   },
   // Badge text styling handled by getTextStyle
   
-  // Channel Tab System
-  channelTabs: {
-    flexDirection: 'row',
+  // Button Stack Layout
+  buttonStack: {
+    position: 'absolute',
+    right: spacing[2],
+    bottom: spacing[2],
+    zIndex: 10,
+    flexDirection: 'column',
+    alignItems: 'flex-end',
     gap: spacing[2],
-  },
-  channelTab: {
-    flex: 1,
-  },
-  channelTabButton: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 32,
-    marginHorizontal: spacing[1],
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
-  },
-  channelTabText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Medium',
-    textAlign: 'center',
-    letterSpacing: -0.2,
-  },
-  tabLogo: {
-    width: 84,
-    height: 28,
-    marginTop: 4,
   },
   
-  // Minimal Action Dock
-  actionDock: {
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[3],
-    gap: spacing[3],
+  // Tab Buttons
+  tabButtonsContainer: {
+    flexDirection: 'column',
+    gap: spacing[1],
   },
-  primaryAction: {
+  tabButtonWrapper: {
+    // Individual tab button wrapper
+  },
+  tabButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    minHeight: 28,
-    borderRadius: 4,
+    height: 44,
+    width: 44,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: -2, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  primaryActionText: {
-    fontSize: 12,
-    fontWeight: '500',
+  tabText: {
+    fontSize: 9,
     fontFamily: 'Inter-Medium',
-    letterSpacing: -0.4,
+    textAlign: 'center',
+    letterSpacing: -0.1,
   },
-  secondaryActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    gap: spacing[2],
+  tabLogo: {
+    width: 24,
+    height: 14,
   },
-  secondaryAction: {
+  
+  // Action Buttons
+  actionButtonsContainer: {
+    flexDirection: 'column',
+    gap: spacing[1],
+  },
+  actionButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing[2],
-    paddingVertical: spacing[1],
+    height: 40,
+    width: 40,
+    borderRadius: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: -1, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
-  secondaryActionText: {
-    fontSize: 12,
-    fontWeight: '400',
-    fontFamily: 'Inter-Regular',
-    letterSpacing: -0.3,
-  },
-  addFriendInputContainer: {
-    paddingHorizontal: 0,
+  primaryActionButton: {
+    height: 44,
+    width: 44,
+    borderRadius: 8,
+    shadowOffset: { width: -2, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
   addFriendInput: {
-    flex: 1,
-    fontSize: 12,
+    paddingHorizontal: 4,
+  },
+  addFriendInputText: {
+    fontSize: 8,
     fontWeight: '500',
     fontFamily: 'Inter-Medium',
-    letterSpacing: -0.4,
-    paddingHorizontal: spacing[3],
-    paddingVertical: 0,
+    letterSpacing: -0.1,
     textAlign: 'center',
+    flex: 1,
+    textAlignVertical: 'center',
   },
 });
 

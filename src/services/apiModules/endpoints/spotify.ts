@@ -167,11 +167,23 @@ export const SpotifyAPI = {
   // Save user's grails (favorite songs and albums)
   async saveGrails(grails: any): Promise<any> {
     try {
-      console.log('SpotifyAPI.saveGrails: Sending grails data:', grails);
+      console.log('SpotifyAPI.saveGrails: Sending grails data:', JSON.stringify(grails, null, 2));
+      console.log('SpotifyAPI.saveGrails: Making request to /spotify/grails');
+      
       const response = await api.post('/spotify/grails', grails);
+      console.log('SpotifyAPI.saveGrails: Response received:', response.status, response.data);
       return response.data;
-    } catch (error) {
-      console.error('SpotifyAPI.saveGrails: Error details:', error);
+    } catch (error: any) {
+      console.error('SpotifyAPI.saveGrails: Error occurred:', error);
+      if (error.response) {
+        console.error('SpotifyAPI.saveGrails: Error response status:', error.response.status);
+        console.error('SpotifyAPI.saveGrails: Error response data:', error.response.data);
+        console.error('SpotifyAPI.saveGrails: Error response headers:', error.response.headers);
+      } else if (error.request) {
+        console.error('SpotifyAPI.saveGrails: No response received:', error.request);
+      } else {
+        console.error('SpotifyAPI.saveGrails: Request setup error:', error.message);
+      }
       throw error;
     }
   }

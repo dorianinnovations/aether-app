@@ -1,16 +1,44 @@
 /**
  * useFeedData Hook
- * Manages feed data fetching and state
+ * Manages artist news and live activity data for buzz screen
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { FeedAPI } from '../../../services/apiModules/endpoints/feed';
-import { SpotifyAPI } from '../../../services/apiModules/endpoints/spotify';
-import { api } from '../../../services/apiModules/core/client';
 import { logger } from '../../../utils/logger';
-import type { FeedItem } from '../../../services/apiModules/endpoints/feed';
+import { buzzService, NewsArticle, LiveTrack, RecentTrack } from '../../../services/buzz';
 
-type FeedTab = 'timeline' | 'releases' | 'news' | 'tours' | 'trending';
+// Enhanced FeedItem interface that combines news and activity data
+export interface FeedItem {
+  id: string;
+  type: 'news' | 'live-activity' | 'recent-activity';
+  title: string;
+  content: string;
+  url?: string;
+  imageUrl?: string | null;
+  publishedAt: string;
+  source: string;
+  viewed?: boolean;
+  interacted?: boolean;
+  priority: 'low' | 'medium' | 'high';
+  // News specific
+  artist?: string;
+  category?: string;
+  description?: string;
+  // Activity specific
+  track?: {
+    name: string;
+    artist: string;
+    album: string;
+    isPlaying?: boolean;
+    progressMs?: number;
+    durationMs?: number;
+    spotifyUrl: string;
+  };
+  username?: string;
+  timeAgo?: string;
+}
+
+type FeedTab = 'looped' | 'releases' | 'custom';
 
 interface UseFeedDataReturn {
   feedItems: FeedItem[];
@@ -38,9 +66,16 @@ export const useFeedData = (activeTab: FeedTab): UseFeedDataReturn => {
   useEffect(() => {
     const checkSpotifyConnection = async () => {
       try {
-        setHasSpotifyConnected(true);
+        logger.info('Checking Spotify connection...');
+        const status = await buzzService.getMySpotifyStatus();
+        logger.info('Spotify status received:', { 
+          success: status.success, 
+          connected: status.data?.connected,
+          hasValidToken: status.data?.hasValidToken 
+        });
+        setHasSpotifyConnected(status.success && status.data.connected);
       } catch (error) {
-        logger.debug('Spotify not connected:', error);
+        logger.debug('Spotify connection check failed:', error);
         setHasSpotifyConnected(false);
       }
     };
@@ -48,7 +83,88 @@ export const useFeedData = (activeTab: FeedTab): UseFeedDataReturn => {
     checkSpotifyConnection();
   }, []);
 
-  // Load feed data
+  // Helper function to convert NewsArticle to FeedItem with source-specific rendering
+  const newsToFeedItem = (article: NewsArticle): FeedItem => {
+    const baseItem: FeedItem = {
+      id: article.id,
+      type: 'news',
+      title: article.title,
+      content: article.description,
+      url: article.url,
+      imageUrl: article.imageUrl,
+      publishedAt: article.publishedAt,
+      source: article.source,
+      viewed: viewedItems.current.has(article.id),
+      priority: article.type === 'release' ? 'high' : 'medium',
+      artist: article.artist,
+      category: article.type,
+      description: article.description
+    };
+
+    // Source-specific customizations
+    switch (article.source) {
+      case 'Genius':
+        return {
+          ...baseItem,
+          title: `${article.artist} - ${article.title}`, // Format as "Artist - Song"
+          priority: 'high', // Releases are high priority
+        };
+      
+      case 'Last.fm':
+        return {
+          ...baseItem,
+          title: `${article.artist} - Artist Info`,
+          priority: 'medium',
+        };
+      
+      case 'HotNewHipHop':
+        return {
+          ...baseItem,
+          priority: 'medium',
+        };
+      
+      default:
+        return baseItem;
+    }
+  };
+
+  // Helper function to convert activity to FeedItem
+  const activityToFeedItem = (activity: LiveTrack | RecentTrack, username?: string): FeedItem => {
+    const isLive = 'isPlaying' in activity;
+    const trackName = isLive ? activity.currentTrack.name : activity.name;
+    const trackArtist = isLive ? activity.currentTrack.artist : activity.artist;
+    const trackAlbum = isLive ? activity.currentTrack.album : activity.album;
+    const trackImage = isLive ? activity.currentTrack.imageUrl : activity.imageUrl;
+    const trackUrl = isLive ? activity.currentTrack.spotifyUrl : activity.spotifyUrl;
+    const timestamp = isLive ? activity.lastUpdated : activity.playedAt;
+    const id = `${isLive ? 'live' : 'recent'}-${username || 'me'}-${trackName}`;
+    
+    return {
+      id,
+      type: isLive ? 'live-activity' : 'recent-activity',
+      title: isLive 
+        ? `${username ? `${username} is` : 'You are'} listening to ${trackName}`
+        : `${username ? `${username} played` : 'You played'} ${trackName}`,
+      content: `${trackArtist} • ${trackAlbum}`,
+      imageUrl: trackImage,
+      publishedAt: timestamp,
+      source: 'Spotify',
+      viewed: viewedItems.current.has(id),
+      priority: isLive ? 'high' : 'medium',
+      track: {
+        name: trackName,
+        artist: trackArtist,
+        album: trackAlbum,
+        isPlaying: isLive ? activity.isPlaying : false,
+        progressMs: isLive ? activity.progressMs : undefined,
+        durationMs: isLive ? activity.durationMs : undefined,
+        spotifyUrl: trackUrl
+      },
+      username,
+      timeAgo: 'timeAgo' in activity ? activity.timeAgo : undefined
+    };
+  };
+
   const loadFeed = useCallback(async () => {
     if (loading) return;
     
@@ -56,41 +172,67 @@ export const useFeedData = (activeTab: FeedTab): UseFeedDataReturn => {
     setError(null);
     
     try {
-      let response;
+      let items: FeedItem[] = [];
       
       switch (activeTab) {
-        case 'timeline':
-          response = await FeedAPI.getTimeline({ limit: 50 });
+        case 'looped': {
+          // Show all content mixed together - news, releases, and activity
+          logger.info('Loading looped feed...');
+          const [newsArticles, userActivity] = await Promise.allSettled([
+            buzzService.getNewsArticles(15),
+            buzzService.getCurrentUserActivity()
+          ]);
+          
+          if (newsArticles.status === 'fulfilled') {
+            logger.info('News articles loaded:', newsArticles.value.length);
+            items.push(...newsArticles.value.map(newsToFeedItem));
+          }
+          
+          if (userActivity.status === 'fulfilled' && userActivity.value) {
+            logger.info('User activity loaded');
+            items.push(activityToFeedItem(userActivity.value));
+          }
           break;
-        case 'releases':
-          response = await FeedAPI.getReleases(50);
-          break;
-        case 'news':
-          response = await FeedAPI.getNews(50);
-          break;
-        case 'tours':
-          response = await FeedAPI.getTours(50);
-          break;
-        case 'trending':
-          response = await FeedAPI.getTrendingContent('24h');
-          break;
-        default:
-          response = await FeedAPI.getTimeline({ limit: 50 });
-      }
-      
-      // API response received
-      
-      if (response.success && response.data) {
-        // Mark previously viewed items
-        const itemsWithViewStatus = response.data.map((item: FeedItem) => ({
-          ...item,
-          viewed: viewedItems.current.has(item.id) || item.viewed || false,
-        }));
+        }
         
-        setFeedItems(itemsWithViewStatus);
-      } else {
-        throw new Error(typeof response.error === 'string' ? response.error : 'Failed to load feed');
+        case 'releases': {
+          // Show only music releases (Genius type content)
+          logger.info('Loading releases...');
+          const articles = await buzzService.getReleases(20);
+          items = articles.map(newsToFeedItem);
+          break;
+        }
+        
+        case 'custom': {
+          // Show customizable content - artist info and hip-hop news
+          logger.info('Loading custom content...');
+          const [artistInfo, hipHopNews] = await Promise.allSettled([
+            buzzService.getArtistInfo(10),
+            buzzService.getHipHopNews(10)
+          ]);
+          
+          if (artistInfo.status === 'fulfilled') {
+            items.push(...artistInfo.value.map(newsToFeedItem));
+          }
+          
+          if (hipHopNews.status === 'fulfilled') {
+            items.push(...hipHopNews.value.map(newsToFeedItem));
+          }
+          break;
+        }
+        
+        default: {
+          // Default to looped feed
+          const articles = await buzzService.getNewsArticles(10);
+          items = articles.map(newsToFeedItem);
+        }
       }
+      
+      // Sort by publication date (newest first)
+      items.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+      
+      setFeedItems(items);
+      
     } catch (error) {
       logger.error('Error loading feed:', error);
       setError('Failed to load feed. Please try again.');
@@ -100,7 +242,6 @@ export const useFeedData = (activeTab: FeedTab): UseFeedDataReturn => {
     }
   }, [activeTab, loading]);
 
-  // Refresh feed
   const refreshFeed = useCallback(async () => {
     if (refreshing) return;
     
@@ -111,45 +252,17 @@ export const useFeedData = (activeTab: FeedTab): UseFeedDataReturn => {
       // Clear viewed items on refresh to show fresh content
       viewedItems.current.clear();
       
-      let response;
+      // Reuse the loadFeed logic
+      await loadFeed();
       
-      switch (activeTab) {
-        case 'timeline':
-          response = await FeedAPI.refreshFeed();
-          break;
-        case 'releases':
-          response = await FeedAPI.getReleases(50);
-          break;
-        case 'news':
-          response = await FeedAPI.getNews(50);
-          break;
-        case 'tours':
-          response = await FeedAPI.getTours(50);
-          break;
-        case 'trending':
-          response = await FeedAPI.getTrendingContent('24h');
-          break;
-        default:
-          response = await FeedAPI.refreshFeed();
-      }
-      
-      if (Array.isArray(response)) {
-        // Handle direct array response from refreshFeed
-        setFeedItems(response);
-      } else if (response && typeof response === 'object' && 'success' in response && response.success && response.data) {
-        setFeedItems(response.data);
-      } else {
-        throw new Error('Failed to refresh feed');
-      }
     } catch (error) {
       logger.error('Error refreshing feed:', error);
       setError('Failed to refresh feed. Please try again.');
     } finally {
       setRefreshing(false);
     }
-  }, [activeTab, refreshing]);
+  }, [loadFeed, refreshing]);
 
-  // Mark item as viewed
   const markItemAsViewed = useCallback((itemId: string) => {
     viewedItems.current.add(itemId);
     
@@ -161,13 +274,10 @@ export const useFeedData = (activeTab: FeedTab): UseFeedDataReturn => {
       )
     );
     
-    // Send to backend (fire and forget)
-    FeedAPI.markAsViewed([itemId]).catch(error => {
-      logger.debug('Failed to mark item as viewed:', error);
-    });
+    // Log interaction for future analytics integration
+    logger.debug('Marked item as viewed:', itemId);
   }, []);
 
-  // Interact with item
   const interactWithItem = useCallback((itemId: string, type: 'like' | 'share' | 'save') => {
     // Update local state
     setFeedItems(prev => 
@@ -178,14 +288,8 @@ export const useFeedData = (activeTab: FeedTab): UseFeedDataReturn => {
       )
     );
     
-    // Send to backend (fire and forget)
-    FeedAPI.interactWithUpdate(itemId, {
-      type,
-      duration: Date.now(),
-      context: activeTab,
-    }).catch(error => {
-      logger.debug('Failed to record interaction:', error);
-    });
+    // Log interaction for future analytics integration
+    logger.debug('Item interaction:', { itemId, type, context: activeTab });
   }, [activeTab]);
 
   // Load feed when tab changes

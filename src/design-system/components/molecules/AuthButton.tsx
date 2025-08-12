@@ -52,7 +52,7 @@ export const AuthButton: React.FC<AuthButtonProps> = ({
 
   const getMinimalGlowColor = () => {
     return theme === 'dark' 
-      ? 'rgba(173, 213, 250, 0.15)'
+      ? 'rgba(255, 255, 255, 0.6)'
       : 'rgba(26, 26, 26, 0.08)';
   };
 
@@ -107,15 +107,15 @@ export const AuthButton: React.FC<AuthButtonProps> = ({
           style={[
             styles.primaryButton,
             {
-              backgroundColor: theme === 'dark' ? '#0d0d0d' : designTokens.brand.primary,
+              backgroundColor: 'rgba(255, 255, 255, 0.85)',
               opacity: (loading || success) ? 0.9 : 1,
-              borderColor: theme === 'dark' ? '#262626' : 'transparent',
-              borderWidth: theme === 'dark' ? 1 : 0,
-              shadowColor: '#ffffff',
-              shadowOffset: { width: 2, height: 2 },
-              shadowOpacity: theme === 'dark' ? 0.15 : 0.1,
-              shadowRadius: 4,
-              elevation: theme === 'dark' ? 3 : 2,
+              borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(220, 220, 220, 0.3)',
+              borderWidth: theme === 'dark' ? 1 : 1,
+              shadowColor: theme === 'dark' ? '#ffffff' : '#000000',
+              shadowOffset: theme === 'dark' ? { width: 0, height: 0 } : { width: 2, height: 4 },
+              shadowOpacity: theme === 'dark' ? 0.4 : 0.15,
+              shadowRadius: theme === 'dark' ? 8 : 6,
+              elevation: theme === 'dark' ? 6 : 4,
             }
           ]}
           onPress={handlePress}
@@ -127,20 +127,20 @@ export const AuthButton: React.FC<AuthButtonProps> = ({
               {loading ? (
                 <Text style={[
                   styles.primaryButtonText, 
-                  { color: theme === 'dark' ? '#ffffff' : '#1a1a1a' }
+                  { color: theme === 'dark' ? '#2a2a2a' : '#1a1a1a' }
                 ]}>
                   {loadingTitle}
                 </Text>
               ) : success ? (
                 <Text style={[
                   styles.primaryButtonText, 
-                  { color: theme === 'dark' ? '#ffffff' : '#1a1a1a' }
+                  { color: theme === 'dark' ? '#2a2a2a' : '#1a1a1a' }
                 ]}>
                   {successTitle}
                 </Text>
               ) : (
                 <RainbowShimmerText
-                  style={StyleSheet.flatten([styles.primaryButtonText, { color: theme === 'dark' ? '#ffffff' : '#1a1a1a' }])}
+                  style={StyleSheet.flatten([styles.primaryButtonText, { color: theme === 'dark' ? '#2a2a2a' : '#1a1a1a' }])}
                   intensity="vibrant"
                   duration={4000}
                   waveWidth="wide"
@@ -154,7 +154,7 @@ export const AuthButton: React.FC<AuthButtonProps> = ({
               <View style={styles.spinnerContainer}>
                 <AnimatedAuthStatus
                   status={authStatus}
-                  color={theme === 'dark' ? '#ffffff' : '#1a1a1a'}
+                  color={theme === 'dark' ? '#2a2a2a' : '#1a1a1a'}
                   size={16}
                   onAnimationComplete={() => {
                     if (authStatus === 'error' && onAnimationComplete) {

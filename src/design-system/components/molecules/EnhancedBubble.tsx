@@ -122,7 +122,7 @@ const StreamContent: React.FC<{
   if (isTypingMessage || (isStreaming && !safeText.trim())) {
     return (
       <LottieView
-        source={require('../../../../assets/AetherTwister.json')}
+        source={require('../../../../assets/AetherSpinner.json')}
         autoPlay
         loop
         style={styles.lottieAnimation}
@@ -798,10 +798,10 @@ const styles = StyleSheet.create({
     shadowRadius: 0.5,
   },
   lottieAnimation: {
-    width: 160, // Increased size for better visibility
-    height: 160, // Make it square for the twister animation
+    width: 40,
+    height: 40,
     alignSelf: 'flex-start',
-    marginLeft: -60, // Pull it much further left
+    marginLeft: 0,
   },
   searchResultsContainer: {
     marginTop: spacing[2],

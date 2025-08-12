@@ -183,6 +183,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [authKey, setAuthKey] = useState(0); // Force re-render key
 
   const checkAuthStatus = async () => {
     const token = await TokenManager.getToken();
@@ -237,6 +238,12 @@ export default function App() {
     
     (global as typeof globalThis & { clearAuthState?: () => Promise<void>; checkAuthState?: () => Promise<void> }).clearAuthState = async () => {
       await TokenManager.removeToken();
+      
+      // Add a small delay to ensure any modal close animations complete
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Force complete re-render by changing key
+      setAuthKey(prev => prev + 1);
       setIsAuthenticated(false);
     };
     
@@ -254,7 +261,7 @@ export default function App() {
       <SettingsProvider>
         <ThemeProvider>
           <ToastProvider>
-          <NavigationContainer>
+          <NavigationContainer key={authKey}>
           <StatusBar style="auto" />
           <RootStack.Navigator
             screenOptions={{
@@ -267,9 +274,17 @@ export default function App() {
             }}
           >
             {isAuthenticated ? (
-              <RootStack.Screen name="MainStack" component={MainStackNavigator} />
+              <RootStack.Screen 
+                name="MainStack" 
+                component={MainStackNavigator} 
+                key="main-authenticated"
+              />
             ) : (
-              <RootStack.Screen name="Auth" component={AuthNavigator} />
+              <RootStack.Screen 
+                name="Auth" 
+                component={AuthNavigator} 
+                key="auth-unauthenticated"
+              />
             )}
           </RootStack.Navigator>
           </NavigationContainer>

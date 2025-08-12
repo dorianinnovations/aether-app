@@ -12,7 +12,7 @@ import { typography } from '../../../design-system/tokens/typography';
 import { spacing } from '../../../design-system/tokens/spacing';
 import type { ThemeColors } from '../types';
 
-type ContentType = 'news' | 'release' | 'trending' | 'tour' | 'social';
+type ContentType = 'news' | 'release' | 'info' | 'live-activity' | 'recent-activity';
 
 interface TypeBadgeProps {
   type: ContentType;
@@ -37,26 +37,26 @@ const TypeBadge: React.FC<TypeBadgeProps> = ({ type, colors, isDarkMode }) => {
           color: '#10B981', // Green
           bgColor: isDarkMode ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)',
         };
-      case 'trending':
+      case 'info':
         return {
-          icon: 'trending-up-outline' as const,
-          label: 'Trending',
+          icon: 'information-circle-outline' as const,
+          label: 'Artist Info',
           color: '#F59E0B', // Amber
           bgColor: isDarkMode ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.1)',
         };
-      case 'tour':
+      case 'live-activity':
         return {
-          icon: 'mic-outline' as const,
-          label: 'Tour',
+          icon: 'play-circle-outline' as const,
+          label: 'Live',
+          color: '#10B981', // Green
+          bgColor: isDarkMode ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)',
+        };
+      case 'recent-activity':
+        return {
+          icon: 'time-outline' as const,
+          label: 'Recent',
           color: '#8B5CF6', // Purple
           bgColor: isDarkMode ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.1)',
-        };
-      case 'social':
-        return {
-          icon: 'people-outline' as const,
-          label: 'Social',
-          color: '#EC4899', // Pink
-          bgColor: isDarkMode ? 'rgba(236, 72, 153, 0.15)' : 'rgba(236, 72, 153, 0.1)',
         };
       default:
         return {

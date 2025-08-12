@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { SocialProxyAPI, SpotifyAPI, FriendsAPI } from '../services/api';
+import { GrailsData } from '../design-system/components/molecules/GrailsSection';
 
 export interface SocialProxyProfile {
   username: string;
@@ -15,6 +16,7 @@ export interface SocialProxyProfile {
   lastUpdated: string;
   friendsCount?: number;
   followersCount?: number;
+  grails?: GrailsData;
   spotify: {
     connected: boolean;
     currentTrack?: {
@@ -124,10 +126,14 @@ export const useSocialProxy = (): UseSocialProxyReturn => {
       setLoading(true);
       setError(null);
       
-      // Fetch both profile data and friends count
-      const [profileResponse, friendsResponse] = await Promise.all([
+      // Fetch profile data, friends count, and grails data
+      const [profileResponse, friendsResponse, grailsResponse] = await Promise.all([
         SocialProxyAPI.getProfile(),
-        FriendsAPI.getFriendsList().catch(() => ({ data: { friends: [] } }))
+        FriendsAPI.getFriendsList().catch(() => ({ data: { friends: [] } })),
+        SpotifyAPI.getGrails().catch((error) => {
+          console.warn('Failed to fetch grails:', error);
+          return { success: false, grails: { topTracks: [], topAlbums: [] } };
+        })
       ]);
       
       if (profileResponse.success) {
@@ -135,11 +141,18 @@ export const useSocialProxy = (): UseSocialProxyReturn => {
         // For now, using friendsCount as followersCount since we don't have separate followers API
         // This can be updated when a proper followers endpoint is available
         const followersCount = Math.floor(friendsCount * 1.2); // Mock: slightly more followers than following
+        
+        // Include grails data in the profile
+        const grailsData = grailsResponse.success ? grailsResponse.grails : { topTracks: [], topAlbums: [] };
+        
         setProfile({
           ...profileResponse.profile,
           friendsCount,
-          followersCount
+          followersCount,
+          grails: grailsData
         });
+        
+        console.log('✅ Social profile loaded with grails:', grailsData);
       }
     } catch (err: unknown) {
       setError((err as any).message || 'Failed to load profile');

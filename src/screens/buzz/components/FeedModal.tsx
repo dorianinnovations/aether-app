@@ -31,7 +31,7 @@ import { spacing } from '../../../design-system/tokens/spacing';
 import { getGlassmorphicStyle } from '../../../design-system/tokens/glassmorphism';
 
 // Types
-import type { FeedItem } from '../../../services/apiModules/endpoints/feed';
+import type { FeedItem } from '../hooks/useFeedData';
 import type { ThemeColors } from '../types';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -227,15 +227,15 @@ const FeedModal: React.FC<FeedModalProps> = ({
           {/* Header */}
           <Animated.View style={[styles.header, { opacity: contentOpacity }]}>
             <View style={styles.headerLeft}>
-              {item.artist.image && (
+              {item.imageUrl && (
                 <Image
-                  source={{ uri: item.artist.image }}
+                  source={{ uri: item.imageUrl }}
                   style={styles.artistImage}
                 />
               )}
               <View style={styles.artistInfo}>
                 <Text style={[styles.artistName, { color: colors.text }]}>
-                  {item.artist.name}
+                  {item.artist || 'Unknown Artist'}
                 </Text>
                 <View style={styles.metaRow}>
                   <TypeBadge type={item.type} colors={colors} isDarkMode={isDarkMode} />
@@ -283,28 +283,6 @@ const FeedModal: React.FC<FeedModalProps> = ({
                 {item.content}
               </Text>
 
-              {/* Engagement Score */}
-              {item.engagementScore !== undefined && (
-                <View style={styles.engagementSection}>
-                  <Text style={[styles.engagementLabel, { color: colors.textTertiary }]}>
-                    Relevance Score
-                  </Text>
-                  <View style={[styles.engagementBar, { backgroundColor: colors.surface }]}>
-                    <View
-                      style={[
-                        styles.engagementFill,
-                        {
-                          width: `${item.engagementScore * 100}%`,
-                          backgroundColor: colors.primary,
-                        },
-                      ]}
-                    />
-                  </View>
-                  <Text style={[styles.engagementValue, { color: colors.textSecondary }]}>
-                    {Math.round(item.engagementScore * 100)}%
-                  </Text>
-                </View>
-              )}
 
               {/* Spacer for action bar */}
               <View style={{ height: 100 }} />
@@ -430,7 +408,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   artistName: {
-    ...typography.body,
+    fontFamily: 'MozillaHeadline_600SemiBold',
     fontSize: 18,
     fontWeight: '600',
     marginBottom: spacing.xs,
@@ -441,7 +419,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   source: {
-    ...typography.caption,
+    fontFamily: 'MozillaText_400Regular',
+    fontSize: 12,
   },
   closeButton: {
     padding: spacing.sm,
@@ -454,13 +433,15 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
   },
   title: {
-    ...typography.h3,
+    fontFamily: 'MozillaHeadline_700Bold',
     fontSize: 24,
+    fontWeight: '700',
     marginBottom: spacing.sm,
     lineHeight: 32,
   },
   timestamp: {
-    ...typography.caption,
+    fontFamily: 'MozillaText_400Regular',
+    fontSize: 12,
     marginBottom: spacing.lg,
   },
   featuredImageContainer: {
@@ -473,7 +454,8 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   content: {
-    ...typography.body,
+    fontFamily: 'MozillaText_400Regular',
+    fontSize: 16,
     lineHeight: 24,
     marginBottom: spacing.xl,
   },
@@ -526,7 +508,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   actionText: {
-    ...typography.caption,
+    fontFamily: 'MozillaText_400Regular',
+    fontSize: 12,
     marginTop: spacing.xs,
   },
 });

@@ -181,6 +181,25 @@ const BasicMarkdown: React.FC<BasicMarkdownProps> = ({ children, theme = 'light'
         continue;
       }
 
+      // Song titles "text"
+      const songMatch = remaining.match(/^(.*?)"(.*?)"(.*)/);
+      if (songMatch) {
+        if (songMatch[1]) {
+          parts.push(<Text key={key++}>{songMatch[1]}</Text>);
+        }
+        parts.push(
+          <Text key={key++} style={{ 
+            fontWeight: '600',
+            fontFamily: 'Nunito-SemiBold',
+            color: theme === 'dark' ? '#7c3aed' : '#8b5cf6',
+          }}>
+            "{songMatch[2]}"
+          </Text>
+        );
+        remaining = songMatch[3];
+        continue;
+      }
+
       // Code text `text`
       const codeMatch = remaining.match(/^(.*?)`(.*?)`(.*)/);
       if (codeMatch) {

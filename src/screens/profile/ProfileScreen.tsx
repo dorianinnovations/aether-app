@@ -409,16 +409,34 @@ export const ProfileScreen: React.FC = () => {
 
   const handleGrailsChange = async (grails: GrailsData) => {
     try {
-      await SpotifyAPI.saveGrails(grails);
-      // Update socialProfile with new grails
-      if (socialProfile) {
-        // This would typically be handled by the useProfileData hook
-        // For now, we'll rely on the next refresh to show the updated data
-      }
+      console.log('🔄 Saving grails to server...', grails);
+      const response = await SpotifyAPI.saveGrails(grails);
+      console.log('✅ Grails saved successfully:', response);
+      
+      // Refresh social profile data to pick up the new grails
+      console.log('🔄 Refreshing profile data to show new grails...');
+      await refreshAllData();
+      
       showSuccess('Grails updated successfully!');
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ Error saving grails - Full error details:', error);
+      
+      // Enhanced error reporting
+      let errorMessage = 'Failed to save grails. ';
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+        errorMessage += `Server error: ${error.response.status} - ${error.response.data?.message || error.response.data?.error || 'Unknown error'}`;
+      } else if (error.request) {
+        console.error('No response received:', error.request);
+        errorMessage += 'No response from server. Check your internet connection.';
+      } else {
+        console.error('Request setup error:', error.message);
+        errorMessage += `Request error: ${error.message}`;
+      }
+      
       logger.error('Error saving grails:', error);
-      showError('Failed to save grails. Please try again.');
+      showError(errorMessage);
     }
   };
 
@@ -497,6 +515,7 @@ export const ProfileScreen: React.FC = () => {
           onConfigurePress={handleConfigurePress}
           onUsernamePress={handleUsernamePress}
           onGrailsChange={handleGrailsChange}
+          onEnableEditMode={() => setEditMode(true)}
           configureMode={configureMode}
           scrollRef={scrollViewRef}
         />

@@ -334,16 +334,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       setUserData(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
+      // Close ALL modals first to prevent blocking touch events
+      setShowSignOutModal(false);
+      setShowAboutModal(false);
+      onClose();
+      
+      // Small delay to ensure modal close animations complete
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       // Sign out and navigate to Auth stack
       if (navigation) {
-        // Clear auth state first
+        // Clear auth state after modals are closed
         if ((global as any).clearAuthState) {
           await (global as any).clearAuthState();
         }
       } else {
         onSignOut?.();
       }
-      onClose();
     } catch (error) {
       logger.error('Sign out error:', error);
       Alert.alert('Error', 'Failed to sign out. Please try again.');
@@ -425,10 +432,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         style={[
           styles.settingsItem, 
           { 
-            backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0, 0, 0, 0.03)',
+            backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0, 0, 0, 0.08)',
             borderColor: theme === 'dark' 
-              ? 'rgba(255,255,255,0.1)' 
-              : 'rgba(0, 0, 0, 0.08)',
+              ? 'rgba(255,255,255,0.2)' 
+              : 'rgba(0, 0, 0, 0.15)',
           }
         ]}
         onPress={() => openSubDrawer(section)}
@@ -584,7 +591,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   <TouchableOpacity style={[
                     styles.accountItem, 
                     { 
-                      backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0, 0, 0, 0.03)',
+                      backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0, 0, 0, 0.08)',
                       borderColor: theme === 'dark' 
                         ? 'rgba(255,255,255,0.1)' 
                         : 'rgba(0, 0, 0, 0.08)',
@@ -625,7 +632,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               <Animated.View style={{ opacity: quickActionAnims[0] }}>
                 <TouchableOpacity 
                   style={[styles.quickAction, { 
-                    backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0, 0, 0, 0.03)',
+                    backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0, 0, 0, 0.08)',
                     borderColor: theme === 'dark' 
                       ? 'rgba(255,255,255,0.1)' 
                       : 'rgba(0, 0, 0, 0.08)',
@@ -645,7 +652,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               <Animated.View style={{ opacity: quickActionAnims[1] }}>
                 <TouchableOpacity 
                   style={[styles.quickAction, { 
-                    backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0, 0, 0, 0.03)',
+                    backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0, 0, 0, 0.08)',
                     borderColor: theme === 'dark' 
                       ? 'rgba(255,255,255,0.1)' 
                       : 'rgba(0, 0, 0, 0.08)',
@@ -786,7 +793,7 @@ const styles = StyleSheet.create({
   accountItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 40,
+    height: 56,
     borderRadius: 12,
     marginHorizontal: 0,
     marginVertical: 4,
@@ -827,7 +834,7 @@ const styles = StyleSheet.create({
   settingsItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 40,
+    height: 56,
     borderRadius: 12,
     marginHorizontal: 0,
     marginVertical: 4,
@@ -897,7 +904,7 @@ const styles = StyleSheet.create({
   quickAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 40,
+    height: 56,
     borderRadius: 12,
     marginHorizontal: 0,
     marginVertical: 4,

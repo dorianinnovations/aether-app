@@ -19,7 +19,7 @@ import { typography } from '../../../design-system/tokens/typography';
 import { spacing } from '../../../design-system/tokens/spacing';
 import type { ThemeColors } from '../types';
 
-type FeedTab = 'timeline' | 'releases' | 'news' | 'tours' | 'trending';
+type FeedTab = 'looped' | 'releases' | 'custom';
 
 interface FeedHeaderProps {
   activeTab: FeedTab;
@@ -36,11 +36,9 @@ interface TabConfig {
 }
 
 const tabs: TabConfig[] = [
-  { id: 'timeline', label: 'Timeline', icon: 'pulse', color: '#EF4444' }, // Red
-  { id: 'releases', label: 'Releases', icon: 'disc', color: '#F97316' }, // Orange
-  { id: 'news', label: 'News', icon: 'soundwave', color: '#EAB308' }, // Yellow
-  { id: 'tours', label: 'Tours', icon: 'mic', color: '#22C55E' }, // Green
-  { id: 'trending', label: 'Trending', icon: 'wave', color: '#3B82F6' }, // Blue
+  { id: 'looped', label: 'Looped', icon: 'refresh', color: '#EF4444' }, // Red
+  { id: 'releases', label: 'Releases', icon: 'disc', color: '#10B981' }, // Green
+  { id: 'custom', label: 'Custom', icon: 'settings', color: '#3B82F6' }, // Blue
 ];
 
 const FeedHeader: React.FC<FeedHeaderProps> = ({

@@ -115,7 +115,7 @@ export function LottieRefreshFlatList<T>({
           <View style={[styles.lottieBackground, { backgroundColor: colors.surface + 'E6' }]}>
             <LottieView
               ref={lottieRef}
-              source={require('../../../../assets/AetherTwister.json')}
+              source={require('../../../../assets/AetherSpinner.json')}
               style={{
                 width,
                 height,

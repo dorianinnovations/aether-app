@@ -11,6 +11,7 @@ import {
   Animated,
   Alert,
   Text,
+  Image,
   // Removed unused Dimensions
   SafeAreaView,
   StatusBar,
@@ -30,7 +31,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { EnhancedChatInput } from '../../design-system/components/molecules';
 import EnhancedBubble from '../../design-system/components/molecules/EnhancedBubble';
 import { HeaderMenu, SignOutModal, ArtistListeningModal, WalletModal, SwipeTutorialOverlay } from '../../design-system/components/organisms';
-import { AnimatedHamburger } from '../../design-system/components/atoms';
+import { AnimatedHamburger, NowPlayingIndicator } from '../../design-system/components/atoms';
 import { PageBackground, SwipeToMenu } from '../../design-system/components/atoms';
 import SettingsModal from './SettingsModal';
 import ConversationDrawer from '../../components/ConversationDrawer';
@@ -61,6 +62,7 @@ import { useWebSearch } from '../../hooks/useWebSearch';
 import { useGhostTyping } from '../../hooks/useGhostTyping';
 import { useRealTimeMessaging } from '../../hooks/useRealTimeMessaging';
 import { useFriendRequest } from '../../hooks/useFriendRequest';
+import { useSpotifyLive } from '../../hooks/useSpotifyLive';
 
 // Types
 import type { Message } from '../../types/chat';
@@ -143,6 +145,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   // Removed unused tooltipScale
   const modalAnimationRefs = useRef<ModalAnimationRefs>(createModalAnimationRefs()).current;
   const headerAnim = useRef(new Animated.Value(1)).current;
+  const floatingButtonsAnim = useRef(new Animated.Value(0)).current;
 
   // Settings modal state - simplified
   const [showSettings, setShowSettings] = useState(false);
@@ -158,9 +161,52 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   
   // Hamburger animation state
   const [hamburgerOpen, setHamburgerOpen] = useState(false);
+  const [isAttachmentExpanded, setIsAttachmentExpanded] = useState(false);
   
   // Friend request management
   const friendRequest = useFriendRequest();
+  
+  // Spotify live data
+  const { currentTrack, isLoading: spotifyLoading, error: spotifyError, isConnected: spotifyConnected } = useSpotifyLive(5000);
+  
+  // Scrolling text animation
+  const scrollAnimation = useRef(new Animated.Value(0)).current;
+  const [textWidth, setTextWidth] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
+  
+  // Debug Spotify data
+  useEffect(() => {
+    console.log('Spotify Debug:', { currentTrack, spotifyLoading, spotifyError, spotifyConnected });
+  }, [currentTrack, spotifyLoading, spotifyError, spotifyConnected]);
+  
+  // Start scrolling animation when track changes
+  useEffect(() => {
+    if (currentTrack && textWidth > 0 && containerWidth > 0 && textWidth > containerWidth) {
+      // Reset animation
+      scrollAnimation.setValue(0);
+      
+      // Calculate scroll distance to ensure full text travels across
+      const scrollDistance = textWidth + containerWidth;
+      
+      // Start continuous scrolling
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(scrollAnimation, {
+            toValue: 1,
+            duration: Math.max(6000, scrollDistance * 20), // Dynamic duration based on text length
+            useNativeDriver: true,
+            easing: Easing.linear,
+          }),
+          Animated.delay(1500), // 1.5 second pause at the end
+          Animated.timing(scrollAnimation, {
+            toValue: 0,
+            duration: 0, // Instant reset to beginning
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+  }, [currentTrack, scrollAnimation, textWidth, containerWidth]);
   
   const { ghostText } = useGhostTyping({
     isInputFocused: friendRequest.isInputFocused,
@@ -278,6 +324,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       setHamburgerOpen(false);
     }
   }, [showHeaderMenu]);
+
+  // Slide floating buttons off screen when attachment is expanded or conversation drawer is active
+  useEffect(() => {
+    Animated.timing(floatingButtonsAnim, {
+      toValue: isAttachmentExpanded || showConversationDrawer ? 100 : 0,
+      duration: 80,
+      useNativeDriver: true,
+    }).start();
+  }, [isAttachmentExpanded, showConversationDrawer, floatingButtonsAnim]);
 
   // Check if user should see swipe tutorial (new users only)
   useEffect(() => {
@@ -621,6 +676,54 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
           translucent
         />
 
+        {/* Spotify Now Playing */}
+        {currentTrack && (
+          <View style={styles.spotifyContainer}>
+            <View style={[
+              styles.spotifyContent,
+              {
+                backgroundColor: theme === 'dark' ? 'rgba(80, 80, 80, 0.15)' : 'rgba(140, 140, 140, 0.08)',
+                borderColor: theme === 'dark' ? 'rgba(120, 120, 120, 0.2)' : 'rgba(160, 160, 160, 0.15)',
+              }
+            ]}>
+              {/* Album Art */}
+              {currentTrack?.imageUrl && (
+                <Image 
+                  source={{ uri: currentTrack.imageUrl }}
+                  style={styles.albumArt}
+                />
+              )}
+              
+              {/* Scrolling Text Container */}
+              <View 
+                style={styles.scrollContainer}
+                onLayout={(event) => setContainerWidth(event.nativeEvent.layout.width)}
+              >
+                <Animated.Text 
+                  style={[
+                    styles.spotifyText,
+                    {
+                      color: theme === 'dark' ? '#B0B0B0' : '#6B6B6B',
+                      transform: [{
+                        translateX: scrollAnimation.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [
+                            -textWidth || -300, 
+                            containerWidth + (textWidth || 300)
+                          ], // Start from completely off-screen left, end completely off-screen right
+                        })
+                      }],
+                    }
+                  ]}
+                  onLayout={(event) => setTextWidth(event.nativeEvent.layout.width)}
+                >
+                  {currentTrack ? `${currentTrack.name} • ${currentTrack.artist} • ${currentTrack.album || 'Unknown Album'}` : 'No track playing'}
+                </Animated.Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Dynamic Greeting Banner */}
         {greetingText && showGreeting && (
           <Animated.View 
@@ -779,6 +882,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             onFocus={handleInputFocus}
             onBlur={handleInputBlur}
             onSwipeUp={() => setShowTestTooltip(true)}
+            onAttachmentToggle={setIsAttachmentExpanded}
           />
         </View>
       </Animated.View>
@@ -1223,11 +1327,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
 
       {/* Floating Action Buttons */}
       {!showHeaderMenu && (
-        <View style={[
+        <Animated.View style={[
           styles.floatingButtonBar,
           {
             backgroundColor: theme === 'dark' ? designTokens.surfaces.dark.elevated : designTokens.brand.surface,
             borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+            transform: [{ translateX: floatingButtonsAnim }],
           }
         ]}>
           {/* Conversations Button */}
@@ -1272,7 +1377,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
               size={22}
             />
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       )}
 
       </SafeAreaView>
@@ -1338,6 +1443,45 @@ const styles = StyleSheet.create({
   // Removed more unused styles
   
   // Removed unused scroll button styles
+
+  // Spotify Now Playing
+  spotifyContainer: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 40,
+    left: 0,
+    right: 0,
+    zIndex: 500,
+    paddingHorizontal: 16,
+  },
+  spotifyContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderWidth: 0.5,
+    overflow: 'hidden',
+    height: 36,
+  },
+  albumArt: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  scrollContainer: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  spotifyText: {
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    letterSpacing: -0.1,
+    fontWeight: '500',
+    whiteSpace: 'nowrap',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
 
   // Dynamic Greeting Banner
   greetingBanner: {

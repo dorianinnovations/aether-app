@@ -75,22 +75,7 @@ const PriorityIndicator: React.FC<PriorityIndicatorProps> = ({ priority, colors 
     return null; // Don't show indicator for low priority
   }
 
-  return (
-    <View style={styles.container}>
-      <Animated.View
-        style={[
-          styles.indicator,
-          getIndicatorStyle(),
-          priority === 'high' && {
-            transform: [{ scale: pulseAnim }],
-          },
-        ]}
-      />
-      {priority === 'high' && (
-        <View style={[styles.glow, { backgroundColor: getPriorityColor() }]} />
-      )}
-    </View>
-  );
+  return null; // Hidden - priority indicators disabled
 };
 
 const styles = StyleSheet.create({

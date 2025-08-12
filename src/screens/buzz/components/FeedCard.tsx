@@ -26,11 +26,11 @@ import { spacing } from '../../../design-system/tokens/spacing';
 import { getGlassmorphicStyle } from '../../../design-system/tokens/glassmorphism';
 
 // Types
-import type { FeedItem } from '../../../services/apiModules/endpoints/feed';
+import type { FeedItem } from '../hooks/useFeedData';
 import type { ThemeColors } from '../types';
 
 const { width: screenWidth } = Dimensions.get('window');
-const CARD_WIDTH = screenWidth - spacing.lg * 2;
+const CARD_WIDTH = screenWidth - spacing.sm * 2; // Wider cards with less margin
 
 interface FeedCardProps {
   item: FeedItem;
@@ -68,10 +68,9 @@ const FeedCard: React.FC<FeedCardProps> = ({
   };
 
   const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
+    Animated.timing(scaleAnim, {
       toValue: 1,
-      friction: 3,
-      tension: 40,
+      duration: 100,
       useNativeDriver: true,
     }).start();
   };
@@ -89,18 +88,23 @@ const FeedCard: React.FC<FeedCardProps> = ({
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const truncateContent = (content: string, maxLength: number = 100) => {
+  const truncateContent = (content: string, maxLength: number = 300) => {
     if (content.length <= maxLength) return content;
     return content.substring(0, maxLength).trim() + '...';
   };
 
   const cardStyle = {
-    ...getGlassmorphicStyle('card', isDarkMode ? 'dark' : 'light'),
     backgroundColor: isDarkMode 
-      ? 'rgba(30, 30, 30, 0.6)' // Match the header area's lighter black
-      : 'rgba(255, 255, 255, 0.92)',
-    borderWidth: isDarkMode ? 1 : 0,
-    borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+      ? '#1a1a1a' // Solid dark background for neumorphism
+      : '#f0f0f0', // Light gray background for neumorphism
+    borderWidth: 2,
+    borderColor: isDarkMode ? '#333333' : '#cccccc',
+    // Neumorphic shadows
+    shadowColor: isDarkMode ? '#000000' : '#000000',
+    shadowOffset: { width: 8, height: 8 },
+    shadowOpacity: isDarkMode ? 0.8 : 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   };
 
   return (
@@ -126,15 +130,15 @@ const FeedCard: React.FC<FeedCardProps> = ({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              {item.artist.image && (
+              {item.imageUrl && (
                 <Image
-                  source={{ uri: item.artist.image }}
+                  source={{ uri: item.imageUrl }}
                   style={styles.artistImage}
                 />
               )}
               <View style={styles.artistInfo}>
                 <Text style={[styles.artistName, { color: colors.text }]}>
-                  {item.artist.name}
+                  {item.artist || 'Unknown Artist'}
                 </Text>
                 <View style={styles.metaRow}>
                   <TypeBadge type={item.type} colors={colors} isDarkMode={isDarkMode} />
@@ -147,9 +151,6 @@ const FeedCard: React.FC<FeedCardProps> = ({
                 </View>
               </View>
             </View>
-            {!item.viewed && (
-              <View style={[styles.unreadDot, { backgroundColor: colors.primary }]} />
-            )}
           </View>
 
           {/* Content */}
@@ -157,8 +158,8 @@ const FeedCard: React.FC<FeedCardProps> = ({
             <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
               {item.title}
             </Text>
-            <Text style={[styles.contentText, { color: colors.textSecondary }]} numberOfLines={3}>
-              {truncateContent(item.content, 150)}
+            <Text style={[styles.contentText, { color: colors.textSecondary }]} numberOfLines={5}>
+              {truncateContent(item.content, 250)}
             </Text>
           </View>
 
@@ -202,21 +203,6 @@ const FeedCard: React.FC<FeedCardProps> = ({
                 <Ionicons name="bookmark-outline" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
-            {item.engagementScore !== undefined && (
-              <View style={styles.engagementContainer}>
-                <View style={[styles.engagementBar, { backgroundColor: colors.surface }]}>
-                  <View
-                    style={[
-                      styles.engagementFill,
-                      {
-                        width: `${item.engagementScore * 100}%`,
-                        backgroundColor: colors.primary,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
-            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -226,7 +212,7 @@ const FeedCard: React.FC<FeedCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: spacing.lg,
+    marginHorizontal: spacing.sm,
     marginVertical: spacing.sm,
   },
   card: {
@@ -254,7 +240,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   artistName: {
-    ...typography.body,
+    fontFamily: 'MozillaHeadline_600SemiBold',
+    fontSize: 16,
     fontWeight: '600',
     marginBottom: spacing.xs,
   },
@@ -264,10 +251,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   source: {
-    ...typography.caption,
+    fontFamily: 'MozillaText_400Regular',
+    fontSize: 12,
   },
   timestamp: {
-    ...typography.caption,
+    fontFamily: 'MozillaText_400Regular',
+    fontSize: 12,
   },
   unreadDot: {
     width: 8,
@@ -279,12 +268,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   title: {
-    ...typography.textStyles.headlineMedium,
+    fontFamily: 'MozillaHeadline_600SemiBold',
+    fontSize: 18,
+    fontWeight: '600',
     marginBottom: spacing.xs,
     lineHeight: 24,
   },
   contentText: {
-    ...typography.body,
+    fontFamily: 'MozillaText_400Regular',
+    fontSize: 14,
     lineHeight: 20,
   },
   imageContainer: {

@@ -23,7 +23,6 @@ export { FileAPI } from './endpoints/files';
 
 // New artist-focused API modules
 export { ArtistAPI } from './endpoints/artists';
-export { FeedAPI } from './endpoints/feed';
 export { AnalyticsAPI } from './endpoints/analytics';
 export { MemoryAPI } from './endpoints/memory';
 
