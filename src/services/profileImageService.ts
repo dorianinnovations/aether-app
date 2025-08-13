@@ -33,8 +33,8 @@ export class ProfileImageService {
         camera: cameraResult.status === 'granted'
       };
 
-      // Log permission status for debugging TestFlight issues
-      if (Platform.OS === 'ios') {
+      // Only log permission issues, not successful grants
+      if (Platform.OS === 'ios' && (mediaLibraryResult.status !== 'granted' || cameraResult.status !== 'granted')) {
         logger.info('iOS Permissions Status:', {
           mediaLibrary: mediaLibraryResult.status,
           camera: cameraResult.status,
@@ -110,19 +110,11 @@ export class ProfileImageService {
         }),
       };
 
-      logger.info(`Launching ${useCamera ? 'camera' : 'image library'} with options:`, options);
-
       if (useCamera) {
         result = await ImagePicker.launchCameraAsync(options);
       } else {
         result = await ImagePicker.launchImageLibraryAsync(options);
       }
-
-      logger.info('Image picker result:', {
-        cancelled: result.canceled,
-        hasAssets: result.assets ? result.assets.length > 0 : false,
-        firstAssetUri: result.assets?.[0]?.uri
-      });
 
       return result;
     } catch (error: any) {
@@ -152,8 +144,6 @@ export class ProfileImageService {
    */
   static async uploadProfilePicture(imageUri: string): Promise<ImageUploadResult> {
     try {
-      logger.info('Starting profile picture upload:', { imageUri });
-      
       // Validate image URI using utility
       const uriValidation = ImageUtils.validateImageUri(imageUri);
       if (!uriValidation.valid) {
@@ -170,8 +160,6 @@ export class ProfileImageService {
       ImageUtils.logImageInfo(imageUri, 'Profile picture upload');
 
       const response = await UserAPI.uploadProfilePicture(imageUri);
-      
-      logger.info('Profile upload response:', response);
       
       // Server returns: {data: {profilePhoto: {url: ..., filename: ..., etc}}}
       if (response?.data?.profilePhoto) {
@@ -204,8 +192,6 @@ export class ProfileImageService {
    */
   static async uploadBannerImage(imageUri: string): Promise<ImageUploadResult> {
     try {
-      logger.info('Starting banner image upload:', { imageUri });
-      
       // Validate image URI using utility
       const uriValidation = ImageUtils.validateImageUri(imageUri);
       if (!uriValidation.valid) {
@@ -222,8 +208,6 @@ export class ProfileImageService {
       ImageUtils.logImageInfo(imageUri, 'Banner image upload');
 
       const response = await UserAPI.uploadBannerImage(imageUri);
-      
-      logger.info('Banner upload response:', response);
       
       // Server returns: {data: {bannerImage: {url: ..., filename: ..., etc}}}
       if (response?.data?.bannerImage) {
