@@ -23,4 +23,6 @@ export { WalletModal } from './WalletModal';
 export { ToastProvider } from './ToastProvider';
 export { FloatingButtonProvider } from './FloatingButtonContainer';
 export { SwipeTutorialOverlay } from './SwipeTutorialOverlay';
+export { SpotifyBanner } from './SpotifyBanner';
+export { ChatFloatingActions } from './ChatFloatingActions';
 export * from './FloatingButtonContainer';

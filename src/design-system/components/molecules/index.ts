@@ -53,3 +53,10 @@ export { SocialStats } from './SocialStats';
 // Wallet components
 export { WalletSubscriptions } from './WalletSubscriptions';
 export { WalletCard } from './WalletCard';
+
+// Spotify components
+export { ScrollingTrackText } from './ScrollingTrackText';
+export { SpotifyTrackDisplay } from './SpotifyTrackDisplay';
+
+// Floating button components
+export { FloatingButtonBar } from './FloatingButtonBar';

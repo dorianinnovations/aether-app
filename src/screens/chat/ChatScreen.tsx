@@ -11,7 +11,6 @@ import {
   Animated,
   Alert,
   Text,
-  Image,
   // Removed unused Dimensions
   SafeAreaView,
   StatusBar,
@@ -22,17 +21,15 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
-import LottieView from 'lottie-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 
 // Enhanced Components
 import { EnhancedChatInput } from '../../design-system/components/molecules';
 import EnhancedBubble from '../../design-system/components/molecules/EnhancedBubble';
-import { HeaderMenu, SignOutModal, ArtistListeningModal, WalletModal, SwipeTutorialOverlay } from '../../design-system/components/organisms';
+import { HeaderMenu, SignOutModal, ArtistListeningModal, WalletModal, SwipeTutorialOverlay, SpotifyBanner, ChatFloatingActions } from '../../design-system/components/organisms';
 import { AnimatedHamburger, NowPlayingIndicator, SpotifyLinkPrompt, TrioOptionsRing } from '../../design-system/components/atoms';
 import { PageBackground, SwipeToMenu } from '../../design-system/components/atoms';
 import SettingsModal from './SettingsModal';
@@ -179,23 +176,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   // Spotify OAuth for connecting account
   const { connectToSpotify } = useSpotifyOAuth();
   
-  // Scrolling text animation
-  const scrollAnimation = useRef(new Animated.Value(0)).current;
-  const [textWidth, setTextWidth] = useState(0);
-  const [containerWidth, setContainerWidth] = useState(0);
-  
-  // Album art fade animation
-  const albumArtFadeAnim = useRef(new Animated.Value(1)).current;
-  const [previousImageUrl, setPreviousImageUrl] = useState<string | null>(null);
-  
-  // Green indicator animation after album art change
-  const [showGreenIndicator, setShowGreenIndicator] = useState(false);
-  const greenIndicatorAnim = useRef(new Animated.Value(0)).current;
-  
-  // Spotify banner tappability animations
-  const spotifyPulseAnim = useRef(new Animated.Value(0)).current;
-  const spotifyScaleAnim = useRef(new Animated.Value(1)).current;
-  
   // Delay showing Spotify link prompt for new users
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -205,122 +185,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Start pulse animation when currentTrack is available
-  useEffect(() => {
-    if (currentTrack && spotifyConnected) {
-      // Start subtle pulse border animation (80% off, 20% active with gradual transitions)
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(spotifyPulseAnim, {
-            toValue: 0,
-            duration: 4000, // 80% off time (4 seconds)
-            useNativeDriver: true,
-          }),
-          Animated.timing(spotifyPulseAnim, {
-            toValue: 1,
-            duration: 600, // Gradual climb up (0.6 seconds)
-            useNativeDriver: true,
-            easing: Easing.out(Easing.cubic), // Smooth acceleration
-          }),
-          Animated.timing(spotifyPulseAnim, {
-            toValue: 0,
-            duration: 400, // Gradual fade down (0.4 seconds)
-            useNativeDriver: true,
-            easing: Easing.in(Easing.cubic), // Smooth deceleration
-          }),
-        ])
-      ).start();
-    } else {
-      // Stop animations when no track
-      spotifyPulseAnim.stopAnimation();
-      spotifyPulseAnim.setValue(0);
-    }
-  }, [currentTrack, spotifyConnected, spotifyPulseAnim]);
-
-  // Start scrolling animation when track changes
-  useEffect(() => {
-    if (currentTrack && textWidth > 0 && containerWidth > 0) {
-      // Reset animation
-      scrollAnimation.setValue(0);
-      
-      // Always scroll if text is close to container width (within 50px) or longer
-      const shouldAnimate = textWidth >= (containerWidth - 50);
-      
-      if (shouldAnimate) {
-        // Calculate scroll distance to ensure full text travels across
-        const scrollDistance = textWidth + containerWidth;
-        
-        // Start continuous scrolling
-        Animated.loop(
-          Animated.sequence([
-            Animated.timing(scrollAnimation, {
-              toValue: 1,
-              duration: Math.max(8000, scrollDistance * 25), // Slower scrolling
-              useNativeDriver: true,
-              easing: Easing.linear,
-            }),
-            Animated.delay(2000), // 2 second pause at the end
-            Animated.timing(scrollAnimation, {
-              toValue: 0,
-              duration: 0, // Instant reset to beginning
-              useNativeDriver: true,
-            }),
-          ])
-        ).start();
-      }
-    }
-  }, [currentTrack, scrollAnimation, textWidth, containerWidth]);
-
-  // Album art fade animation when image changes
-  useEffect(() => {
-    const currentImageUrl = currentTrack?.imageUrl;
-    
-    if (currentImageUrl && previousImageUrl && currentImageUrl !== previousImageUrl) {
-      // Trigger fade animation when album art changes
-      albumArtFadeAnim.setValue(0);
-      
-      Animated.timing(albumArtFadeAnim, {
-        toValue: 1,
-        duration: 300, // Quick fade
-        useNativeDriver: true,
-        easing: Easing.out(Easing.ease),
-      }).start(() => {
-        // Keep animation value at 1 to keep album art visible
-        // albumArtSlideAnim.setValue(1);
-        
-        // Show green indicator after fade completes
-        setShowGreenIndicator(true);
-        greenIndicatorAnim.setValue(0);
-        
-        // Fade in the green indicator
-        Animated.timing(greenIndicatorAnim, {
-          toValue: 1,
-          duration: 300, // Smooth fade-in duration
-          useNativeDriver: true,
-          easing: Easing.out(Easing.ease),
-        }).start(() => {
-          // After 5 seconds, slide the indicator away to the right
-          setTimeout(() => {
-            Animated.timing(greenIndicatorAnim, {
-              toValue: 2, // Use value 2 to trigger slide-out animation
-              duration: 400,
-              useNativeDriver: true,
-              easing: Easing.in(Easing.back(1.2)),
-            }).start(() => {
-              // Hide indicator after slide animation completes
-              setShowGreenIndicator(false);
-              greenIndicatorAnim.setValue(0);
-            });
-          }, 5000);
-        });
-      });
-    }
-    
-    // Update previous image URL
-    if (currentImageUrl !== previousImageUrl) {
-      setPreviousImageUrl(currentImageUrl || null);
-    }
-  }, [currentTrack?.imageUrl, previousImageUrl, albumArtFadeAnim, greenIndicatorAnim]);
   
   const { ghostText } = useGhostTyping({
     isInputFocused: friendRequest.isInputFocused,
@@ -885,188 +749,23 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         />
 
         {/* Spotify Banner - Show current track or link prompt */}
-        <View style={styles.spotifyContainer}>
-          {currentTrack && spotifyConnected ? (
-            <TouchableOpacity 
-              onPress={() => {
-                if (currentTrack) {
-                  // Haptic feedback for the tap
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  
-                  // Create silent question about the current song
-                  const silentQuery = `Search statistics about "${currentTrack.name}" by ${currentTrack.artist}${currentTrack.album ? ` from the album "${currentTrack.album}"` : ''} and provide interesting information about it like chart performance, background, or fun facts in a conversational answer.`;
-                  
-                  // Send the message silently (no user bubble shown)
-                  // Always send the message regardless of friend conversation status
-                  handleMessageSend(silentQuery, [], true); // Pass true for silent mode
-                  
-                  // Scroll to show the invisible user message + AI response
-                  setTimeout(() => scrollToBottom(), 200);
-                }
-              }}
-              onPressIn={() => {
-                // Scale down on press
-                Animated.spring(spotifyScaleAnim, {
-                  toValue: 0.96,
-                  useNativeDriver: true,
-                  tension: 200,
-                  friction: 7,
-                }).start();
-              }}
-              onPressOut={() => {
-                // Scale back up on release
-                Animated.spring(spotifyScaleAnim, {
-                  toValue: 1,
-                  useNativeDriver: true,
-                  tension: 200,
-                  friction: 7,
-                }).start();
-              }}
-              activeOpacity={1} // Let our scale animation handle the feedback
-            >
-              <Animated.View 
-                style={[
-                  styles.spotifyContent,
-                  {
-                    borderColor: spotifyPulseAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [
-                        theme === 'dark' ? 'rgba(120, 120, 120, 0.2)' : 'rgba(160, 160, 160, 0.15)',
-                        theme === 'dark' ? 'rgba(29, 185, 84, 0.6)' : 'rgba(29, 185, 84, 0.4)', // Spotify green
-                      ],
-                    }),
-                    shadowColor: '#1DB954', // Spotify green
-                    shadowOpacity: spotifyPulseAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, 0.4],
-                    }),
-                    shadowRadius: spotifyPulseAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, 12],
-                    }),
-                    shadowOffset: {
-                      width: 0,
-                      height: 0,
-                    },
-                    elevation: spotifyPulseAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, 8],
-                    }),
-                    transform: [{ scale: spotifyScaleAnim }],
-                  }
-                ]}
-              >
-              <BlurView
-                intensity={20}
-                tint={theme === 'dark' ? 'dark' : 'light'}
-                style={StyleSheet.absoluteFillObject}
-              />
-              {/* Album Art */}
-              {currentTrack?.imageUrl && (
-                <View style={styles.albumArtContainer}>
-                  <Animated.View style={{
-                    opacity: albumArtFadeAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, 1], // Simple fade in
-                    })
-                  }}>
-                    <Image 
-                      source={{ uri: currentTrack.imageUrl }}
-                      style={styles.albumArt}
-                    />
-                  </Animated.View>
-                  
-                  {/* Green Success Indicator */}
-                  {showGreenIndicator && (
-                    <Animated.View style={[
-                      styles.greenIndicator,
-                      {
-                        opacity: greenIndicatorAnim.interpolate({
-                          inputRange: [0, 1, 2],
-                          outputRange: [0, 1, 0],
-                        }),
-                        transform: [
-                          {
-                            translateX: greenIndicatorAnim.interpolate({
-                              inputRange: [0, 1, 2],
-                              outputRange: [0, 0, 60], // Slide 60px to the right when hiding
-                            })
-                          },
-                          {
-                            scale: greenIndicatorAnim.interpolate({
-                              inputRange: [0, 1, 2],
-                              outputRange: [0.3, 1, 0.8],
-                            })
-                          }
-                        ],
-                      }
-                    ]}>
-                      <LottieView
-                        source={require('../../../assets/AetherLiveStatusGreen.json')}
-                        autoPlay
-                        loop={false}
-                        style={styles.greenIndicatorLottie}
-                      />
-                    </Animated.View>
-                  )}
-                </View>
-              )}
-              
-              {/* Scrolling Text Container */}
-              <View 
-                style={styles.scrollContainer}
-                onLayout={(event) => setContainerWidth(event.nativeEvent.layout.width)}
-              >
-                <Animated.View
-                  style={[
-                    styles.spotifyTextContainer,
-                    {
-                      transform: [{
-                        translateX: scrollAnimation.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [
-                            -textWidth || -300, 
-                            containerWidth + (textWidth || 300)
-                          ], // Start from completely off-screen left, end completely off-screen right
-                        })
-                      }],
-                    }
-                  ]}
-                  onLayout={(event) => setTextWidth(event.nativeEvent.layout.width)}
-                >
-                  <Text style={[styles.spotifyText, { color: theme === 'dark' ? '#E0E0E0' : '#4A4A4A', fontWeight: '600' }]}>
-                    {currentTrack.name}
-                  </Text>
-                  <Text style={[styles.spotifyText, { color: theme === 'dark' ? '#C0C0C0' : '#606060', fontWeight: '400' }]}>
-                    {' '}
-                    {currentTrack.artist}
-                  </Text>
-                  <Text style={[styles.spotifyText, { color: theme === 'dark' ? '#A0A0A0' : '#707070', fontWeight: '300' }]}>
-                    {' '}
-                    {currentTrack.album || 'Unknown Album'}
-                  </Text>
-                </Animated.View>
-              </View>
-              
-              {/* Static Tap Indicator */}
-              <View style={styles.tapIndicator}>
-                <Ionicons 
-                  name="chevron-forward" 
-                  size={16} 
-                  color={theme === 'dark' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)'}
-                />
-              </View>
-              </Animated.View>
-            </TouchableOpacity>
-          ) : (
-            showSpotifyLinkPrompt && (
-              <SpotifyLinkPrompt 
-                theme={theme}
-                onPress={connectToSpotify}
-              />
-            )
-          )}
-        </View>
+        <SpotifyBanner
+          theme={theme}
+          currentTrack={currentTrack || undefined}
+          isConnected={spotifyConnected}
+          showLinkPrompt={showSpotifyLinkPrompt}
+          onTrackPress={(track) => {
+            // Create silent question about the current song
+            const silentQuery = `Search statistics about "${track.name}" by ${track.artist}${track.album ? ` from the album "${track.album}"` : ''} and provide interesting information about it like chart performance, background, or fun facts in a conversational answer.`;
+            
+            // Send the message silently (no user bubble shown)
+            handleMessageSend(silentQuery, [], true); // Pass true for silent mode
+            
+            // Scroll to show the invisible user message + AI response
+            setTimeout(() => scrollToBottom(), 200);
+          }}
+          onConnectPress={connectToSpotify}
+        />
 
         {/* Dynamic Greeting Banner */}
         {greetingText && showGreeting && (
@@ -1687,83 +1386,20 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       />
 
       {/* Floating Action Buttons */}
-      {!showHeaderMenu && (
-        <Animated.View style={[
-          styles.floatingButtonBar,
-          {
-            backgroundColor: 'rgba(26, 26, 26, 0.9)',
-            borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-            transform: [{ translateX: floatingButtonsAnim }],
-          }
-        ]}>
-          {/* Third Button - Trio Options */}
-          <TouchableOpacity
-            style={styles.floatingButtonItem}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              handleTrioPress();
-            }}
-            activeOpacity={0.8}
-          >
-            <Ionicons
-              name="finger-print-outline"
-              size={22}
-              color="rgba(255, 255, 255, 0.6)"
-            />
-          </TouchableOpacity>
-
-          {/* Separator */}
-          <View style={[
-            styles.floatingButtonSeparator,
-            {
-              backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-            }
-          ]} />
-
-          {/* Conversations Button */}
-          <TouchableOpacity
-            style={styles.floatingButtonItem}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setShowConversationDrawer(true);
-            }}
-            activeOpacity={0.8}
-          >
-            <Ionicons
-              name="chatbubbles-outline"
-              size={22}
-              color="rgba(255, 255, 255, 0.8)"
-            />
-          </TouchableOpacity>
-
-          {/* Separator */}
-          <View style={[
-            styles.floatingButtonSeparator,
-            {
-              backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-            }
-          ]} />
-
-          {/* Menu Button */}
-          <TouchableOpacity
-            style={styles.floatingButtonItem}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setHamburgerOpen(!hamburgerOpen);
-              setTimeout(() => {
-                toggleHeaderMenu();
-              }, 150); // Small delay to show animation before hiding buttons
-            }}
-            activeOpacity={0.8}
-          >
-            <AnimatedHamburger
-              isOpen={hamburgerOpen}
-              color="rgba(255, 255, 255, 0.9)"
-              size={22}
-            />
-          </TouchableOpacity>
-        </Animated.View>
-      )}
+      <ChatFloatingActions
+        theme={theme}
+        slideAnimation={floatingButtonsAnim}
+        visible={!showHeaderMenu}
+        hamburgerOpen={hamburgerOpen}
+        onTrioPress={handleTrioPress}
+        onConversationsPress={() => setShowConversationDrawer(true)}
+        onMenuPress={() => {
+          setHamburgerOpen(!hamburgerOpen);
+          setTimeout(() => {
+            toggleHeaderMenu();
+          }, 150); // Small delay to show animation before hiding buttons
+        }}
+      />
 
       </SafeAreaView>
     </PageBackground>
@@ -1829,71 +1465,6 @@ const styles = StyleSheet.create({
   
   // Removed unused scroll button styles
 
-  // Spotify Now Playing
-  spotifyContainer: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 40,
-    left: 0,
-    right: 0,
-    zIndex: 500,
-    paddingHorizontal: 16,
-  },
-  spotifyContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderWidth: 0.5,
-    overflow: 'hidden',
-    height: 36,
-  },
-  albumArtContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  albumArt: {
-    width: 24,
-    height: 24,
-    borderRadius: 4,
-  },
-  greenIndicator: {
-    position: 'absolute',
-    right: -16, // Perfect spacing from album art
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  greenIndicatorLottie: {
-    width: 20,
-    height: 20,
-  },
-  scrollContainer: {
-    flex: 1,
-    overflow: 'hidden',
-  },
-  spotifyTextContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  spotifyText: {
-    fontSize: 13,
-    fontFamily: 'Inter-Medium',
-    letterSpacing: -0.1,
-    fontWeight: '500',
-    includeFontPadding: false,
-    textAlignVertical: 'center',
-  },
-  tapIndicator: {
-    position: 'absolute',
-    right: 8,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
 
   // Dynamic Greeting Banner
   greetingBanner: {
@@ -2117,32 +1688,6 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
 
-  // Floating Action Button Bar
-  floatingButtonBar: {
-    position: 'absolute',
-    bottom: 120, // Position above input area
-    right: spacing[2], // Moved more to the right
-    flexDirection: 'column',
-    borderRadius: 12, // Less round corners
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
-    borderWidth: 1,
-    zIndex: 1000,
-    overflow: 'hidden',
-  },
-  floatingButtonItem: {
-    width: 50, // Larger size
-    height: 50, // Larger size
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  floatingButtonSeparator: {
-    height: 1,
-    width: '100%',
-  },
 });
 
 export default ChatScreen;

@@ -48,6 +48,11 @@ export { SwipeToMenu } from './SwipeToMenu';
 export { SpotifyNowPlaying } from './SpotifyNowPlaying';
 export { SpotifyLinkPrompt } from './SpotifyLinkPrompt';
 export { default as TrioOptionsRing } from './TrioOptionsRing';
+export { AlbumArt } from './AlbumArt';
+export { GreenIndicator } from './GreenIndicator';
+export { SpotifyPulseEffect } from './SpotifyPulseEffect';
+export { FloatingActionButton } from './FloatingActionButton';
+export { FloatingButtonSeparator } from './FloatingButtonSeparator';
 
 // Re-export types
 export type { IconName, IconSize } from './Icon';
