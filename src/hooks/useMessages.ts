@@ -313,7 +313,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         let messageMetadata: { toolResults?: unknown[]; toolUsed?: string; thinking?: string; conversationId?: string } | undefined = undefined;
         
         // Use the ChatAPI streaming method directly
-        console.log('🎯 Sending message with conversationId:', activeConversationId);
+        console.log('🎯 Sending message with conversationId:', activeConversationId || '(new conversation)');
         for await (const chunk of ChatAPI.streamSocialChat(apiPrompt, attachments, activeConversationId)) {
           // Check if chunk is metadata object
           if (typeof chunk === 'object' && chunk !== null && 'metadata' in chunk) {
