@@ -30,7 +30,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { EnhancedChatInput } from '../../design-system/components/molecules';
 import EnhancedBubble from '../../design-system/components/molecules/EnhancedBubble';
 import { HeaderMenu, SignOutModal, ArtistListeningModal, WalletModal, SwipeTutorialOverlay, SpotifyBanner, ChatFloatingActions } from '../../design-system/components/organisms';
-import { AnimatedHamburger, NowPlayingIndicator, SpotifyLinkPrompt, TrioOptionsRing } from '../../design-system/components/atoms';
+import { AnimatedHamburger, NowPlayingIndicator, SpotifyLinkPrompt, TrioOptionsRing, ScrollToBottomButton } from '../../design-system/components/atoms';
 import { PageBackground, SwipeToMenu } from '../../design-system/components/atoms';
 import SettingsModal from './SettingsModal';
 import ConversationDrawer from '../../components/ConversationDrawer';
@@ -848,32 +848,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       </View>
 
       {/* Scroll to bottom button - hidden when near bottom */}
-      {!isNearBottom && (
-        <TouchableOpacity
-          style={[
-            styles.scrollToBottomButton,
-            {
-              backgroundColor: theme === 'dark' 
-                ? 'rgba(255, 255, 255, 0.1)' 
-                : 'rgba(0, 0, 0, 0.05)',
-              borderColor: theme === 'dark' 
-                ? 'rgba(255, 255, 255, 0.15)' 
-                : 'rgba(0, 0, 0, 0.1)',
-            }
-          ]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            scrollToBottom(false);
-          }}
-          activeOpacity={0.7}
-        >
-          <Ionicons 
-            name="chevron-down" 
-            size={20} 
-            color={theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.6)'} 
-          />
-        </TouchableOpacity>
-      )}
+      <ScrollToBottomButton
+        visible={!isNearBottom}
+        onPress={() => scrollToBottom(false)}
+        theme={theme}
+      />
 
       <Animated.View 
         style={[
@@ -1668,25 +1647,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Scroll to bottom button
-  scrollToBottomButton: {
-    position: 'absolute',
-    bottom: 120, // Position above input area
-    left: '50%', // Center horizontally
-    marginLeft: -22, // Offset by half width (44/2)
-    width: 44,
-    height: 44,
-    borderRadius: 22, // Perfectly circular
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    zIndex: 1000,
-  },
 
 });
 
