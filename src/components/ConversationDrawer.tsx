@@ -90,6 +90,8 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const [addFriendUsername, setAddFriendUsername] = useState('');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const actionDockAnim = useRef(new Animated.Value(0)).current;
+  const newChatButtonAnim = useRef(new Animated.Value(0)).current;
+  const tabButtonsAnim = useRef(new Animated.Value(0)).current;
 
   // Clear all modal state
   const [clearAllModal, setClearAllModal] = useState<{ visible: boolean; type: 'conversations' | 'friends' } | null>(null);
@@ -262,6 +264,40 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const handleTabTransitionWithAnimationState = useCallback((targetTab: number) => {
     handleTabTransition(targetTab, isAnimating);
   }, [handleTabTransition, isAnimating]);
+
+  // Animate new chat button and tab buttons based on current tab
+  useEffect(() => {
+    if (currentTab === 0) {
+      // Aether tab - show new chat button, tabs in normal position
+      newChatButtonAnim.setValue(0);
+      Animated.parallel([
+        Animated.timing(newChatButtonAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(tabButtonsAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        })
+      ]).start();
+    } else {
+      // Friends tab - hide new chat button, slide tab buttons down
+      Animated.parallel([
+        Animated.timing(newChatButtonAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(tabButtonsAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        })
+      ]).start();
+    }
+  }, [currentTab, newChatButtonAnim, tabButtonsAnim]);
 
   useEffect(() => {
     if (isVisible) {
@@ -604,7 +640,19 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                 }
               ]}>
                 {/* Tab Buttons */}
-                <View style={styles.tabButtonsContainer}>
+                <Animated.View 
+                  style={[
+                    styles.tabButtonsContainer,
+                    {
+                      transform: [{
+                        translateY: tabButtonsAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, 52] // Slide down by button height + gap (44 + 8)
+                        })
+                      }]
+                    }
+                  ]}
+                >
                   {tabs.map((tab, index) => {
                     const isActive = index === currentTab;
                     const tabProgress = tabAnimations[index];
@@ -624,8 +672,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                               backgroundColor: isActive
                                 ? (theme === 'dark' ? 'rgba(42, 42, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)')
                                 : (theme === 'dark' ? 'rgba(25, 25, 25, 0.8)' : 'rgba(240, 240, 240, 0.9)'),
-                              borderWidth: isActive ? 0.5 : 0,
-                              borderColor: isActive ? (theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)') : 'transparent',
+                              borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
                             }
                           ]}
                           onPress={() => handleTabTransitionWithAnimationState(index)}
@@ -662,27 +709,40 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                       </Animated.View>
                     );
                   })}
-                </View>
+                </Animated.View>
 
                 {/* Action Buttons */}
                 <View style={styles.actionButtonsContainer}>
                   {/* Primary action */}
-                  {currentTab === 0 ? (
+                  <Animated.View
+                    style={{
+                      opacity: newChatButtonAnim,
+                      transform: [{
+                        translateY: newChatButtonAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [-20, 0]
+                        })
+                      }]
+                    }}
+                    pointerEvents={currentTab === 0 ? 'auto' : 'none'}
+                  >
                     <TouchableOpacity
                       style={[
                         styles.actionButton,
                         styles.primaryActionButton,
                         {
                           backgroundColor: theme === 'dark' ? 'rgba(42, 42, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+                          borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)',
                         }
                       ]}
                       onPress={handleNewChat}
                       activeOpacity={0.7}
-                      disabled={isAnimating}
+                      disabled={isAnimating || currentTab !== 0}
                     >
                       <Feather name="plus" size={18} color={themeColors.text} />
                     </TouchableOpacity>
-                  ) : currentTab === 1 ? (
+                  </Animated.View>
+                  {currentTab === 1 && (
                     showAddFriendInput ? (
                       <View style={[
                         styles.actionButton,
@@ -690,6 +750,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                         styles.addFriendInput,
                         {
                           backgroundColor: theme === 'dark' ? 'rgba(42, 42, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+                          borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)',
                         }
                       ]}>
                         <TextInput
@@ -717,6 +778,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                           styles.primaryActionButton,
                           {
                             backgroundColor: theme === 'dark' ? 'rgba(42, 42, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+                            borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)',
                           }
                         ]}
                         onPress={handleAddFriendPress}
@@ -726,7 +788,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                         <Feather name="user-plus" size={18} color={themeColors.text} />
                       </TouchableOpacity>
                     )
-                  ) : null}
+                  )}
 
                   {/* Refresh */}
                   <TouchableOpacity
@@ -734,6 +796,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                       styles.actionButton,
                       {
                         backgroundColor: theme === 'dark' ? 'rgba(25, 25, 25, 0.8)' : 'rgba(240, 240, 240, 0.9)',
+                        borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
                       }
                     ]}
                     onPress={handleRefresh}
@@ -749,6 +812,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                         styles.actionButton,
                         {
                           backgroundColor: theme === 'dark' ? 'rgba(25, 25, 25, 0.8)' : 'rgba(240, 240, 240, 0.9)',
+                          borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
                         }
                       ]}
                       onPress={handleClearAllConversations}
@@ -764,6 +828,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                       styles.actionButton,
                       {
                         backgroundColor: theme === 'dark' ? 'rgba(25, 25, 25, 0.8)' : 'rgba(240, 240, 240, 0.9)',
+                        borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
                       }
                     ]}
                     onPress={handleClose}
@@ -899,7 +964,7 @@ const styles = StyleSheet.create({
   // Tab Buttons
   tabButtonsContainer: {
     flexDirection: 'column',
-    gap: spacing[1],
+    gap: 8,
   },
   tabButtonWrapper: {
     // Individual tab button wrapper
@@ -910,6 +975,7 @@ const styles = StyleSheet.create({
     height: 44,
     width: 44,
     borderRadius: 8,
+    borderWidth: 0.5,
     shadowColor: '#000',
     shadowOffset: { width: -2, height: 2 },
     shadowOpacity: 0.15,
@@ -930,28 +996,23 @@ const styles = StyleSheet.create({
   // Action Buttons
   actionButtonsContainer: {
     flexDirection: 'column',
-    gap: spacing[1],
+    gap: 8,
   },
   actionButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 40,
-    width: 40,
-    borderRadius: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: -1, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  primaryActionButton: {
     height: 44,
     width: 44,
     borderRadius: 8,
+    borderWidth: 0.5,
+    shadowColor: '#000',
     shadowOffset: { width: -2, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 4,
+  },
+  primaryActionButton: {
+    // All buttons now same size - no overrides needed
   },
   addFriendInput: {
     paddingHorizontal: 4,

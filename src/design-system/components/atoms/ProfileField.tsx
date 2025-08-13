@@ -283,7 +283,7 @@ export const ProfileField: React.FC<ProfileFieldProps> = ({
   }
 
   const containerStyle: ViewStyle = {
-    marginBottom: spacing[5],
+    marginBottom: spacing[2],
     ...style,
   };
 

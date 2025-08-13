@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    paddingTop: 120,
+    paddingTop: 20,
     paddingBottom: 40,
   },
   refreshIndicator: {

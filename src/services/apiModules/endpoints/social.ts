@@ -38,7 +38,6 @@ export const SocialProxyAPI = {
     try {
       // Note: Timeline endpoint not yet implemented on server
       // Returning mock success response to prevent 404 errors
-      logger.info('Timeline endpoint not implemented on server, falling back to mock response');
       return {
         success: false,
         message: 'Timeline endpoint not available',

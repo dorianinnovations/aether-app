@@ -70,17 +70,6 @@ export const ProfileFieldsGroup: React.FC<ProfileFieldsGroupProps> = ({
   };
   return (
     <View style={[styles.container, style]}>
-      {/* Display Name */}
-      <ProfileField
-        label="Display Name"
-        value={profile.displayName}
-        fieldType="displayName"
-        editable={editable}
-        showWhenEmpty={editable}
-        onChangeText={(text) => onFieldChange?.('displayName', text)}
-        onInputFocus={onInputFocus}
-      />
-
       {/* Bio */}
       <ProfileField
         label="Bio"
@@ -195,11 +184,11 @@ export const ProfileFieldsGroup: React.FC<ProfileFieldsGroupProps> = ({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: spacing[5],
-    paddingTop: 40, // Reduced space since no prominent display
+    paddingTop: spacing[10], // A bit more space to clear username/display name
     position: 'relative',
   },
   linksSection: {
-    marginTop: spacing[4],
+    marginTop: spacing[2],
   },
   linksSectionHeader: {
     marginBottom: spacing[2],

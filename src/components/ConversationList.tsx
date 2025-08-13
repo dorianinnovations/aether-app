@@ -455,6 +455,19 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   };
 
   const renderSkeletonLoader = () => {
+    // For Aether chats (tab 0), use Lottie instead of skeleton
+    if (currentTab === 0) {
+      return (
+        <View style={styles.lottieLoadingContainer}>
+          <LottieLoader
+            size={60}
+            style={{ width: 60, height: 60 }}
+          />
+        </View>
+      );
+    }
+    
+    // For other tabs, use skeleton loader
     return (
       <View style={styles.skeletonContainer}>
         {[...Array(4)].map((_, index) => (
@@ -563,7 +576,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
         </View>
       )}
       
-      {isTabSwitching ? (
+      {false ? (
         renderSkeletonLoader()
       ) : (
         <FlatList
@@ -911,6 +924,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[2],
     paddingVertical: spacing[2],
     gap: spacing[2],
+  },
+
+  lottieLoadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 80,
+    paddingBottom: 100,
   },
 
   // Load More Button styles

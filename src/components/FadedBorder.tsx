@@ -15,8 +15,8 @@ export const FadedBorder: React.FC<FadedBorderProps> = ({
     <LinearGradient
       colors={
         theme === 'light' 
-          ? ['#F8F8F8', '#F8F8F8', '#FFFFFF', '#F8F8F8', '#F8F8F8']
-          : ['#151515', '#151515', '#FFFFFF', '#151515', '#151515']
+          ? ['#F8F8F8', '#F8F8F8', '#D0D0D0', '#F8F8F8', '#F8F8F8']
+          : ['#151515', '#151515', '#505050', '#151515', '#151515']
       }
       locations={[0, 0.1, 0.5, 0.9, 1]}
       start={{ x: 0, y: 0 }}

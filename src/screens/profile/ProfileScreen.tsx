@@ -409,12 +409,9 @@ export const ProfileScreen: React.FC = () => {
 
   const handleGrailsChange = async (grails: GrailsData) => {
     try {
-      console.log('🔄 Saving grails to server...', grails);
       const response = await SpotifyAPI.saveGrails(grails);
-      console.log('✅ Grails saved successfully:', response);
       
       // Refresh social profile data to pick up the new grails
-      console.log('🔄 Refreshing profile data to show new grails...');
       await refreshAllData();
       
       showSuccess('Grails updated successfully!');

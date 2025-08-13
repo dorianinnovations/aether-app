@@ -193,8 +193,7 @@ export const useConversationData = () => {
         if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
           setConversations(cached.data);
           setHasMoreConversations(cached.hasMore);
-          log.debug(`Using cached data for tab ${currentTab}:`, cached.data.length);
-          return;
+                    return;
         }
       }
       

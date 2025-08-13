@@ -152,7 +152,6 @@ export const useSocialProxy = (): UseSocialProxyReturn => {
           grails: grailsData
         });
         
-        console.log('✅ Social profile loaded with grails:', grailsData);
       }
     } catch (err: unknown) {
       setError((err as any).message || 'Failed to load profile');

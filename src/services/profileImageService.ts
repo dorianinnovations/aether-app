@@ -100,7 +100,7 @@ export class ProfileImageService {
       const platformOptions = ImageUtils.getImagePickerOptions(imageType);
       
       const options: ImagePicker.ImagePickerOptions = {
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ImagePicker.MediaType.Images,
         allowsEditing: true,
         aspect: aspectRatio,
         quality: platformOptions.quality,

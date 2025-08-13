@@ -166,45 +166,46 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   // Friend request management
   const friendRequest = useFriendRequest();
   
-  // Spotify live data
-  const { currentTrack, isLoading: spotifyLoading, error: spotifyError, isConnected: spotifyConnected } = useSpotifyLive(5000);
+  // Spotify live data - increased interval to prevent rate limiting
+  const { currentTrack, isLoading: spotifyLoading, error: spotifyError, isConnected: spotifyConnected } = useSpotifyLive(15000);
   
   // Scrolling text animation
   const scrollAnimation = useRef(new Animated.Value(0)).current;
   const [textWidth, setTextWidth] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
   
-  // Debug Spotify data
-  useEffect(() => {
-    console.log('Spotify Debug:', { currentTrack, spotifyLoading, spotifyError, spotifyConnected });
-  }, [currentTrack, spotifyLoading, spotifyError, spotifyConnected]);
-  
+
   // Start scrolling animation when track changes
   useEffect(() => {
-    if (currentTrack && textWidth > 0 && containerWidth > 0 && textWidth > containerWidth) {
+    if (currentTrack && textWidth > 0 && containerWidth > 0) {
       // Reset animation
       scrollAnimation.setValue(0);
       
-      // Calculate scroll distance to ensure full text travels across
-      const scrollDistance = textWidth + containerWidth;
+      // Always scroll if text is close to container width (within 50px) or longer
+      const shouldAnimate = textWidth >= (containerWidth - 50);
       
-      // Start continuous scrolling
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(scrollAnimation, {
-            toValue: 1,
-            duration: Math.max(6000, scrollDistance * 20), // Dynamic duration based on text length
-            useNativeDriver: true,
-            easing: Easing.linear,
-          }),
-          Animated.delay(1500), // 1.5 second pause at the end
-          Animated.timing(scrollAnimation, {
-            toValue: 0,
-            duration: 0, // Instant reset to beginning
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
+      if (shouldAnimate) {
+        // Calculate scroll distance to ensure full text travels across
+        const scrollDistance = textWidth + containerWidth;
+        
+        // Start continuous scrolling
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(scrollAnimation, {
+              toValue: 1,
+              duration: Math.max(8000, scrollDistance * 25), // Slower scrolling
+              useNativeDriver: true,
+              easing: Easing.linear,
+            }),
+            Animated.delay(2000), // 2 second pause at the end
+            Animated.timing(scrollAnimation, {
+              toValue: 0,
+              duration: 0, // Instant reset to beginning
+              useNativeDriver: true,
+            }),
+          ])
+        ).start();
+      }
     }
   }, [currentTrack, scrollAnimation, textWidth, containerWidth]);
   
@@ -717,7 +718,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
                   ]}
                   onLayout={(event) => setTextWidth(event.nativeEvent.layout.width)}
                 >
-                  {currentTrack ? `${currentTrack.name} • ${currentTrack.artist} • ${currentTrack.album || 'Unknown Album'}` : 'No track playing'}
+                  {`${currentTrack.name} • ${currentTrack.artist} • ${currentTrack.album || 'Unknown Album'}`}
                 </Animated.Text>
               </View>
             </View>
@@ -1478,7 +1479,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Medium',
     letterSpacing: -0.1,
     fontWeight: '500',
-    whiteSpace: 'nowrap',
     includeFontPadding: false,
     textAlignVertical: 'center',
   },

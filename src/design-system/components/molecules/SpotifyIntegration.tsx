@@ -245,22 +245,17 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
   // Handle deep link return from Spotify
   useEffect(() => {
     const handleUrl = async (url: string) => {
-      logger.info('Received Spotify deep link:', url);
       if (url.includes('aether://spotify-auth')) {
-        logger.info('Spotify auth callback received');
-        
         // Parse query parameters from the URL
         const urlObj = new URL(url);
         const code = urlObj.searchParams.get('code');
         const state = urlObj.searchParams.get('state');
         
         if (code && state) {
-          logger.info('Processing OAuth callback with code and state');
           try {
             setConnecting(true);
             // Call the mobile callback endpoint
             await SpotifyAPI.handleMobileCallback(code, state);
-            logger.info('OAuth callback processed successfully');
             
             // Refresh status after successful auth
             setTimeout(async () => {
@@ -278,7 +273,6 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
             setConnecting(false);
           }
         } else {
-          logger.warn('Missing code or state in callback URL');
           // Still refresh status in case it worked
           setTimeout(async () => {
             await loadSpotifyStatus();
@@ -319,10 +313,12 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
       const response = await SpotifyAPI.getTopTracks('short_term', 10);
       if (response.success && response.tracks) {
         setTopTracks(response.tracks);
-        // Top tracks loaded
       }
-    } catch (err) {
-      logger.warn('Failed to load top tracks:', err);
+    } catch (err: any) {
+      // Only log if it's not a "connect Spotify first" error
+      if (!err?.message?.includes('connect your Spotify account first')) {
+        logger.warn('Failed to load top tracks:', err);
+      }
     }
   };
 
@@ -805,10 +801,8 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
 
   const handleWebViewMessage = (event: any) => {
     const { data } = event.nativeEvent;
-    logger.info('WebView message received:', data);
     
     if (data === 'spotify-connected') {
-      logger.info('Spotify connection successful!');
       setShowWebView(false);
       setConnecting(false);
       
@@ -827,7 +821,6 @@ export const SpotifyIntegration: React.FC<SpotifyIntegrationProps> = ({
   const handleWebViewNavigationStateChange = (navState: any) => {
     // Close WebView if we detect the success page
     if (navState.url.includes('spotify/callback') && navState.title?.includes('Spotify Connected')) {
-      logger.info('Detected success page, closing WebView...');
       setTimeout(() => {
         setShowWebView(false);
         setConnecting(false);

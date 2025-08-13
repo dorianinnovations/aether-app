@@ -8,7 +8,7 @@ import { View, Text, StyleSheet, ViewStyle, TouchableOpacity } from 'react-nativ
 import Svg, { Path, Circle } from 'react-native-svg';
 import { MiniTooltip } from './MiniTooltip';
 
-export type UserBadgeType = 'founder' | 'og' | 'early' | 'supporter' | 'verified' | 'creator';
+export type UserBadgeType = 'founder' | 'og' | 'early' | 'supporter' | 'verified' | 'creator' | 'vip' | 'elite' | 'legendary';
 
 interface UserBadgeProps {
   type: UserBadgeType;
@@ -116,6 +116,39 @@ const getBadgeConfig = (theme: 'light' | 'dark' = 'light') => ({
     premiumGlow: false,
     tooltip: 'Content creator and community builder',
   },
+  vip: {
+    text: 'VIP',
+    color: theme === 'light' ? '#8B5CF6' : '#A78BFA',
+    backgroundColor: 'transparent',
+    borderColor: theme === 'light' ? '#8B5CF6' : '#A78BFA',
+    fontFamily: 'Inter-ExtraBold',
+    hasSwirl: false,
+    textShadow: null,
+    premiumGlow: true,
+    tooltip: 'VIP member with special privileges',
+  },
+  elite: {
+    text: 'ELITE',
+    color: theme === 'light' ? '#DC2626' : '#EF4444',
+    backgroundColor: 'transparent',
+    borderColor: theme === 'light' ? '#DC2626' : '#EF4444',
+    fontFamily: 'Inter-ExtraBold',
+    hasSwirl: false,
+    textShadow: null,
+    premiumGlow: true,
+    tooltip: 'Elite member with exclusive access',
+  },
+  legendary: {
+    text: 'LEGEND',
+    color: theme === 'light' ? '#FF6B35' : '#FF8C42',
+    backgroundColor: 'transparent',
+    borderColor: theme === 'light' ? '#FF6B35' : '#FF8C42',
+    fontFamily: 'Inter-ExtraBold',
+    hasSwirl: false,
+    textShadow: null,
+    premiumGlow: true,
+    tooltip: 'Legendary member with ultimate status',
+  },
 });
 
 
@@ -130,7 +163,14 @@ export const UserBadge: React.FC<UserBadgeProps> = ({
   
   if (!visible) return null;
 
-  const config = getBadgeConfig(theme)[type];
+  const badgeConfigs = getBadgeConfig(theme);
+  const config = badgeConfigs[type];
+  
+  // Return null if invalid badge type
+  if (!config) {
+    console.warn(`UserBadge: Invalid badge type "${type}". Valid types are: ${Object.keys(badgeConfigs).join(', ')}`);
+    return null;
+  }
 
   const getGlowStyle = () => {
     const glowSettings = {

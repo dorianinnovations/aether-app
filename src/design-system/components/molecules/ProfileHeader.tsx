@@ -11,7 +11,7 @@ import {
   ViewStyle,
   TouchableOpacity,
 } from 'react-native';
-import { BannerImage, ProfileImage, OnlineStatusType, UserBadge, UserBadgeType, InteractiveBadge, PrestigiousBadge, mapDatabaseBadgeToPrestigious } from '../atoms';
+import { BannerImage, ProfileImage, OnlineStatusType, AdvancedBadge, BadgeType, InteractiveBadge } from '../atoms';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { spacing } from '../../tokens/spacing';
 import { typography } from '../../tokens/typography';
@@ -28,7 +28,7 @@ export interface ProfileHeaderProps {
   /** User badges */
   badges?: Array<{
     id: string;
-    badgeType: UserBadgeType;
+    badgeType: BadgeType;
     isVisible: boolean;
   }>;
   /** Whether images are editable */
@@ -158,33 +158,39 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               <View style={styles.accoladesContainer}>
                 {badges
                   .filter(badge => badge.isVisible)
-                  .map(badge => {
-                    const displayType = mapDatabaseBadgeToPrestigious(badge.badgeType);
+                  .sort((a, b) => {
+                    // Rarity ranking: highest to lowest
+                    const rarityOrder: { [key: string]: number } = {
+                      'legendary': 1,    // Red/Crimson + Gold
+                      'founder': 2,      // Crimson + Gold  
+                      'legend': 3,       // Gold + Crimson
+                      'elite': 4,        // Crimson + Gold
+                      'og': 5,           // Gold + Steel
+                      'vip': 6,          // Platinum + Steel
+                      'verified': 7,     // Navy + Steel
+                      'creator': 8,      // Navy + Steel
+                      'innovator': 9,    // Titanium + Steel
+                      'early': 10,       // Bronze + Steel
+                      'supporter': 11,   // Steel + Titanium
+                      'quantum': 12,     // Titanium + Steel
+                      'ethereal': 13,    // Platinum + Titanium
+                    };
                     
-                    // Show prestigious badges (VIP and LEGEND) if they exist
-                    if (displayType) {
-                      return (
-                        <PrestigiousBadge 
-                          key={badge.id}
-                          badgeKey={badge.id}
-                          type={displayType}
-                          theme={theme}
-                          showTooltip={true}
-                          size="small"
-                        />
-                      );
-                    }
+                    const rankA = rarityOrder[a.badgeType] || 999;
+                    const rankB = rarityOrder[b.badgeType] || 999;
                     
-                    // Show standard badges for all other types
-                    return (
-                      <UserBadge 
-                        key={badge.id}
-                        type={badge.badgeType}
-                        theme={theme}
-                        visible={true}
-                      />
-                    );
-                  })}
+                    return rankA - rankB;
+                  })
+                  .map(badge => (
+                    <AdvancedBadge 
+                      key={badge.id}
+                      type={badge.badgeType}
+                      theme={theme}
+                      size="small"
+                      intensity="normal"
+                      showTooltip={true}
+                    />
+                  ))}
               </View>
             )}
           </View>

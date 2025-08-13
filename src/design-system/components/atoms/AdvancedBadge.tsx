@@ -53,13 +53,16 @@ export type BadgeType =
   | 'legend' 
   | 'vip' 
   | 'og'
-  | 'ea' 
+  | 'early' 
   | 'creator' 
   | 'innovator'
   | 'founder'
   | 'legendary'
   | 'quantum'
-  | 'ethereal';
+  | 'ethereal'
+  | 'verified'
+  | 'supporter'
+  | 'elite';
 
 interface ParticleConfig {
   count: number;
@@ -284,156 +287,135 @@ const DynamicBackground: React.FC<{
 };
 
 const getBadgeConfig = (type: BadgeType, theme: 'light' | 'dark') => {
+  // Military/Medal inspired color palette - sleek and professional
+  const military = {
+    gold: theme === 'light' ? '#B8860B' : '#DAA520',
+    silver: theme === 'light' ? '#6B7280' : '#9CA3AF', 
+    bronze: theme === 'light' ? '#8B4513' : '#CD853F',
+    steel: theme === 'light' ? '#374151' : '#6B7280',
+    platinum: theme === 'light' ? '#4B5563' : '#D1D5DB',
+    titanium: theme === 'light' ? '#1F2937' : '#F3F4F6',
+    crimson: theme === 'light' ? '#7F1D1D' : '#DC2626',
+    navy: theme === 'light' ? '#1E3A8A' : '#3B82F6',
+  };
+
   const configs = {
     founder: {
       text: 'FOUNDER',
-      primaryColor: theme === 'light' ? '#B91C1C' : '#EF4444',
-      secondaryColor: theme === 'light' ? '#EF4444' : '#F87171',
-      style: 'plasma' as BadgeStyle,
-      animation: 'energy' as BadgeAnimation,
-      tooltip: 'Early adopter and platform pioneer',
-      particles: {
-        count: 25,
-        size: 3,
-        speed: 2.5,
-        colors: ['#B91C1C', '#EF4444', '#F87171', '#FECACA'],
-        opacity: 1.0,
-      },
+      primaryColor: military.crimson,
+      secondaryColor: military.gold,
+      style: 'metal' as BadgeStyle,
+      animation: null,
+      tooltip: 'Founding member who built Aether from the ground up',
+      particles: { count: 0, size: 0, speed: 0, colors: [], opacity: 0 },
     },
     og: {
       text: 'OG',
-      primaryColor: theme === 'light' ? '#8B5CF6' : '#A78BFA',
-      secondaryColor: theme === 'light' ? '#A78BFA' : '#C4B5FD',
-      style: 'cosmic' as BadgeStyle,
-      animation: 'energy' as BadgeAnimation,
-      tooltip: '👑 Original gangster from day one',
-      particles: {
-        count: 12,
-        size: 2,
-        speed: 1.2,
-        colors: ['#8B5CF6', '#A78BFA', '#C4B5FD'],
-        opacity: 0.6,
-      },
+      primaryColor: military.gold,
+      secondaryColor: military.steel,
+      style: 'metal' as BadgeStyle,
+      animation: null,
+      tooltip: 'Original member from the early days',
+      particles: { count: 0, size: 0, speed: 0, colors: [], opacity: 0 },
     },
     vip: {
       text: 'VIP',
-      primaryColor: theme === 'light' ? '#D97706' : '#F59E0B',
-      secondaryColor: theme === 'light' ? '#F59E0B' : '#FCD34D',
-      style: 'crystalline' as BadgeStyle,
-      animation: 'breathe' as BadgeAnimation,
-      tooltip: 'VIP member with exclusive access',
-      particles: {
-        count: 8,
-        size: 1.5,
-        speed: 0.8,
-        colors: ['#D97706', '#F59E0B', '#FCD34D'],
-        opacity: 0.6,
-      },
+      primaryColor: military.platinum,
+      secondaryColor: military.steel,
+      style: 'metal' as BadgeStyle,
+      animation: null,
+      tooltip: 'VIP member with exclusive privileges',
+      particles: { count: 0, size: 0, speed: 0, colors: [], opacity: 0 },
     },
-    ea: {
-      text: 'EA',
-      primaryColor: theme === 'light' ? '#10B981' : '#34D399',
-      secondaryColor: theme === 'light' ? '#34D399' : '#6EE7B7',
-      style: 'neon' as BadgeStyle,
-      animation: 'pulse' as BadgeAnimation,
-      tooltip: 'Early Access pioneer and beta tester',
-      particles: {
-        count: 12,
-        size: 2,
-        speed: 1.5,
-        colors: ['#10B981', '#34D399', '#6EE7B7'],
-        opacity: 0.7,
-      },
+    early: {
+      text: 'EARLY',
+      primaryColor: military.bronze,
+      secondaryColor: military.steel,
+      style: 'metal' as BadgeStyle,
+      animation: null,
+      tooltip: 'Early adopter who joined in the first wave',
+      particles: { count: 0, size: 0, speed: 0, colors: [], opacity: 0 },
     },
     creator: {
       text: 'CREATOR',
-      primaryColor: theme === 'light' ? '#F59E0B' : '#FCD34D',
-      secondaryColor: theme === 'light' ? '#FCD34D' : '#FDE68A',
-      style: 'neon' as BadgeStyle,
-      animation: 'pulse' as BadgeAnimation,
-      tooltip: '🎨 Creative mastermind and content creator',
-      particles: {
-        count: 10,
-        size: 1.2,
-        speed: 1,
-        colors: ['#F59E0B', '#FCD34D', '#FDE68A'],
-        opacity: 0.6,
-      },
+      primaryColor: military.navy,
+      secondaryColor: military.steel,
+      style: 'metal' as BadgeStyle,
+      animation: null,
+      tooltip: 'Content creator and community builder',
+      particles: { count: 0, size: 0, speed: 0, colors: [], opacity: 0 },
     },
     innovator: {
       text: 'INNOVATOR',
-      primaryColor: theme === 'light' ? '#10B981' : '#34D399',
-      secondaryColor: theme === 'light' ? '#34D399' : '#6EE7B7',
-      style: 'quantum' as BadgeStyle,
-      animation: 'magnetic' as BadgeAnimation,
-      tooltip: '⚡ Innovation catalyst and tech pioneer',
-      particles: {
-        count: 15,
-        size: 0.8,
-        speed: 1.5,
-        colors: ['#10B981', '#34D399', '#6EE7B7'],
-        opacity: 0.8,
-      },
+      primaryColor: military.titanium,
+      secondaryColor: military.steel,
+      style: 'metal' as BadgeStyle,
+      animation: null,
+      tooltip: 'Innovation catalyst and tech pioneer',
+      particles: { count: 0, size: 0, speed: 0, colors: [], opacity: 0 },
     },
     legend: {
       text: 'LEGEND',
-      primaryColor: theme === 'light' ? '#B91C1C' : '#EF4444',
-      secondaryColor: theme === 'light' ? '#EF4444' : '#F87171',
-      style: 'plasma' as BadgeStyle,
-      animation: 'energy' as BadgeAnimation,
-      tooltip: 'Early adopter and platform pioneer',
-      particles: {
-        count: 25,
-        size: 3,
-        speed: 1.5,
-        colors: ['#B91C1C', '#EF4444', '#F87171'],
-        opacity: 1.0,
-      },
+      primaryColor: military.gold,
+      secondaryColor: military.crimson,
+      style: 'metal' as BadgeStyle,
+      animation: null,
+      tooltip: 'Legendary member with ultimate recognition',
+      particles: { count: 0, size: 0, speed: 0, colors: [], opacity: 0 },
     },
     legendary: {
       text: 'LEGENDARY',
-      primaryColor: theme === 'light' ? '#DC2626' : '#F87171',
-      secondaryColor: theme === 'light' ? '#F87171' : '#FCA5A5',
-      style: 'plasma' as BadgeStyle,
-      animation: 'energy' as BadgeAnimation,
+      primaryColor: military.gold,
+      secondaryColor: military.crimson,
+      style: 'metal' as BadgeStyle,
+      animation: null,
       tooltip: 'Achieved legendary status through excellence',
-      particles: {
-        count: 30,
-        size: 2.5,
-        speed: 2.0,
-        colors: ['#DC2626', '#F87171', '#FCA5A5', '#FECACA'],
-        opacity: 0.9,
-      },
+      particles: { count: 0, size: 0, speed: 0, colors: [], opacity: 0 },
     },
     quantum: {
       text: 'QUANTUM',
-      primaryColor: theme === 'light' ? '#059669' : '#10B981',
-      secondaryColor: theme === 'light' ? '#10B981' : '#34D399',
-      style: 'quantum' as BadgeStyle,
-      animation: 'particles' as BadgeAnimation,
-      tooltip: '⚛️ Exists in multiple states simultaneously',
-      particles: {
-        count: 30,
-        size: 0.6,
-        speed: 3,
-        colors: ['#059669', '#10B981', '#34D399', '#6EE7B7'],
-        opacity: 0.6,
-      },
+      primaryColor: military.titanium,
+      secondaryColor: military.steel,
+      style: 'metal' as BadgeStyle,
+      animation: null,
+      tooltip: 'Advanced quantum-level contributor',
+      particles: { count: 0, size: 0, speed: 0, colors: [], opacity: 0 },
     },
     ethereal: {
       text: 'ETHEREAL',
-      primaryColor: theme === 'light' ? '#EC4899' : '#F472B6',
-      secondaryColor: theme === 'light' ? '#F472B6' : '#F9A8D4',
-      style: 'holographic' as BadgeStyle,
-      animation: 'shimmer' as BadgeAnimation,
-      tooltip: '✨ Pure ethereal energy being',
-      particles: {
-        count: 18,
-        size: 1.4,
-        speed: 0.7,
-        colors: ['#EC4899', '#F472B6', '#F9A8D4', '#FBCFE8'],
-        opacity: 0.5,
-      },
+      primaryColor: military.platinum,
+      secondaryColor: military.titanium,
+      style: 'metal' as BadgeStyle,
+      animation: null,
+      tooltip: 'Ethereal presence in the community',
+      particles: { count: 0, size: 0, speed: 0, colors: [], opacity: 0 },
+    },
+    verified: {
+      text: 'VERIFIED',
+      primaryColor: military.navy,
+      secondaryColor: military.steel,
+      style: 'metal' as BadgeStyle,
+      animation: null,
+      tooltip: 'Verified community member',
+      particles: { count: 0, size: 0, speed: 0, colors: [], opacity: 0 },
+    },
+    supporter: {
+      text: 'PRO',
+      primaryColor: military.steel,
+      secondaryColor: military.titanium,
+      style: 'metal' as BadgeStyle,
+      animation: null,
+      tooltip: 'Platform supporter and contributor',
+      particles: { count: 0, size: 0, speed: 0, colors: [], opacity: 0 },
+    },
+    elite: {
+      text: 'ELITE',
+      primaryColor: military.crimson,
+      secondaryColor: military.gold,
+      style: 'metal' as BadgeStyle,
+      animation: null,
+      tooltip: 'Elite member with exclusive access',
+      particles: { count: 0, size: 0, speed: 0, colors: [], opacity: 0 },
     },
   };
 
@@ -564,16 +546,16 @@ export const AdvancedBadge: React.FC<AdvancedBadgeProps> = ({
               styles.text,
               {
                 fontSize: sizeConfig.fontSize,
-                color: type === 'founder' || type === 'legend' ? '#FFFFFF' 
-                  : (theme === 'dark' ? '#FFFFFF' : config.primaryColor),
-                fontWeight: intensity === 'extreme' ? '900' : '800',
-                textShadowColor: intensity === 'subtle' ? 'transparent' : (type === 'founder' || type === 'legend' ? '#FFFFFF' : (theme === 'dark' ? config.primaryColor : 'rgba(0,0,0,0.3)')),
-                textShadowOffset: { width: 0, height: 0 },
-                textShadowRadius: intensity === 'subtle' ? 0 : (type === 'founder' || type === 'legend' ? (theme === 'dark' ? 8 : 4) : (3 * intensityMultiplier)),
+                color: theme === 'dark' ? '#FFFFFF' : config.primaryColor,
+                fontWeight: '800',
                 zIndex: 10,
-                letterSpacing: -0.2,
+                letterSpacing: config.text.length > 6 ? -0.4 : -0.2,
+                lineHeight: sizeConfig.fontSize + 2,
               },
             ]}
+            numberOfLines={1}
+            adjustsFontSizeToFit={true}
+            minimumFontScale={0.7}
           >
             {customText || config.text}
           </Text>

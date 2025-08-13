@@ -64,9 +64,14 @@ export function LottieRefreshFlatList<T>({
         }),
       ]).start();
       
-      lottieRef.current?.play();
-    } else {
-      // Hide the Lottie
+      // Add a small delay before playing to prevent rapid state changes
+      const playTimer = setTimeout(() => {
+        lottieRef.current?.play();
+      }, 100);
+      
+      return () => clearTimeout(playTimer);
+    } else if (!refreshing) {
+      // Hide the Lottie only when explicitly not refreshing
       Animated.parallel([
         Animated.timing(opacity, {
           toValue: 0,
@@ -80,7 +85,12 @@ export function LottieRefreshFlatList<T>({
         }),
       ]).start();
       
-      lottieRef.current?.reset();
+      // Add delay before reset to allow animation to complete
+      const resetTimer = setTimeout(() => {
+        lottieRef.current?.reset();
+      }, 200);
+      
+      return () => clearTimeout(resetTimer);
     }
   }, [refreshing, showLottieOverlay]);
 

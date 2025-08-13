@@ -45,7 +45,6 @@ export const useSpotifyLive = (refreshInterval: number = 30000): UseSpotifyLiveR
         setIsConnected(spotifyData.connected || false);
         
         if (spotifyData.connected && spotifyData.currentTrack) {
-          console.log('Setting current track:', spotifyData.currentTrack);
           setCurrentTrack({
             name: spotifyData.currentTrack.name,
             artist: spotifyData.currentTrack.artist,
@@ -57,7 +56,6 @@ export const useSpotifyLive = (refreshInterval: number = 30000): UseSpotifyLiveR
             durationMs: undefined,
           });
         } else {
-          console.log('No currentTrack found, connected:', spotifyData.connected);
           setCurrentTrack(null);
         }
       } else {

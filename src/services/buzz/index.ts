@@ -209,7 +209,6 @@ export class BuzzService {
         }
       };
     } catch (error) {
-      console.log('Spotify status check failed:', error);
       return {
         success: false,
         data: {
