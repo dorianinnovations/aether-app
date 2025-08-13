@@ -63,6 +63,13 @@ const getAllMenuActions = (theme: 'light' | 'dark'): MenuAction[] => [
     requiresAuth: false 
   },
   { 
+    icon: <Feather name="credit-card" size={16} color={getIconColor('profile', theme)} />, 
+    label: 'Wallet', 
+    key: 'wallet', 
+    requiresAuth: true,
+    isAuthAction: false
+  },
+  { 
     icon: <Feather name="user-plus" size={16} color={getIconColor('profile', theme)} />, 
     label: 'Add Friend', 
     key: 'add_friend', 
@@ -125,6 +132,44 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
   
   // State to prevent multiple rapid presses
   const [pressedIndex, setPressedIndex] = useState<number | null>(null);
+  
+  // Animation refs for each menu item
+  const itemAnimations = useRef(
+    menuActions.map(() => new Animated.Value(0))
+  ).current;
+
+  // Sequential fade-in animation when menu becomes visible
+  useEffect(() => {
+    if (visible) {
+      // Reset all animations to 0
+      itemAnimations.forEach(anim => anim.setValue(0));
+      
+      // Create staggered animations from bottom to top (reverse order)
+      const animations = menuActions.map((_, index) => {
+        const reverseIndex = menuActions.length - 1 - index; // Bottom to top
+        const animation = Animated.timing(itemAnimations[index], {
+          toValue: 1,
+          duration: 150,
+          delay: reverseIndex * 50, // 50ms delay between each
+          useNativeDriver: true,
+          easing: Easing.out(Easing.cubic),
+        });
+        
+        // Add haptic feedback when each item starts animating
+        setTimeout(() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }, reverseIndex * 50); // Same delay as animation
+        
+        return animation;
+      });
+      
+      // Start all animations in parallel
+      Animated.parallel(animations).start();
+    } else {
+      // Reset animations when menu is hidden
+      itemAnimations.forEach(anim => anim.setValue(0));
+    }
+  }, [visible, menuActions.length]);
 
   // Simplified button press handler
   const handleMenuButtonPress = useCallback((actionKey: string, index: number) => {
@@ -181,9 +226,14 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
           ]}
         >
           {menuActions.map((action, index) => (
-            <View
+            <Animated.View
               key={action.key}
-              style={styles.menuItem}
+              style={[
+                styles.menuItem,
+                {
+                  opacity: itemAnimations[index],
+                }
+              ]}
             >
               <TouchableOpacity
                 style={styles.menuItemTouchable}
@@ -207,7 +257,7 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
                   />
                 </View>
               </TouchableOpacity>
-            </View>
+            </Animated.View>
           ))}
           
         </View>

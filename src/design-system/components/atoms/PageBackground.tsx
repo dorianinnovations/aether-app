@@ -27,14 +27,13 @@ export const PageBackground: React.FC<PageBackgroundProps> = ({
 }) => {
   const { settings } = useSettings();
 
-  // The dreamy baby blue gradient colors - brighter (closer to white)!
   const dreamyGradientColors = ['#ffffff', '#f2f8ff', '#e2f0ff', '#eaf4ff', '#f4faff'];
   
-  // Consistent dark grey background (slightly brightened)
+  // Consistent background (slightly brightened)
   const darkGrey = '#1A1A1A';
   
-  // Darker background for chat screen specifically
-  const chatDarkGrey = '#0F0F0F';
+  //chat screen specifically
+  const chatDarkGrey = '#141414ff';
 
   const getGradientColors = (): string[] => {
     // If white background is selected and it's light theme, use pure white

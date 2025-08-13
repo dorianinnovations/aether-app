@@ -216,10 +216,28 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
     // Determine cache key - validate friendUsername is not undefined
     const cacheKey = (friendUsername && friendUsername !== 'undefined') ? `friend-${friendUsername}` : conversationId;
 
-    // Add user message with optimistic update (skip if silent)
+    // Add user message with optimistic update
     if (!silent) {
+      // Normal visible user message
       setMessages(prev => {
         const newMessages = [...prev, userMessage];
+        // Update cache with new messages
+        if (cacheKey) {
+          messageCache.current.set(cacheKey, newMessages);
+        }
+        
+        return newMessages;
+      });
+    } else {
+      // Silent query: add invisible user message with spacing
+      const invisibleUserMessage: Message = {
+        ...userMessage,
+        variant: 'invisible-user' as any, // Mark as invisible for EnhancedBubble
+        message: displayText, // Keep the actual text for context but won't be displayed
+      };
+      
+      setMessages(prev => {
+        const newMessages = [...prev, invisibleUserMessage];
         // Update cache with new messages
         if (cacheKey) {
           messageCache.current.set(cacheKey, newMessages);

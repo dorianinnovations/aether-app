@@ -42,7 +42,7 @@ export interface Message {
   sender: 'user' | 'aether' | 'system';
   message: string;
   timestamp: string;
-  variant?: 'default' | 'streaming' | 'error' | 'tool' | 'search-results';
+  variant?: 'default' | 'streaming' | 'error' | 'tool' | 'search-results' | 'invisible-user';
   metadata?: MessageMetadata;
   attachments?: MessageAttachment[];
   

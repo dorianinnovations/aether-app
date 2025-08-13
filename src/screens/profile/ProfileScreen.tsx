@@ -99,6 +99,7 @@ export const ProfileScreen: React.FC = () => {
   // Header menu hook
   const { showHeaderMenu, setShowHeaderMenu, handleMenuAction, toggleHeaderMenu } = useHeaderMenu({
     screenName: 'profile',
+    onWalletPress: () => setShowWalletModal(true),
     onSignOut: () => setShowSignOutModal(true)
   });
 

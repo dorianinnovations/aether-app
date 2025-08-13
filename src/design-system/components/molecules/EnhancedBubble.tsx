@@ -246,6 +246,7 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
   const isUser = message.sender === 'user';
   // const _isSystem = message.isSystem || message.sender === 'system';
   const isStreaming = message.variant === 'streaming';
+  const isInvisibleUser = message.variant === 'invisible-user';
 
   // Action handlers
   const handleCopyMessage = useCallback(async () => {
@@ -521,7 +522,22 @@ const EnhancedBubble: React.FC<AnimatedMessageBubbleProps> = memo(({
       ]}
     >
       <View>
-        {isUser ? (
+        {isInvisibleUser ? (
+          // Invisible user message - maintains spacing but shows nothing
+          <View style={[styles.userMessageContainer, { opacity: 0 }]}>
+            <View style={[
+              styles.userProfileBubble,
+              theme === 'light' ? styles.userBubbleLight : styles.userBubbleDark
+            ]}>
+              <Text style={[
+                styles.userMessageText,
+                theme === 'light' ? styles.userTextLight : styles.userTextDark
+              ]}>
+                {message.text || message.message}
+              </Text>
+            </View>
+          </View>
+        ) : isUser ? (
           // Optimized User messages
           <View style={styles.userMessageContainer}>
             <TouchableOpacity

@@ -47,6 +47,7 @@ export { SocialLinksBar } from './SocialLinksBar';
 export { SwipeToMenu } from './SwipeToMenu';
 export { SpotifyNowPlaying } from './SpotifyNowPlaying';
 export { SpotifyLinkPrompt } from './SpotifyLinkPrompt';
+export { default as TrioOptionsRing } from './TrioOptionsRing';
 
 // Re-export types
 export type { IconName, IconSize } from './Icon';

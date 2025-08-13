@@ -120,7 +120,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
         <Animated.View style={[styles.modalContainer, modalStyle]}>
           <WalletCard 
             currentTier={displayTier}
-            usage={displayUsage}
+            usage={displayUsage || undefined}
             userBadges={userBadges}
             onUpgrade={handleTierSelect}
             isLoadingRealData={loading}

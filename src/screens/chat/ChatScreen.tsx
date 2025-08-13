@@ -33,7 +33,7 @@ import { BlurView } from 'expo-blur';
 import { EnhancedChatInput } from '../../design-system/components/molecules';
 import EnhancedBubble from '../../design-system/components/molecules/EnhancedBubble';
 import { HeaderMenu, SignOutModal, ArtistListeningModal, WalletModal, SwipeTutorialOverlay } from '../../design-system/components/organisms';
-import { AnimatedHamburger, NowPlayingIndicator, SpotifyLinkPrompt } from '../../design-system/components/atoms';
+import { AnimatedHamburger, NowPlayingIndicator, SpotifyLinkPrompt, TrioOptionsRing } from '../../design-system/components/atoms';
 import { PageBackground, SwipeToMenu } from '../../design-system/components/atoms';
 import SettingsModal from './SettingsModal';
 import ConversationDrawer from '../../components/ConversationDrawer';
@@ -142,7 +142,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [extraPaddingBottom, setExtraPaddingBottom] = useState(0);
   const [showSpotifyLinkPrompt, setShowSpotifyLinkPrompt] = useState(false);
+  const [showTrioOptions, setShowTrioOptions] = useState(false);
+  const [trioOptions, setTrioOptions] = useState<Array<{id: string; text: string; type: 'background' | 'tracks' | 'personal'}>>([]);
   const inputContainerAnim = useRef(new Animated.Value(0)).current;
+  const inputSlideAnim = useRef(new Animated.Value(0)).current;
   
   // Animation refs
   const tooltipOpacity = useRef(new Animated.Value(1)).current;
@@ -189,6 +192,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   const [showGreenIndicator, setShowGreenIndicator] = useState(false);
   const greenIndicatorAnim = useRef(new Animated.Value(0)).current;
   
+  // Spotify banner tappability animations
+  const spotifyPulseAnim = useRef(new Animated.Value(0)).current;
+  const spotifyScaleAnim = useRef(new Animated.Value(1)).current;
+  
   // Delay showing Spotify link prompt for new users
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -197,6 +204,38 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Start pulse animation when currentTrack is available
+  useEffect(() => {
+    if (currentTrack && spotifyConnected) {
+      // Start subtle pulse border animation (80% off, 20% active with gradual transitions)
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(spotifyPulseAnim, {
+            toValue: 0,
+            duration: 4000, // 80% off time (4 seconds)
+            useNativeDriver: true,
+          }),
+          Animated.timing(spotifyPulseAnim, {
+            toValue: 1,
+            duration: 600, // Gradual climb up (0.6 seconds)
+            useNativeDriver: true,
+            easing: Easing.out(Easing.cubic), // Smooth acceleration
+          }),
+          Animated.timing(spotifyPulseAnim, {
+            toValue: 0,
+            duration: 400, // Gradual fade down (0.4 seconds)
+            useNativeDriver: true,
+            easing: Easing.in(Easing.cubic), // Smooth deceleration
+          }),
+        ])
+      ).start();
+    } else {
+      // Stop animations when no track
+      spotifyPulseAnim.stopAnimation();
+      spotifyPulseAnim.setValue(0);
+    }
+  }, [currentTrack, spotifyConnected, spotifyPulseAnim]);
 
   // Start scrolling animation when track changes
   useEffect(() => {
@@ -378,8 +417,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     onSettingsPress: () => {
       setShowSettings(true);
     },
+    onWalletPress: () => {
+      setShowWalletModal(true);
+    },
     onSignOut: () => setShowSignOutModal(true),
-    onWalletPress: () => setShowWalletModal(true),
     onAddFriend: friendRequest.handleAddFriendPress
   });
 
@@ -400,14 +441,23 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     }
   }, [showHeaderMenu]);
 
-  // Slide floating buttons off screen when attachment is expanded or conversation drawer is active
+  // Slide floating buttons off screen when attachment is expanded, conversation drawer is active, trio options are shown, or chat input is focused
   useEffect(() => {
     Animated.timing(floatingButtonsAnim, {
-      toValue: isAttachmentExpanded || showConversationDrawer ? 100 : 0,
-      duration: 80,
+      toValue: isAttachmentExpanded || showConversationDrawer || showTrioOptions || isChatInputFocused ? 100 : 0,
+      duration: 200, // Slightly longer for smoother animation
       useNativeDriver: true,
     }).start();
-  }, [isAttachmentExpanded, showConversationDrawer, floatingButtonsAnim]);
+  }, [isAttachmentExpanded, showConversationDrawer, showTrioOptions, isChatInputFocused, floatingButtonsAnim]);
+
+  // Slide chat input down ONLY when trio options are shown (NOT when input is focused - that should move up for keyboard)
+  useEffect(() => {
+    Animated.timing(inputSlideAnim, {
+      toValue: showTrioOptions ? 200 : 0, // Only slide down when trio is shown
+      duration: 200, // Smoother animation timing
+      useNativeDriver: true,
+    }).start();
+  }, [showTrioOptions, inputSlideAnim]);
 
   // Check if user should see swipe tutorial (new users only)
   useEffect(() => {
@@ -688,6 +738,89 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   // Removed unused dynamic options handler
 
 
+  // Generate smart trio options based on the last user message
+  const generateTrioOptions = (lastUserMessage: string) => {
+    // Simple pattern matching for demo - this will be replaced with smart backend endpoint
+    const message = lastUserMessage.toLowerCase();
+    const options: Array<{id: string; text: string; type: 'background' | 'tracks' | 'personal'}> = [];
+    
+    // Artist/musician pattern
+    if (message.includes('artist') || message.includes('musician') || message.includes('singer') || message.includes('band')) {
+      const artistMatch = message.match(/artist|musician|singer|band\s+(\w+(?:\s+\w+)*)/);
+      const artistName = artistMatch ? artistMatch[1] : 'this artist';
+      options.push(
+        { id: '1', text: `${artistName}'s Background?`, type: 'background' },
+        { id: '2', text: `${artistName}'s Top Tracks?`, type: 'tracks' },
+        { id: '3', text: 'Why do I like this?', type: 'personal' }
+      );
+    }
+    // Music/song pattern
+    else if (message.includes('song') || message.includes('track') || message.includes('music') || message.includes('love') || message.includes('like')) {
+      options.push(
+        { id: '1', text: 'Song Background?', type: 'background' },
+        { id: '2', text: 'Similar Artists?', type: 'tracks' },
+        { id: '3', text: 'Why do I connect?', type: 'personal' }
+      );
+    }
+    // Movie/film pattern
+    else if (message.includes('movie') || message.includes('film') || message.includes('watched')) {
+      options.push(
+        { id: '1', text: 'Movie Details?', type: 'background' },
+        { id: '2', text: 'Similar Films?', type: 'tracks' },
+        { id: '3', text: 'What resonated?', type: 'personal' }
+      );
+    }
+    // Book pattern
+    else if (message.includes('book') || message.includes('read') || message.includes('author')) {
+      options.push(
+        { id: '1', text: 'Book Analysis?', type: 'background' },
+        { id: '2', text: 'Author\'s Works?', type: 'tracks' },
+        { id: '3', text: 'Personal Impact?', type: 'personal' }
+      );
+    }
+    // Generic fallback
+    else {
+      options.push(
+        { id: '1', text: 'Tell me more?', type: 'background' },
+        { id: '2', text: 'Related topics?', type: 'tracks' },
+        { id: '3', text: 'Why is this important?', type: 'personal' }
+      );
+    }
+    
+    return options;
+  };
+
+  // Handle trio button press
+  const handleTrioPress = () => {
+    // For testing - use mock data always
+    const mockOptions = [
+      { id: '1', text: 'Anna Luna\'s Background?', type: 'background' as const },
+      { id: '2', text: 'Anna Luna\'s Top Tracks?', type: 'tracks' as const },
+      { id: '3', text: 'Why do I love this?', type: 'personal' as const }
+    ];
+    
+    setTrioOptions(mockOptions);
+    setShowTrioOptions(true);
+    
+    // Original logic (commented for testing)
+    // const lastUserMessage = messages.filter(msg => msg.sender === 'user').pop()?.message;
+    // if (lastUserMessage) {
+    //   const options = generateTrioOptions(lastUserMessage);
+    //   setTrioOptions(options);
+    //   setShowTrioOptions(true);
+    // }
+  };
+
+  // Handle trio option selection
+  const handleTrioOptionSelect = (option: {id: string; text: string; type: 'background' | 'tracks' | 'personal'}) => {
+    // Convert the option text into a question and send it silently
+    const questionText = option.text.endsWith('?') ? option.text : `${option.text}?`;
+    handleMessageSend(questionText, [], true); // Send as silent query
+    
+    // Scroll to show the invisible user message + AI response
+    setTimeout(() => scrollToBottom(), 200);
+  };
+
   // Handle creating a new conversation
   const handleStartNewChat = async () => {
     try {
@@ -755,12 +888,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         <View style={styles.spotifyContainer}>
           {currentTrack && spotifyConnected ? (
             <TouchableOpacity 
-              style={[
-                styles.spotifyContent,
-                {
-                  borderColor: theme === 'dark' ? 'rgba(120, 120, 120, 0.2)' : 'rgba(160, 160, 160, 0.15)',
-                }
-              ]}
               onPress={() => {
                 if (currentTrack) {
                   // Haptic feedback for the tap
@@ -772,10 +899,63 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
                   // Send the message silently (no user bubble shown)
                   // Always send the message regardless of friend conversation status
                   handleMessageSend(silentQuery, [], true); // Pass true for silent mode
+                  
+                  // Scroll to show the invisible user message + AI response
+                  setTimeout(() => scrollToBottom(), 200);
                 }
               }}
-              activeOpacity={0.8}
+              onPressIn={() => {
+                // Scale down on press
+                Animated.spring(spotifyScaleAnim, {
+                  toValue: 0.96,
+                  useNativeDriver: true,
+                  tension: 200,
+                  friction: 7,
+                }).start();
+              }}
+              onPressOut={() => {
+                // Scale back up on release
+                Animated.spring(spotifyScaleAnim, {
+                  toValue: 1,
+                  useNativeDriver: true,
+                  tension: 200,
+                  friction: 7,
+                }).start();
+              }}
+              activeOpacity={1} // Let our scale animation handle the feedback
             >
+              <Animated.View 
+                style={[
+                  styles.spotifyContent,
+                  {
+                    borderColor: spotifyPulseAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [
+                        theme === 'dark' ? 'rgba(120, 120, 120, 0.2)' : 'rgba(160, 160, 160, 0.15)',
+                        theme === 'dark' ? 'rgba(29, 185, 84, 0.6)' : 'rgba(29, 185, 84, 0.4)', // Spotify green
+                      ],
+                    }),
+                    shadowColor: '#1DB954', // Spotify green
+                    shadowOpacity: spotifyPulseAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 0.4],
+                    }),
+                    shadowRadius: spotifyPulseAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 12],
+                    }),
+                    shadowOffset: {
+                      width: 0,
+                      height: 0,
+                    },
+                    elevation: spotifyPulseAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 8],
+                    }),
+                    transform: [{ scale: spotifyScaleAnim }],
+                  }
+                ]}
+              >
               <BlurView
                 intensity={20}
                 tint={theme === 'dark' ? 'dark' : 'light'}
@@ -867,6 +1047,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
                   </Text>
                 </Animated.View>
               </View>
+              
+              {/* Static Tap Indicator */}
+              <View style={styles.tapIndicator}>
+                <Ionicons 
+                  name="chevron-forward" 
+                  size={16} 
+                  color={theme === 'dark' ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)'}
+                />
+              </View>
+              </Animated.View>
             </TouchableOpacity>
           ) : (
             showSpotifyLinkPrompt && (
@@ -990,7 +1180,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         style={[
           styles.inputContainer,
           {
-            transform: [{ translateY: inputContainerAnim }],
+            transform: [
+              { translateY: inputContainerAnim },
+              { translateY: inputSlideAnim }
+            ],
           }
         ]}
       >
@@ -1484,16 +1677,49 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         theme={theme}
       />
 
+      {/* Trio Options Ring */}
+      <TrioOptionsRing
+        visible={showTrioOptions}
+        onClose={() => setShowTrioOptions(false)}
+        onOptionSelect={handleTrioOptionSelect}
+        options={trioOptions}
+        theme={theme}
+      />
+
       {/* Floating Action Buttons */}
       {!showHeaderMenu && (
         <Animated.View style={[
           styles.floatingButtonBar,
           {
-            backgroundColor: theme === 'dark' ? designTokens.surfaces.dark.elevated : designTokens.brand.surface,
+            backgroundColor: 'rgba(26, 26, 26, 0.9)',
             borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
             transform: [{ translateX: floatingButtonsAnim }],
           }
         ]}>
+          {/* Third Button - Trio Options */}
+          <TouchableOpacity
+            style={styles.floatingButtonItem}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              handleTrioPress();
+            }}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name="finger-print-outline"
+              size={22}
+              color="rgba(255, 255, 255, 0.6)"
+            />
+          </TouchableOpacity>
+
+          {/* Separator */}
+          <View style={[
+            styles.floatingButtonSeparator,
+            {
+              backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+            }
+          ]} />
+
           {/* Conversations Button */}
           <TouchableOpacity
             style={styles.floatingButtonItem}
@@ -1506,7 +1732,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             <Ionicons
               name="chatbubbles-outline"
               size={22}
-              color={theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary}
+              color="rgba(255, 255, 255, 0.8)"
             />
           </TouchableOpacity>
 
@@ -1532,7 +1758,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
           >
             <AnimatedHamburger
               isOpen={hamburgerOpen}
-              color={theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.secondary}
+              color="rgba(255, 255, 255, 0.9)"
               size={22}
             />
           </TouchableOpacity>
@@ -1659,6 +1885,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     includeFontPadding: false,
     textAlignVertical: 'center',
+  },
+  tapIndicator: {
+    position: 'absolute',
+    right: 8,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   // Dynamic Greeting Banner
