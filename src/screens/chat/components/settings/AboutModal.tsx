@@ -69,6 +69,9 @@ export const AboutModal: React.FC<AboutModalProps> = ({
             <Text style={[styles.aboutVersion, { color: colors.textMuted }]}>
               Version {Constants.expoConfig?.version || '1.0.0'}
             </Text>
+            <Text style={[styles.aboutBetaLabel, { color: '#10B981' }]}>
+              Beta Version
+            </Text>
             <Text style={[styles.aboutPlatform, { color: colors.textMuted }]}>
               {Constants.platform?.ios ? 'iOS' : 'Android'} Platform
             </Text>
@@ -129,6 +132,14 @@ const styles = StyleSheet.create({
     fontFamily: typography.fonts.body,
     fontSize: 13,
     marginBottom: 4,
+  },
+  aboutBetaLabel: {
+    fontFamily: typography.fonts.bodySemiBold,
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   aboutPlatform: {
     fontFamily: typography.fonts.body,
