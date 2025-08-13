@@ -27,6 +27,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 
 // Enhanced Components
 import { EnhancedChatInput } from '../../design-system/components/molecules';
@@ -140,6 +141,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [extraPaddingBottom, setExtraPaddingBottom] = useState(0);
+  const [showSpotifyLinkPrompt, setShowSpotifyLinkPrompt] = useState(false);
   const inputContainerAnim = useRef(new Animated.Value(0)).current;
   
   // Animation refs
@@ -179,14 +181,22 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   const [textWidth, setTextWidth] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
   
-  // Album art flip animation
-  const albumArtFlipAnim = useRef(new Animated.Value(0)).current;
+  // Album art fade animation
+  const albumArtFadeAnim = useRef(new Animated.Value(1)).current;
   const [previousImageUrl, setPreviousImageUrl] = useState<string | null>(null);
   
   // Green indicator animation after album art change
   const [showGreenIndicator, setShowGreenIndicator] = useState(false);
   const greenIndicatorAnim = useRef(new Animated.Value(0)).current;
   
+  // Delay showing Spotify link prompt for new users
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSpotifyLinkPrompt(true);
+    }, 5000); // 5 second delay
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Start scrolling animation when track changes
   useEffect(() => {
@@ -222,24 +232,24 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     }
   }, [currentTrack, scrollAnimation, textWidth, containerWidth]);
 
-  // Album art flip animation when image changes
+  // Album art fade animation when image changes
   useEffect(() => {
     const currentImageUrl = currentTrack?.imageUrl;
     
     if (currentImageUrl && previousImageUrl && currentImageUrl !== previousImageUrl) {
-      // Trigger multiple spin animation when album art changes
-      albumArtFlipAnim.setValue(0);
+      // Trigger fade animation when album art changes
+      albumArtFadeAnim.setValue(0);
       
-      Animated.timing(albumArtFlipAnim, {
+      Animated.timing(albumArtFadeAnim, {
         toValue: 1,
-        duration: 1200, // Longer duration for multiple spins
+        duration: 300, // Quick fade
         useNativeDriver: true,
-        easing: Easing.out(Easing.back(1.1)), // Slightly less bouncy for smoother spins
+        easing: Easing.out(Easing.ease),
       }).start(() => {
-        // Reset animation value after completion
-        albumArtFlipAnim.setValue(0);
+        // Keep animation value at 1 to keep album art visible
+        // albumArtSlideAnim.setValue(1);
         
-        // Show green indicator after spin completes
+        // Show green indicator after fade completes
         setShowGreenIndicator(true);
         greenIndicatorAnim.setValue(0);
         
@@ -271,7 +281,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     if (currentImageUrl !== previousImageUrl) {
       setPreviousImageUrl(currentImageUrl || null);
     }
-  }, [currentTrack?.imageUrl, previousImageUrl, albumArtFlipAnim, greenIndicatorAnim]);
+  }, [currentTrack?.imageUrl, previousImageUrl, albumArtFadeAnim, greenIndicatorAnim]);
   
   const { ghostText } = useGhostTyping({
     isInputFocused: friendRequest.isInputFocused,
@@ -748,7 +758,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
               style={[
                 styles.spotifyContent,
                 {
-                  backgroundColor: theme === 'dark' ? 'rgba(80, 80, 80, 0.15)' : 'rgba(140, 140, 140, 0.08)',
                   borderColor: theme === 'dark' ? 'rgba(120, 120, 120, 0.2)' : 'rgba(160, 160, 160, 0.15)',
                 }
               ]}
@@ -761,34 +770,25 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
                   const silentQuery = `Search statistics about "${currentTrack.name}" by ${currentTrack.artist}${currentTrack.album ? ` from the album "${currentTrack.album}"` : ''} and provide interesting information about it like chart performance, background, or fun facts in a conversational answer.`;
                   
                   // Send the message silently (no user bubble shown)
-                  // Ensure we're using the current conversation context
-                  if (!currentFriendUsername) {
-                    // If no current conversation ID, let the backend create a new one
-                    // This is needed for silent messages to work properly
-                    handleMessageSend(silentQuery, [], true); // Pass true for silent mode
-                  }
+                  // Always send the message regardless of friend conversation status
+                  handleMessageSend(silentQuery, [], true); // Pass true for silent mode
                 }
               }}
               activeOpacity={0.8}
             >
+              <BlurView
+                intensity={20}
+                tint={theme === 'dark' ? 'dark' : 'light'}
+                style={StyleSheet.absoluteFillObject}
+              />
               {/* Album Art */}
               {currentTrack?.imageUrl && (
                 <View style={styles.albumArtContainer}>
                   <Animated.View style={{
-                    transform: [
-                      {
-                        rotateY: albumArtFlipAnim.interpolate({
-                          inputRange: [0, 0.25, 0.5, 0.75, 1],
-                          outputRange: ['0deg', '180deg', '360deg', '540deg', '720deg'], // 2 full spins
-                        })
-                      },
-                      {
-                        scale: albumArtFlipAnim.interpolate({
-                          inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1],
-                          outputRange: [1, 0.9, 0.8, 0.9, 1.1, 1], // More dynamic scaling
-                        })
-                      }
-                    ]
+                    opacity: albumArtFadeAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 1], // Simple fade in
+                    })
                   }}>
                     <Image 
                       source={{ uri: currentTrack.imageUrl }}
@@ -869,10 +869,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
               </View>
             </TouchableOpacity>
           ) : (
-            <SpotifyLinkPrompt 
-              theme={theme}
-              onPress={connectToSpotify}
-            />
+            showSpotifyLinkPrompt && (
+              <SpotifyLinkPrompt 
+                theme={theme}
+                onPress={connectToSpotify}
+              />
+            )
           )}
         </View>
 
@@ -1135,6 +1137,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         onStartNewChat={handleStartNewChat}
         currentConversationId={currentConversationId}
         theme={theme}
+        onAllConversationsCleared={() => {
+          setMessages([]);
+          setCurrentConversationId(undefined);
+          setCurrentFriendUsername(undefined);
+        }}
       />
       
       {/* Header Menu */}

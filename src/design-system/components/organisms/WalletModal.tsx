@@ -13,6 +13,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { WalletCard } from '../molecules/WalletCard';
+import { useSubscription } from '../../../hooks/useSubscription';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -37,6 +38,16 @@ export const WalletModal: React.FC<WalletModalProps> = ({
   usage,
   userBadges,
 }) => {
+  // Use real subscription data
+  const { 
+    currentTier: realCurrentTier, 
+    walletUsage, 
+    refreshUsage 
+  } = useSubscription();
+
+  // Use real data if available, otherwise fallback to props
+  const displayTier = realCurrentTier || currentTier;
+  const displayUsage = walletUsage || usage;
   // Animation values
   const overlayOpacity = useSharedValue(0);
   const modalTranslateY = useSharedValue(screenHeight);
@@ -80,6 +91,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({
 
   const handleTierSelect = (tier: 'pro' | 'elite') => {
     onTierSelect(tier);
+    // Refresh usage data after tier selection
+    setTimeout(refreshUsage, 2000); // Allow time for webhook processing
     onClose();
   };
 
@@ -103,8 +116,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({
         
         <Animated.View style={[styles.modalContainer, modalStyle]}>
           <WalletCard 
-            currentTier={currentTier}
-            usage={usage}
+            currentTier={displayTier}
+            usage={displayUsage}
             userBadges={userBadges}
             onUpgrade={handleTierSelect}
           />

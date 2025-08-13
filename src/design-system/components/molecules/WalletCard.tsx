@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Animated, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Animated, TouchableOpacity, Modal, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import PagerView from 'react-native-pager-view';
 import * as Haptics from 'expo-haptics';
@@ -8,6 +8,7 @@ import { useTheme } from '../../../contexts/ThemeContext';
 import { designTokens } from '../../tokens/colors';
 import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
+import { subscriptionService } from '../../../services/subscriptionService';
 
 interface WalletCardProps {
   currentTier?: 'standard' | 'pro' | 'elite';
@@ -139,12 +140,30 @@ export const WalletCard: React.FC<WalletCardProps> = ({
       } else if (hapticCount === 6) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       } else if (hapticCount >= 8) {
-        // Final success haptic and trigger upgrade
+        // Final success haptic and trigger payment
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        onUpgrade(tier);
+        handlePaymentInitiation(tier);
         handleLongPressEnd();
       }
     }, 200); // Every 200ms
+  };
+
+  // Handle payment initiation
+  const handlePaymentInitiation = async (tier: 'pro' | 'elite') => {
+    try {
+      const stripeTier = tier === 'pro' ? 'Legend' : 'VIP';
+      await subscriptionService.initiatePayment(stripeTier);
+      
+      // Call the original onUpgrade for any additional UI updates
+      onUpgrade(tier);
+    } catch (error) {
+      console.error('Payment initiation failed:', error);
+      Alert.alert(
+        'Payment Error',
+        'Unable to start payment process. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   const handleLongPressEnd = () => {
@@ -165,34 +184,33 @@ export const WalletCard: React.FC<WalletCardProps> = ({
   const getTierInfo = (tier: 'pro' | 'elite') => {
     if (tier === 'pro') {
       return {
-        name: 'LEGENDARY',
-        price: '$15',
+        name: 'LEGEND',
+        price: '$12',
         priceUnit: '/mo',
         color: '#EF4444', // Red
         accentColors: ['#EC4899', '#10B981', '#F59E0B'], // Pink, emerald, amber
         features: [
-          'Unlimited Platform Access - Unrestricted use of all core features and AI capabilities',
-          'LEGEND Status Badge - Exclusive profile designation showcasing your commitment to music AI',
-          'Elite Model Allocation - Up to 5,000 monthly requests using GPT-5, Claude Opus, and Gemini 2.5 Pro',
-          "Founder's Circle Benefits - Early access to experimental features and platform updates",
-          'Advanced Customization Suite - Personalized interface themes and workflow optimization'
+          '3,000 responses every 2 weeks (20x more than Standard)',
+          '50 GPT-5 calls per month (5x more than Standard)',
+          'Priority AI processing',
+          'Enhanced music recognition',
+          'Advanced customization options'
         ]
       };
     } else {
       return {
         name: 'VIP',
-        price: '$30',
+        price: '$20',
         priceUnit: '/mo',
         color: '#F59E0B', // Gold
         accentColors: ['#06B6D4', '#EF4444', '#22C55E'], // Cyan, red, green
         features: [
-          'Everything in LEGENDARY',
-          'Superior Recognition Engine - Amplified request limits for unparalleled artist and track identification',
-          'Aether Music Discovery - AI-powered exploration engine for personalized musical journeys',
-          'Intelligent Model Switching - Automatic optimization based on your preferences and recognition needs',
-          'Agentic Background Processing - Smart notifications and proactive music insights',
-          'Exclusive VIP Distinction - Premium badge showcasing elite platform status',
-          'Master Customization Control - Advanced app personalization and premium profile design options'
+          'Everything in LEGEND',
+          'Unlimited responses',
+          'Unlimited GPT-5 calls',
+          'Priority processing',
+          'Early access to new features',
+          'Premium support'
         ]
       };
     }

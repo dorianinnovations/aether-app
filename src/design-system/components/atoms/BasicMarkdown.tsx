@@ -164,6 +164,7 @@ const BasicMarkdown: React.FC<BasicMarkdownProps> = ({ children, theme = 'light'
     const parts: React.ReactNode[] = [];
     let remaining = text;
     let key = 0;
+    let quotedTextIndex = 0;
 
     while (remaining.length > 0) {
       // Bold text **text**
@@ -173,11 +174,38 @@ const BasicMarkdown: React.FC<BasicMarkdownProps> = ({ children, theme = 'light'
           parts.push(<Text key={key++}>{boldMatch[1]}</Text>);
         }
         parts.push(
-          <Text key={key++} style={{ fontWeight: 'bold', fontFamily: 'Nunito-Bold' }}>
+          <Text key={key++} style={{ 
+            fontWeight: '900',
+            fontFamily: 'Nunito-Black',
+            color: getCyclingPastelColor(quotedTextIndex++, theme),
+            fontSize: 18,
+            letterSpacing: -0.5,
+          }}>
             {boldMatch[2]}
           </Text>
         );
         remaining = boldMatch[3];
+        continue;
+      }
+
+      // Italic text *text*
+      const italicMatch = remaining.match(/^(.*?)\*([^*]+?)\*(.*)/);
+      if (italicMatch) {
+        if (italicMatch[1]) {
+          parts.push(<Text key={key++}>{italicMatch[1]}</Text>);
+        }
+        parts.push(
+          <Text key={key++} style={{ 
+            fontStyle: 'italic',
+            fontFamily: 'Nunito-LightItalic',
+            color: getCyclingPastelColor(quotedTextIndex++, theme),
+            fontSize: 17,
+            letterSpacing: 0.2,
+          }}>
+            {italicMatch[2]}
+          </Text>
+        );
+        remaining = italicMatch[3];
         continue;
       }
 
@@ -189,11 +217,11 @@ const BasicMarkdown: React.FC<BasicMarkdownProps> = ({ children, theme = 'light'
         }
         parts.push(
           <Text key={key++} style={{ 
-            fontWeight: '600',
-            fontFamily: 'Nunito-SemiBold',
-            color: theme === 'dark' ? '#7c3aed' : '#8b5cf6',
+            fontWeight: 'bold',
+            fontFamily: 'Nunito-Bold',
+            color: getCyclingPastelColor(quotedTextIndex++, theme),
           }}>
-            "{songMatch[2]}"
+            {songMatch[2]}
           </Text>
         );
         remaining = songMatch[3];
@@ -208,12 +236,17 @@ const BasicMarkdown: React.FC<BasicMarkdownProps> = ({ children, theme = 'light'
         }
         parts.push(
           <Text key={key++} style={{ 
-            fontFamily: 'Courier',
-            backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-            paddingHorizontal: 4,
-            paddingVertical: 2,
-            borderRadius: 4,
-            fontSize: 14
+            fontFamily: 'JetBrains Mono',
+            backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)',
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 6,
+            fontSize: 15,
+            fontWeight: '600',
+            color: getCyclingPastelColor(quotedTextIndex++, theme),
+            borderWidth: 1,
+            borderColor: getCyclingPastelColor(quotedTextIndex, theme),
+            letterSpacing: 0.5,
           }}>
             {codeMatch[2]}
           </Text>
@@ -288,34 +321,48 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   header1: {
-    fontSize: 22,
-    lineHeight: 30,
-    fontFamily: 'Nunito-Bold',
-    fontWeight: '700',
-    letterSpacing: -0.4,
+    fontSize: 32,
+    lineHeight: 40,
+    fontFamily: 'Nunito-Black',
+    fontWeight: '900',
+    letterSpacing: -0.8,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   header2: {
-    fontSize: 20,
-    lineHeight: 28,
-    fontFamily: 'Nunito-SemiBold',
-    fontWeight: '600',
-    letterSpacing: -0.3,
+    fontSize: 26,
+    lineHeight: 34,
+    fontFamily: 'Nunito-ExtraBold',
+    fontWeight: '800',
+    letterSpacing: -0.6,
+    textShadowColor: 'rgba(0, 0, 0, 0.08)',
+    textShadowOffset: { width: 0.5, height: 0.5 },
+    textShadowRadius: 1,
   },
   questionContainer: {
-    marginVertical: 6,
-    paddingLeft: 12,
-    paddingRight: 8,
-    borderLeftWidth: 2,
-    paddingVertical: 4,
-    backgroundColor: 'transparent',
+    marginVertical: 8,
+    paddingLeft: 16,
+    paddingRight: 12,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   questionText: {
-    fontSize: 18,
-    lineHeight: 27,
-    fontFamily: 'Nunito-SemiBold',
-    fontWeight: '600',
-    letterSpacing: -0.2,
+    fontSize: 22,
+    lineHeight: 32,
+    fontFamily: 'Nunito-ExtraBold',
+    fontWeight: '800',
+    letterSpacing: -0.4,
     fontStyle: 'italic',
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   longParagraphContainer: {
     marginVertical: 6,

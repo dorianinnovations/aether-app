@@ -48,7 +48,7 @@ interface OnboardingStep {
 
 const onboardingSteps: OnboardingStep[] = [
   {
-    title: "Figure Out Any Song",
+    title: "CHAT AND LISTEN TO MUSIC WITH AI",
     subtitle: "That track stuck in your head? We got you",
     description: "Take a pic of some random vinyl, scan whatever's playing, or just hum that melody you can't shake. The AI behind this thing is actually pretty wild - it'll tell you not just what song it is, but like, the whole story behind it.",
     accent: "VIBES",

@@ -62,6 +62,7 @@ interface ConversationDrawerProps {
   currentConversationId?: string;
   theme: 'light' | 'dark';
   onFriendMessagePress?: (friendUsername: string) => void;
+  onAllConversationsCleared?: () => void;
 }
 
 const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
@@ -72,6 +73,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   currentConversationId,
   theme,
   onFriendMessagePress,
+  onAllConversationsCleared,
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [modalVisible, setModalVisible] = useState(isVisible);
@@ -153,6 +155,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     onAllConversationsDeleted: ({ deletedCount }: { deletedCount: number }) => {
       log.debug('Real-time: All conversations deleted', deletedCount);
       setConversations([]);
+      onAllConversationsCleared?.();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     },
     onMessageAdded: ({ conversationId, conversation }: { conversationId: string; conversation?: any }) => {
@@ -397,6 +400,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
       if (clearAllModal.type === 'conversations') {
         const success = await handleDeleteAllConversations();
         if (success) {
+          onAllConversationsCleared?.();
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } else {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

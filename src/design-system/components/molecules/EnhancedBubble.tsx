@@ -801,7 +801,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     alignSelf: 'flex-start',
-    marginLeft: 0,
+    marginLeft: 20,
   },
   searchResultsContainer: {
     marginTop: spacing[2],
