@@ -11,12 +11,14 @@ interface LottieLoaderProps {
   size?: 'small' | 'medium' | 'large' | number;
   color?: string; // Note: This won't affect the Lottie animation colors, but included for API compatibility
   style?: ViewStyle;
+  speed?: number; // Animation speed multiplier (1.0 = normal, 2.0 = 2x faster)
 }
 
 export const LottieLoader: React.FC<LottieLoaderProps> = ({
   size = 'medium',
   color: _color, // Kept for compatibility but not used since Lottie colors are baked in
   style,
+  speed = 2.0, // Default to 2x faster for snappier feel
 }) => {
   const getDimensions = () => {
     if (typeof size === 'number') {
@@ -43,6 +45,7 @@ export const LottieLoader: React.FC<LottieLoaderProps> = ({
         source={require('../../../../assets/AetherSpinner.json')}
         autoPlay
         loop
+        speed={speed}
         style={{
           width: width,
           height: height,

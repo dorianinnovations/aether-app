@@ -29,7 +29,7 @@ import { Ionicons } from '@expo/vector-icons';
 // Enhanced Components
 import { EnhancedChatInput } from '../../design-system/components/molecules';
 import EnhancedBubble from '../../design-system/components/molecules/EnhancedBubble';
-import { HeaderMenu, SignOutModal, ArtistListeningModal, WalletModal, SwipeTutorialOverlay, SpotifyBanner, ChatFloatingActions } from '../../design-system/components/organisms';
+import { HeaderMenu, SignOutModal, ArtistListeningModal, WalletModal, SwipeTutorialOverlay, SpotifyBanner, ChatFloatingActions, AddFriendModal } from '../../design-system/components/organisms';
 import { AnimatedHamburger, NowPlayingIndicator, SpotifyLinkPrompt, TrioOptionsRing, ScrollToBottomButton } from '../../design-system/components/atoms';
 import { PageBackground, SwipeToMenu } from '../../design-system/components/atoms';
 import SettingsModal from './SettingsModal';
@@ -40,8 +40,6 @@ import { WebSearchIndicator } from '../../design-system/components/atoms';
 import TypingIndicator from '../../design-system/components/atoms/TypingIndicator';
 
 // Design System
-import { designTokens } from '../../design-system/tokens/colors';
-import { getHeaderMenuShadow } from '../../design-system/tokens/shadows';
 
 // Contexts
 import { useTheme } from '../../contexts/ThemeContext';
@@ -77,7 +75,7 @@ import {
   hideModalAnimation,
   type ModalAnimationRefs 
 } from '../../utils/animations';
-import { validateUsername, isValidMessageInput, formatMessageText, shouldStartTyping, shouldStopTyping } from '../../utils/chatUtils';
+import { isValidMessageInput, formatMessageText, shouldStartTyping, shouldStopTyping } from '../../utils/chatUtils';
 
 
 
@@ -755,14 +753,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
           isConnected={spotifyConnected}
           showLinkPrompt={showSpotifyLinkPrompt}
           onTrackPress={(track) => {
-            // Create silent question about the current song
-            const silentQuery = `Search statistics about "${track.name}" by ${track.artist}${track.album ? ` from the album "${track.album}"` : ''} and provide interesting information about it like chart performance, background, or fun facts in a conversational answer.`;
+            // Enhanced multi-angle search prompt for comprehensive track details
+            const enhancedSilentQuery = `Web search for current detailed information about the song "${track.name}" by ${track.artist}${track.album ? ` from the album "${track.album}"` : ''}. Look up the latest chart positions, streaming numbers, commercial performance, release history, song background story, production details, critical reception, and any recent news or updates about this track or artist. Find comprehensive real-time data and statistics, then provide a conversational response with the most fascinating details and insights you discover from your search.`;
             
-            // Send the message silently (no user bubble shown)
-            handleMessageSend(silentQuery, [], true); // Pass true for silent mode
+            // Send the enhanced message silently (no user bubble shown)
+            handleMessageSend(enhancedSilentQuery, [], true); // Pass true for silent mode
             
             // Scroll to show the invisible user message + AI response
             setTimeout(() => scrollToBottom(), 200);
+            
+            // Haptic feedback for better UX
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           }}
           onConnectPress={connectToSpotify}
         />
@@ -1165,179 +1166,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         </Animated.View>
       )}
 
-      {/* Add Friend Dropdown */}
-      {friendRequest.shouldRenderAddFriendModal && (
-      <Modal
+      {/* Add Friend Modal */}
+      <AddFriendModal
+        theme={theme}
         visible={friendRequest.shouldRenderAddFriendModal}
-        transparent={true}
-        animationType="none"
-        onRequestClose={() => friendRequest.setShowAddFriendModal(false)}
-      >
-        <Animated.View style={[styles.overlay, { opacity: friendRequest.addFriendModalOpacity }]}>
-          <TouchableOpacity 
-            style={StyleSheet.absoluteFillObject}
-            activeOpacity={1}
-            onPress={() => friendRequest.setShowAddFriendModal(false)}
-          />
-          
-          <Animated.View style={[
-            styles.addFriendOverlay,
-            {
-              backgroundColor: theme === 'light' ? '#ffffff' : designTokens.brand.surfaceDark,
-              borderWidth: 1,
-              borderColor: theme === 'dark' ? designTokens.borders.dark.default : designTokens.borders.light.default,
-              ...getHeaderMenuShadow(theme),
-            }
-          ]}>
-            
-            <View style={styles.dropdownContent}>
-              <Text style={[
-                styles.dropdownTitle,
-                { 
-                  color: theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.primary,
-                  fontFamily: 'Nunito-SemiBold',
-                  letterSpacing: -0.7,
-                }
-              ]}>
-                Add a friend by username
-              </Text>
-              
-              <Animated.View
-                style={{
-                  transform: [{ translateX: friendRequest.shakeAnim }]
-                }}
-              >
-                <TextInput
-                  style={[
-                    styles.friendInput,
-                    {
-                      color: friendRequest.validationError 
-                        ? '#FF6B6B' 
-                        : friendRequest.statusType === 'error' 
-                          ? '#FF4444' 
-                          : friendRequest.statusType === 'success' 
-                            ? '#00DD44' 
-                            : friendRequest.statusType === 'warning'
-                              ? '#FFB366'
-                              : (theme === 'dark' ? designTokens.text.primaryDark : designTokens.text.primary),
-                      backgroundColor: friendRequest.isSubmittingFriendRequest 
-                        ? (theme === 'dark' ? '#2a2a2a' : '#f0f0f0')
-                        : (theme === 'dark' ? '#1a1a1a' : '#f8f8f8'),
-                      borderColor: friendRequest.validationError
-                        ? '#FF6B6B'
-                        : friendRequest.statusType === 'error' 
-                          ? '#FF4444' 
-                          : friendRequest.statusType === 'success' 
-                            ? '#00DD44'
-                            : friendRequest.statusType === 'warning'
-                              ? '#FFB366'
-                              : friendRequest.statusType === 'loading'
-                                ? '#4A90E2'
-                                : (theme === 'dark' ? designTokens.borders.dark.default : designTokens.borders.light.default),
-                      borderWidth: (friendRequest.validationError || friendRequest.statusType) ? 2 : 1,
-                    }
-                  ]}
-                  placeholder={friendRequest.validationError || friendRequest.statusMessage || ghostText}
-                  placeholderTextColor={
-                    friendRequest.validationError 
-                      ? '#FF6B6B' 
-                      : friendRequest.statusType === 'error' 
-                        ? '#FF4444' 
-                        : friendRequest.statusType === 'success' 
-                          ? '#00BB44' 
-                          : friendRequest.statusType === 'warning'
-                            ? '#FF9933'
-                            : friendRequest.statusType === 'loading'
-                              ? '#4A90E2'
-                              : (theme === 'dark' ? designTokens.text.mutedDark : designTokens.text.muted)
-                  }
-                  value={friendRequest.friendUsername}
-                  onChangeText={(text) => {
-                    friendRequest.setFriendUsername(text);
-                    // Clear status and validation errors when user starts typing
-                    if (friendRequest.statusMessage || friendRequest.validationError) {
-                      friendRequest.clearStatus();
-                    }
-                    
-                    // Real-time validation (only show after user stops typing)
-                    if (text.trim().length > 0) {
-                      const validation = validateUsername(text);
-                      if (validation && text.trim().length >= 3) {
-                        // Only show validation error for longer inputs to avoid annoying users
-                        friendRequest.setValidationError(validation);
-                      } else {
-                        friendRequest.setValidationError('');
-                      }
-                    } else {
-                      friendRequest.setValidationError('');
-                    }
-                  }}
-                  onFocus={() => friendRequest.setIsInputFocused(true)}
-                  onBlur={() => friendRequest.setIsInputFocused(false)}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  autoFocus={true}
-                  keyboardAppearance={theme === 'dark' ? 'dark' : 'light'}
-                  selectionColor={theme === 'dark' ? '#ffffff' : '#007AFF'}
-                  cursorColor={theme === 'dark' ? '#ffffff' : '#007AFF'}
-                  textAlign="center"
-                  editable={!friendRequest.isSubmittingFriendRequest && !friendRequest.statusMessage} // Disable input while submitting or showing status
-                />
-              </Animated.View>
-              
-              <TouchableOpacity
-                style={[
-                  styles.addButton,
-                  {
-                    backgroundColor: friendRequest.isSubmittingFriendRequest 
-                      ? (theme === 'dark' ? '#333333' : '#cccccc')
-                      : friendRequest.statusType === 'success'
-                        ? '#00AA44'
-                        : friendRequest.statusType === 'error' || friendRequest.validationError
-                          ? '#FF4444'
-                          : friendRequest.statusType === 'warning'
-                            ? '#FF9933'
-                            : (theme === 'dark' ? '#0d0d0d' : designTokens.brand.primary),
-                    borderColor: friendRequest.isSubmittingFriendRequest
-                      ? (theme === 'dark' ? '#555555' : '#aaaaaa')
-                      : (theme === 'dark' ? '#262626' : 'transparent'),
-                    borderWidth: theme === 'dark' ? 1 : 0,
-                    opacity: friendRequest.isSubmittingFriendRequest ? 0.7 : 1,
-                    // Strong tight glow for dark mode, shadow for light mode
-                    shadowColor: theme === 'dark' ? '#ffffff' : '#000000',
-                    shadowOffset: { width: 0, height: theme === 'dark' ? 0 : 2 },
-                    shadowOpacity: theme === 'dark' ? 0.4 : 0.3,
-                    shadowRadius: theme === 'dark' ? 4 : 8,
-                    elevation: theme === 'dark' ? 0 : 4,
-                  }
-                ]}
-                onPress={friendRequest.handleAddFriendSubmit}
-                activeOpacity={0.8}
-                disabled={friendRequest.isSubmittingFriendRequest || !!friendRequest.validationError}
-              >
-                <Text style={[
-                  styles.addButtonText,
-                  { 
-                    color: '#ffffff',
-                    fontFamily: 'Nunito-SemiBold',
-                    letterSpacing: -0.3,
-                  }
-                ]}>
-                  {friendRequest.isSubmittingFriendRequest 
-                    ? 'Sending...' 
-                    : friendRequest.statusType === 'success'
-                      ? 'Sent!'
-                      : friendRequest.statusType === 'error' || friendRequest.validationError
-                        ? 'Try Again'
-                        : 'Add Friend'
-                  }
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        </Animated.View>
-      </Modal>
-      )}
+        friendRequest={friendRequest}
+        ghostText={ghostText}
+        onClose={() => friendRequest.setShowAddFriendModal(false)}
+      />
 
       {/* Artist Listening Modal */}
       <ArtistListeningModal
@@ -1572,80 +1408,6 @@ const styles = StyleSheet.create({
   
   // Removed unused search styles
   
-  // Add Friend Dropdown Styles
-  overlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  dropdown: {
-    position: 'absolute',
-    width: 280,
-    borderRadius: 16,
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[2],
-    overflow: 'visible',
-  },
-  addFriendOverlay: {
-    position: 'absolute',
-    width: 320,
-    borderRadius: 16,
-    paddingVertical: spacing[4],
-    paddingHorizontal: spacing[3],
-    top: '30%',
-    left: '50%',
-    marginLeft: -160, // Half of width to center
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  arrow: {
-    width: 0,
-    height: 0,
-    borderStyle: 'solid',
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-  },
-  arrowUp: {
-    width: 0,
-    height: 0,
-    borderStyle: 'solid',
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: 'transparent',
-  },
-  dropdownContent: {
-    paddingTop: spacing[2],
-  },
-  dropdownTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: spacing[3],
-  },
-  friendInput: {
-    width: '100%',
-    height: 44,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: spacing[3],
-    fontSize: 16,
-    fontWeight: '400',
-    textAlign: 'center',
-    marginBottom: spacing[3],
-  },
-  addButton: {
-    width: '100%',
-    height: 37,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
 
 
 });

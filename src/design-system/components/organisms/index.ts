@@ -25,4 +25,5 @@ export { FloatingButtonProvider } from './FloatingButtonContainer';
 export { SwipeTutorialOverlay } from './SwipeTutorialOverlay';
 export { SpotifyBanner } from './SpotifyBanner';
 export { ChatFloatingActions } from './ChatFloatingActions';
+export { AddFriendModal } from './AddFriendModal';
 export * from './FloatingButtonContainer';

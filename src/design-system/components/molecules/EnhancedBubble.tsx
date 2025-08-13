@@ -125,6 +125,7 @@ const StreamContent: React.FC<{
         source={require('../../../../assets/AetherSpinner.json')}
         autoPlay
         loop
+        speed={2.8}
         style={styles.lottieAnimation}
       />
     );

@@ -789,7 +789,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
                     color="#ffffff"
                   />
                 ) : isLoading || isUploading ? (
-                  <LottieLoader size={40} />
+                  <LottieLoader size={40} speed={3.0} />
                 ) : (
                   <FontAwesome5
                     name="arrow-up"

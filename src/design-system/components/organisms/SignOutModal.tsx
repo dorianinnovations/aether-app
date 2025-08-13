@@ -194,6 +194,7 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
                   source={require('../../../../assets/AetherSpinner.json')}
                   autoPlay
                   loop
+                  speed={2.5}
                   style={styles.lottieAnimation}
                 />
               </View>
