@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.isaiahpappas.aether",
-      "buildNumber": "1",
+      "buildNumber": "23",
       "config": {
         "usesNonExemptEncryption": false
       }

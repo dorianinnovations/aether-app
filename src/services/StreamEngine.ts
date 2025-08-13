@@ -131,11 +131,17 @@ export class StreamEngine {
       }
     };
     
-    xhr.onerror = () => {
+    let hasError = false;
+    
+    xhr.onerror = (error) => {
+      logger.error('StreamEngine XHR error:', error);
+      hasError = true;
       completed = true;
     };
     
     xhr.ontimeout = () => {
+      logger.error('StreamEngine request timeout');
+      hasError = true;
       completed = true;
     };
     
@@ -148,6 +154,11 @@ export class StreamEngine {
     
     // Process chunks and yield individual words as they come from server
     while (!completed || processedChunks < chunks.length) {
+      // Check for errors before processing
+      if (hasError) {
+        throw new Error('Network error occurred during streaming');
+      }
+      
       if (processedChunks < chunks.length) {
         const chunk = chunks[processedChunks++];
         
@@ -161,6 +172,11 @@ export class StreamEngine {
         // Wait for more chunks
         await new Promise(resolve => setTimeout(resolve, 50));
       }
+    }
+    
+    // Check for HTTP errors after completion
+    if (xhr.status >= 400) {
+      throw new Error(`HTTP ${xhr.status}: Server error occurred during streaming`);
     }
     
     // No need to yield remaining text since server handles word completion

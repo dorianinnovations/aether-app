@@ -11,7 +11,17 @@ export const SpotifyAPI = {
     try {
       const response = await api.get('/spotify/auth?platform=mobile');
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
+      // Enhance error with more specific information
+      if (error.response?.status === 401) {
+        throw new Error('Authentication required. Please log in to connect Spotify.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Permission denied. Please contact support.');
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
+        throw new Error('Network error. Please check your connection.');
+      }
       throw error;
     }
   },

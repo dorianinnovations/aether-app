@@ -14,7 +14,7 @@ interface UseMessagesReturn {
   messages: Message[];
   isLoading: boolean;
   isStreaming: boolean;
-  handleSend: (inputText: string, attachments?: MessageAttachment[]) => Promise<void>;
+  handleSend: (inputText: string, attachments?: MessageAttachment[], silent?: boolean) => Promise<void>;
   handleMessagePress: (message: Message) => Promise<void>;
   handleMessageLongPress: (message: Message) => void;
   handleConversationSelect: (conversation: Conversation) => Promise<void>;
@@ -183,7 +183,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
     handleConversationSwitch();
   }, [conversationId, friendUsername]);
 
-  const handleSend = async (inputText: string, attachments: MessageAttachment[] = []) => {
+  const handleSend = async (inputText: string, attachments: MessageAttachment[] = [], silent: boolean = false) => {
     // Allow sending if there's text OR attachments
     if ((!inputText.trim() && attachments.length === 0) || isLoading) return;
 
@@ -197,6 +197,7 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
     // Prepare message text for display (keep user input as-is)
     const displayText = inputText.trim();
     
+    // Create user message (but only add to UI if not silent)
     const userMessage: Message = {
       id: Date.now().toString(),
       sender: 'user',
@@ -215,17 +216,18 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
     // Determine cache key - validate friendUsername is not undefined
     const cacheKey = (friendUsername && friendUsername !== 'undefined') ? `friend-${friendUsername}` : conversationId;
 
-    // Add user message with optimistic update
-    setMessages(prev => {
-      const newMessages = [...prev, userMessage];
-      // Update cache with new messages
-      if (cacheKey) {
-        messageCache.current.set(cacheKey, newMessages);
-      }
-      
-      
-      return newMessages;
-    });
+    // Add user message with optimistic update (skip if silent)
+    if (!silent) {
+      setMessages(prev => {
+        const newMessages = [...prev, userMessage];
+        // Update cache with new messages
+        if (cacheKey) {
+          messageCache.current.set(cacheKey, newMessages);
+        }
+        
+        return newMessages;
+      });
+    }
     setIsLoading(true);
 
     // Force immediate render cycle for better perceived performance

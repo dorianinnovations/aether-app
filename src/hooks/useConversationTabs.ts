@@ -33,8 +33,8 @@ export const useConversationTabs = (theme: 'light' | 'dark') => {
       label: 'Aether', 
       icon: null,
       logo: theme === 'dark'
-        ? require('../../assets/images/aether-brand-logo-dark.webp')
-        : require('../../assets/images/aether-brand-logo-light.webp'),
+        ? require('../../assets/images/aether-logo-dark-mode.webp')
+        : require('../../assets/images/aether-logo-light-mode.webp'),
       color: theme === 'dark' ? '#8B8B8B' : '#666666',
       iconColor: null,
     },

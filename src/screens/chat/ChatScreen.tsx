@@ -22,6 +22,7 @@ import {
   Modal,
   TextInput,
 } from 'react-native';
+import LottieView from 'lottie-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
@@ -31,7 +32,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { EnhancedChatInput } from '../../design-system/components/molecules';
 import EnhancedBubble from '../../design-system/components/molecules/EnhancedBubble';
 import { HeaderMenu, SignOutModal, ArtistListeningModal, WalletModal, SwipeTutorialOverlay } from '../../design-system/components/organisms';
-import { AnimatedHamburger, NowPlayingIndicator } from '../../design-system/components/atoms';
+import { AnimatedHamburger, NowPlayingIndicator, SpotifyLinkPrompt } from '../../design-system/components/atoms';
 import { PageBackground, SwipeToMenu } from '../../design-system/components/atoms';
 import SettingsModal from './SettingsModal';
 import ConversationDrawer from '../../components/ConversationDrawer';
@@ -63,6 +64,7 @@ import { useGhostTyping } from '../../hooks/useGhostTyping';
 import { useRealTimeMessaging } from '../../hooks/useRealTimeMessaging';
 import { useFriendRequest } from '../../hooks/useFriendRequest';
 import { useSpotifyLive } from '../../hooks/useSpotifyLive';
+import { useSpotifyOAuth } from '../../hooks/useSpotifyOAuth';
 
 // Types
 import type { Message } from '../../types/chat';
@@ -169,10 +171,21 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   // Spotify live data - increased interval to prevent rate limiting
   const { currentTrack, isLoading: spotifyLoading, error: spotifyError, isConnected: spotifyConnected } = useSpotifyLive(15000);
   
+  // Spotify OAuth for connecting account
+  const { connectToSpotify } = useSpotifyOAuth();
+  
   // Scrolling text animation
   const scrollAnimation = useRef(new Animated.Value(0)).current;
   const [textWidth, setTextWidth] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
+  
+  // Album art flip animation
+  const albumArtFlipAnim = useRef(new Animated.Value(0)).current;
+  const [previousImageUrl, setPreviousImageUrl] = useState<string | null>(null);
+  
+  // Green indicator animation after album art change
+  const [showGreenIndicator, setShowGreenIndicator] = useState(false);
+  const greenIndicatorAnim = useRef(new Animated.Value(0)).current;
   
 
   // Start scrolling animation when track changes
@@ -208,6 +221,57 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       }
     }
   }, [currentTrack, scrollAnimation, textWidth, containerWidth]);
+
+  // Album art flip animation when image changes
+  useEffect(() => {
+    const currentImageUrl = currentTrack?.imageUrl;
+    
+    if (currentImageUrl && previousImageUrl && currentImageUrl !== previousImageUrl) {
+      // Trigger multiple spin animation when album art changes
+      albumArtFlipAnim.setValue(0);
+      
+      Animated.timing(albumArtFlipAnim, {
+        toValue: 1,
+        duration: 1200, // Longer duration for multiple spins
+        useNativeDriver: true,
+        easing: Easing.out(Easing.back(1.1)), // Slightly less bouncy for smoother spins
+      }).start(() => {
+        // Reset animation value after completion
+        albumArtFlipAnim.setValue(0);
+        
+        // Show green indicator after spin completes
+        setShowGreenIndicator(true);
+        greenIndicatorAnim.setValue(0);
+        
+        // Fade in the green indicator
+        Animated.timing(greenIndicatorAnim, {
+          toValue: 1,
+          duration: 300, // Smooth fade-in duration
+          useNativeDriver: true,
+          easing: Easing.out(Easing.ease),
+        }).start(() => {
+          // After 5 seconds, slide the indicator away to the right
+          setTimeout(() => {
+            Animated.timing(greenIndicatorAnim, {
+              toValue: 2, // Use value 2 to trigger slide-out animation
+              duration: 400,
+              useNativeDriver: true,
+              easing: Easing.in(Easing.back(1.2)),
+            }).start(() => {
+              // Hide indicator after slide animation completes
+              setShowGreenIndicator(false);
+              greenIndicatorAnim.setValue(0);
+            });
+          }, 5000);
+        });
+      });
+    }
+    
+    // Update previous image URL
+    if (currentImageUrl !== previousImageUrl) {
+      setPreviousImageUrl(currentImageUrl || null);
+    }
+  }, [currentTrack?.imageUrl, previousImageUrl, albumArtFlipAnim, greenIndicatorAnim]);
   
   const { ghostText } = useGhostTyping({
     isInputFocused: friendRequest.isInputFocused,
@@ -677,22 +741,95 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
           translucent
         />
 
-        {/* Spotify Now Playing */}
-        {currentTrack && (
-          <View style={styles.spotifyContainer}>
-            <View style={[
-              styles.spotifyContent,
-              {
-                backgroundColor: theme === 'dark' ? 'rgba(80, 80, 80, 0.15)' : 'rgba(140, 140, 140, 0.08)',
-                borderColor: theme === 'dark' ? 'rgba(120, 120, 120, 0.2)' : 'rgba(160, 160, 160, 0.15)',
-              }
-            ]}>
+        {/* Spotify Banner - Show current track or link prompt */}
+        <View style={styles.spotifyContainer}>
+          {currentTrack && spotifyConnected ? (
+            <TouchableOpacity 
+              style={[
+                styles.spotifyContent,
+                {
+                  backgroundColor: theme === 'dark' ? 'rgba(80, 80, 80, 0.15)' : 'rgba(140, 140, 140, 0.08)',
+                  borderColor: theme === 'dark' ? 'rgba(120, 120, 120, 0.2)' : 'rgba(160, 160, 160, 0.15)',
+                }
+              ]}
+              onPress={() => {
+                if (currentTrack) {
+                  // Haptic feedback for the tap
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  
+                  // Create silent question about the current song
+                  const silentQuery = `Search statistics about "${currentTrack.name}" by ${currentTrack.artist}${currentTrack.album ? ` from the album "${currentTrack.album}"` : ''} and provide interesting information about it like chart performance, background, or fun facts in a conversational answer.`;
+                  
+                  // Send the message silently (no user bubble shown)
+                  // Ensure we're using the current conversation context
+                  if (!currentFriendUsername) {
+                    // If no current conversation ID, let the backend create a new one
+                    // This is needed for silent messages to work properly
+                    handleMessageSend(silentQuery, [], true); // Pass true for silent mode
+                  }
+                }
+              }}
+              activeOpacity={0.8}
+            >
               {/* Album Art */}
               {currentTrack?.imageUrl && (
-                <Image 
-                  source={{ uri: currentTrack.imageUrl }}
-                  style={styles.albumArt}
-                />
+                <View style={styles.albumArtContainer}>
+                  <Animated.View style={{
+                    transform: [
+                      {
+                        rotateY: albumArtFlipAnim.interpolate({
+                          inputRange: [0, 0.25, 0.5, 0.75, 1],
+                          outputRange: ['0deg', '180deg', '360deg', '540deg', '720deg'], // 2 full spins
+                        })
+                      },
+                      {
+                        scale: albumArtFlipAnim.interpolate({
+                          inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1],
+                          outputRange: [1, 0.9, 0.8, 0.9, 1.1, 1], // More dynamic scaling
+                        })
+                      }
+                    ]
+                  }}>
+                    <Image 
+                      source={{ uri: currentTrack.imageUrl }}
+                      style={styles.albumArt}
+                    />
+                  </Animated.View>
+                  
+                  {/* Green Success Indicator */}
+                  {showGreenIndicator && (
+                    <Animated.View style={[
+                      styles.greenIndicator,
+                      {
+                        opacity: greenIndicatorAnim.interpolate({
+                          inputRange: [0, 1, 2],
+                          outputRange: [0, 1, 0],
+                        }),
+                        transform: [
+                          {
+                            translateX: greenIndicatorAnim.interpolate({
+                              inputRange: [0, 1, 2],
+                              outputRange: [0, 0, 60], // Slide 60px to the right when hiding
+                            })
+                          },
+                          {
+                            scale: greenIndicatorAnim.interpolate({
+                              inputRange: [0, 1, 2],
+                              outputRange: [0.3, 1, 0.8],
+                            })
+                          }
+                        ],
+                      }
+                    ]}>
+                      <LottieView
+                        source={require('../../../assets/AetherLiveStatusGreen.json')}
+                        autoPlay
+                        loop={false}
+                        style={styles.greenIndicatorLottie}
+                      />
+                    </Animated.View>
+                  )}
+                </View>
               )}
               
               {/* Scrolling Text Container */}
@@ -700,11 +837,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
                 style={styles.scrollContainer}
                 onLayout={(event) => setContainerWidth(event.nativeEvent.layout.width)}
               >
-                <Animated.Text 
+                <Animated.View
                   style={[
-                    styles.spotifyText,
+                    styles.spotifyTextContainer,
                     {
-                      color: theme === 'dark' ? '#B0B0B0' : '#6B6B6B',
                       transform: [{
                         translateX: scrollAnimation.interpolate({
                           inputRange: [0, 1],
@@ -718,12 +854,27 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
                   ]}
                   onLayout={(event) => setTextWidth(event.nativeEvent.layout.width)}
                 >
-                  {`${currentTrack.name} • ${currentTrack.artist} • ${currentTrack.album || 'Unknown Album'}`}
-                </Animated.Text>
+                  <Text style={[styles.spotifyText, { color: theme === 'dark' ? '#E0E0E0' : '#4A4A4A', fontWeight: '600' }]}>
+                    {currentTrack.name}
+                  </Text>
+                  <Text style={[styles.spotifyText, { color: theme === 'dark' ? '#C0C0C0' : '#606060', fontWeight: '400' }]}>
+                    {' '}
+                    {currentTrack.artist}
+                  </Text>
+                  <Text style={[styles.spotifyText, { color: theme === 'dark' ? '#A0A0A0' : '#707070', fontWeight: '300' }]}>
+                    {' '}
+                    {currentTrack.album || 'Unknown Album'}
+                  </Text>
+                </Animated.View>
               </View>
-            </View>
-          </View>
-        )}
+            </TouchableOpacity>
+          ) : (
+            <SpotifyLinkPrompt 
+              theme={theme}
+              onPress={connectToSpotify}
+            />
+          )}
+        </View>
 
         {/* Dynamic Greeting Banner */}
         {greetingText && showGreeting && (
@@ -1464,15 +1615,35 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     height: 36,
   },
+  albumArtContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+  },
   albumArt: {
     width: 24,
     height: 24,
     borderRadius: 4,
-    marginRight: 8,
+  },
+  greenIndicator: {
+    position: 'absolute',
+    right: -16, // Perfect spacing from album art
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  greenIndicatorLottie: {
+    width: 20,
+    height: 20,
   },
   scrollContainer: {
     flex: 1,
     overflow: 'hidden',
+  },
+  spotifyTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   spotifyText: {
     fontSize: 13,

@@ -46,6 +46,7 @@ export { Toast } from './Toast';
 export { SocialLinksBar } from './SocialLinksBar';
 export { SwipeToMenu } from './SwipeToMenu';
 export { SpotifyNowPlaying } from './SpotifyNowPlaying';
+export { SpotifyLinkPrompt } from './SpotifyLinkPrompt';
 
 // Re-export types
 export type { IconName, IconSize } from './Icon';

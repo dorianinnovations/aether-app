@@ -592,6 +592,30 @@ export const ProfileScreen: React.FC = () => {
                 size={22}
               />
             </TouchableOpacity>
+
+            {/* Separator */}
+            <View style={[
+              styles.floatingButtonSeparator,
+              {
+                backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+              }
+            ]} />
+
+            {/* Sign Out Button */}
+            <TouchableOpacity
+              style={styles.floatingButtonItem}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setShowSignOutModal(true);
+              }}
+              activeOpacity={0.8}
+            >
+              <Feather
+                name="log-out"
+                size={22}
+                color="#FF6B6B"
+              />
+            </TouchableOpacity>
           </View>
         )}
 

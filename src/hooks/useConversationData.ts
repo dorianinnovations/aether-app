@@ -130,11 +130,11 @@ export const useConversationData = () => {
         let friendsList: Friend[] = [];
         
         if (friendsResponse.success && friendsResponse.friends && Array.isArray(friendsResponse.friends)) {
-          friendsList = friendsResponse.friends;
+          friendsList = friendsResponse.friends.filter((friend: Friend) => friend && friend.username);
         } else if (friendsResponse.success && friendsResponse.data && friendsResponse.data.friends && Array.isArray(friendsResponse.data.friends)) {
-          friendsList = friendsResponse.data.friends;
+          friendsList = friendsResponse.data.friends.filter((friend: Friend) => friend && friend.username);
         } else if (Array.isArray(friendsResponse)) {
-          friendsList = friendsResponse;
+          friendsList = friendsResponse.filter((friend: Friend) => friend && friend.username);
         }
         
         return friendsList.map((friend: Friend) => ({
@@ -161,11 +161,11 @@ export const useConversationData = () => {
       let friendsList: Friend[] = [];
       
       if (friendsResponse.success && friendsResponse.friends && Array.isArray(friendsResponse.friends)) {
-        friendsList = friendsResponse.friends;
+        friendsList = friendsResponse.friends.filter((friend: Friend) => friend && friend.username);
       } else if (friendsResponse.success && friendsResponse.data && friendsResponse.data.friends && Array.isArray(friendsResponse.data.friends)) {
-        friendsList = friendsResponse.data.friends;
+        friendsList = friendsResponse.data.friends.filter((friend: Friend) => friend && friend.username);
       } else if (Array.isArray(friendsResponse)) {
-        friendsList = friendsResponse;
+        friendsList = friendsResponse.filter((friend: Friend) => friend && friend.username);
       }
       
       return friendsList.map((friend: Friend) => ({

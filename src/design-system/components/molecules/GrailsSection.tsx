@@ -193,9 +193,12 @@ export const GrailsSection: React.FC<GrailsSectionProps> = ({
   };
 
   const openSearch = (type: 'track' | 'album', slotIndex: number) => {
-    if (!editable && onEnableEditMode) {
-      // If not in edit mode, enable edit mode first
-      onEnableEditMode();
+    if (!editable) {
+      // If not editable (e.g., public profile), prevent access to search
+      if (onEnableEditMode) {
+        // If callback exists, enable edit mode first
+        onEnableEditMode();
+      }
       return;
     }
     
@@ -212,24 +215,33 @@ export const GrailsSection: React.FC<GrailsSectionProps> = ({
     const isEmpty = !item || !item.id;
     const isTrack = type === 'track';
 
+    // Don't render empty slots on public profiles
+    if (isEmpty && !editable) {
+      return null;
+    }
+
     return (
       <View key={`${type}-${index}`} style={styles.grailSlot}>
         <TouchableOpacity
           style={[
             styles.grailCard,
             isEmpty && styles.emptyGrailCard,
+            isEmpty && editable && styles.discreetEmptyCard,
             { backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)' }
           ]}
-          onPress={() => openSearch(type, index)}
-          activeOpacity={0.7}
+          onPress={() => editable && openSearch(type, index)}
+          activeOpacity={editable ? 0.7 : 1}
+          disabled={!editable}
         >
           {isEmpty ? (
-            <View style={styles.emptySlot}>
-              <Feather name="plus" size={20} color={colors.textSecondary} />
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                Add {isTrack ? 'Song' : 'Album'}
-              </Text>
-            </View>
+            editable && (
+              <View style={styles.emptySlot}>
+                <Feather name="plus" size={16} color={colors.textMuted} />
+                <Text style={[styles.emptyText, styles.discreetText, { color: colors.textMuted }]}>
+                  Add {isTrack ? 'Song' : 'Album'}
+                </Text>
+              </View>
+            )
           ) : (
             <>
               <View style={styles.artworkContainer}>
@@ -347,24 +359,44 @@ export const GrailsSection: React.FC<GrailsSectionProps> = ({
       {/* Content */}
       <View style={styles.content}>
         {/* Top Tracks */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Top Songs</Text>
-          <View style={styles.grailGrid}>
-            {[0, 1, 2].map(index => 
-              renderGrailSlot(localGrails.topTracks[index], index, 'track')
-            )}
-          </View>
-        </View>
+        {(() => {
+          const trackSlots = [0, 1, 2]
+            .map(index => renderGrailSlot(localGrails.topTracks[index], index, 'track'))
+            .filter(slot => slot !== null);
+          
+          // Only show section if there are tracks to display or if editable
+          if (trackSlots.length > 0 || editable) {
+            return (
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Top Songs</Text>
+                <View style={styles.grailGrid}>
+                  {trackSlots}
+                </View>
+              </View>
+            );
+          }
+          return null;
+        })()}
 
         {/* Top Albums */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Top Albums</Text>
-          <View style={styles.grailGrid}>
-            {[0, 1, 2].map(index => 
-              renderGrailSlot(localGrails.topAlbums[index], index, 'album')
-            )}
-          </View>
-        </View>
+        {(() => {
+          const albumSlots = [0, 1, 2]
+            .map(index => renderGrailSlot(localGrails.topAlbums[index], index, 'album'))
+            .filter(slot => slot !== null);
+          
+          // Only show section if there are albums to display or if editable
+          if (albumSlots.length > 0 || editable) {
+            return (
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Top Albums</Text>
+                <View style={styles.grailGrid}>
+                  {albumSlots}
+                </View>
+              </View>
+            );
+          }
+          return null;
+        })()}
       </View>
 
       {/* Search Modal */}
@@ -487,6 +519,10 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
+  discreetEmptyCard: {
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    opacity: 0.6,
+  },
   emptySlot: {
     flex: 1,
     justifyContent: 'center',
@@ -496,6 +532,10 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 10,
     textAlign: 'center',
+  },
+  discreetText: {
+    fontSize: 9,
+    opacity: 0.7,
   },
   artworkContainer: {
     position: 'relative',

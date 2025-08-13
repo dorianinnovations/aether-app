@@ -192,9 +192,10 @@ export const useSocialCards = (): UseSocialCardsReturn => {
       const friendsResponse = await FriendsAPI.getFriendsList();
 
       if (friendsResponse.success && Array.isArray(friendsResponse.friends)) {
-        // Transform backend friends data to SocialCard format
+        // Filter out null/invalid friends and transform backend friends data to SocialCard format
+        const validFriends = friendsResponse.friends.filter((friend: any) => friend && friend.username);
         const socialCards: SocialCard[] = await Promise.all(
-          friendsResponse.friends.map(async (friend: any) => {
+          validFriends.map(async (friend: any) => {
             try {
               // Get each friend's social proxy profile
               const profileResponse = await SocialProxyAPI.getFriendProfile(friend.username);
@@ -228,9 +229,10 @@ export const useSocialCards = (): UseSocialCardsReturn => {
       const friendsResponse = await FriendsAPI.getFriendsList();
 
       if (friendsResponse.success && Array.isArray(friendsResponse.friends)) {
-        // Transform backend friends data to SocialCard format
+        // Filter out null/invalid friends and transform backend friends data to SocialCard format
+        const validFriends = friendsResponse.friends.filter((friend: any) => friend && friend.username);
         const socialCards: SocialCard[] = await Promise.all(
-          friendsResponse.friends.map(async (friend: any) => {
+          validFriends.map(async (friend: any) => {
             try {
               // Get each friend's social proxy profile
               const profileResponse = await SocialProxyAPI.getFriendProfile(friend.username);
