@@ -19,6 +19,9 @@ interface WalletCardProps {
   };
   userBadges?: string[]; // Array of badge types from database
   onUpgrade: (tier: 'pro' | 'elite') => void;
+  isLoadingRealData?: boolean;
+  hasRealData?: boolean;
+  dataError?: string | null;
 }
 
 export const WalletCard: React.FC<WalletCardProps> = ({
@@ -26,6 +29,9 @@ export const WalletCard: React.FC<WalletCardProps> = ({
   usage = { gpt4o: 45, gpt5: 120, gpt5Limit: 150 },
   userBadges = [],
   onUpgrade,
+  isLoadingRealData = false,
+  hasRealData = false,
+  dataError = null,
 }) => {
   const { theme, colors } = useTheme();
   const [activePage, setActivePage] = useState(0);
@@ -240,6 +246,22 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                 ]}>
                   Current Plan
                 </Text>
+                {/* Data status indicator */}
+                {isLoadingRealData && (
+                  <View style={styles.dataStatusDot}>
+                    <Feather name="loader" size={10} color="#F59E0B" />
+                  </View>
+                )}
+                {!hasRealData && !isLoadingRealData && (
+                  <View style={[styles.dataStatusDot, { backgroundColor: 'rgba(239, 68, 68, 0.2)' }]}>
+                    <Feather name="wifi-off" size={8} color="#EF4444" />
+                  </View>
+                )}
+                {hasRealData && (
+                  <View style={[styles.dataStatusDot, { backgroundColor: 'rgba(16, 185, 129, 0.2)' }]}>
+                    <Feather name="check" size={8} color="#10B981" />
+                  </View>
+                )}
                 <TouchableOpacity 
                   style={styles.infoButton}
                   onPress={() => setShowBenefitsModal(true)}
@@ -665,7 +687,12 @@ export const WalletCard: React.FC<WalletCardProps> = ({
           <Pressable
             style={[
               styles.longPressTrack,
-              { borderBottomColor: tierInfo.color }
+              { 
+                borderBottomColor: tierInfo.color,
+                backgroundColor: theme === 'dark' 
+                  ? 'rgba(255, 255, 255, 0.08)' 
+                  : 'rgba(255, 255, 255, 0.25)',
+              }
             ]}
             onPressIn={() => handleLongPressStart(tier)}
             onPressOut={handleLongPressEnd}
@@ -1109,23 +1136,22 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255, 255, 255, 0.2)',
     borderLeftColor: 'rgba(255, 255, 255, 0.1)',
     borderRightColor: 'rgba(255, 255, 255, 0.1)',
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     borderRadius: 12,
     position: 'relative',
     overflow: 'hidden',
     justifyContent: 'center',
-    // Enhanced neumorphic upgrade button
+    // Enhanced neumorphic upgrade button with increased elevation
     shadowColor: '#000000',
     shadowOffset: {
       width: 0,
-      height: 3,
+      height: 8,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 16,
     // Tech glow effect
     marginHorizontal: 2,
-    marginVertical: 4,
+    marginVertical: 6,
   },
   longPressFill: {
     position: 'absolute',
@@ -1233,6 +1259,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[1],
+  },
+  dataStatusDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(245, 158, 11, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   infoButton: {
     padding: 2,

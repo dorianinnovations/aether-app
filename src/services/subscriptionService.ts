@@ -1,4 +1,5 @@
 import { api } from './apiModules';
+import { Linking } from 'react-native';
 
 export interface UsageInfo {
   tier: 'Standard' | 'Legend' | 'VIP';
@@ -98,8 +99,7 @@ class SubscriptionService {
     try {
       const checkout = await this.createCheckoutSession(tier);
       
-      // For React Native, we need to use Linking to open the browser
-      const { Linking } = await import('react-native');
+      // Open Stripe checkout in external browser (Apple-compliant)
       const canOpen = await Linking.canOpenURL(checkout.checkoutUrl);
       
       if (canOpen) {

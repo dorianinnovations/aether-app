@@ -42,12 +42,15 @@ export const WalletModal: React.FC<WalletModalProps> = ({
   const { 
     currentTier: realCurrentTier, 
     walletUsage, 
-    refreshUsage 
+    refreshUsage,
+    hasRealData,
+    loading,
+    error
   } = useSubscription();
 
   // Use real data if available, otherwise fallback to props
-  const displayTier = realCurrentTier || currentTier;
-  const displayUsage = walletUsage || usage;
+  const displayTier = hasRealData ? realCurrentTier : currentTier;
+  const displayUsage = hasRealData ? walletUsage : usage;
   // Animation values
   const overlayOpacity = useSharedValue(0);
   const modalTranslateY = useSharedValue(screenHeight);
@@ -120,6 +123,9 @@ export const WalletModal: React.FC<WalletModalProps> = ({
             usage={displayUsage}
             userBadges={userBadges}
             onUpgrade={handleTierSelect}
+            isLoadingRealData={loading}
+            hasRealData={hasRealData}
+            dataError={error}
           />
         </Animated.View>
       </View>

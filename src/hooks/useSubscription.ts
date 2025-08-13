@@ -44,7 +44,7 @@ export const useSubscription = () => {
 
   // Convert usage data to the format expected by WalletCard
   const getUsageForWallet = () => {
-    if (!usage) return { gpt4o: 0, gpt5: 0, gpt5Limit: 150 };
+    if (!usage) return null; // Return null instead of mock data
 
     return {
       gpt4o: usage.responseUsage.used,
@@ -59,6 +59,7 @@ export const useSubscription = () => {
     error,
     refreshUsage,
     currentTier: getCurrentTier(),
-    walletUsage: getUsageForWallet()
+    walletUsage: getUsageForWallet(),
+    hasRealData: !!usage // Flag to indicate if we have real data
   };
 };
