@@ -1,4 +1,4 @@
-import { apiClient } from './apiModules/core/client';
+import { api } from './apiModules';
 
 export interface UsageInfo {
   tier: 'Standard' | 'Legend' | 'VIP';
@@ -45,7 +45,7 @@ export interface CheckoutResponse {
 class SubscriptionService {
   async getUsageInfo(): Promise<UsageInfo> {
     try {
-      const response = await apiClient.get('/api/subscription/usage');
+      const response = await api.get('/api/subscription/usage');
       return response.data;
     } catch (error) {
       console.error('Failed to get usage info:', error);
@@ -55,7 +55,7 @@ class SubscriptionService {
 
   async getTiers(): Promise<{ tiers: TierInfo[] }> {
     try {
-      const response = await apiClient.get('/api/subscription/tiers');
+      const response = await api.get('/api/subscription/tiers');
       return response.data;
     } catch (error) {
       console.error('Failed to get tiers:', error);
@@ -65,7 +65,7 @@ class SubscriptionService {
 
   async createCheckoutSession(tier: 'Legend' | 'VIP'): Promise<CheckoutResponse> {
     try {
-      const response = await apiClient.post('/api/subscription/checkout', { tier });
+      const response = await api.post('/api/subscription/checkout', { tier });
       return response.data;
     } catch (error) {
       console.error('Failed to create checkout session:', error);
@@ -75,7 +75,7 @@ class SubscriptionService {
 
   async getSubscriptionDetails(): Promise<{ subscription: any }> {
     try {
-      const response = await apiClient.get('/api/subscription/details');
+      const response = await api.get('/api/subscription/details');
       return response.data;
     } catch (error) {
       console.error('Failed to get subscription details:', error);
@@ -85,7 +85,7 @@ class SubscriptionService {
 
   async cancelSubscription(): Promise<{ success: boolean }> {
     try {
-      const response = await apiClient.post('/api/subscription/cancel');
+      const response = await api.post('/api/subscription/cancel');
       return response.data;
     } catch (error) {
       console.error('Failed to cancel subscription:', error);
