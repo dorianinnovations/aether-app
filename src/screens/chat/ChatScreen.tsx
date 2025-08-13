@@ -297,7 +297,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     handleHaltStreaming,
     setMessages,
     flatListRef: messagesRef,
-  } = useMessages(() => setShowGreeting(false), currentConversationId, currentFriendUsername, flatListRef as React.RefObject<FlatList>);
+  } = useMessages(() => setShowGreeting(false), currentConversationId, currentFriendUsername, flatListRef as React.RefObject<FlatList>, setCurrentConversationId);
 
   // Real-time messaging for friend conversations
   const {

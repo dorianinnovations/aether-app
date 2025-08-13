@@ -23,7 +23,7 @@ interface UseMessagesReturn {
   flatListRef: React.RefObject<FlatList | null>;
 }
 
-export const useMessages = (onHideGreeting?: () => void, conversationId?: string, friendUsername?: string, externalFlatListRef?: React.RefObject<FlatList | null>): UseMessagesReturn => {
+export const useMessages = (onHideGreeting?: () => void, conversationId?: string, friendUsername?: string, externalFlatListRef?: React.RefObject<FlatList | null>, onConversationIdUpdate?: (conversationId: string) => void): UseMessagesReturn => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -316,6 +316,10 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
             if ((chunk as any).conversationId && !activeConversationId) {
               activeConversationId = (chunk as any).conversationId;
               console.log('🎯 Server provided conversationId:', activeConversationId);
+              // Update parent component's conversation ID
+              if (onConversationIdUpdate && activeConversationId) {
+                onConversationIdUpdate(activeConversationId);
+              }
             }
             continue;
           }
@@ -330,6 +334,10 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
                 if (parsed.metadata.conversationId && !activeConversationId) {
                   activeConversationId = parsed.metadata.conversationId;
                   console.log('🎯 Server provided conversationId in metadata:', activeConversationId);
+                  // Update parent component's conversation ID
+                  if (onConversationIdUpdate && activeConversationId) {
+                    onConversationIdUpdate(activeConversationId);
+                  }
                 }
                 continue;
               }
@@ -347,7 +355,11 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
                 // Update active conversation ID if server provides one
                 if (parsed.conversationId && !activeConversationId) {
                   activeConversationId = parsed.conversationId;
-                  console.log('🎯 Server provided conversationId in stringified metadata:', activeConversationId);
+                  console.log('🎯 Server provided conversationId in parsed object:', activeConversationId);
+                  // Update parent component's conversation ID
+                  if (onConversationIdUpdate && activeConversationId) {
+                    onConversationIdUpdate(activeConversationId);
+                  }
                 }
                 continue;
               }
