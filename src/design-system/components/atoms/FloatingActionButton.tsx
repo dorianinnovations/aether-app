@@ -2,6 +2,7 @@ import React from 'react';
 import { TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import type { ThemeMode } from '../../../contexts/ThemeContext';
 
 interface FloatingActionButtonProps {
   iconName: keyof typeof Ionicons.glyphMap;
@@ -10,16 +11,24 @@ interface FloatingActionButtonProps {
   onPress?: () => void;
   activeOpacity?: number;
   children?: React.ReactNode;
+  theme?: ThemeMode;
 }
 
 export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   iconName,
   iconSize = 22,
-  iconColor = 'rgba(255, 255, 255, 0.8)',
+  iconColor,
   onPress,
   activeOpacity = 0.8,
   children,
+  theme = 'dark',
 }) => {
+  // Default theme-aware icon color if none provided
+  const defaultIconColor = theme === 'dark' 
+    ? 'rgba(255, 255, 255, 0.8)' 
+    : 'rgba(0, 0, 0, 0.8)';
+  
+  const finalIconColor = iconColor || defaultIconColor;
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onPress?.();
@@ -35,7 +44,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
         <Ionicons
           name={iconName}
           size={iconSize}
-          color={iconColor}
+          color={finalIconColor}
         />
       )}
     </TouchableOpacity>

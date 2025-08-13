@@ -33,8 +33,9 @@ export const ChatFloatingActions: React.FC<ChatFloatingActionsProps> = ({
       {/* Trio Options Button */}
       <FloatingActionButton
         iconName="finger-print-outline"
-        iconColor="rgba(255, 255, 255, 0.6)"
+        iconColor={theme === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)'}
         onPress={onTrioPress}
+        theme={theme}
       />
 
       <FloatingButtonSeparator theme={theme} />
@@ -42,8 +43,9 @@ export const ChatFloatingActions: React.FC<ChatFloatingActionsProps> = ({
       {/* Conversations Button */}
       <FloatingActionButton
         iconName="chatbubbles-outline"
-        iconColor="rgba(255, 255, 255, 0.8)"
+        iconColor={theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)'}
         onPress={onConversationsPress}
+        theme={theme}
       />
 
       <FloatingButtonSeparator theme={theme} />
@@ -52,10 +54,11 @@ export const ChatFloatingActions: React.FC<ChatFloatingActionsProps> = ({
       <FloatingActionButton
         iconName="menu" // This will be overridden by children
         onPress={onMenuPress}
+        theme={theme}
       >
         <AnimatedHamburger
           isOpen={hamburgerOpen}
-          color="rgba(255, 255, 255, 0.9)"
+          color={theme === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)'}
           size={22}
         />
       </FloatingActionButton>
