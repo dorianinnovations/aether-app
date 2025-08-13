@@ -815,10 +815,10 @@ const styles = StyleSheet.create({
     shadowRadius: 0.5,
   },
   lottieAnimation: {
-    width: 40,
-    height: 40,
+    width: 80,
+    height: 80,
     alignSelf: 'flex-start',
-    marginLeft: 20,
+    marginLeft: 8,
   },
   searchResultsContainer: {
     marginTop: spacing[2],

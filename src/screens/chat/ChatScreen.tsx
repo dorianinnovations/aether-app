@@ -46,7 +46,6 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { typography } from '../../design-system/tokens/typography';
 import { spacing } from '../../design-system/tokens/spacing';
-import { getGlassmorphicStyle } from '../../design-system/tokens/glassmorphism';
 import { useHeaderMenu } from '../../design-system/hooks';
 import { logger } from '../../utils/logger';
 
@@ -54,7 +53,6 @@ import { logger } from '../../utils/logger';
 import { useGreeting } from '../../hooks/useGreeting';
 import { useKeyboardAnimation } from '../../hooks/useKeyboardAnimation';
 import { useMessages } from '../../hooks/useMessages';
-import { useDynamicPrompts } from '../../hooks/useDynamicPrompts';
 import { useWebSearch } from '../../hooks/useWebSearch';
 import { useGhostTyping } from '../../hooks/useGhostTyping';
 import { useRealTimeMessaging } from '../../hooks/useRealTimeMessaging';
@@ -69,12 +67,6 @@ import type { Message } from '../../types/chat';
 import { AuthAPI, FriendsAPI, ConversationAPI } from '../../services/api';
 
 // Utils
-import { 
-  createModalAnimationRefs, 
-  // Removed unused animation utilities
-  hideModalAnimation,
-  type ModalAnimationRefs 
-} from '../../utils/animations';
 import { isValidMessageInput, formatMessageText, shouldStartTyping, shouldStopTyping } from '../../utils/chatUtils';
 
 
@@ -145,7 +137,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   // Animation refs
   const tooltipOpacity = useRef(new Animated.Value(1)).current;
   // Removed unused tooltipScale
-  const modalAnimationRefs = useRef<ModalAnimationRefs>(createModalAnimationRefs()).current;
   const headerAnim = useRef(new Animated.Value(1)).current;
   const floatingButtonsAnim = useRef(new Animated.Value(0)).current;
 
@@ -250,28 +241,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
     autoConnect: !!currentFriendUsername  // Enable auto-connect for friend conversations
   });
 
-  // Dynamic prompts hook for intelligent contextual options (after useMessages)
-  const {
-    prompts: dynamicPrompts,
-    isAnalyzing: isAnalyzingContext,
-    executePrompt,
-    // refreshPrompts
-  } = useDynamicPrompts({
-    messages: messages.map(msg => ({
-      id: msg.id,
-      text: msg.message,
-      sender: msg.sender === 'aether' ? 'ai' : msg.sender === 'system' ? 'ai' : msg.sender,
-      timestamp: new Date(msg.timestamp).getTime()
-    })),
-    onPromptExecute: (promptText: string) => {
-      // Execute the hidden prompt directly
-      handleMessageSend(promptText);
-      // Hide the modal after execution
-      // Modal handling removed
-    },
-    enabled: true,
-    refreshInterval: 3
-  });
 
   // Header menu hook
   const { showHeaderMenu, setShowHeaderMenu, handleMenuAction, toggleHeaderMenu } = useHeaderMenu({
@@ -1030,141 +999,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       />
       
       
-      {/* Dynamic Options Modal */}
-      {false && (
-        <Animated.View 
-          style={[
-            styles.modalOverlay,
-            {
-              opacity: modalAnimationRefs.opacity,
-            }
-          ]}
-        >
-          <TouchableOpacity 
-            style={styles.modalBackdrop}
-            onPress={() => {}}
-            activeOpacity={1}
-          />
-          <View style={styles.modalPositioner}>
-            <Animated.View style={[
-              styles.dynamicOptionsModal,
-              getGlassmorphicStyle('card', theme),
-              {
-                backgroundColor: theme === 'dark' ? 'rgba(30, 30, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-                borderColor: colors.borders?.default || (theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'),
-                opacity: modalAnimationRefs.opacity,
-                transform: [
-                  { scale: modalAnimationRefs.scale },
-                  { translateY: modalAnimationRefs.translateY }
-                ],
-              }
-            ]}>
-              <Text style={[
-                styles.modalTitle,
-                {
-                  color: colors.text,
-                }
-              ]}>
-                Explore Further
-              </Text>
-              
-              {/* Dynamic contextual prompts */}
-              <View style={styles.optionsContainer}>
-                {isAnalyzingContext ? (
-                  <View style={styles.loadingContainer}>
-                    <Text style={[
-                      styles.loadingText,
-                      {
-                        color: colors.textSecondary,
-                      }
-                    ]}>
-                      Analyzing conversation...
-                    </Text>
-                  </View>
-                ) : dynamicPrompts.length > 0 ? (
-                  dynamicPrompts.map((prompt, index) => {
-                    // Color coding: red, yellow, green for first 3 options
-                    const dotColors = ['#FF4757', '#FFA502', '#2ED573'];
-                    const dotColor = dotColors[index % 3];
-                    
-                    return (
-                      <TouchableOpacity
-                        key={prompt.id}
-                        style={[
-                          styles.promptOption,
-                          {
-                            backgroundColor: theme === 'dark' 
-                              ? 'rgba(255, 255, 255, 0.05)' 
-                              : 'rgba(0, 0, 0, 0.03)',
-                            borderColor: theme === 'dark' 
-                              ? 'rgba(255, 255, 255, 0.1)' 
-                              : 'rgba(0, 0, 0, 0.08)',
-                          }
-                        ]}
-                        onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          executePrompt(prompt.id);
-                        }}
-                        activeOpacity={0.8}
-                      >
-                        <View style={styles.promptHeader}>
-                          <View style={[styles.colorDot, { backgroundColor: dotColor }]} />
-                          <Text style={[
-                            styles.promptText,
-                            {
-                              color: colors.text,
-                            }
-                          ]}>
-                            {prompt.displayText}
-                          </Text>
-                        </View>
-                        <Text style={[
-                          styles.promptCategory,
-                          {
-                            color: colors.textMuted,
-                          }
-                        ]}>
-                          {prompt.archetype}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })
-                ) : (
-                  <Text style={[
-                    styles.placeholderText,
-                    {
-                      color: colors.textSecondary,
-                    }
-                  ]}>
-                    Start a conversation to see contextual options
-                  </Text>
-                )}
-              </View>
-              
-              <TouchableOpacity 
-                style={[
-                  styles.closeButton,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.borders?.default || (theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'),
-                  }
-                ]}
-                onPress={() => {}}
-                activeOpacity={0.8}
-              >
-                <Text style={[
-                  styles.closeButtonText,
-                  {
-                    color: colors.text,
-                  }
-                ]}>
-                  Close
-                </Text>
-              </TouchableOpacity>
-            </Animated.View>
-          </View>
-        </Animated.View>
-      )}
 
       {/* Add Friend Modal */}
       <AddFriendModal
@@ -1304,107 +1138,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
 
-  // Dynamic Options Modal
-  modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 10000,
-  },
-  modalBackdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalPositioner: {
-    position: 'absolute',
-    bottom: 110, 
-    left: 12,
-    right: 12,
-  },
-  dynamicOptionsModal: {
-    width: '92%', 
-    alignSelf: 'center', 
-    borderRadius: 8, 
-    borderWidth: 1,
-    padding: spacing[2],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  modalTitle: {
-    ...typography.textStyles.bodyMedium,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: spacing[3],
-  },
-  optionsContainer: {
-    minHeight: 80,
-    paddingVertical: spacing[1],
-    gap: spacing[1],
-  },
-  loadingContainer: {
-    paddingVertical: spacing[4],
-    alignItems: 'center',
-  },
-  loadingText: {
-    ...typography.textStyles.caption,
-    fontStyle: 'italic',
-  },
-  promptOption: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: spacing[2],
-  },
-  promptHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing[1],
-  },
-  colorDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: spacing[2],
-  },
-  promptText: {
-    ...typography.textStyles.body,
-    fontWeight: '600',
-    flex: 1,
-  },
-  promptCategory: {
-    ...typography.textStyles.caption,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    fontWeight: '500',
-    opacity: 0.7,
-  },
-  placeholderText: {
-    ...typography.textStyles.caption,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  closeButton: {
-    marginTop: spacing[3],
-    paddingVertical: spacing[2],
-    paddingHorizontal: spacing[4],
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    ...typography.textStyles.labelMedium,
-    fontWeight: '500',
-  },
   
   // Removed unused search styles
   
