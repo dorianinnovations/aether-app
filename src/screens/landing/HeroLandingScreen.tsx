@@ -287,7 +287,7 @@ const HeroLandingScreen: React.FC<HeroLandingScreenProps> = ({
                 duration={3000}
                 delay={1000}
               >
-                music + ai + you = fun
+                music + you + ai + friends =
               </ShimmerText>
             </View>
 

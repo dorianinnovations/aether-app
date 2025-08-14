@@ -49,8 +49,9 @@ export const RainbowShimmerText: React.FC<RainbowShimmerTextProps> = ({
 
   // Get base and shimmer colors for rainbow band effect
   const getColors = () => {
-    // Dimmer base color
-    const baseColor = theme === 'dark' ? '#2a2a2a' : '#8a8a8a';
+    // Use passed color from style, fallback to more balanced theme colors
+    const styleColor = (style as any)?.color;
+    const baseColor = styleColor || (theme === 'dark' ? '#E5E5E5' : '#4A4A4A');
     
     return { baseColor };
   };

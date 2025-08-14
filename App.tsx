@@ -22,6 +22,15 @@ import {
   CrimsonPro_600SemiBold,
   CrimsonPro_700Bold,
 } from '@expo-google-fonts/crimson-pro';
+import {
+  ElMessiri_400Regular,
+  ElMessiri_500Medium,
+  ElMessiri_600SemiBold,
+  ElMessiri_700Bold,
+} from '@expo-google-fonts/el-messiri';
+import {
+  Danfo_400Regular,
+} from '@expo-google-fonts/danfo';
 // Removed bottom tabs - using stack navigation only
 import { View, StyleSheet, Dimensions, Image } from 'react-native';
 
@@ -202,6 +211,11 @@ export default function App() {
         CrimsonPro_500Medium,
         CrimsonPro_600SemiBold,
         CrimsonPro_700Bold,
+        ElMessiri_400Regular,
+        ElMessiri_500Medium,
+        ElMessiri_600SemiBold,
+        ElMessiri_700Bold,
+        Danfo_400Regular,
       });
       setFontsLoaded(true);
     } catch (error) {

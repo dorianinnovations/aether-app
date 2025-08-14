@@ -48,31 +48,38 @@ interface OnboardingStep {
 
 const onboardingSteps: OnboardingStep[] = [
   {
-    title: "CHAT AND LISTEN TO MUSIC WITH AI",
-    subtitle: "That track stuck in your head? We got you",
-    description: "Take a pic of some random vinyl, scan whatever's playing, or just hum that melody you can't shake. The AI behind this thing is actually pretty wild - it'll tell you not just what song it is, but like, the whole story behind it.",
+    title: "LISTEN TO MUSIC WITH AI",
+    subtitle: "Get the full story behind every song, right as it plays",
+    description: "Connect Spotify and AetheR becomes your music companion who knows everything about what's playing. Deep dive into lyrics, discover hidden samples, learn about the artist's journey, or just vibe together—all in real-time. No need to say what song you're on, AetheR already knows and is ready to chat about whatever catches your ear.",
     accent: "VIBES",
     category: "FOUNDATION"
   },
   {
-    title: "Three Tiers. Your Choice.", 
-    subtitle: "Standard → Legendary → VIP",
-    description: "Start wherever. Standard gets you going. Legendary? Unlimited requests, that badge, the works. VIP is... well, it's VIP. You know what that means. Each tier unlocks more of the good stuff.",
-    accent: "TIERS",
+    title: "FIND YOUR SOUND",
+    subtitle: "Music discovery that speaks your language",
+    description: "Tell AetheR what you're feeling—get back exactly what you need. From 'rainy day vibes' to 'songs like this but harder,' AetheR gets it. Save straight to Spotify, keep exploring, build your perfect soundtrack.",
+    accent: "DISCOVERY",
     category: "CONNECTION"
   },
   {
-    title: "Badges That Actually Matter",
-    subtitle: "VIP for early believers. LEGEND for premium users.", 
-    description: "See that badge on someone's profile? They earned it. No participation trophies here - these mean you were here early or you upgraded because you get it. Rare stuff stays rare.",
-    accent: "STATUS",
+    title: "DIAL IN YOUR PERFECT SOUND",
+    subtitle: "Fine-tune discovery in real-time",
+    description: "Swipe through tracks while tweaking your settings live. Too mainstream? Slide it underground. Need more energy? Crank it up. Adjust era, mood, obscurity, genre blend—watch your recommendations transform instantly. Every swipe teaches AetheR, every dial makes it yours.",
+    accent: "CONTROL",
     category: "EXPERIENCE"
   },
   {
-    title: "Privacy? Obviously.",
-    subtitle: "Your data doesn't get sold or shared or whatever",
-    description: "AI learns your music taste to help you discover new stuff. That's it. No sketchy data selling, no random companies getting your info. Just you, the music, and recommendations that don't suck. Keep it simple.",
-    accent: "TRUST",
+    title: "BUILD YOUR MUSIC PROFILE",
+    subtitle: "Your taste, visualized",
+    description: "Customize themes, colors, and layouts. Display top tracks, current rotation, and listening stats. Premium unlocks animated backgrounds, exclusive badges, and unlimited updates. Make your profile uniquely yours.",
+    accent: "PROFILE",
+    category: "FRIENDS"
+  },
+  {
+    title: "CONNECT WITH FRIENDS",
+    subtitle: "Share music, discover together",
+    description: "See what friends are playing now. Share discoveries, exchange playlists, discuss new releases. Message about concerts, create group sessions, explore together. Music is social—your platform should be too.",
+    accent: "SOCIAL",
     category: "FRIENDS"
   }
 ];
@@ -94,6 +101,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route: 
   const borderOpacity = useRef(new Animated.Value(0)).current;
   const progressOpacity = useRef(new Animated.Value(0)).current;
   const swipeHintOpacity = useRef(new Animated.Value(0)).current;
+  const readyTextOpacity = useRef(new Animated.Value(0)).current;
   
   const panRef = useRef<PanGestureHandler>(null);
 
@@ -113,6 +121,31 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route: 
       }).start(() => {
         setShowSwipeHint(false);
       });
+    }
+    
+    // Show "Ready to continue?" text on step 5 with delay and pulse
+    if (currentStep === 4) { // Step 5 is index 4
+      setTimeout(() => {
+        // Start slow pulsing animation
+        readyTextOpacity.setValue(0.25); // Set initial value
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(readyTextOpacity, {
+              toValue: 0.6,
+              duration: 3000,
+              useNativeDriver: true,
+            }),
+            Animated.timing(readyTextOpacity, {
+              toValue: 0.25,
+              duration: 3000,
+              useNativeDriver: true,
+            }),
+          ]),
+          { iterations: -1 } // Infinite loop
+        ).start();
+      }, 1500); // 1.5 second delay
+    } else {
+      readyTextOpacity.setValue(0);
     }
   }, [currentStep]);
 
@@ -341,7 +374,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route: 
                     style={[
                       styles.titleText,
                       { 
-                        color: theme === 'dark' ? '#E0E0E0' : '#333333',
+                        color: theme === 'dark' ? '#FFFFFF' : '#333333',
                       }
                     ] as any}
                     intensity="normal"
@@ -408,7 +441,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route: 
                         styles.bottomProgressNode,
                         {
                           backgroundColor: index === currentStep 
-                            ? getStepColor(index, theme)
+                            ? (theme === 'dark' ? '#FFFFFF' : '#333333')
                             : (theme === 'dark' ? '#333333' : '#e5e7eb'),
                         },
                       ]}
@@ -416,6 +449,18 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation, route: 
                   </View>
                 ))}
               </View>
+              
+              {/* Ready to continue text - only on step 5 */}
+              {currentStep === 4 && (
+                <Animated.View style={[styles.readyTextContainer, { opacity: readyTextOpacity }]}>
+                  <Text style={[
+                    styles.readyText,
+                    { color: theme === 'dark' ? '#CCCCCC' : '#666666' }
+                  ]}>
+                    Ready to continue?
+                  </Text>
+                </Animated.View>
+              )}
             </View>
 
           </Animated.View>
@@ -588,7 +633,8 @@ const styles = StyleSheet.create({
   // Bottom Progress Indicator
   bottomProgressContainer: {
     alignItems: 'center',
-    paddingBottom: 40,
+    paddingBottom: 20,
+    marginTop: -40,
   },
   bottomProgressTrack: {
     flexDirection: 'row',
@@ -602,6 +648,17 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
+  },
+  readyTextContainer: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  readyText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    fontWeight: '500',
+    letterSpacing: 0.2,
+    fontStyle: 'italic',
   },
 });
 

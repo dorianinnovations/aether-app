@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@expo-google-fonts/crimson-pro": "^0.4.1",
+    "@expo-google-fonts/danfo": "^0.4.0",
+    "@expo-google-fonts/el-messiri": "^0.4.1",
     "@expo-google-fonts/jetbrains-mono": "^0.4.0",
     "@expo-google-fonts/mozilla-headline": "^0.4.0",
     "@expo-google-fonts/mozilla-text": "^0.4.0",
