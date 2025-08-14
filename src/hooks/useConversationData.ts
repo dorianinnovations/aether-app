@@ -247,16 +247,47 @@ export const useConversationData = () => {
 
   // Delete conversation function
   const handleDeleteConversation = useCallback(async (conversationId: string) => {
+    // Store the conversation for potential rollback
+    const conversationToDelete = conversations.find(conv => conv._id === conversationId);
+    
+    // Immediately remove from UI for instant feedback
+    setConversations(prev => prev.filter(conv => conv._id !== conversationId));
+    log.debug('Optimistically deleted conversation from UI:', conversationId);
+    
     try {
       await ConversationAPI.deleteConversation(conversationId);
-      setConversations(prev => prev.filter(conv => conv._id !== conversationId));
-      log.debug('Deleted conversation:', conversationId);
+      log.debug('Successfully deleted conversation on server:', conversationId);
       return true;
     } catch (error) {
-      log.error('Failed to delete conversation:', error);
+      log.error('Failed to delete conversation on server, rolling back UI:', error);
+      
+      // Rollback: restore the conversation to UI if server call failed
+      if (conversationToDelete) {
+        setConversations(prev => {
+          // Check if conversation already exists (avoid duplicates)
+          const exists = prev.some(conv => conv._id === conversationToDelete._id);
+          if (exists) {
+            return prev; // Don't add duplicate
+          }
+          
+          // Insert back in the correct position (sorted by lastActivity)
+          const insertIndex = prev.findIndex(conv => 
+            new Date(conv.lastActivity) < new Date(conversationToDelete.lastActivity)
+          );
+          if (insertIndex === -1) {
+            return [...prev, conversationToDelete];
+          } else {
+            return [
+              ...prev.slice(0, insertIndex),
+              conversationToDelete,
+              ...prev.slice(insertIndex)
+            ];
+          }
+        });
+      }
       return false;
     }
-  }, []);
+  }, [conversations]);
 
   // Delete all conversations function
   const handleDeleteAllConversations = useCallback(async () => {

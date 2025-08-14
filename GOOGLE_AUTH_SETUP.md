@@ -33,6 +33,7 @@ GOOGLE_CLIENT_ID=your_google_oauth_client_id_here
 
 #### iOS Application Client
 - **Bundle ID**: `com.isaiahpappas.aether` (match your app.json)
+- **Authorized redirect URIs**: Add your app's custom scheme (e.g., `aether://`)
 
 #### Android Application Client
 - **Package name**: `com.isaiahpappas.aether`

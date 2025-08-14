@@ -11,8 +11,10 @@ import {
   StyleSheet,
   Animated,
   ActivityIndicator,
+  Image,
 } from 'react-native';
-// import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthAPI } from '../../../services/apiModules/endpoints/auth';
@@ -26,6 +28,7 @@ interface GoogleSignInButtonProps {
   disabled?: boolean;
   style?: any;
   compact?: boolean;
+  title?: string;
 }
 
 export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
@@ -34,13 +37,50 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   disabled = false,
   style,
   compact = false,
+  title = 'Google',
 }) => {
   const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
-  // Temporary: Google OAuth will be implemented once auth session is fixed
-  // const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
+  // Custom Google OAuth implementation using WebBrowser
+  const generateRandomString = (length: number) => {
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let text = '';
+    for (let i = 0; i < length; i++) {
+      text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
+  };
+
+  const openGoogleOAuth = async () => {
+    const redirectUri = Linking.createURL('/');
+    const state = generateRandomString(32);
+    const nonce = generateRandomString(32);
+    
+    const authUrl = 
+      'https://accounts.google.com/o/oauth2/v2/auth?' +
+      `client_id=${process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      'response_type=id_token&' +
+      'scope=openid%20profile%20email&' +
+      `state=${state}&` +
+      `nonce=${nonce}`;
+
+    const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+    
+    if (result.type === 'success' && result.url) {
+      const url = new URL(result.url);
+      const fragment = url.hash.substring(1);
+      const params = new URLSearchParams(fragment);
+      const idToken = params.get('id_token');
+      
+      if (idToken) {
+        return idToken;
+      }
+    }
+    throw new Error('OAuth failed or was cancelled');
+  };
 
   const handleGoogleSignIn = async () => {
     if (disabled || loading) return;
@@ -63,15 +103,31 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         }),
       ]).start();
 
-      // Temporary: Show not implemented message
-      setTimeout(() => {
-        onError?.('Google Sign-In coming soon! Use email signup for now.');
-        setLoading(false);
-      }, 1000);
+      // Get ID token from Google OAuth
+      const idToken = await openGoogleOAuth();
+      
+      // Send token to backend
+      const authResponse = await AuthAPI.googleAuth(idToken);
+      
+      if (authResponse.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        onSuccess?.(authResponse.data?.user);
+      } else {
+        throw new Error(authResponse.data?.error || 'Google authentication failed');
+      }
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       logger.error('Google Sign-In error:', error);
-      onError?.(error.message || 'Google Sign-In failed');
+      
+      let errorMessage = 'Google Sign-In failed';
+      if (error.message === 'OAuth failed or was cancelled') {
+        errorMessage = 'Sign-in was cancelled';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      onError?.(errorMessage);
+    } finally {
       setLoading(false);
     }
   };
@@ -96,33 +152,44 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         disabled={disabled || loading}
         activeOpacity={0.9}
       >
-        <View style={styles.buttonContent}>
-          {loading ? (
+        {loading ? (
+          <View style={styles.buttonContent}>
             <ActivityIndicator 
               size="small" 
               color={theme === 'dark' ? '#ffffff' : '#4285f4'} 
               style={styles.icon}
             />
-          ) : (
+            <Text
+              style={[
+                styles.buttonText,
+                {
+                  color: theme === 'dark' ? '#ffffff' : '#000000',
+                },
+              ]}
+            >
+              Signing in...
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.buttonContent}>
             <Ionicons
               name="logo-google"
-              size={18}
+              size={16}
               color="#4285f4"
               style={styles.icon}
             />
-          )}
-          <Text
-            style={[
-              styles.buttonText,
-              compact && styles.buttonTextCompact,
-              {
-                color: theme === 'dark' ? '#ffffff' : '#000000',
-              },
-            ]}
-          >
-            {loading ? 'Signing in...' : compact ? 'Google' : 'Continue with Google'}
-          </Text>
-        </View>
+            <Text
+              style={[
+                styles.buttonText,
+                {
+                  color: theme === 'dark' ? '#ffffff' : '#000000',
+                },
+              ]}
+            >
+              {title}
+            </Text>
+          </View>
+        )}
       </TouchableOpacity>
     </Animated.View>
   );
@@ -131,7 +198,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
 const styles = StyleSheet.create({
   button: {
     width: '100%',
-    height: 48,
+    height: 37,
     borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
@@ -146,19 +213,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: 8,
+    paddingHorizontal: 4,
   },
   icon: {
-    width: 18,
-    height: 18,
+    width: 16,
+    height: 16,
   },
   buttonText: {
     ...typography.textStyles.bodyMedium,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
   },
-  buttonTextCompact: {
-    fontSize: 14,
+  googleIcon: {
+    width: 16,
+    height: 16,
   },
 });
 

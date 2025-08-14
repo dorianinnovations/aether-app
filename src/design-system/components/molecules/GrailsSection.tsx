@@ -13,7 +13,6 @@ import {
   Modal,
   TextInput,
   FlatList,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { Feather, FontAwesome } from '@expo/vector-icons';
@@ -22,6 +21,7 @@ import { spacing } from '../../tokens/spacing';
 import { FadedBorder } from '../../../components/FadedBorder';
 import { SpotifyAPI } from '../../../services/api';
 import { logger } from '../../../utils/logger';
+import { LottieLoader } from '../atoms';
 
 export interface GrailTrack {
   id: string;
@@ -286,16 +286,16 @@ export const GrailsSection: React.FC<GrailsSectionProps> = ({
 
   const renderSearchResult = ({ item }: { item: SearchResult }) => (
     <TouchableOpacity
-      style={[styles.searchResult, { backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)' }]}
+      style={styles.searchResult}
       onPress={() => handleSelectItem(item)}
-      activeOpacity={0.7}
+      activeOpacity={0.6}
     >
       <View style={styles.searchArtwork}>
         {item.imageUrl ? (
           <Image source={{ uri: item.imageUrl }} style={styles.searchImage} />
         ) : (
-          <View style={[styles.searchImage, styles.placeholderArt, { backgroundColor: colors.borders.default }]}>
-            <FontAwesome name="music" size={12} color={colors.textSecondary} />
+          <View style={[styles.searchImage, styles.placeholderArt, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
+            <FontAwesome name="music" size={14} color={colors.textSecondary} />
           </View>
         )}
       </View>
@@ -314,7 +314,9 @@ export const GrailsSection: React.FC<GrailsSectionProps> = ({
         )}
       </View>
       
-      <FontAwesome name="spotify" size={16} color="#1DB954" />
+      <View style={[styles.spotifyIcon, { backgroundColor: theme === 'dark' ? 'rgba(29,185,84,0.1)' : 'rgba(29,185,84,0.05)' }]}>
+        <FontAwesome name="spotify" size={14} color="#1DB954" />
+      </View>
     </TouchableOpacity>
   );
 
@@ -331,7 +333,7 @@ export const GrailsSection: React.FC<GrailsSectionProps> = ({
         <View style={styles.headerContainer}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.textSecondary }]}>Grails</Text>
-            <Feather name="star" size={14} color="#FFD700" />
+            <Feather name="disc" size={14} color="#10B981" />
           </View>
           <FadedBorder theme={theme} />
         </View>
@@ -351,7 +353,7 @@ export const GrailsSection: React.FC<GrailsSectionProps> = ({
       <View style={styles.headerContainer}>
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.textSecondary }]}>Grails</Text>
-          <Feather name="star" size={14} color="#FFD700" />
+          <Feather name="disc" size={14} color="#10B981" />
         </View>
         <FadedBorder theme={theme} />
       </View>
@@ -402,55 +404,83 @@ export const GrailsSection: React.FC<GrailsSectionProps> = ({
       {/* Search Modal */}
       <Modal
         visible={searchModal?.visible || false}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        animationType="fade"
+        transparent={true}
         onRequestClose={() => setSearchModal(null)}
       >
-        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: colors.borders.default }]}>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setSearchModal(null)}
-            >
-              <Feather name="x" size={24} color={colors.text} />
-            </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>
-              Search {searchModal?.type === 'track' ? 'Songs' : 'Albums'}
-            </Text>
-            <View style={{ width: 24 }} />
-          </View>
-
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={[
-                styles.searchInput,
-                {
-                  backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                  color: colors.text,
-                }
-              ]}
-              placeholder={`Search for ${searchModal?.type === 'track' ? 'songs' : 'albums'}...`}
-              placeholderTextColor={colors.textSecondary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoFocus
-            />
-          </View>
-
-          {searching && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#1DB954" />
-              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Searching...</Text>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { backgroundColor: theme === 'dark' ? '#0a0a0a' : '#ffffff' }]}>
+            {/* Header with close button */}
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Add {searchModal?.type === 'track' ? 'Song' : 'Album'}
+              </Text>
+              <TouchableOpacity
+                style={[styles.closeButton, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}
+                onPress={() => setSearchModal(null)}
+              >
+                <Feather name="x" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
             </View>
-          )}
 
-          <FlatList
-            data={searchResults}
-            renderItem={renderSearchResult}
-            keyExtractor={(item) => item.id}
-            style={styles.searchResults}
-            showsVerticalScrollIndicator={false}
-          />
+            {/* Search Input */}
+            <View style={styles.searchContainer}>
+              <View style={[styles.searchInputContainer, { 
+                backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'
+              }]}>
+                <Feather name="search" size={16} color={colors.textSecondary} style={styles.searchIcon} />
+                <TextInput
+                  style={[styles.searchInput, { color: colors.text }]}
+                  placeholder={`Search ${searchModal?.type === 'track' ? 'songs' : 'albums'}...`}
+                  placeholderTextColor={colors.textSecondary}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoFocus
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity
+                    style={styles.clearButton}
+                    onPress={() => {
+                      setSearchQuery('');
+                      setSearchResults([]);
+                    }}
+                  >
+                    <Feather name="x" size={16} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            {/* Loading State */}
+            {searching && (
+              <View style={styles.loadingContainer}>
+                <LottieLoader size="small" />
+              </View>
+            )}
+
+            {/* Results */}
+            {searchResults.length > 0 && (
+              <FlatList
+                data={searchResults}
+                renderItem={renderSearchResult}
+                keyExtractor={(item) => item.id}
+                style={styles.searchResults}
+                contentContainerStyle={styles.searchResultsContent}
+                showsVerticalScrollIndicator={true}
+                bounces={true}
+              />
+            )}
+            
+            {/* Empty state */}
+            {!searching && searchQuery.length > 0 && searchResults.length === 0 && (
+              <View style={styles.emptyState}>
+                <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+                  No results found for "{searchQuery}"
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
       </Modal>
     </View>
@@ -580,8 +610,26 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   // Modal Styles
-  modalContainer: {
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing[4],
+  },
+  modalContainer: {
+    width: '100%',
+    maxWidth: 400,
+    height: '80%',
+    borderRadius: 16,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 20,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -589,67 +637,114 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
-    paddingTop: 60,
     borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
   closeButton: {
-    padding: spacing[1],
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
   searchContainer: {
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
   },
-  searchInput: {
-    borderRadius: 8,
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
     paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    fontSize: 16,
+  },
+  searchIcon: {
+    marginRight: spacing[2],
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: spacing[3],
+    fontSize: 15,
+    fontFamily: 'Inter-Regular',
+  },
+  clearButton: {
+    padding: spacing[1],
+    marginLeft: spacing[1],
   },
   loadingContainer: {
-    padding: spacing[6],
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing[4],
     gap: spacing[2],
   },
   loadingText: {
-    fontSize: 14,
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
   },
   searchResults: {
     flex: 1,
+    minHeight: 200,
+  },
+  searchResultsContent: {
     paddingHorizontal: spacing[4],
+    paddingBottom: spacing[6],
+    flexGrow: 1,
+  },
+  emptyState: {
+    padding: spacing[6],
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    textAlign: 'center',
+    fontFamily: 'Inter-Medium',
   },
   searchResult: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing[3],
-    marginVertical: spacing[1],
-    borderRadius: 8,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[1],
   },
   searchArtwork: {
     marginRight: spacing[3],
   },
   searchImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 4,
+    width: 48,
+    height: 48,
+    borderRadius: 8,
   },
   searchInfo: {
     flex: 1,
     gap: 2,
   },
   searchTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
+    fontFamily: 'Inter-SemiBold',
   },
   searchArtist: {
-    fontSize: 12,
+    fontSize: 13,
+    fontFamily: 'Inter-Regular',
   },
   searchAlbum: {
-    fontSize: 11,
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
     fontStyle: 'italic',
+  },
+  spotifyIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

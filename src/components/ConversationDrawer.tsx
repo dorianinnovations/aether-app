@@ -142,7 +142,8 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     },
     onConversationDeleted: ({ conversationId }: { conversationId: string }) => {
       log.debug('Real-time: Conversation deleted', conversationId);
-      setConversations(prev => prev.filter(conv => conv._id !== conversationId));
+      // Note: UI already updated optimistically in handleDeleteConversation
+      // This real-time event confirms the server processed the deletion
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     },
     onAllConversationsDeleted: ({ deletedCount }: { deletedCount: number }) => {
@@ -378,10 +379,8 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
 
   const handleAddFriendPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onClose(); // Hide the conversation drawer first
-    setTimeout(() => {
-      onAddFriend?.(); // Then trigger modal after drawer closes
-    }, 100);
+    onAddFriend?.(); // Trigger modal first
+    onClose(); // Then hide the conversation drawer
   }, [onAddFriend, onClose]);
 
 

@@ -81,7 +81,6 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
   const slideAnim = useRef(new Animated.Value(30)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
   const buttonScaleAnim = useRef(new Animated.Value(1)).current;
-  const buttonGlowAnim = useRef(new Animated.Value(0)).current;
   const emailInputScaleAnim = useRef(new Animated.Value(1)).current;
   const passwordInputScaleAnim = useRef(new Animated.Value(1)).current;
   const headerOpacityAnim = useRef(new Animated.Value(1)).current;
@@ -120,22 +119,6 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
           useNativeDriver: true,
         }).start();
         
-        // Start minimal glow animation after button appears
-        const glowAnimation = Animated.loop(
-          Animated.sequence([
-            Animated.timing(buttonGlowAnim, {
-              toValue: 1,
-              duration: 3000,
-              useNativeDriver: true,
-            }),
-            Animated.timing(buttonGlowAnim, {
-              toValue: 0,
-              duration: 3000,
-              useNativeDriver: true,
-            }),
-          ])
-        );
-        glowAnimation.start();
       }, 800);
 
       // Link last (1100ms delay)
@@ -313,12 +296,6 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
     }
   };
 
-  // Static minimal glow color for Sign In button
-  const getMinimalGlowColor = () => {
-    return theme === 'dark' 
-      ? 'rgba(255, 255, 255, 0.6)'  // White glow in dark mode
-      : 'rgba(26, 26, 26, 0.08)';    // Extremely subtle dark glow in light mode
-  };
 
   // Header menu action handler
   const handleMenuAction = (key: string) => {
@@ -620,34 +597,19 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                     {/* Sign In Button with Animation */}
                     <Animated.View style={[styles.buttonContainer, { opacity: buttonOpacity }]}>
                       <Animated.View style={{ transform: [{ scale: buttonScaleAnim }] }}>
-                        <Animated.View 
-                          style={{ 
-                            opacity: buttonGlowAnim,
-                            shadowColor: getMinimalGlowColor(),
-                            shadowOffset: { width: 2, height: 2 },
-                            shadowOpacity: 1,
-                            shadowRadius: 6,
-                            borderRadius: 12,
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                          }}
-                        />
                         <TouchableOpacity
                           style={[
                             styles.primaryButton,
                             {
-                              backgroundColor: 'rgba(255, 255, 255, 0.85)',
-                              opacity: (loading || isSignInSuccess) ? 0.9 : 1,
-                              borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(220, 220, 220, 0.3)',
+                              backgroundColor: theme === 'dark' ? '#2a2a2a' : '#ffffff',
+                              borderColor: theme === 'dark' ? '#404040' : '#e1e5e9',
                               borderWidth: 1,
-                              shadowColor: theme === 'dark' ? '#ffffff' : '#000000',
-                              shadowOffset: theme === 'dark' ? { width: 0, height: 0 } : { width: 2, height: 4 },
-                              shadowOpacity: theme === 'dark' ? 0.4 : 0.15,
-                              shadowRadius: theme === 'dark' ? 8 : 6,
-                              elevation: theme === 'dark' ? 6 : 4,
+                              shadowColor: theme === 'dark' ? '#000000' : '#000000',
+                              shadowOffset: { width: 0, height: theme === 'dark' ? 4 : 2 },
+                              shadowOpacity: theme === 'dark' ? 0.3 : 0.1,
+                              shadowRadius: theme === 'dark' ? 8 : 4,
+                              elevation: theme === 'dark' ? 4 : 2,
+                              opacity: (loading || isSignInSuccess) ? 0.6 : 1,
                             }
                           ]}
                           onPress={handleSubmit}
@@ -659,21 +621,21 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                               {loading ? (
                                 <Text style={[
                                   styles.primaryButtonText, 
-                                  { color: theme === 'dark' ? '#2a2a2a' : '#1a1a1a' }
+                                  { color: theme === 'dark' ? '#ffffff' : '#000000' }
                                 ]}>
                                   Signing In
                                 </Text>
                               ) : isSignInSuccess ? (
                                 <Text style={[
                                   styles.primaryButtonText, 
-                                  { color: theme === 'dark' ? '#2a2a2a' : '#1a1a1a' }
+                                  { color: theme === 'dark' ? '#ffffff' : '#000000' }
                                 ]}>
                                   Success
                                 </Text>
                               ) : (
                                 <Text style={[
                                   styles.primaryButtonText, 
-                                  { color: theme === 'dark' ? '#2a2a2a' : '#1a1a1a' }
+                                  { color: theme === 'dark' ? '#ffffff' : '#000000' }
                                 ]}>
                                   Sign In
                                 </Text>
@@ -683,7 +645,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                               <View style={styles.spinnerContainer}>
                                 <AnimatedAuthStatus
                                   status={authStatus}
-                                  color={theme === 'dark' ? '#2a2a2a' : '#1a1a1a'}
+                                  color={theme === 'dark' ? '#ffffff' : '#000000'}
                                   size={16}
                                   onAnimationComplete={() => {
                                     if (authStatus === 'error') {
@@ -708,6 +670,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                     {/* Google Sign-In Button */}
                     <Animated.View style={{ opacity: buttonOpacity }}>
                       <GoogleSignInButton
+                        title="Sign in with Google"
                         onSuccess={() => {
                           setIsSignInSuccess(true);
                           setAuthStatus('success');
@@ -813,7 +776,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingHorizontal: 24,
     paddingVertical: 32,
-    paddingTop: 180,
+    paddingTop: 140,
   },
   content: {
     width: '100%',
@@ -826,7 +789,7 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     borderRadius: 16,
-    padding: 32,
+    padding: 24,
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -845,7 +808,7 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    marginBottom: 32,
+    marginBottom: 24,
     alignItems: 'center',
   },
   title: {
@@ -861,10 +824,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   formContent: {
-    gap: 24,
+    gap: 18,
   },
   inputGroup: {
-    gap: 16,
+    gap: 12,
   },
   input: {
     paddingHorizontal: 16,

@@ -29,32 +29,7 @@ export const AuthButton: React.FC<AuthButtonProps> = ({
   successTitle = 'Success!',
 }) => {
   const buttonScaleAnim = useRef(new Animated.Value(1)).current;
-  const buttonGlowAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    const glowAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(buttonGlowAnim, {
-          toValue: 1,
-          duration: 3500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(buttonGlowAnim, {
-          toValue: 0,
-          duration: 3500,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    glowAnimation.start();
-    return () => glowAnimation.stop();
-  }, []);
-
-  const getMinimalGlowColor = () => {
-    return theme === 'dark' 
-      ? 'rgba(255, 255, 255, 0.6)'
-      : 'rgba(26, 26, 26, 0.08)';
-  };
 
   const handlePress = () => {
     // Button press animation
@@ -88,34 +63,19 @@ export const AuthButton: React.FC<AuthButtonProps> = ({
   return (
     <View style={styles.buttonContainer}>
       <Animated.View style={{ transform: [{ scale: buttonScaleAnim }] }}>
-        <Animated.View 
-          style={{ 
-            opacity: buttonGlowAnim,
-            shadowColor: getMinimalGlowColor(),
-            shadowOffset: { width: 2, height: 2 },
-            shadowOpacity: 1,
-            shadowRadius: 6,
-            borderRadius: 12,
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-          }}
-        />
         <TouchableOpacity
           style={[
             styles.primaryButton,
             {
-              backgroundColor: 'rgba(255, 255, 255, 0.85)',
-              opacity: (loading || success) ? 0.9 : 1,
-              borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(220, 220, 220, 0.3)',
-              borderWidth: theme === 'dark' ? 1 : 1,
-              shadowColor: theme === 'dark' ? '#ffffff' : '#000000',
-              shadowOffset: theme === 'dark' ? { width: 0, height: 0 } : { width: 2, height: 4 },
-              shadowOpacity: theme === 'dark' ? 0.4 : 0.15,
-              shadowRadius: theme === 'dark' ? 8 : 6,
-              elevation: theme === 'dark' ? 6 : 4,
+              backgroundColor: theme === 'dark' ? '#2a2a2a' : '#ffffff',
+              borderColor: theme === 'dark' ? '#404040' : '#e1e5e9',
+              borderWidth: 1,
+              shadowColor: theme === 'dark' ? '#000000' : '#000000',
+              shadowOffset: { width: 0, height: theme === 'dark' ? 4 : 2 },
+              shadowOpacity: theme === 'dark' ? 0.3 : 0.1,
+              shadowRadius: theme === 'dark' ? 8 : 4,
+              elevation: theme === 'dark' ? 4 : 2,
+              opacity: (loading || success) ? 0.6 : 1,
             }
           ]}
           onPress={handlePress}
@@ -127,34 +87,31 @@ export const AuthButton: React.FC<AuthButtonProps> = ({
               {loading ? (
                 <Text style={[
                   styles.primaryButtonText, 
-                  { color: theme === 'dark' ? '#2a2a2a' : '#1a1a1a' }
+                  { color: theme === 'dark' ? '#ffffff' : '#000000' }
                 ]}>
                   {loadingTitle}
                 </Text>
               ) : success ? (
                 <Text style={[
                   styles.primaryButtonText, 
-                  { color: theme === 'dark' ? '#2a2a2a' : '#1a1a1a' }
+                  { color: theme === 'dark' ? '#ffffff' : '#000000' }
                 ]}>
                   {successTitle}
                 </Text>
               ) : (
-                <RainbowShimmerText
-                  style={StyleSheet.flatten([styles.primaryButtonText, { color: theme === 'dark' ? '#2a2a2a' : '#1a1a1a' }])}
-                  intensity="vibrant"
-                  duration={4000}
-                  waveWidth="wide"
-                  colorMode="rainbow-cycle"
-                >
+                <Text style={[
+                  styles.primaryButtonText, 
+                  { color: theme === 'dark' ? '#ffffff' : '#000000' }
+                ]}>
                   {title}
-                </RainbowShimmerText>
+                </Text>
               )}
             </View>
             {authStatus !== 'idle' && (
               <View style={styles.spinnerContainer}>
                 <AnimatedAuthStatus
                   status={authStatus}
-                  color={theme === 'dark' ? '#2a2a2a' : '#1a1a1a'}
+                  color={theme === 'dark' ? '#ffffff' : '#000000'}
                   size={16}
                   onAnimationComplete={() => {
                     if (authStatus === 'error' && onAnimationComplete) {

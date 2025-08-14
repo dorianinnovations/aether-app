@@ -831,6 +831,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                       
                       <View style={styles.buttonContainer}>
                         <GoogleSignInButton
+                          title="Sign up with Google"
                           onSuccess={() => {
                             setIsSuccess(true);
                             setAuthStatus('success');
@@ -841,7 +842,6 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                             setTimeout(() => setAuthStatus('idle'), 3000);
                           }}
                           disabled={loading || isSignUpSuccess}
-                          compact={true}
                         />
                       </View>
                     </Animated.View>
@@ -938,7 +938,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingHorizontal: 24,
     paddingVertical: 32,
-    paddingTop: 140,
+    paddingTop: 100,
   },
   content: {
     width: '100%',
@@ -951,7 +951,7 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     borderRadius: 16,
-    padding: 32,
+    padding: 24,
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -970,7 +970,7 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    marginBottom: 32,
+    marginBottom: 24,
     alignItems: 'center',
   },
   title: {
@@ -989,10 +989,10 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   formContent: {
-    gap: 24,
+    gap: 18,
   },
   inputGroup: {
-    gap: 16,
+    gap: 12,
   },
   nameRow: {
     flexDirection: 'row',
@@ -1021,7 +1021,7 @@ const styles = StyleSheet.create({
   
   // Password strength
   passwordContainer: {
-    gap: 16,
+    gap: 12,
   },
   
   linkButton: {
