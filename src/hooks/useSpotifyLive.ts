@@ -16,6 +16,7 @@ interface SpotifyTrack {
   isPlaying?: boolean;
   progressMs?: number;
   durationMs?: number;
+  lastUpdated?: number; // Timestamp when track was last updated
 }
 
 interface UseSpotifyLiveReturn {
@@ -32,6 +33,8 @@ export const useSpotifyLive = (refreshInterval: number = 30000): UseSpotifyLiveR
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTrackChangeRef = useRef<number>(0);
+  const previousTrackRef = useRef<string | null>(null);
 
   const fetchCurrentTrack = async () => {
     try {
@@ -45,16 +48,48 @@ export const useSpotifyLive = (refreshInterval: number = 30000): UseSpotifyLiveR
         setIsConnected(spotifyData.connected || false);
         
         if (spotifyData.connected && spotifyData.currentTrack) {
-          setCurrentTrack({
-            name: spotifyData.currentTrack.name,
-            artist: spotifyData.currentTrack.artist,
-            album: spotifyData.currentTrack.album,
-            imageUrl: spotifyData.currentTrack.imageUrl,
-            spotifyUrl: spotifyData.currentTrack.spotifyUrl,
-            isPlaying: true,
-            progressMs: undefined,
-            durationMs: undefined,
-          });
+          
+          // Check if track is actually playing
+          const hasLastPlayed = spotifyData.currentTrack.lastPlayed;
+          const lastPlayedTime = hasLastPlayed ? new Date(spotifyData.currentTrack.lastPlayed).getTime() : 0;
+          const currentTime = Date.now();
+          const timeSinceLastPlayed = currentTime - lastPlayedTime;
+          
+          // Use server's isPlaying status - should now be reliable
+          const isActuallyPlaying = 
+            spotifyData.currentTrack.isPlaying === true || 
+            spotifyData.currentTrack.playing === true ||
+            // Fallback: if server doesn't provide isPlaying and track was recently changed (< 5 seconds)
+            (spotifyData.currentTrack.isPlaying === undefined && 
+             hasLastPlayed && timeSinceLastPlayed < 5000);
+          
+          
+          if (isActuallyPlaying) {
+            setCurrentTrack({
+              name: spotifyData.currentTrack.name,
+              artist: spotifyData.currentTrack.artist,
+              album: spotifyData.currentTrack.album,
+              imageUrl: spotifyData.currentTrack.imageUrl,
+              spotifyUrl: spotifyData.currentTrack.spotifyUrl,
+              isPlaying: true,
+              progressMs: spotifyData.currentTrack.progressMs,
+              durationMs: spotifyData.currentTrack.durationMs,
+              lastUpdated: Date.now(),
+            });
+          } else {
+            // Track exists but not playing - set with isPlaying: false to allow short timeout
+            setCurrentTrack({
+              name: spotifyData.currentTrack.name,
+              artist: spotifyData.currentTrack.artist,
+              album: spotifyData.currentTrack.album,
+              imageUrl: spotifyData.currentTrack.imageUrl,
+              spotifyUrl: spotifyData.currentTrack.spotifyUrl,
+              isPlaying: false,
+              progressMs: spotifyData.currentTrack.progressMs,
+              durationMs: spotifyData.currentTrack.durationMs,
+              lastUpdated: Date.now(),
+            });
+          }
         } else {
           setCurrentTrack(null);
         }
