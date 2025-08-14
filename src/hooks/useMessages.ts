@@ -313,7 +313,6 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
         let messageMetadata: { toolResults?: unknown[]; toolUsed?: string; thinking?: string; conversationId?: string } | undefined = undefined;
         
         // Use the ChatAPI streaming method directly
-        console.log('🎯 Sending message with conversationId:', activeConversationId || '(new conversation)');
         for await (const chunk of ChatAPI.streamSocialChat(apiPrompt, attachments, activeConversationId)) {
           // Check if chunk is metadata object
           if (typeof chunk === 'object' && chunk !== null && 'metadata' in chunk) {
@@ -333,7 +332,6 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
             // Update active conversation ID if server provides one
             if ((chunk as any).conversationId && !activeConversationId) {
               activeConversationId = (chunk as any).conversationId;
-              console.log('🎯 Server provided conversationId:', activeConversationId);
               // Update parent component's conversation ID
               if (onConversationIdUpdate && activeConversationId) {
                 onConversationIdUpdate(activeConversationId);
@@ -351,7 +349,6 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
                 // Update active conversation ID if server provides one
                 if (parsed.metadata.conversationId && !activeConversationId) {
                   activeConversationId = parsed.metadata.conversationId;
-                  console.log('🎯 Server provided conversationId in metadata:', activeConversationId);
                   // Update parent component's conversation ID
                   if (onConversationIdUpdate && activeConversationId) {
                     onConversationIdUpdate(activeConversationId);
@@ -373,7 +370,6 @@ export const useMessages = (onHideGreeting?: () => void, conversationId?: string
                 // Update active conversation ID if server provides one
                 if (parsed.conversationId && !activeConversationId) {
                   activeConversationId = parsed.conversationId;
-                  console.log('🎯 Server provided conversationId in parsed object:', activeConversationId);
                   // Update parent component's conversation ID
                   if (onConversationIdUpdate && activeConversationId) {
                     onConversationIdUpdate(activeConversationId);

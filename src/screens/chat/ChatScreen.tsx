@@ -3,7 +3,7 @@
  * The heart of Aether - AI that learns and adapts to your patterns
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   FlatList,
@@ -19,17 +19,19 @@ import {
   Easing,
   Modal,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { WebView } from 'react-native-webview';
 
 // Enhanced Components
 import { EnhancedChatInput } from '../../design-system/components/molecules';
 import EnhancedBubble from '../../design-system/components/molecules/EnhancedBubble';
-import { HeaderMenu, SignOutModal, ArtistListeningModal, WalletModal, SwipeTutorialOverlay, SpotifyBanner, ChatFloatingActions, AddFriendModal } from '../../design-system/components/organisms';
+import { HeaderMenu, SignOutModal, ArtistListeningModal, WalletModal, SwipeTutorialOverlay, SpotifyBanner, ChatFloatingActions, AddFriendModal, UserProfileModal } from '../../design-system/components/organisms';
 import { AnimatedHamburger, NowPlayingIndicator, SpotifyLinkPrompt, TrioOptionsRing, ScrollToBottomButton } from '../../design-system/components/atoms';
 import { PageBackground, SwipeToMenu } from '../../design-system/components/atoms';
 import SettingsModal from './SettingsModal';
@@ -54,7 +56,6 @@ import { useGreeting } from '../../hooks/useGreeting';
 import { useKeyboardAnimation } from '../../hooks/useKeyboardAnimation';
 import { useMessages } from '../../hooks/useMessages';
 import { useWebSearch } from '../../hooks/useWebSearch';
-import { useGhostTyping } from '../../hooks/useGhostTyping';
 import { useRealTimeMessaging } from '../../hooks/useRealTimeMessaging';
 import { useFriendRequest } from '../../hooks/useFriendRequest';
 import { useSpotifyLive } from '../../hooks/useSpotifyLive';
@@ -148,6 +149,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   
   // Wallet modal state
   const [showWalletModal, setShowWalletModal] = useState(false);
+
+  // Profile modal state
+  const [showProfileModal, setShowProfileModal] = useState(false);
   
   // Conversation drawer state
   const [showConversationDrawer, setShowConversationDrawer] = useState(false);
@@ -163,7 +167,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   const { currentTrack, isLoading: spotifyLoading, error: spotifyError, isConnected: spotifyConnected } = useSpotifyLive(15000);
   
   // Spotify OAuth for connecting account
-  const { connectToSpotify } = useSpotifyOAuth();
+  const { connectToSpotify, showWebView, authUrl, setShowWebView, connecting, handleWebViewNavigation } = useSpotifyOAuth();
   
   // Delay showing Spotify link prompt for new users
   useEffect(() => {
@@ -175,12 +179,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   }, []);
 
   
-  const { ghostText } = useGhostTyping({
-    isInputFocused: friendRequest.isInputFocused,
-    inputText: friendRequest.friendUsername,
-  });
+  const ghostText = 'Enter username';
   
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(undefined);
+  const [currentConversationTitle, setCurrentConversationTitle] = useState<string | undefined>(undefined);
   const [currentFriendUsername, setCurrentFriendUsername] = useState<string | undefined>(
     route?.params?.friendUsername || undefined
   );
@@ -252,7 +254,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       setShowWalletModal(true);
     },
     onSignOut: () => setShowSignOutModal(true),
-    onAddFriend: friendRequest.handleAddFriendPress
+    onAddFriend: friendRequest.handleAddFriendPress,
+    onProfilePress: () => setShowProfileModal(true)
   });
 
   // Handle route parameter changes for friend username
@@ -262,8 +265,32 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       setMessages([]);
       setCurrentFriendUsername(route.params.friendUsername);
       setCurrentConversationId(undefined);
+      setCurrentConversationTitle(undefined);
     }
   }, [route?.params?.friendUsername, currentFriendUsername, setMessages]);
+
+  // Fetch conversation title when conversation ID changes
+  useEffect(() => {
+    const fetchConversationTitle = async () => {
+      if (currentConversationId && !currentFriendUsername) {
+        try {
+          const conversation = await ConversationAPI.getConversation(currentConversationId, 1); // Only need 1 message to get title
+          if (conversation && conversation.title) {
+            setCurrentConversationTitle(conversation.title);
+          } else {
+            setCurrentConversationTitle(undefined);
+          }
+        } catch (error) {
+          console.error('Failed to fetch conversation title:', error);
+          setCurrentConversationTitle(undefined);
+        }
+      } else {
+        setCurrentConversationTitle(undefined);
+      }
+    };
+
+    fetchConversationTitle();
+  }, [currentConversationId, currentFriendUsername]);
 
   // Reset hamburger animation when header menu closes
   useEffect(() => {
@@ -326,6 +353,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       setShowSwipeTutorial(false);
     }
   };
+
 
   // Add Friend modal visibility effect - fixed to prevent useInsertionEffect warnings
   useEffect(() => {
@@ -667,6 +695,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         // Clear current messages and set new conversation ID
         setMessages([]);
         setCurrentConversationId(response.data._id);
+        setCurrentConversationTitle(response.data.title || undefined);
         setCurrentFriendUsername(undefined); // Clear friend context
         setShowConversationDrawer(false);
         
@@ -681,6 +710,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
       // Fallback to clearing current state
       setMessages([]);
       setCurrentConversationId(undefined);
+      setCurrentConversationTitle(undefined);
       setCurrentFriendUsername(undefined); // Clear friend context
       setShowConversationDrawer(false);
       
@@ -695,7 +725,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   };
 
   // Render message item using EnhancedBubble for proper attachment support
-  const renderMessage = ({ item, index }: { item: Message; index: number }) => {
+  const renderMessage = useCallback(({ item, index }: { item: Message; index: number }) => {
     return (
       <View style={styles.messageItem}>
         <EnhancedBubble
@@ -706,7 +736,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         />
       </View>
     );
-  };
+  }, [theme]);
 
   return (
     <SwipeToMenu onSwipeToMenu={toggleHeaderMenu}>
@@ -739,6 +769,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
           }}
           onConnectPress={connectToSpotify}
         />
+
 
         {/* Dynamic Greeting Banner */}
         {greetingText && showGreeting && (
@@ -799,7 +830,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             Keyboard.dismiss();
           }}
           ItemSeparatorComponent={() => <View style={{ height: 0 }} />}
-          onScroll={(event: any) => {
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={10}
+          initialNumToRender={15}
+          updateCellsBatchingPeriod={50}
+          onScroll={(event) => {
             // Simplified scroll handler without Animated.event
             const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
             const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
@@ -860,6 +896,43 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
           }
         ]}
       >
+        {/* Conversation Context Header - Thin bar above chat input */}
+        <View style={[
+          styles.conversationContextHeader,
+          {
+            backgroundColor: theme === 'dark' 
+              ? 'rgba(15, 15, 15, 0.95)' 
+              : 'rgba(245, 245, 245, 0.95)',
+            borderTopColor: theme === 'dark' 
+              ? 'rgba(255, 255, 255, 0.08)' 
+              : 'rgba(0, 0, 0, 0.08)',
+            borderLeftColor: theme === 'dark' 
+              ? 'rgba(255, 255, 255, 0.08)' 
+              : 'rgba(0, 0, 0, 0.08)',
+            borderRightColor: theme === 'dark' 
+              ? 'rgba(255, 255, 255, 0.08)' 
+              : 'rgba(0, 0, 0, 0.08)',
+          }
+        ]}>
+          <Text style={[
+            styles.conversationContextText,
+            {
+              color: theme === 'dark' ? '#888888' : '#666666',
+            }
+          ]}>
+            {currentFriendUsername 
+              ? `Chatting with ${currentFriendUsername}`
+              : currentConversationTitle 
+                ? currentConversationTitle
+                : currentConversationId 
+                  ? 'AI Conversation' 
+                  : 'New Chat'
+            }
+            {(currentFriendUsername || currentConversationId) && messages.length > 0 && 
+              ` • ${messages.length} message${messages.length === 1 ? '' : 's'}`
+            }
+          </Text>
+        </View>
         
         <View style={[
           styles.chatInputWrapper,
@@ -870,6 +943,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             borderTopWidth: 0.5,
             borderLeftWidth: 0.5,
             borderRightWidth: 0.5,
+            borderBottomWidth: 0.5,
             borderTopColor: theme === 'dark' 
               ? 'rgba(255, 255, 255, 0.08)' 
               : 'rgba(0, 0, 0, 0.08)',
@@ -879,7 +953,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             borderRightColor: theme === 'dark' 
               ? 'rgba(255, 255, 255, 0.08)' 
               : 'rgba(0, 0, 0, 0.08)',
+            borderBottomColor: theme === 'dark' 
+              ? 'rgba(255, 255, 255, 0.08)' 
+              : 'rgba(0, 0, 0, 0.08)',
             shadowOpacity: theme === 'dark' ? 0.2 : 0.15,
+            borderTopLeftRadius: 32, // Restore top radius since header is now separate
+            borderTopRightRadius: 32,
           }
         ]}>
           <EnhancedChatInput
@@ -944,7 +1023,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         onClose={() => setShowWalletModal(false)}
         onTierSelect={(tier) => {
           // Handle tier selection - could integrate with payment processing here
-          console.log(`Selected tier: ${tier}`);
+        }}
+      />
+
+      {/* User Profile Modal */}
+      <UserProfileModal
+        visible={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+        onNavigateToProfile={() => {
+          navigation.navigate('Profile' as never);
         }}
       />
       
@@ -955,6 +1042,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
           // Handle friend message press from drawer - same logic as from friends screen
           setMessages([]);
           setCurrentConversationId(undefined);
+          setCurrentConversationTitle(undefined);
           setCurrentFriendUsername(friendUsername);
           setShowConversationDrawer(false);
         }}
@@ -965,6 +1053,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             
             // Clear any existing conversation state
             setCurrentConversationId(undefined);
+            setCurrentConversationTitle(undefined);
             setMessages([]);
             
             // Set friend username which will trigger useMessages useEffect
@@ -984,12 +1073,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             // Only handle valid conversation IDs (not friend- or orbit- prefixed ones)
             if (conversationId && !conversationId.startsWith('friend-') && !conversationId.startsWith('orbit-')) {
               setCurrentConversationId(conversationId);
+              setCurrentConversationTitle(conversation.title || undefined);
               setCurrentFriendUsername(undefined);
               handleConversationSelect(conversation as any);
               setShowConversationDrawer(false);
             } else {
               // Invalid conversation ID, just clear state
               setCurrentConversationId(undefined);
+              setCurrentConversationTitle(undefined);
               setCurrentFriendUsername(undefined);
               setShowConversationDrawer(false);
             }
@@ -1001,8 +1092,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         onAllConversationsCleared={() => {
           setMessages([]);
           setCurrentConversationId(undefined);
+          setCurrentConversationTitle(undefined);
           setCurrentFriendUsername(undefined);
         }}
+        onAddFriend={friendRequest.handleAddFriendPress}
       />
       
       {/* Header Menu */}
@@ -1069,6 +1162,73 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         }}
       />
 
+      {/* Spotify OAuth WebView Modal */}
+      <Modal
+        visible={showWebView}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => {
+          setShowWebView(false);
+        }}
+      >
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+          <View style={[
+            styles.webViewHeader,
+            {
+              backgroundColor: colors.background,
+              borderBottomColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+            }
+          ]}>
+            <TouchableOpacity
+              style={styles.webViewCloseButton}
+              onPress={() => setShowWebView(false)}
+            >
+              <Ionicons name="close" size={24} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={[styles.webViewTitle, { color: colors.text }]}>Connect Spotify</Text>
+            <View style={{ width: 24 }} />
+          </View>
+          {authUrl ? (
+            <WebView
+              source={{ uri: authUrl }}
+              onNavigationStateChange={handleWebViewNavigation}
+              onError={(syntheticEvent) => {
+                const { nativeEvent } = syntheticEvent;
+                logger.error('WebView error:', nativeEvent);
+                
+                Alert.alert(
+                  'Connection Error',
+                  'Failed to load Spotify authentication page. Please check your internet connection and try again.',
+                  [
+                    { 
+                      text: 'Close', 
+                      onPress: () => setShowWebView(false)
+                    },
+                    { 
+                      text: 'Retry', 
+                      onPress: () => {
+                        // Force refresh the WebView by updating the URL
+                        setShowWebView(false);
+                        setTimeout(() => setShowWebView(true), 100);
+                      }
+                    }
+                  ]
+                );
+              }}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              startInLoadingState={true}
+              renderLoading={() => (
+                <View style={[styles.webViewLoading, { backgroundColor: colors.background }]}>
+                  <ActivityIndicator size="large" color="#1DB954" />
+                  <Text style={[styles.webViewLoadingText, { color: colors.text }]}>Loading Spotify...</Text>
+                </View>
+              )}
+            />
+          ) : null}
+        </View>
+      </Modal>
+
       </View>
     </PageBackground>
     </SwipeToMenu>
@@ -1091,7 +1251,7 @@ const styles = StyleSheet.create({
   },
   
   messagesContainer: {
-    paddingTop: Platform.OS === 'ios' ? 80 : 130,
+    paddingTop: Platform.OS === 'ios' ? 80 : 130, // Reset to original padding
     paddingBottom: 40,
     gap: 0,
   },
@@ -1159,6 +1319,40 @@ const styles = StyleSheet.create({
   },
 
   
+  // Conversation Context Header - Thin bar above chat input
+  conversationContextHeader: {
+    height: 14, // A bit taller for better text visibility
+    backgroundColor: 'rgba(15, 15, 15, 0.95)',
+    borderTopWidth: 0.5,
+    borderLeftWidth: 0.5,
+    borderRightWidth: 0.5,
+    borderBottomWidth: 0, // No bottom border
+    borderTopLeftRadius: 6, // A bit more rounded on top corners
+    borderTopRightRadius: 6,
+    borderBottomLeftRadius: 0, // Flat bottom
+    borderBottomRightRadius: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    marginHorizontal: 30, // Even wider pill - less margin on sides
+    marginBottom: -1, // Lowered - closer to chat input
+    alignSelf: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  
+  conversationContextText: {
+    fontSize: 9, // Slightly bigger to utilize the extra height
+    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
+    textAlign: 'center',
+    opacity: 0.8,
+    letterSpacing: 0.2,
+  },
+
   // Top fade overlay for dynamic island effect
   topFadeOverlay: {
     position: 'absolute',
@@ -1167,6 +1361,35 @@ const styles = StyleSheet.create({
     right: 0,
     height: Platform.OS === 'ios' ? 100 : 65,
     zIndex: 1000,
+  },
+
+  // WebView Modal Styles
+  webViewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderBottomWidth: 1,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40, // Account for status bar
+  },
+  webViewCloseButton: {
+    padding: spacing[1],
+  },
+  webViewTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  webViewLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing[3],
+  },
+  webViewLoadingText: {
+    fontSize: 16,
+    opacity: 0.7,
   },
 
 

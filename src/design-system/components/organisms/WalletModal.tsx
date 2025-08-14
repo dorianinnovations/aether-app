@@ -5,15 +5,11 @@ import {
   TouchableOpacity, 
   StyleSheet,
   Dimensions,
+  Animated,
 } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
 import { WalletCard } from '../molecules/WalletCard';
 import { useSubscription } from '../../../hooks/useSubscription';
+import { useWalletModalAnimation } from '../../../hooks/useWalletModalAnimation';
 
 const { height: screenHeight } = Dimensions.get('window');
 
@@ -52,46 +48,32 @@ export const WalletModal: React.FC<WalletModalProps> = ({
   // Use real data if available, otherwise fallback to props
   const displayTier = hasRealData ? realCurrentTier : currentTier;
   const displayUsage = hasRealData ? walletUsage : usage;
-  // Animation values
-  const overlayOpacity = useSharedValue(0);
-  const modalTranslateY = useSharedValue(screenHeight);
+  
+  // Perfect animation system (same as ConversationDrawer)
+  const {
+    slideAnim,
+    overlayOpacity,
+    modalVisible,
+    showModal,
+    hideModal,
+    resetAnimations,
+  } = useWalletModalAnimation();
 
-  // Animate in/out based on visibility
+  // Handle visibility changes with perfect timing
   useEffect(() => {
     if (visible) {
-      // Fade in overlay immediately
-      overlayOpacity.value = withTiming(1, {
-        duration: 200,
-        easing: Easing.out(Easing.ease),
-      });
-      
-      // Slide up modal content with slight delay
-      modalTranslateY.value = withTiming(0, {
-        duration: 300,
-        easing: Easing.out(Easing.cubic),
-      });
+      showModal();
     } else {
-      // Animate out
-      modalTranslateY.value = withTiming(screenHeight, {
-        duration: 250,
-        easing: Easing.in(Easing.cubic),
-      });
-      
-      overlayOpacity.value = withTiming(0, {
-        duration: 200,
-        easing: Easing.in(Easing.ease),
-      });
+      hideModal();
     }
-  }, [visible]);
+  }, [visible, showModal, hideModal]);
 
-  // Animated styles
-  const overlayStyle = useAnimatedStyle(() => ({
-    opacity: overlayOpacity.value,
-  }));
-
-  const modalStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: modalTranslateY.value }],
-  }));
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      resetAnimations();
+    };
+  }, [resetAnimations]);
 
   const handleTierSelect = (tier: 'pro' | 'elite') => {
     onTierSelect(tier);
@@ -102,14 +84,17 @@ export const WalletModal: React.FC<WalletModalProps> = ({
 
   return (
     <Modal
-      visible={visible}
+      visible={modalVisible}
       transparent={true}
       animationType="none"
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
         <Animated.View 
-          style={[styles.backgroundOverlay, overlayStyle]}
+          style={[
+            styles.backgroundOverlay, 
+            { opacity: overlayOpacity }
+          ]}
         >
           <TouchableOpacity 
             style={styles.backgroundTouchable}
@@ -118,7 +103,12 @@ export const WalletModal: React.FC<WalletModalProps> = ({
           />
         </Animated.View>
         
-        <Animated.View style={[styles.modalContainer, modalStyle]}>
+        <Animated.View 
+          style={[
+            styles.modalContainer, 
+            { transform: [{ translateY: slideAnim }] }
+          ]}
+        >
           <WalletCard 
             currentTier={displayTier}
             usage={displayUsage || undefined}

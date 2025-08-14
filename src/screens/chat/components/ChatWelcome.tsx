@@ -65,7 +65,7 @@ export const ChatWelcome: React.FC<ChatWelcomeProps> = ({
 const styles = StyleSheet.create({
   greetingBanner: {
     position: 'absolute',
-    top: 92,
+    top: 60,
     left: 0,
     right: 0,
     alignItems: 'center',
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     zIndex: 1,
-    transform: [{ translateY: -12 }],
+    transform: [{ translateY: -24 }],
   },
   greetingText: {
     fontSize: 16,

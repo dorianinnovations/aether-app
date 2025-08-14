@@ -25,7 +25,7 @@ export const useKeyboardAnimation = (): UseKeyboardAnimationReturn => {
       // Silky smooth upward movement with refined physics
       Animated.parallel([
         Animated.timing(greetingAnimY, {
-          toValue: -80, // Reduced from -120 for subtler movement
+          toValue: -160, // Even higher up to avoid collision with conversation context
           duration: 350, // Faster but still smooth
           easing: Easing.bezier(0.33, 1, 0.68, 1), // Custom smooth curve (ease-out-cubic)
           useNativeDriver: true,

@@ -54,7 +54,7 @@ export const DEFAULT_SETTINGS = {
   autoLock: true,
   autoLockTimeout: 300, // 5 minutes in seconds
   // Background
-  backgroundType: 'blue' as 'blue' | 'white' | 'sage' | 'lavender' | 'cream' | 'mint' | 'pearl',
+  backgroundType: 'white' as 'blue' | 'white' | 'sage' | 'lavender' | 'cream' | 'mint' | 'pearl',
   // Model Selection
   selectedModels: ['gpt5', 'gemini25pro', 'opus41'] as string[],
 };

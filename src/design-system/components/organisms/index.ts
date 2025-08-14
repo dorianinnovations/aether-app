@@ -18,6 +18,7 @@ export { ProfileInsights } from './ProfileInsights';
 export { ProfileCard } from './ProfileCard';
 export { PublicUserProfile } from './PublicUserProfile';
 export { PublicUserProfileModal } from './PublicUserProfileModal';
+export { UserProfileModal } from './UserProfileModal';
 export { PersonaModal } from './PersonaModal';
 export { WalletModal } from './WalletModal';
 export { ToastProvider } from './ToastProvider';

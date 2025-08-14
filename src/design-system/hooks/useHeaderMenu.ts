@@ -19,10 +19,11 @@ interface UseHeaderMenuOptions {
   onSignOut?: () => void;
   onWalletPress?: () => void;
   onAddFriend?: () => void;
+  onProfilePress?: () => void;
 }
 
 export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
-  const { screenName, onSettingsPress, onSignOut, onWalletPress, onAddFriend } = options;
+  const { screenName, onSettingsPress, onSignOut, onWalletPress, onAddFriend, onProfilePress } = options;
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
   const navigation = useNavigation();
   const { toggleTheme } = useTheme();
@@ -35,11 +36,16 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
         navigation.goBack();
         break;
       case 'profile':
-        if (screenName !== 'profile') {
+        if (onProfilePress) {
+          // Use custom profile handler (e.g., modal)
+          requestAnimationFrame(() => {
+            onProfilePress();
+          });
+        } else if (screenName !== 'profile') {
+          // Fallback to navigation
           try {
             navigation.navigate('Profile' as never);
           } catch (error) {
-            console.log('Profile navigation failed:', error);
           }
         }
         break;
@@ -48,7 +54,6 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
           try {
             navigation.navigate('Chat' as never);
           } catch (error) {
-            console.log('Chat navigation failed:', error);
           }
         }
         break;
@@ -57,7 +62,6 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
           try {
             navigation.navigate('Dive' as never);
           } catch (error) {
-            console.log('Dive navigation failed:', error);
           }
         }
         break;

@@ -70,9 +70,8 @@ export const SpotifyBanner: React.FC<SpotifyBannerProps> = ({
 
   // Auto-hide logic based on track activity
   useEffect(() => {
-    if (currentTrack && isConnected && (currentTrack.isPlaying || currentTrack.isPlaying === undefined)) {
-      // Show for playing tracks OR when playing status is unknown (fallback)
-      // Show banner and reset opacity only for actively playing tracks
+    if (currentTrack && isConnected) {
+      // Show banner for any track (playing or paused)
       setShouldShowBanner(true);
       bannerOpacityAnim.setValue(1);
       
@@ -81,8 +80,16 @@ export const SpotifyBanner: React.FC<SpotifyBannerProps> = ({
         clearTimeout(hideTimeoutRef.current);
       }
       
-      // Set new timeout based on track duration
-      const timeoutMs = calculateHideTimeout(currentTrack);
+      // Set timeout based on playing status
+      let timeoutMs: number;
+      
+      if (currentTrack.isPlaying || currentTrack.isPlaying === undefined) {
+        // Track is playing or status unknown - use adaptive timeout
+        timeoutMs = calculateHideTimeout(currentTrack);
+      } else {
+        // Track is paused - shorter timeout (2 minutes)
+        timeoutMs = 2 * 60 * 1000; // 2 minutes for paused tracks
+      }
       
       hideTimeoutRef.current = setTimeout(() => {
         // Fade out animation
@@ -95,8 +102,8 @@ export const SpotifyBanner: React.FC<SpotifyBannerProps> = ({
           setShouldShowBanner(false);
         });
       }, timeoutMs);
-    } else if (isConnected && (!currentTrack || !currentTrack.isPlaying) && shouldShowBanner) {
-      // No track or not playing but still connected - hide after short delay
+    } else if (isConnected && !currentTrack && shouldShowBanner) {
+      // No track but still connected - hide after short delay
       if (hideTimeoutRef.current) {
         clearTimeout(hideTimeoutRef.current);
       }
@@ -111,7 +118,7 @@ export const SpotifyBanner: React.FC<SpotifyBannerProps> = ({
         }).start(() => {
           setShouldShowBanner(false);
         });
-      }, 45000); // 45 seconds when no track or not playing
+      }, 45000); // 45 seconds when no track
     } else {
       // Not connected or already hidden - clear timeout
       if (hideTimeoutRef.current) {
@@ -129,7 +136,7 @@ export const SpotifyBanner: React.FC<SpotifyBannerProps> = ({
 
   // Start pulse animation when currentTrack is available and playing
   useEffect(() => {
-    if (currentTrack && isConnected && (currentTrack.isPlaying || currentTrack.isPlaying === undefined) && shouldShowBanner) {
+    if (currentTrack && isConnected && currentTrack.isPlaying && shouldShowBanner) {
       // Reset scale animation to ensure clean state
       spotifyScaleAnim.setValue(1);
       
@@ -266,7 +273,7 @@ export const SpotifyBanner: React.FC<SpotifyBannerProps> = ({
     <Animated.View 
       style={[styles.container, { opacity: bannerOpacityAnim }]}
     >
-      {currentTrack && isConnected && shouldShowBanner && (currentTrack.isPlaying || currentTrack.isPlaying === undefined) ? (
+      {currentTrack && isConnected && shouldShowBanner ? (
         <SpotifyTrackDisplay
           track={currentTrack}
           theme={theme}

@@ -8,13 +8,13 @@ import {
   View,
   Image,
   TouchableOpacity,
-  ActivityIndicator,
   ImageStyle,
   ViewStyle,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../../contexts/ThemeContext';
+import { LottieLoader } from './LottieLoader';
 
 export interface ProfileImageProps {
   /** Image URI or null for placeholder */
@@ -153,7 +153,9 @@ export const ProfileImage: React.FC<ProfileImageProps> = ({
     width: editOverlaySize,
     height: editOverlaySize,
     borderRadius: editOverlaySize / 2,
-    backgroundColor: uploading ? colors.primary : 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: uploading 
+      ? (theme === 'dark' ? 'rgba(60, 60, 60, 0.9)' : 'rgba(120, 120, 120, 0.9)') 
+      : 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -209,9 +211,9 @@ export const ProfileImage: React.FC<ProfileImageProps> = ({
       {editable && (
         <View style={editOverlayStyle}>
           {uploading ? (
-            <ActivityIndicator 
-              size="small" 
-              color="white" 
+            <LottieLoader 
+              size={Math.floor(editOverlaySize * 0.8)}
+              speed={2.5}
             />
           ) : (
             <Feather 

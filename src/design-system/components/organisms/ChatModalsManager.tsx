@@ -10,7 +10,9 @@ import { useTheme } from '../../../contexts/ThemeContext';
 import AddFriendModal from '../molecules/AddFriendModal';
 import SettingsModal from '../../../screens/chat/SettingsModal';
 import ConversationDrawer from '../../../components/ConversationDrawer';
-import { SignOutModal, ArtistListeningModal, WalletModal } from '../organisms';
+import { SignOutModal } from './SignOutModal';
+import { ArtistListeningModal } from './ArtistListeningModal';
+import { WalletModal } from './WalletModal';
 // Remove unused DynamicPrompt import - using any[] for now
 
 interface ChatModalsManagerProps {

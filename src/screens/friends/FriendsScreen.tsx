@@ -21,7 +21,6 @@ import { getHeaderMenuShadow } from '../../design-system/tokens/shadows';
 import { designTokens, getThemeColors } from '../../design-system/tokens/colors';
 import { spacing } from '../../design-system/tokens/spacing';
 import { useTheme } from '../../hooks/useTheme';
-import { useGhostTyping } from '../../hooks/useGhostTyping';
 import { useHeaderMenu } from '../../design-system/hooks';
 import SettingsModal from '../chat/SettingsModal';
 import * as Haptics from 'expo-haptics';
@@ -156,10 +155,7 @@ export const FriendsScreen: React.FC<FriendsScreenProps> = ({ navigation }) => {
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const inputRef = useRef<TextInput>(null);
 
-  const { ghostText } = useGhostTyping({
-    isInputFocused,
-    inputText: friendUsername,
-  });
+  const ghostText = 'Enter username';
 
   // Header menu hook
   const { showHeaderMenu, setShowHeaderMenu, handleMenuAction, toggleHeaderMenu } = useHeaderMenu({

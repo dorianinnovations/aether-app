@@ -21,7 +21,6 @@ import { typography } from '../../tokens/typography';
 import { spacing, borderRadius } from '../../tokens/spacing';
 import { getHeaderMenuShadow } from '../../tokens/shadows';
 import { useTheme } from '../../../contexts/ThemeContext';
-import { useGhostTyping } from '../../../hooks/useGhostTyping';
 
 interface AddFriendModalProps {
   visible: boolean;
@@ -51,10 +50,7 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { ghostText } = useGhostTyping({
-    isInputFocused,
-    inputText: username,
-  });
+  const ghostText = 'Enter username';
 
   // Modal animation
   useEffect(() => {

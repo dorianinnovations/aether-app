@@ -47,7 +47,25 @@ export const SpotifyAPI = {
         state: 'mobile'
       });
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
+      // Enhanced error handling with more specific information
+      if (error.response?.status === 409) {
+        throw new Error('This Spotify account is already connected to another user.');
+      } else if (error.response?.status === 401) {
+        throw new Error('Authentication failed. Please log in again and try connecting Spotify.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Permission denied. Please contact support if this issue persists.');
+      } else if (error.response?.status === 429) {
+        throw new Error('Too many requests. Please wait a few minutes before trying again.');
+      } else if (error.response?.status >= 500) {
+        throw new Error('Spotify servers are currently unavailable. Please try again later.');
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else if (error.response?.data?.error) {
+        throw new Error(error.response.data.error);
+      } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
+        throw new Error('Network error. Please check your connection and try again.');
+      }
       throw error;
     }
   },

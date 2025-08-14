@@ -64,32 +64,18 @@ export const useSpotifyLive = (refreshInterval: number = 30000): UseSpotifyLiveR
              hasLastPlayed && timeSinceLastPlayed < 5000);
           
           
-          if (isActuallyPlaying) {
-            setCurrentTrack({
-              name: spotifyData.currentTrack.name,
-              artist: spotifyData.currentTrack.artist,
-              album: spotifyData.currentTrack.album,
-              imageUrl: spotifyData.currentTrack.imageUrl,
-              spotifyUrl: spotifyData.currentTrack.spotifyUrl,
-              isPlaying: true,
-              progressMs: spotifyData.currentTrack.progressMs,
-              durationMs: spotifyData.currentTrack.durationMs,
-              lastUpdated: Date.now(),
-            });
-          } else {
-            // Track exists but not playing - set with isPlaying: false to allow short timeout
-            setCurrentTrack({
-              name: spotifyData.currentTrack.name,
-              artist: spotifyData.currentTrack.artist,
-              album: spotifyData.currentTrack.album,
-              imageUrl: spotifyData.currentTrack.imageUrl,
-              spotifyUrl: spotifyData.currentTrack.spotifyUrl,
-              isPlaying: false,
-              progressMs: spotifyData.currentTrack.progressMs,
-              durationMs: spotifyData.currentTrack.durationMs,
-              lastUpdated: Date.now(),
-            });
-          }
+          // Always set the track information, let the banner component handle display logic
+          setCurrentTrack({
+            name: spotifyData.currentTrack.name,
+            artist: spotifyData.currentTrack.artist,
+            album: spotifyData.currentTrack.album,
+            imageUrl: spotifyData.currentTrack.imageUrl,
+            spotifyUrl: spotifyData.currentTrack.spotifyUrl,
+            isPlaying: isActuallyPlaying,
+            progressMs: spotifyData.currentTrack.progressMs,
+            durationMs: spotifyData.currentTrack.durationMs,
+            lastUpdated: Date.now(),
+          });
         } else {
           setCurrentTrack(null);
         }

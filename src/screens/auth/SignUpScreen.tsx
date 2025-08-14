@@ -39,6 +39,7 @@ import { useSignUpForm } from '../../hooks/useSignUpForm';
 import { usePasswordStrength } from '../../hooks/usePasswordStrength';
 import { useUsernameValidation } from '../../hooks/useUsernameValidation';
 import { TokenManager } from '../../services/api';
+import { GoogleSignInButton } from '../../design-system/components/molecules/GoogleSignInButton';
 
 const { height } = Dimensions.get('window');
 
@@ -827,6 +828,29 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                       />
                     </Animated.View>
 
+                    {/* Divider */}
+                    <Animated.View style={[styles.dividerContainer, { opacity: buttonOpacity }]}>
+                      <View style={[styles.dividerLine, { backgroundColor: theme === 'dark' ? '#333333' : '#e5e5e5' }]} />
+                      <Text style={[styles.dividerText, { color: theme === 'dark' ? '#666666' : '#999999' }]}>or</Text>
+                      <View style={[styles.dividerLine, { backgroundColor: theme === 'dark' ? '#333333' : '#e5e5e5' }]} />
+                    </Animated.View>
+
+                    {/* Google Sign-Up Button */}
+                    <Animated.View style={{ opacity: buttonOpacity }}>
+                      <GoogleSignInButton
+                        onSuccess={() => {
+                          setIsSuccess(true);
+                          setAuthStatus('success');
+                        }}
+                        onError={(error) => {
+                          setError(error);
+                          setAuthStatus('error');
+                          setTimeout(() => setAuthStatus('idle'), 3000);
+                        }}
+                        disabled={loading || isSignUpSuccess}
+                      />
+                    </Animated.View>
+
                     {/* Sign In Link */}
                     <Animated.View style={{ opacity: linkOpacity }}>
                       <TouchableOpacity
@@ -1037,6 +1061,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
     fontSize: 14,
+  },
+  // Divider styles
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 16,
+    gap: 12,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    ...typography.textStyles.bodyMedium,
+    fontSize: 14,
+    fontWeight: '400',
   },
   // Success Screen
   successContainer: {

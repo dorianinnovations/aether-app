@@ -16,9 +16,6 @@ import {
   Animated,
   Modal,
   Image,
-  TextInput,
-  Keyboard,
-  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
@@ -63,6 +60,7 @@ interface ConversationDrawerProps {
   theme: 'light' | 'dark';
   onFriendMessagePress?: (friendUsername: string) => void;
   onAllConversationsCleared?: () => void;
+  onAddFriend?: () => void;
 }
 
 const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
@@ -74,6 +72,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   theme,
   onFriendMessagePress,
   onAllConversationsCleared,
+  onAddFriend,
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [modalVisible, setModalVisible] = useState(isVisible);
@@ -87,13 +86,7 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const [friends, setFriends] = useState<Friend[]>([]);
   const [friendsLoading, setFriendsLoading] = useState(false);
   
-  // Add friend input state
-  const [showAddFriendInput, setShowAddFriendInput] = useState(false);
-  const [addFriendUsername, setAddFriendUsername] = useState('');
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const actionDockAnim = useRef(new Animated.Value(0)).current;
   const newChatButtonAnim = useRef(new Animated.Value(0)).current;
-  const tabButtonsAnim = useRef(new Animated.Value(0)).current;
 
   // Clear all modal state
   const [clearAllModal, setClearAllModal] = useState<{ visible: boolean; type: 'conversations' | 'friends' } | null>(null);
@@ -268,39 +261,24 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     handleTabTransition(targetTab, isAnimating);
   }, [handleTabTransition, isAnimating]);
 
-  // Animate new chat button and tab buttons based on current tab
+  // Animate new chat button based on current tab
   useEffect(() => {
     if (currentTab === 0) {
-      // Aether tab - show new chat button, tabs in normal position
-      newChatButtonAnim.setValue(0);
-      Animated.parallel([
-        Animated.timing(newChatButtonAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(tabButtonsAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        })
-      ]).start();
+      // Aether tab - show new chat button
+      Animated.timing(newChatButtonAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     } else {
-      // Friends tab - hide new chat button, slide tab buttons down
-      Animated.parallel([
-        Animated.timing(newChatButtonAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(tabButtonsAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        })
-      ]).start();
+      // Friends tab - hide new chat button
+      Animated.timing(newChatButtonAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
     }
-  }, [currentTab, newChatButtonAnim, tabButtonsAnim]);
+  }, [currentTab, newChatButtonAnim]);
 
   useEffect(() => {
     if (isVisible) {
@@ -321,38 +299,6 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
     };
   }, [resetAnimations, resetTabAnimations]);
 
-  // Keyboard handling for add friend input
-  useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    
-    const keyboardShowListener = Keyboard.addListener(showEvent, (e) => {
-      if (showAddFriendInput) {
-        setKeyboardHeight(e.endCoordinates.height);
-        Animated.spring(actionDockAnim, {
-          toValue: -e.endCoordinates.height + 20, // Move up by keyboard height minus some padding
-          tension: 400,
-          friction: 30,
-          useNativeDriver: true,
-        }).start();
-      }
-    });
-
-    const keyboardHideListener = Keyboard.addListener(hideEvent, () => {
-      setKeyboardHeight(0);
-      Animated.spring(actionDockAnim, {
-        toValue: 0,
-        tension: 400,
-        friction: 30,
-        useNativeDriver: true,
-      }).start();
-    });
-
-    return () => {
-      keyboardShowListener?.remove();
-      keyboardHideListener?.remove();
-    };
-  }, [showAddFriendInput, actionDockAnim]);
   
   const handleClose = useCallback(() => {
     if (isAnimating) return;
@@ -432,37 +378,12 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
 
   const handleAddFriendPress = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setShowAddFriendInput(true);
-  }, []);
+    onClose(); // Hide the conversation drawer first
+    setTimeout(() => {
+      onAddFriend?.(); // Then trigger modal after drawer closes
+    }, 100);
+  }, [onAddFriend, onClose]);
 
-  const handleAddFriendSubmit = useCallback(async () => {
-    const username = addFriendUsername.trim();
-    if (!username) return;
-
-    try {
-      const response = await FriendsAPI.addFriend(username);
-      if (response.success) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Keyboard.dismiss();
-        setAddFriendUsername('');
-        setShowAddFriendInput(false);
-        // Refresh friends list
-        fetchFriends();
-      } else {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        log.error('Add friend failed:', response.message);
-      }
-    } catch (error) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      log.error('Add friend error:', error);
-    }
-  }, [addFriendUsername, fetchFriends]);
-
-  const handleAddFriendCancel = useCallback(() => {
-    Keyboard.dismiss();
-    setAddFriendUsername('');
-    setShowAddFriendInput(false);
-  }, []);
 
   const handleFetchProfile = useCallback(async (username: string) => {
     try {
@@ -631,95 +552,8 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                 onFriendProfilePress={handleFriendProfilePress}
               />
               
-              {/* Button Stack - Right Edge */}
-              <Animated.View style={[
-                styles.buttonStack,
-                {
-                  transform: [{ translateY: actionDockAnim }],
-                }
-              ]}>
-                {/* Tab Buttons */}
-                <Animated.View 
-                  style={[
-                    styles.tabButtonsContainer,
-                    {
-                      transform: [{
-                        translateY: tabButtonsAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0, 52] // Slide down by button height + gap (44 + 8)
-                        })
-                      }]
-                    }
-                  ]}
-                >
-                  {tabs.map((tab, index) => {
-                    const isActive = index === currentTab;
-                    const tabProgress = tabAnimations[index];
-                    
-                    return (
-                      <Animated.View
-                        key={tab.label}
-                        style={[
-                          styles.tabButtonWrapper,
-                          { opacity: tabProgress }
-                        ]}
-                      >
-                        <TouchableOpacity
-                          style={[
-                            styles.tabButton,
-                            {
-                              backgroundColor: isActive
-                                ? (theme === 'dark' ? 'rgba(42, 42, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)')
-                                : (theme === 'dark' ? 'rgba(25, 25, 25, 0.8)' : 'rgba(240, 240, 240, 0.9)'),
-                              borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
-                            }
-                          ]}
-                          onPress={() => handleTabTransitionWithAnimationState(index)}
-                          activeOpacity={0.7}
-                          disabled={isAnimating}
-                        >
-                          <View style={styles.tabButtonContent}>
-                            {tab.logo ? (
-                              <Image 
-                                source={tab.logo}
-                                style={[
-                                  styles.tabLogo,
-                                  { opacity: isActive ? 1 : 0.7 }
-                                ]}
-                                resizeMode="contain"
-                              />
-                            ) : tab.icon ? (
-                              <Feather 
-                                name={tab.icon as any}
-                                size={14}
-                                color={isActive ? themeColors.text : themeColors.textSecondary}
-                              />
-                            ) : (
-                              <Text style={[
-                                styles.tabText,
-                                {
-                                  color: isActive ? themeColors.text : themeColors.textSecondary,
-                                  fontWeight: isActive ? '600' : '400',
-                                }
-                              ]}>
-                                {tab.label}
-                              </Text>
-                            )}
-                            <Text style={[
-                              styles.tabIndicatorText,
-                              {
-                                color: isActive ? themeColors.text : themeColors.textSecondary,
-                                opacity: isActive ? 0.9 : 0.6,
-                              }
-                            ]}>
-                              {tab.label}
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
-                      </Animated.View>
-                    );
-                  })}
-                </Animated.View>
+              {/* Action Buttons - Right Edge */}
+              <View style={styles.actionButtonsStack}>
 
                 {/* Action Buttons */}
                 <View style={styles.actionButtonsContainer}>
@@ -789,58 +623,88 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
                   ) : null}
 
                 </View>
-              </Animated.View>
+              </View>
+
+              {/* Bottom Tab Bar Background */}
+              <View style={[
+                styles.bottomTabBackground,
+                {
+                  backgroundColor: theme === 'dark' ? 'rgba(30, 30, 30, 0.95)' : 'rgba(240, 240, 240, 0.95)',
+                  borderColor: themeColors.borders.default,
+                }
+              ]} />
+
+              {/* Bottom Tab Bar */}
+              <View style={[
+                styles.bottomTabBar,
+                {
+                  backgroundColor: 'transparent',
+                  borderTopColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                }
+              ]}>
+                {tabs.map((tab, index) => {
+                  const isActive = index === currentTab;
+                  const tabProgress = tabAnimations[index];
+                  
+                  return (
+                    <Animated.View
+                      key={tab.label}
+                      style={[
+                        styles.bottomTabButton,
+                        { opacity: tabProgress }
+                      ]}
+                    >
+                      <TouchableOpacity
+                        style={[
+                          styles.bottomTabTouch,
+                          {
+                            backgroundColor: isActive
+                              ? (theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)')
+                              : 'transparent',
+                            borderColor: isActive
+                              ? (theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)')
+                              : (theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'),
+                          }
+                        ]}
+                        onPress={() => handleTabTransitionWithAnimationState(index)}
+                        activeOpacity={0.6}
+                        disabled={isAnimating}
+                      >
+                        <View style={styles.bottomTabContent}>
+                          {tab.logo ? (
+                            <Image 
+                              source={tab.logo}
+                              style={[
+                                styles.bottomTabLogo,
+                                { opacity: isActive ? 1 : 0.6 }
+                              ]}
+                              resizeMode="contain"
+                            />
+                          ) : tab.icon ? (
+                            <Feather 
+                              name={tab.icon as any}
+                              size={18}
+                              color={isActive ? themeColors.text : themeColors.textSecondary}
+                            />
+                          ) : null}
+                          <Text style={[
+                            styles.bottomTabText,
+                            {
+                              color: isActive ? themeColors.text : themeColors.textSecondary,
+                              fontWeight: isActive ? '600' : '400',
+                            }
+                          ]}>
+                            {tab.label}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    </Animated.View>
+                  );
+                })}
+              </View>
             </View>
           </SafeAreaView>
           
-          {/* Floating Add Friend Input */}
-          {showAddFriendInput && (
-            <Animated.View
-              style={[
-                styles.floatingAddFriendContainer,
-                {
-                  transform: [{ translateY: actionDockAnim }],
-                  backgroundColor: theme === 'dark' ? 'rgba(20, 20, 20, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-                  borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-                }
-              ]}
-            >
-              <View style={styles.floatingInputHeader}>
-                <Text style={[
-                  styles.floatingInputTitle,
-                  { color: themeColors.text }
-                ]}>
-                  Add Friend
-                </Text>
-                <TouchableOpacity
-                  onPress={handleAddFriendCancel}
-                  style={styles.floatingInputClose}
-                >
-                  <Feather name="x" size={16} color={themeColors.textSecondary} />
-                </TouchableOpacity>
-              </View>
-              <TextInput
-                style={[
-                  styles.floatingAddFriendInput,
-                  {
-                    color: themeColors.text,
-                    backgroundColor: theme === 'dark' ? 'rgba(40, 40, 40, 0.6)' : 'rgba(240, 240, 240, 0.6)',
-                    borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-                  }
-                ]}
-                placeholder="Enter username..."
-                placeholderTextColor={themeColors.textSecondary}
-                value={addFriendUsername}
-                onChangeText={setAddFriendUsername}
-                onSubmitEditing={handleAddFriendSubmit}
-                autoFocus={true}
-                returnKeyType="done"
-                autoCapitalize="none"
-                autoCorrect={false}
-                maxLength={20}
-              />
-            </Animated.View>
-          )}
         </Animated.View>
 
         {artistModal && (
@@ -950,60 +814,82 @@ const styles = StyleSheet.create({
   },
   // Badge text styling handled by getTextStyle
   
-  // Button Stack Layout
-  buttonStack: {
+  // Action Buttons Stack (Right Side)
+  actionButtonsStack: {
     position: 'absolute',
     right: spacing[2],
-    bottom: spacing[2],
+    bottom: 90,
     zIndex: 10,
     flexDirection: 'column',
     alignItems: 'flex-end',
     gap: spacing[2],
   },
   
-  // Tab Buttons
-  tabButtonsContainer: {
-    flexDirection: 'column',
-    gap: 8,
-  },
-  tabButtonWrapper: {
-    // Individual tab button wrapper
-  },
-  tabButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 44,
-    width: 44,
-    borderRadius: 8,
-    borderWidth: 0.5,
+  // Bottom Tab Bar Background
+  bottomTabBackground: {
+    position: 'absolute',
+    bottom: -43,
+    left: 0,
+    right: 0,
+    height: 119,
+    borderTopWidth: 0.5,
+    borderLeftWidth: 0.5,
+    borderRightWidth: 0.5,
     shadowColor: '#000',
-    shadowOffset: { width: -2, height: 2 },
-    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 4,
+    elevation: 8,
   },
-  tabButtonContent: {
+  
+  // Bottom Tab Bar
+  bottomTabBar: {
+    position: 'absolute',
+    bottom: -20,
+    left: 0,
+    right: 0,
+    height: 80,
+    flexDirection: 'row',
+    borderTopWidth: 0.5,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 8,
+  },
+  bottomTabButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
-    gap: 2,
   },
-  tabIndicatorText: {
-    fontSize: 8,
-    fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
-    letterSpacing: 0.5,
-    marginTop: 1,
+  bottomTabTouch: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    minWidth: 100,
   },
-  tabText: {
-    fontSize: 9,
+  bottomTabContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  bottomTabLogo: {
+    width: 24,
+    height: 18,
+  },
+  bottomTabText: {
+    fontSize: 11,
     fontFamily: 'Inter-Medium',
     textAlign: 'center',
     letterSpacing: -0.1,
-  },
-  tabLogo: {
-    width: 28,
-    height: 20,
   },
   
   // Action Buttons
@@ -1026,54 +912,6 @@ const styles = StyleSheet.create({
   },
   primaryActionButton: {
     // All buttons now same size - no overrides needed
-  },
-  addFriendInput: {
-    paddingHorizontal: 4,
-  },
-  addFriendInputText: {
-    fontSize: 8,
-    fontWeight: '500',
-    fontFamily: 'Inter-Medium',
-    letterSpacing: -0.1,
-    textAlign: 'center',
-    flex: 1,
-    textAlignVertical: 'center',
-  },
-  floatingAddFriendContainer: {
-    position: 'absolute',
-    bottom: 100,
-    right: 16,
-    left: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  floatingInputHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  floatingInputTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Inter-SemiBold',
-  },
-  floatingInputClose: {
-    padding: 4,
-  },
-  floatingAddFriendInput: {
-    height: 44,
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    fontSize: 16,
-    fontFamily: 'Inter-Regular',
   },
 });
 

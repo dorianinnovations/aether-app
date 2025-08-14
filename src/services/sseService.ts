@@ -46,7 +46,6 @@ class SSEService {
       this.eventSource.addEventListener('open', () => {
         this.connectionState = true;
         this.isConnecting = false;
-        console.log('🔗 SSE connection established');
       });
 
       this.eventSource.addEventListener('message', (event: any) => {

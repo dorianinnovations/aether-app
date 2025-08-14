@@ -37,35 +37,45 @@ export const useSpotifyOAuth = () => {
       
       // Get the authorization URL from your backend
       const authResponse = await SpotifyAPI.getAuthUrl();
+      const authUrlFromServer = authResponse.authUrl || authResponse.data?.authUrl;
       
-      if (authResponse.success && authResponse.data?.authUrl) {
-        setAuthUrl(authResponse.data.authUrl);
-        setShowWebView(true);
-      } else if (authResponse.data?.authUrl) {
-        // Handle case where response doesn't have success flag but has authUrl
-        setAuthUrl(authResponse.data.authUrl);
+      if (authUrlFromServer) {
+        setAuthUrl(authUrlFromServer);
         setShowWebView(true);
       } else {
-        throw new Error(authResponse.message || 'Failed to get Spotify authorization URL');
+        throw new Error('Failed to get authentication URL');
       }
     } catch (error: any) {
       logger.error('Spotify connection error:', error);
       
+      let title = 'Connection Error';
       let errorMessage = 'Unable to connect to Spotify. Please try again.';
       
+      // Handle specific error scenarios
       if (error.message?.includes('logged in')) {
+        title = 'Login Required';
         errorMessage = 'Please log in to your account first before connecting Spotify.';
-      } else if (error.message?.includes('network') || error.message?.includes('timeout')) {
-        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.message?.includes('network') || error.message?.includes('timeout') || error.code === 'NETWORK_ERROR') {
+        title = 'Network Error';
+        errorMessage = 'Network error. Please check your internet connection and try again.';
       } else if (error.response?.status === 401) {
-        errorMessage = 'Your session has expired. Please log in again.';
+        title = 'Session Expired';
+        errorMessage = 'Your session has expired. Please log in again and try connecting Spotify.';
+      } else if (error.response?.status === 403) {
+        title = 'Permission Denied';
+        errorMessage = 'Access denied. Please contact support if this issue persists.';
+      } else if (error.response?.status === 429) {
+        title = 'Rate Limited';
+        errorMessage = 'Too many requests. Please wait a few minutes before trying again.';
+      } else if (error.response?.status >= 500) {
+        title = 'Server Error';
+        errorMessage = 'Spotify services are currently unavailable. Please try again later.';
+      } else if (error.response?.data?.message) {
+        // Use server-provided error message if available
+        errorMessage = error.response.data.message;
       }
       
-      Alert.alert(
-        'Connection Error',
-        errorMessage,
-        [{ text: 'OK' }]
-      );
+      Alert.alert(title, errorMessage, [{ text: 'OK' }]);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setConnecting(false);
@@ -121,6 +131,29 @@ export const useSpotifyOAuth = () => {
   const handleWebViewNavigation = useCallback((navState: any) => {
     const url = navState.url;
     
+    // Handle WebView loading errors
+    if (navState.code && navState.code < 0) {
+      logger.warn('WebView navigation error:', navState);
+      
+      let title = 'Connection Error';
+      let message = 'Unable to load Spotify authentication page. Please check your internet connection and try again.';
+      
+      if (navState.code === -1004) {
+        title = 'Network Error';
+        message = 'Could not connect to Spotify servers. Please check your internet connection and try again.';
+      } else if (navState.code === -1009) {
+        title = 'No Internet';
+        message = 'No internet connection available. Please connect to the internet and try again.';
+      } else if (navState.code === -1001) {
+        title = 'Request Timeout';
+        message = 'The request timed out. Please try again with a better internet connection.';
+      }
+      
+      setShowWebView(false);
+      Alert.alert(title, message, [{ text: 'OK' }]);
+      return;
+    }
+    
     // Check if this is the callback URL with authorization code
     if (url.includes('callback') && url.includes('code=')) {
       const urlParams = new URLSearchParams(url.split('?')[1]);
@@ -132,16 +165,33 @@ export const useSpotifyOAuth = () => {
       }
     }
     
-    // Handle errors
+    // Handle OAuth errors
     if (url.includes('error=')) {
+      const urlParams = new URLSearchParams(url.split('?')[1]);
+      const error = urlParams.get('error');
+      const errorDescription = urlParams.get('error_description');
+      
       setShowWebView(false);
-      Alert.alert(
-        'Authentication Error',
-        'Spotify authentication was cancelled or failed.',
-        [{ text: 'OK' }]
-      );
+      
+      let title = 'Authentication Error';
+      let message = 'Spotify authentication failed.';
+      
+      if (error === 'access_denied') {
+        title = 'Access Denied';
+        message = 'You denied access to your Spotify account. Please try again and approve the connection to use Spotify features.';
+      } else if (error === 'invalid_request') {
+        title = 'Invalid Request';
+        message = 'There was an issue with the authentication request. Please try connecting again.';
+      } else if (error === 'unauthorized_client') {
+        title = 'Unauthorized';
+        message = 'This app is not authorized to connect to Spotify. Please contact support.';
+      } else if (errorDescription) {
+        message = errorDescription;
+      }
+      
+      Alert.alert(title, message, [{ text: 'OK' }]);
     }
-  }, []);
+  }, [handleSpotifyCallback]);
 
   const handleSpotifyCallback = useCallback(async (code: string) => {
     setConnecting(true);
@@ -150,20 +200,79 @@ export const useSpotifyOAuth = () => {
       logger.debug('Processing Spotify callback with code:', code);
       
       const response = await SpotifyAPI.handleCallback(code);
+      logger.debug('Spotify callback response:', response);
       
+      // Handle different response formats
       if (response.success && response.data) {
+        // Format: { success: true, data: {...} }
         setSpotifyStatus(response.data);
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        
+        // Show success message
+        Alert.alert(
+          'Success!',
+          'Your Spotify account has been connected successfully.',
+          [{ text: 'OK' }]
+        );
+      } else if (response.success === true) {
+        // Format: { success: true, spotify: {...} } or other structure
+        const spotifyData = response.spotify || response.data || response;
+        setSpotifyStatus(spotifyData);
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        
+        // Show success message
+        Alert.alert(
+          'Success!',
+          'Your Spotify account has been connected successfully.',
+          [{ text: 'OK' }]
+        );
+      } else if (response.connected !== undefined) {
+        // Format: { connected: true, ... } (direct Spotify data)
+        setSpotifyStatus(response);
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        
+        // Show success message
+        Alert.alert(
+          'Success!',
+          'Your Spotify account has been connected successfully.',
+          [{ text: 'OK' }]
+        );
       } else {
-        throw new Error('Failed to complete Spotify authentication');
+        // Log the response structure for debugging
+        logger.error('Unexpected response structure:', response);
+        throw new Error(response.message || response.error || 'Failed to connect Spotify account');
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Spotify callback error:', error);
-      Alert.alert(
-        'Authentication Error',
-        'Failed to complete Spotify connection. Please try again.',
-        [{ text: 'OK' }]
-      );
+      
+      let title = 'Connection Failed';
+      let message = 'Failed to connect your Spotify account. Please try again.';
+      
+      // Handle specific error scenarios
+      if (error.response?.status === 409 || error.message?.includes('already connected') || error.message?.includes('account conflict')) {
+        title = 'Account Already Connected';
+        message = 'This Spotify account is already connected to another user. Please disconnect it first or use a different Spotify account.';
+      } else if (error.response?.status === 401 || error.message?.includes('unauthorized') || error.message?.includes('invalid')) {
+        title = 'Authorization Failed';
+        message = 'Spotify authorization failed. Please try connecting again and make sure you approve the connection.';
+      } else if (error.response?.status === 403 || error.message?.includes('forbidden') || error.message?.includes('permission')) {
+        title = 'Permission Denied';
+        message = 'Permission denied by Spotify. Please make sure your Spotify account has the necessary permissions.';
+      } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error') || error.message?.includes('Could not connect')) {
+        title = 'Connection Error';
+        message = 'Unable to connect to Spotify servers. Please check your internet connection and try again.';
+      } else if (error.response?.status === 429) {
+        title = 'Too Many Requests';
+        message = 'Too many connection attempts. Please wait a few minutes before trying again.';
+      } else if (error.response?.status >= 500) {
+        title = 'Server Error';
+        message = 'Spotify servers are currently unavailable. Please try again later.';
+      } else if (error.response?.data?.message) {
+        // Use server-provided error message if available
+        message = error.response.data.message;
+      }
+      
+      Alert.alert(title, message, [{ text: 'OK' }]);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setConnecting(false);

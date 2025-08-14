@@ -10,6 +10,7 @@ export { useConversationTabs } from './useConversationTabs';
 export { useConversationData } from './useConversationData';
 export { useConversationTitleGeneration } from './useConversationTitleGeneration';
 export { useDrawerAnimation } from './useDrawerAnimation';
+export { useWalletModalAnimation } from './useWalletModalAnimation';
 export { useDynamicPrompts } from './useDynamicPrompts';
 export { useGhostTyping } from './useGhostTyping';
 export { useGreeting } from './useGreeting';

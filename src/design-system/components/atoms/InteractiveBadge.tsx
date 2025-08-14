@@ -101,8 +101,7 @@ export const InteractiveBadge: React.FC<InteractiveBadgeProps> = ({
 
     const loadSounds = async () => {
       // Sound loading would go here when assets are available
-      console.log('Sound effects would be loaded here');
-    };
+      };
 
     loadSounds();
 
@@ -134,7 +133,6 @@ export const InteractiveBadge: React.FC<InteractiveBadgeProps> = ({
   const playSound = async (soundKey: keyof typeof soundEffects) => {
     if (!enableSounds) return;
     // Sound playback would go here when assets are available
-    console.log(`Playing sound: ${soundKey}`);
   };
 
   // Magnetic field animation

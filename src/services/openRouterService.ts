@@ -86,7 +86,6 @@ class OpenRouterService {
       
       // Log usage for monitoring (optional)
       if (data.usage) {
-        console.log(`Title generation cost: ${data.usage.total_tokens} tokens (~$${(data.usage.total_tokens * 0.00000018).toFixed(6)})`);
       }
 
       return cleanTitle;

@@ -63,7 +63,7 @@ export const BadgeComparison: React.FC<{ theme: 'light' | 'dark' }> = ({ theme }
             theme={theme}
             enableHaptics={true}
             enableMagnetism={true}
-            onPress={() => console.log('Founder badge pressed!')}
+            onPress={() => {}}
           />
           <InteractiveBadge 
             type="legend" 
@@ -72,7 +72,7 @@ export const BadgeComparison: React.FC<{ theme: 'light' | 'dark' }> = ({ theme }
             theme={theme}
             enableHaptics={true}
             enableMagnetism={true}
-            onPress={() => console.log('Legend badge pressed!')}
+            onPress={() => {}}
           />
           <InteractiveBadge 
             type="quantum" 
@@ -81,7 +81,7 @@ export const BadgeComparison: React.FC<{ theme: 'light' | 'dark' }> = ({ theme }
             theme={theme}
             enableHaptics={true}
             enableMagnetism={true}
-            onPress={() => console.log('Quantum badge pressed!')}
+            onPress={() => {})
           />
         </View>
       </View>

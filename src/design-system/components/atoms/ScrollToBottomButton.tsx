@@ -105,7 +105,7 @@ const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = ({
         <Icon
           name="chevron-down"
           size="sm"
-          color="primary"
+          color={theme === 'light' ? 'secondary' : 'primary'}
           theme={theme}
         />
       </TouchableOpacity>
@@ -116,14 +116,14 @@ const ScrollToBottomButton: React.FC<ScrollToBottomButtonProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 120, // Above chat input
+    bottom: 140, // Raised higher to accommodate conversation context header
     alignSelf: 'center',
     zIndex: 100,
   },
   button: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36, // Slightly smaller
+    height: 36, // Slightly smaller
+    borderRadius: 18, // Proportional radius
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',

@@ -8,7 +8,7 @@ import { TokenManager } from './api';
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://aether-server-j5kh.onrender.com';
 
 export interface NotificationEvent {
-  type: 'message';
+  type: 'message' | 'friend_message' | 'message_delivered' | 'message_read' | 'friend_activity' | 'profile_update' | 'spotify_update' | 'connection' | 'heartbeat';
   data: any;
   timestamp: string;
 }
@@ -239,9 +239,33 @@ export { NotificationStreamService };
  * NotificationStream.connect({
  *   onMessage: (event) => {
  *     console.log('Notification:', event);
- *     // Handle friend message notifications
- *     if (event.type === 'message') {
- *       // Handle friend message
+ *     
+ *     // Handle different notification types
+ *     switch (event.type) {
+ *       case 'friend_message':
+ *         // New message from friend
+ *         handleNewFriendMessage(event.data);
+ *         break;
+ *       case 'message_delivered':
+ *         // Message delivery confirmation
+ *         updateMessageStatus(event.data.messageId, 'delivered');
+ *         break;
+ *       case 'message_read':
+ *         // Read receipt notification
+ *         updateMessageStatus(event.data.messageId, 'read');
+ *         break;
+ *       case 'friend_activity':
+ *         // Friend status updates
+ *         updateFriendStatus(event.data);
+ *         break;
+ *       case 'profile_update':
+ *         // Profile updates
+ *         refreshProfile(event.data);
+ *         break;
+ *       case 'spotify_update':
+ *         // Spotify status updates
+ *         updateSpotifyStatus(event.data);
+ *         break;
  *     }
  *   },
  *   onError: (error) => {

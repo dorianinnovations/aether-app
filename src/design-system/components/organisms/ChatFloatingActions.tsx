@@ -29,9 +29,9 @@ export const ChatFloatingActions: React.FC<ChatFloatingActionsProps> = ({
       visible={visible}
     >
 
-      {/* Conversations Button */}
+      {/* Conversations & Friends Button */}
       <FloatingActionButton
-        iconName="chatbubbles-outline"
+        iconName="people-outline"
         iconColor={theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)'}
         onPress={onConversationsPress}
         theme={theme}

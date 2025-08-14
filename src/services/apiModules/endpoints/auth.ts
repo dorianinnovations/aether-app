@@ -153,4 +153,43 @@ export const AuthAPI = {
       throw error;
     }
   },
+
+  async googleAuth(token: string): Promise<AuthResponse> {
+    const response = await makeRequest<AuthResponse['data']>('POST', '/auth/google', {
+      token,
+    });
+    
+    if ((response.success || (response as any).status === 'success') && ((response as any).token || response.data)) {
+      // Store tokens and user data with cleanup - Backend returns token at root level
+      const token = (response as any).token || response.data?.token;
+      const user = response.data?.user;
+      const refreshToken = (response as any).refreshToken || response.data?.refreshToken;
+      
+      if (token) {
+        await TokenManager.setToken(token);
+      }
+      if (refreshToken) {
+        await AsyncStorage.setItem('@aether_refresh_token', refreshToken);
+      }
+      if (user) {
+        await TokenManager.setUserData(user);
+        
+        // Clean up any contaminated storage for this user
+        if (user.id) {
+          await StorageCleanup.cleanupUserStorage(user.id);
+        }
+      }
+    }
+    
+    // Return response in proper AuthResponse format
+    return {
+      success: (response as any).status === 'success',
+      status: (response as any).status || 'error',
+      data: {
+        token: (response as any).token || response.data?.token,
+        user: response.data?.user,
+        refreshToken: (response as any).refreshToken || response.data?.refreshToken
+      }
+    } as AuthResponse;
+  },
 };

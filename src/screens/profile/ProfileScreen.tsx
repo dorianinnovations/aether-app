@@ -76,6 +76,7 @@ export const ProfileScreen: React.FC = () => {
   const [showPersonaModal, setShowPersonaModal] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [hamburgerOpen, setHamburgerOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Refs
   const qualiaViewRef = useRef<View>(null);
@@ -225,9 +226,10 @@ export const ProfileScreen: React.FC = () => {
   };
 
   const handleSaveProfile = async () => {
-    if (!profile) return;
+    if (!profile || saving) return;
     
     try {
+      setSaving(true);
       const profileData = {
         displayName: profile.displayName,
         bio: profile.bio,
@@ -252,6 +254,8 @@ export const ProfileScreen: React.FC = () => {
       logger.error('Error saving profile:', error);
       const errorMsg = error.message || 'Failed to save profile. Please try again.';
       showError(errorMsg);
+    } finally {
+      setSaving(false);
     }
   };
 

@@ -30,7 +30,7 @@ export const PageBackground: React.FC<PageBackgroundProps> = ({
   const dreamyGradientColors = ['#ffffff', '#f2f8ff', '#e2f0ff', '#eaf4ff', '#f4faff'];
   
   // Consistent background (slightly brightened)
-  const darkGrey = '#1A1A1A';
+  const darkGrey = '#161616ff';
   
   //chat screen specifically
   const chatDarkGrey = '#141414ff';
