@@ -1,6 +1,6 @@
 /**
  * Google Sign-In Button Component
- * Elegant Google OAuth button with Aether's design system
+ * Elegant Google OAuth button with Aether's design system using Expo AuthSession
  */
 
 import React, { useState } from 'react';
@@ -12,7 +12,7 @@ import {
   Animated,
   ActivityIndicator,
 } from 'react-native';
-import { GoogleSignin, GoogleSigninButton, statusCodes } from '@react-native-google-signin/google-signin';
+import * as AuthSession from 'expo-auth-session';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthAPI } from '../../../services/apiModules/endpoints/auth';
@@ -37,8 +37,56 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   const [loading, setLoading] = useState(false);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
+  // Set up Google OAuth with Expo AuthSession
+  const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
+  
+  // Create and manage the request
+  const [request, response, promptAsync] = AuthSession.useAuthRequest(
+    {
+      clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '', // Your Google OAuth client ID
+      scopes: ['openid', 'profile', 'email'],
+      responseType: AuthSession.ResponseType.IdToken,
+    },
+    discovery
+  );
+
+  React.useEffect(() => {
+    if (response?.type === 'success') {
+      handleAuthResponse(response);
+    } else if (response?.type === 'error') {
+      setLoading(false);
+      onError?.('Google authentication failed');
+    } else if (response?.type === 'cancel') {
+      setLoading(false);
+      onError?.('Sign-in was cancelled');
+    }
+  }, [response]);
+
+  const handleAuthResponse = async (response: AuthSession.AuthSessionResult) => {
+    try {
+      if (response.type === 'success' && response.params?.id_token) {
+        // Send token to backend
+        const authResponse = await AuthAPI.googleAuth(response.params.id_token);
+        
+        if (authResponse.success) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          onSuccess?.(authResponse.data?.user);
+        } else {
+          throw new Error(authResponse.data?.error || 'Google authentication failed');
+        }
+      } else {
+        throw new Error('No ID token received from Google');
+      }
+    } catch (error: any) {
+      logger.error('Google Auth Response error:', error);
+      onError?.(error.message || 'Google authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
-    if (disabled || loading) return;
+    if (disabled || loading || !request) return;
 
     try {
       setLoading(true);
@@ -58,49 +106,12 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         }),
       ]).start();
 
-      // Configure Google Sign-In
-      await GoogleSignin.configure({
-        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID, // This should be in your .env
-        offlineAccess: true,
-      });
-
-      // Check if device supports Google Play Services
-      await GoogleSignin.hasPlayServices();
-
-      // Trigger Google Sign-In
-      const userInfo = await GoogleSignin.signIn();
-      
-      if (userInfo.idToken) {
-        // Send token to backend
-        const response = await AuthAPI.googleAuth(userInfo.idToken);
-        
-        if (response.success) {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          onSuccess?.(response.data?.user);
-        } else {
-          throw new Error(response.data?.error || 'Google authentication failed');
-        }
-      } else {
-        throw new Error('No ID token received from Google');
-      }
+      // Prompt for authentication
+      await promptAsync();
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       logger.error('Google Sign-In error:', error);
-      
-      let errorMessage = 'Google Sign-In failed';
-      
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        errorMessage = 'Sign-in was cancelled';
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        errorMessage = 'Sign-in is already in progress';
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        errorMessage = 'Google Play Services not available';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      onError?.(errorMessage);
-    } finally {
+      onError?.(error.message || 'Google Sign-In failed');
       setLoading(false);
     }
   };

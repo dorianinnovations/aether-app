@@ -8,6 +8,14 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "scheme": "aether",
+    "plugins": [
+      [
+        "expo-auth-session",
+        {
+          "schemes": ["aether"]
+        }
+      ]
+    ],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
