@@ -9,6 +9,7 @@ import { designTokens } from '../../tokens/colors';
 import { typography } from '../../tokens/typography';
 import { spacing } from '../../tokens/spacing';
 import { subscriptionService } from '../../../services/subscriptionService';
+import { FadedBorder } from '../../../components/FadedBorder';
 
 interface WalletCardProps {
   currentTier?: 'standard' | 'pro' | 'elite';
@@ -113,7 +114,7 @@ export const WalletCard: React.FC<WalletCardProps> = ({
     } else if (displayTier === 'pro') {
       return {
         name: 'LEGENDARY',
-        color: '#EF4444',
+        color: '#10B981',
         benefits: [
           'Unlimited Platform Access - Unrestricted use of all core features and AI capabilities',
           'LEGEND Status Badge - Exclusive profile designation showcasing your commitment to music AI',
@@ -125,7 +126,7 @@ export const WalletCard: React.FC<WalletCardProps> = ({
     } else {
       return {
         name: 'VIP',
-        color: '#F59E0B',
+        color: '#10B981',
         benefits: [
           {
             parts: [
@@ -212,14 +213,14 @@ export const WalletCard: React.FC<WalletCardProps> = ({
         name: 'LEGEND',
         price: '$12',
         priceUnit: '/mo',
-        color: '#EF4444', // Red
-        accentColors: ['#EC4899', '#10B981', '#F59E0B'], // Pink, emerald, amber
+        color: '#10B981', // Green
+        accentColors: ['#EC4899', '#10B981', '#06B6D4'], // Pink, emerald, cyan
         features: [
-          '3,000 responses every 2 weeks (20x more than Standard)',
-          '50 GPT-5 calls per month (5x more than Standard)',
-          'Priority AI processing',
-          'Enhanced music recognition',
-          'Advanced customization options'
+          '5x increased API capacity over Standard tier',
+          'Extended discovery engine - Process ~1,000 song matches monthly via advanced recommendation algorithms',
+          'Exclusive founder badge - Limited availability for early adopters',
+          'Unrestricted profile modifications - Real-time updates without rate limiting',
+          'Enhanced media pipeline - Increased monthly allocation for file and image uploads during chat sessions'
         ]
       };
     } else {
@@ -228,14 +229,14 @@ export const WalletCard: React.FC<WalletCardProps> = ({
         price: '$20',
         priceUnit: '/mo',
         color: '#F59E0B', // Gold
-        accentColors: ['#06B6D4', '#EF4444', '#22C55E'], // Cyan, red, green
+        accentColors: ['#06B6D4', '#10B981', '#22C55E'], // Cyan, green, green
         features: [
-          'Everything in LEGEND',
-          'Unlimited responses',
-          'Unlimited GPT-5 calls',
-          'Priority processing',
-          'Early access to new features',
-          'Premium support'
+          'Includes all Legend features',
+          'Unlimited AetheR interactions - No session caps on AI companion conversations',
+          'Advanced model access - Toggle between multiple AI architectures for optimized discovery',
+          'Unrestricted discovery pipeline - Live AI-augmented recommendations without monthly limits',
+          'Unlimited storage quota - No restrictions on photo and file uploads',
+          'Early access program - Priority beta feature rollout and testing opportunities'
         ]
       };
     }
@@ -243,9 +244,9 @@ export const WalletCard: React.FC<WalletCardProps> = ({
 
   const renderCurrentPlanOverview = () => {
     const tierColor = isProTier 
-      ? '#EF4444' // Red
+      ? '#10B981' // Green
       : isEliteTier 
-        ? '#F59E0B' // Gold
+        ? '#10B981' // Green
         : '#10B981'; // Modern emerald for standard tier
 
     const gpt5Progress = usage.gpt5Limit ? (usage.gpt5 / usage.gpt5Limit) * 100 : 0;
@@ -268,12 +269,12 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                 {/* Data status indicator */}
                 {isLoadingRealData && (
                   <View style={styles.dataStatusDot}>
-                    <Feather name="loader" size={10} color="#F59E0B" />
+                    <Feather name="loader" size={10} color="#10B981" />
                   </View>
                 )}
                 {!hasRealData && !isLoadingRealData && (
                   <View style={[styles.dataStatusDot, { backgroundColor: 'rgba(239, 68, 68, 0.2)' }]}>
-                    <Feather name="wifi-off" size={8} color="#EF4444" />
+                    <Feather name="wifi-off" size={8} color="#10B981" />
                   </View>
                 )}
                 {hasRealData && (
@@ -297,13 +298,13 @@ export const WalletCard: React.FC<WalletCardProps> = ({
               <Text style={[
                 styles.tierName,
                 { 
-                  color: currentTier === 'standard' ? '#10B981' : currentTier === 'pro' ? '#EF4444' : '#F59E0B',
-                  fontFamily: 'MozillaHeadline_700Bold',
-                  fontSize: 32,
-                  fontWeight: '700',
+                  color: currentTier === 'standard' ? colors.text : currentTier === 'pro' ? '#10B981' : '#10B981',
+                  fontFamily: currentTier === 'standard' ? 'MozillaHeadline_600SemiBold' : currentTier === 'pro' ? 'Danfo_400Regular' : 'El Messiri',
+                  fontSize: 20,
+                  fontWeight: currentTier === 'standard' ? '600' : '700',
                   letterSpacing: -0.3,
                   textTransform: 'uppercase',
-                  textShadowColor: currentTier === 'standard' ? '#10B981' : currentTier === 'pro' ? '#EF4444' : '#F59E0B',
+                  textShadowColor: currentTier === 'standard' ? colors.text : currentTier === 'pro' ? '#10B981' : '#10B981',
                   textShadowOffset: { width: 0, height: 0 },
                   textShadowRadius: 2,
                 }
@@ -356,9 +357,7 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                   size="small"
                   showTooltip={false}
                 />
-              ) : (
-                <Feather name="credit-card" size={24} color={tierColor} />
-              )}
+              ) : null}
             </View>
           </View>
         </View>
@@ -380,8 +379,14 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                 styles.usageCard,
                 { 
                   borderLeftWidth: 2, 
-                  borderLeftColor: '#10B981',
-                  backgroundColor: 'rgba(16, 185, 129, 0.1)'
+                  borderLeftColor: 'rgba(255, 255, 255, 0.4)',
+                  borderRightWidth: 1,
+                  borderTopWidth: 1,
+                  borderBottomWidth: 1,
+                  borderRightColor: 'rgba(255, 255, 255, 0.2)',
+                  borderTopColor: 'rgba(255, 255, 255, 0.2)',
+                  borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.03)'
                 }
               ]}>
                 <View style={styles.usageHeader}>
@@ -389,34 +394,38 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                     styles.usageTitle,
                     { 
                       color: colors.text,
-                      fontFamily: 'Inter-Medium',
-                      fontSize: 14,
+                      fontFamily: 'JetBrainsMono-Medium',
+                      fontSize: 13,
                       fontWeight: '600',
-                      letterSpacing: 0.2,
+                      letterSpacing: 0.5,
                     }
                   ]}>
-                    AI Conversations
+                    ai_conversations
                   </Text>
                   <Text style={[
                     styles.usageCount,
                     { 
-                      color: '#10B981',
-                      fontFamily: 'Inter-Bold',
-                      fontSize: 13,
+                      color: colors.text,
+                      fontFamily: 'JetBrainsMono-Bold',
+                      fontSize: 16,
                       fontWeight: '700',
-                      letterSpacing: 0.3,
+                      letterSpacing: 0.8,
                     }
                   ]}>
-                    {activityMetrics.conversations.total}
+                    {activityMetrics.conversations.total.toString().padStart(3, '0')}
                   </Text>
                 </View>
                 <Text style={[
                   styles.metricSubtext,
-                  { color: colors.textSecondary }
+                  { 
+                    color: colors.textSecondary,
+                    fontFamily: 'JetBrainsMono-Regular',
+                    fontSize: 10,
+                  }
                 ]}>
                   {activityMetrics.conversations.avgLength > 0 ? 
-                    `Avg ${activityMetrics.conversations.avgLength} messages per chat` : 
-                    'Total conversations created'
+                    `avg_len: ${activityMetrics.conversations.avgLength.toString().padStart(2, '0')} msg/chat` : 
+                    'total_conversations_created'
                   }
                 </Text>
               </View>
@@ -426,8 +435,14 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                 styles.usageCard,
                 { 
                   borderLeftWidth: 2, 
-                  borderLeftColor: '#F59E0B',
-                  backgroundColor: 'rgba(245, 158, 11, 0.1)'
+                  borderLeftColor: 'rgba(255, 255, 255, 0.4)',
+                  borderRightWidth: 1,
+                  borderTopWidth: 1,
+                  borderBottomWidth: 1,
+                  borderRightColor: 'rgba(255, 255, 255, 0.2)',
+                  borderTopColor: 'rgba(255, 255, 255, 0.2)',
+                  borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.03)'
                 }
               ]}>
                 <View style={styles.usageHeader}>
@@ -435,32 +450,36 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                     styles.usageTitle,
                     { 
                       color: colors.text,
-                      fontFamily: 'Inter-Medium',
-                      fontSize: 14,
+                      fontFamily: 'JetBrainsMono-Medium',
+                      fontSize: 13,
                       fontWeight: '600',
-                      letterSpacing: 0.2,
+                      letterSpacing: 0.5,
                     }
                   ]}>
-                    Music & Social
+                    music_social
                   </Text>
                   <Text style={[
                     styles.usageCount,
                     { 
-                      color: '#F59E0B',
-                      fontFamily: 'Inter-Bold',
-                      fontSize: 13,
+                      color: colors.text,
+                      fontFamily: 'JetBrainsMono-Bold',
+                      fontSize: 16,
                       fontWeight: '700',
-                      letterSpacing: 0.3,
+                      letterSpacing: 0.8,
                     }
                   ]}>
-                    {activityMetrics.music.grailsCollected + activityMetrics.social.friends}
+                    {(activityMetrics.music.grailsCollected + activityMetrics.social.friends).toString().padStart(3, '0')}
                   </Text>
                 </View>
                 <Text style={[
                   styles.metricSubtext,
-                  { color: colors.textSecondary }
+                  { 
+                    color: colors.textSecondary,
+                    fontFamily: 'JetBrainsMono-Regular',
+                    fontSize: 10,
+                  }
                 ]}>
-                  {activityMetrics.music.grailsCollected} grails, {activityMetrics.social.friends} friends
+                  grails: {activityMetrics.music.grailsCollected.toString().padStart(2, '0')} | friends: {activityMetrics.social.friends.toString().padStart(2, '0')}
                 </Text>
               </View>
 
@@ -470,8 +489,14 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                   styles.usageCard,
                   { 
                     borderLeftWidth: 2, 
-                    borderLeftColor: '#EC4899',
-                    backgroundColor: 'rgba(236, 72, 153, 0.1)'
+                    borderLeftColor: 'rgba(255, 255, 255, 0.4)',
+                    borderRightWidth: 1,
+                    borderTopWidth: 1,
+                    borderBottomWidth: 1,
+                    borderRightColor: 'rgba(255, 255, 255, 0.2)',
+                    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+                    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.03)'
                   }
                 ]}>
                   <View style={styles.usageHeader}>
@@ -479,32 +504,36 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                       styles.usageTitle,
                       { 
                         color: colors.text,
-                        fontFamily: 'Inter-Medium',
-                        fontSize: 14,
+                        fontFamily: 'JetBrainsMono-Medium',
+                        fontSize: 13,
                         fontWeight: '600',
-                        letterSpacing: 0.2,
+                        letterSpacing: 0.5,
                       }
                     ]}>
-                      Advanced AI Usage
+                      advanced_ai
                     </Text>
                     <Text style={[
                       styles.usageCount,
                       { 
-                        color: '#EC4899',
-                        fontFamily: 'Inter-Bold',
-                        fontSize: 13,
+                        color: colors.text,
+                        fontFamily: 'JetBrainsMono-Bold',
+                        fontSize: 16,
                         fontWeight: '700',
-                        letterSpacing: 0.3,
+                        letterSpacing: 0.8,
                       }
                     ]}>
-                      {activityMetrics.totals.gpt5Lifetime}
+                      {activityMetrics.totals.gpt5Lifetime.toString().padStart(4, '0')}
                     </Text>
                   </View>
                   <Text style={[
                     styles.metricSubtext,
-                    { color: colors.textSecondary }
+                    { 
+                      color: colors.textSecondary,
+                      fontFamily: 'JetBrainsMono-Regular',
+                      fontSize: 10,
+                    }
                   ]}>
-                    GPT-5 requests lifetime
+                    gpt5_requests_lifetime
                   </Text>
                 </View>
               )}
@@ -515,8 +544,14 @@ export const WalletCard: React.FC<WalletCardProps> = ({
               styles.usageCard,
               { 
                 borderLeftWidth: 2, 
-                borderLeftColor: colors.textSecondary,
-                backgroundColor: 'rgba(128, 128, 128, 0.1)'
+                borderLeftColor: 'rgba(255, 255, 255, 0.3)',
+                borderRightWidth: 1,
+                borderTopWidth: 1,
+                borderBottomWidth: 1,
+                borderRightColor: 'rgba(255, 255, 255, 0.2)',
+                borderTopColor: 'rgba(255, 255, 255, 0.2)',
+                borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+                backgroundColor: 'rgba(255, 255, 255, 0.02)'
               }
             ]}>
               <View style={styles.usageHeader}>
@@ -524,32 +559,36 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                   styles.usageTitle,
                   { 
                     color: colors.text,
-                    fontFamily: 'Inter-Medium',
-                    fontSize: 14,
+                    fontFamily: 'JetBrainsMono-Medium',
+                    fontSize: 13,
                     fontWeight: '600',
-                    letterSpacing: 0.2,
+                    letterSpacing: 0.5,
                   }
                 ]}>
-                  Loading Activity...
+                  loading_activity
                 </Text>
                 <Text style={[
                   styles.usageCount,
                   { 
                     color: colors.textSecondary,
-                    fontFamily: 'Inter-Bold',
-                    fontSize: 13,
+                    fontFamily: 'JetBrainsMono-Bold',
+                    fontSize: 16,
                     fontWeight: '700',
-                    letterSpacing: 0.3,
+                    letterSpacing: 0.8,
                   }
                 ]}>
-                  --
+                  ---
                 </Text>
               </View>
               <Text style={[
                 styles.metricSubtext,
-                { color: colors.textSecondary }
+                { 
+                  color: colors.textSecondary,
+                  fontFamily: 'JetBrainsMono-Regular',
+                  fontSize: 10,
+                }
               ]}>
-                Gathering your usage data
+                gathering_usage_data
               </Text>
             </View>
           )}
@@ -597,8 +636,8 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                   styles.tierName,
                   { 
                     color: tierInfo.color,
-                    fontFamily: 'MozillaHeadline_700Bold',
-                    fontSize: 32,
+                    fontFamily: tier === 'pro' ? 'Danfo_400Regular' : 'El Messiri',
+                    fontSize: 20,
                     fontWeight: '700',
                     letterSpacing: -0.3,
                     textTransform: 'uppercase',
@@ -640,7 +679,7 @@ export const WalletCard: React.FC<WalletCardProps> = ({
             </Text>
             <View style={styles.featuresList}>
               {tierInfo.features.map((feature, index) => {
-                const modernColors = ['#EC4899', '#10B981', '#F59E0B', '#06B6D4', '#EF4444'];
+                const modernColors = ['#EC4899', '#10B981', '#06B6D4', '#22C55E', '#8B5CF6'];
                 const featureColor = modernColors[index % modernColors.length];
                 
                 return (
@@ -711,7 +750,6 @@ export const WalletCard: React.FC<WalletCardProps> = ({
             style={[
               styles.longPressTrack,
               { 
-                borderBottomColor: tierInfo.color,
                 backgroundColor: theme === 'dark' 
                   ? 'rgba(255, 255, 255, 0.08)' 
                   : 'rgba(255, 255, 255, 0.25)',
@@ -776,7 +814,7 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                     <Text style={[
                       styles.priceUnit,
                       { 
-                        color: tierInfo.accentColors[0],
+                        color: '#06B6D4',
                         fontFamily: 'JetBrainsMono-Regular',
                         fontSize: 11,
                         fontWeight: '500',
@@ -797,13 +835,13 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                   transform: [{
                     scale: longPressAnim.interpolate({
                       inputRange: [0, 0.5, 1],
-                      outputRange: [1, 1.2, 1.4],
+                      outputRange: [1.4, 1.2, 1],
                     })
                   }]
                 }
               ]}>
                 <Feather 
-                  name="credit-card" 
+                  name="arrow-right" 
                   size={18} 
                   color={tierInfo.color}
                 />
@@ -875,7 +913,7 @@ export const WalletCard: React.FC<WalletCardProps> = ({
             <Animated.View style={{ opacity: modalFadeAnim }}>
               <ScrollView style={styles.benefitsModalContent} showsVerticalScrollIndicator={false}>
                 {currentBenefits.benefits.map((benefit, index) => {
-                  const modernColors = ['#EC4899', '#10B981', '#F59E0B', '#06B6D4', '#EF4444', '#8B5CF6'];
+                  const modernColors = ['#EC4899', '#10B981', '#06B6D4', '#22C55E', '#8B5CF6', '#EC4899'];
                   const benefitColor = modernColors[index % modernColors.length];
                   
                   return (
@@ -1065,27 +1103,27 @@ const styles = StyleSheet.create({
     marginBottom: spacing[3],
   },
   usageCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 16,
-    padding: spacing[5],
-    marginBottom: spacing[3],
-    borderWidth: 0.5,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 3,
+    padding: spacing[3],
+    marginBottom: spacing[2],
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
     shadowColor: '#000000',
     shadowOffset: {
       width: 0,
-      height: 3,
+      height: 1,
     },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
     position: 'relative' as const,
   },
   usageHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing[2],
+    marginBottom: spacing[1],
   },
   usageTitle: {
     fontSize: 16,
@@ -1152,7 +1190,6 @@ const styles = StyleSheet.create({
   },
   longPressTrack: {
     height: 56,
-    borderBottomWidth: 4,
     borderTopWidth: 2,
     borderLeftWidth: 1,
     borderRightWidth: 1,
@@ -1271,10 +1308,10 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.8 }],
   },
   metricSubtext: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: 'Inter-Regular',
     fontStyle: 'italic',
-    marginTop: spacing[1],
+    marginTop: spacing[1]/2,
     opacity: 0.7,
     letterSpacing: 0.1,
   },
