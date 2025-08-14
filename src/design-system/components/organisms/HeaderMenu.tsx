@@ -14,7 +14,6 @@ import {
   Modal,
   Easing
 } from 'react-native';
-import { PanGestureHandler, State as GestureState } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { designTokens, getIconColor } from '../../tokens/colors';
@@ -134,9 +133,6 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
   
   // State to prevent multiple rapid presses
   const [pressedIndex, setPressedIndex] = useState<number | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [menuLayout, setMenuLayout] = useState<{y: number, height: number} | null>(null);
-  const [itemLayouts, setItemLayouts] = useState<Array<{y: number, height: number}>>([]);
   
   // Animation for pressed state
   const pressedAnimation = useRef(new Animated.Value(0)).current;
@@ -146,17 +142,12 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
     menuActions.map(() => new Animated.Value(0))
   ).current;
   
-  // Individual opacity animations for each menu item
-  const itemOpacityAnimations = useRef(
-    menuActions.map(() => new Animated.Value(1))
-  ).current;
 
   // Sequential fade-in animation when menu becomes visible
   useEffect(() => {
     if (visible) {
       // Reset all animations to 0
       itemAnimations.forEach(anim => anim.setValue(0));
-      itemOpacityAnimations.forEach(anim => anim.setValue(1));
       
       // Create staggered animations from bottom to top (reverse order)
       const animations = menuActions.map((_, index) => {
@@ -182,7 +173,6 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
     } else {
       // Reset animations when menu is hidden
       itemAnimations.forEach(anim => anim.setValue(0));
-      itemOpacityAnimations.forEach(anim => anim.setValue(1));
     }
   }, [visible, menuActions.length]);
 
@@ -200,146 +190,30 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
 
   // Touch handlers with immediate feedback
   const handlePressIn = useCallback((index: number) => {
-    if (isDragging) return; // Don't interfere with drag gestures
-    
     setPressedIndex(index);
     animatePressedState(true);
-    animateItemOpacities(index); // 🎨 Mind-blowing effect on tap too!
     
     // Haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, [isDragging, animatePressedState, animateItemOpacities]);
+  }, [animatePressedState]);
 
   const handlePressOut = useCallback(() => {
-    if (isDragging) return; // Don't interfere with drag gestures
-    
     animatePressedState(false);
-    resetItemOpacities(); // Reset all items to full opacity
-  }, [isDragging, animatePressedState, resetItemOpacities]);
+  }, [animatePressedState]);
 
   const handlePress = useCallback((actionKey: string, index: number) => {
-    if (isDragging) return; // Don't trigger on drag end
-    
     // Medium haptic for actual press
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     // Call action immediately for quick tap response
     onAction(actionKey);
-  }, [onAction, isDragging]);
+  }, [onAction]);
 
-  // Professional coordinate mapping - find which item is under the touch point
-  const getMenuItemAtY = useCallback((gestureY: number) => {
-    if (!menuLayout || itemLayouts.length === 0) return 0;
-    
-    // Convert gesture Y to menu-relative coordinates
-    const relativeY = gestureY - menuLayout.y;
-    
-    // Find the closest item center rather than exact boundaries
-    let closestIndex = 0;
-    let closestDistance = Infinity;
-    
-    for (let i = 0; i < itemLayouts.length; i++) {
-      const item = itemLayouts[i];
-      const itemCenter = item.y + (item.height / 2);
-      const distance = Math.abs(relativeY - itemCenter);
-      
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestIndex = i;
-      }
-    }
-    
-    return closestIndex;
-  }, [menuLayout, itemLayouts]);
 
-  // Measure menu container layout
-  const onMenuLayout = useCallback((event: any) => {
-    const { y, height } = event.nativeEvent.layout;
-    setMenuLayout({ y, height });
-  }, []);
 
-  // Measure individual item layouts
-  const onItemLayout = useCallback((index: number, event: any) => {
-    const { y, height } = event.nativeEvent.layout;
-    setItemLayouts(prev => {
-      const newLayouts = [...prev];
-      newLayouts[index] = { y, height };
-      return newLayouts;
-    });
-  }, []);
 
-  // Mind-blowing cascading fade effect
-  const animateItemOpacities = useCallback((selectedIndex: number) => {
-    menuActions.forEach((_, index) => {
-      const distance = Math.abs(index - selectedIndex);
-      const targetOpacity = distance === 0 ? 1 : 0.3 - (distance * 0.1); // Selected = 1, others fade based on distance
-      const delay = distance * 30; // Stagger the fade
-      
-      Animated.timing(itemOpacityAnimations[index], {
-        toValue: Math.max(0.1, targetOpacity), // Never fully invisible
-        duration: 200 + (distance * 50), // Longer duration for distant items
-        delay: delay,
-        useNativeDriver: true,
-        easing: Easing.bezier(0.25, 0.46, 0.45, 0.94), // Smooth bezier curve
-      }).start();
-    });
-  }, [menuActions, itemOpacityAnimations]);
 
-  // Reset all items to full opacity
-  const resetItemOpacities = useCallback(() => {
-    const animations = itemOpacityAnimations.map((anim, index) => 
-      Animated.timing(anim, {
-        toValue: 1,
-        duration: 300,
-        delay: index * 20, // Staggered fade back in
-        useNativeDriver: true,
-        easing: Easing.out(Easing.quad),
-      })
-    );
-    
-    Animated.parallel(animations).start();
-  }, [itemOpacityAnimations]);
 
-  // Pan gesture handler - swipe to preview, release to navigate
-  const onGestureEvent = useCallback((event: any) => {
-    const { absoluteY, state } = event.nativeEvent;
-    
-    if (state === GestureState.BEGAN || state === GestureState.ACTIVE) {
-      if (state === GestureState.BEGAN) {
-        setIsDragging(true);
-      }
-      
-      // Use absolute Y coordinate for accurate mapping
-      const newIndex = getMenuItemAtY(absoluteY);
-      
-      if (newIndex !== pressedIndex) {
-        setPressedIndex(newIndex);
-        animateItemOpacities(newIndex); // 🎨 Preview effect during swipe
-        if (pressedAnimation._value === 0) {
-          animatePressedState(true);
-        }
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-    } else if (state === GestureState.END) {
-      // Only navigate on END (finger lift), not CANCELLED
-      setIsDragging(false);
-      if (pressedIndex !== null) {
-        const action = menuActions[pressedIndex];
-        if (action) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          onAction(action.key); // Navigate to selected option
-        }
-      }
-      // Reset visual state
-      resetItemOpacities();
-      animatePressedState(false);
-    } else if (state === GestureState.CANCELLED) {
-      // Just reset visuals on cancel, don't navigate
-      setIsDragging(false);
-      resetItemOpacities();
-      animatePressedState(false);
-    }
-  }, [pressedIndex, menuActions, onAction, animatePressedState, pressedAnimation, getMenuItemAtY, animateItemOpacities, resetItemOpacities]);
 
   // Always render, use visible prop to control Modal visibility
 
@@ -371,26 +245,6 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
         </TouchableOpacity>
         
 
-        {/* Swipe gesture zone - LEFT of menu items */}
-        <PanGestureHandler
-          onGestureEvent={onGestureEvent}
-          onHandlerStateChange={onGestureEvent}
-          shouldCancelWhenOutside={false}
-        >
-          <View
-            style={[
-              styles.gestureOverlay,
-              {
-                position: 'absolute',
-                right: 120, // Left of the menu items
-                bottom: 100,
-                width: screenWidth * 0.5, // Wide swipe area
-                height: 300,
-                backgroundColor: 'transparent',
-              }
-            ]}
-          />
-        </PanGestureHandler>
 
         {/* Minimal vertical menu aligned to right */}
           <View
@@ -402,7 +256,6 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
                 bottom: 120,
               }
             ]}
-            onLayout={onMenuLayout}
           >
           {menuActions.map((action, index) => (
             <Animated.View
@@ -410,13 +263,9 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
               style={[
                 styles.menuItem,
                 {
-                  opacity: Animated.multiply(
-                    itemAnimations[index], 
-                    itemOpacityAnimations[index]
-                  ), // Combine entrance and selection opacity
+                  opacity: itemAnimations[index]
                 }
               ]}
-              onLayout={(event) => onItemLayout(index, event)}
             >
               <TouchableOpacity
                 style={styles.menuItemTouchable}
@@ -526,10 +375,6 @@ const styles = StyleSheet.create({
   themeSelectorWrapper: {
     paddingVertical: spacing[2],
     paddingLeft: spacing[3],
-  },
-  gestureOverlay: {
-    backgroundColor: 'transparent',
-    zIndex: 1,
   },
 });
 

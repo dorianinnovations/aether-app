@@ -834,19 +834,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
 
       </View>
 
-      {/* Bottom fade overlay above chat input - dark mode only */}
-      {theme === 'dark' && (
-        <LinearGradient
-          colors={[
-            'transparent',
-            'rgba(0, 0, 0, 0.3)',
-            'rgba(0, 0, 0, 0.6)',
-            'rgba(0, 0, 0, 0.8)'
-          ]}
-          style={styles.bottomFadeOverlay}
-          pointerEvents="none"
-        />
-      )}
 
       {/* Scroll to bottom button - hidden when near bottom, attachment buttons expanded, or trio options shown */}
       <ScrollToBottomButton
@@ -855,6 +842,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         theme={theme}
       />
 
+      {/* Chat input with synchronized fade when Add Friend Modal is visible */}
       <Animated.View 
         style={[
           styles.inputContainer,
@@ -863,6 +851,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
               { translateY: inputContainerAnim },
               { translateY: inputSlideAnim }
             ],
+            opacity: friendRequest.shouldRenderAddFriendModal 
+              ? friendRequest.addFriendModalOpacity.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [1, 0], // Inverse: when modal fades in (0→1), input fades out (1→0)
+                }) 
+              : 1,
           }
         ]}
       >
@@ -1097,8 +1091,8 @@ const styles = StyleSheet.create({
   },
   
   messagesContainer: {
-    paddingTop: Platform.OS === 'ios' ? 20 : 70,
-    // paddingBottom is now handled dynamically based on keyboard state
+    paddingTop: Platform.OS === 'ios' ? 80 : 130,
+    paddingBottom: 40,
     gap: 0,
   },
   
@@ -1171,19 +1165,10 @@ const styles = StyleSheet.create({
     top: -20,
     left: 0,
     right: 0,
-    height: Platform.OS === 'ios' ? 120 : 80,
+    height: Platform.OS === 'ios' ? 100 : 65,
     zIndex: 1000,
   },
 
-  // Bottom fade overlay above chat input
-  bottomFadeOverlay: {
-    position: 'absolute',
-    bottom: 0, // Start from very bottom of screen
-    left: 0, // Full width
-    right: 0, // Full width
-    height: 170, // Extend much taller to reach higher
-    zIndex: 50, // Behind input (100) but above messages (no z-index)
-  },
 
 
 });

@@ -37,26 +37,40 @@ export const useGreeting = (): UseGreetingReturn => {
     return !nameUnfriendlyPatterns.some(pattern => pattern.test(greeting));
   };
 
-  // Get simple time-based greeting
-  const getTimeBasedGreeting = () => {
+  // Get time-based greeting with variations
+  const getTimeGreeting = () => {
     const now = new Date();
     const hour = now.getHours();
     
-    // Early AM (12 AM - 4:59 AM): Special case - late night
-    if (hour >= 0 && hour < 5) {
-      return "Good evening";
-    }
-    // Morning (5 AM - 11:59 AM)
-    else if (hour >= 5 && hour < 12) {
-      return "Good morning";
-    }
-    // Afternoon (12 PM - 5:59 PM)
+    if (hour >= 5 && hour < 12) {
+      const morningGreetings = [
+        { text: "Good morning", useName: true },
+        { text: "Morning", useName: true },
+        { text: "Rise and shine", useName: true },
+        { text: "Someone's alarm just went off somewhere", useName: false },
+        { text: "Morning coffee and good music, perfect combo", useName: false }
+      ];
+      return morningGreetings[Math.floor(Math.random() * morningGreetings.length)];
+    } 
     else if (hour >= 12 && hour < 18) {
-      return "Good afternoon";
+      const afternoonGreetings = [
+        { text: "Good afternoon", useName: true },
+        { text: "Afternoon", useName: true },
+        { text: "Hope your day's been melodic", useName: true },
+        { text: "That afternoon playlist energy is hitting different", useName: false },
+        { text: "Somewhere someone just discovered their new favorite song", useName: false }
+      ];
+      return afternoonGreetings[Math.floor(Math.random() * afternoonGreetings.length)];
     }
-    // Evening (6 PM - 11:59 PM): Special case - late night
     else {
-      return "Good evening";
+      const eveningGreetings = [
+        { text: "Good evening", useName: true },
+        { text: "Evening", useName: true },
+        { text: "Hope your evening sounds good", useName: true },
+        { text: "Golden hour deserves a golden playlist", useName: false },
+        { text: "The skip button is working overtime tonight", useName: false }
+      ];
+      return eveningGreetings[Math.floor(Math.random() * eveningGreetings.length)];
     }
   };
 
@@ -113,27 +127,19 @@ export const useGreeting = (): UseGreetingReturn => {
         
         setUserName(firstName);
         
-        const timeGreeting = getTimeBasedGreeting();
+        const timeGreeting = getTimeGreeting();
         
-        // Always include the name in some form
-        // Check if this greeting works well with names
-        if (isNameFriendly(timeGreeting)) {
-          // Sometimes add the name at the start, sometimes at the end
-          const nameAtStart = Math.random() > 0.5;
-          if (nameAtStart) {
-            setGreetingText(`Hey ${firstName}! ${timeGreeting}`);
-          } else {
-            setGreetingText(`${timeGreeting}, ${firstName}!`);
-          }
+        // Add name only if it makes sense
+        if (timeGreeting.useName) {
+          setGreetingText(`${timeGreeting.text}, ${firstName}`);
         } else {
-          // For name-unfriendly greetings, only add name at the start
-          setGreetingText(`Hey ${firstName}! ${timeGreeting}`);
+          setGreetingText(timeGreeting.text);
         }
       } catch (error) {
         logger.error('Error loading user data for greeting:', error);
-        // Fallback with current time-based greeting, always include a name
-        const timeGreeting = getTimeBasedGreeting();
-        setGreetingText(`Hey there! ${timeGreeting}`);
+        // Fallback greeting
+        const timeGreeting = getTimeGreeting();
+        setGreetingText(timeGreeting.text);
       }
     };
     

@@ -815,8 +815,8 @@ const styles = StyleSheet.create({
     shadowRadius: 0.5,
   },
   lottieAnimation: {
-    width: 80,
-    height: 80,
+    width: 32,
+    height: 32,
     alignSelf: 'flex-start',
     marginLeft: 0,
   },

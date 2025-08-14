@@ -220,7 +220,7 @@ const BasicMarkdown: React.FC<BasicMarkdownProps> = ({ children, theme = 'light'
           <Text key={key++} style={{ 
             fontWeight: 'bold',
             fontFamily: 'Nunito-Bold',
-            color: getCyclingPastelColor(quotedTextIndex++, theme),
+            color: theme === 'dark' ? '#4ECDC4' : '#98FB98', // Mint green for song titles
           }}>
             {songMatch[2]}
           </Text>

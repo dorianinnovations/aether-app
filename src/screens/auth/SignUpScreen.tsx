@@ -378,7 +378,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                         marginBottom: 8
                       }
                     ]}>
-                      Create a free account
+                      Find your frequency
                     </Text>
                     <FadedBorder theme={theme} style={{ marginTop: 16 }} />
                   </Animated.View>

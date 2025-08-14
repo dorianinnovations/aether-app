@@ -449,7 +449,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                         marginBottom: 8
                       }
                     ]}>
-                      Welcome back friend
+                      Pick up where the music left off
                     </Text>
                     <FadedBorder theme={theme} style={{ marginTop: 16 }} />
                   </Animated.View>
