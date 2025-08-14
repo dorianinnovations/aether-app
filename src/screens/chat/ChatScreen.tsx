@@ -12,7 +12,6 @@ import {
   Alert,
   Text,
   // Removed unused Dimensions
-  SafeAreaView,
   StatusBar,
   TouchableOpacity,
   Platform,
@@ -25,6 +24,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // Enhanced Components
 import { EnhancedChatInput } from '../../design-system/components/molecules';
@@ -274,9 +274,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
 
   // Slide floating buttons off screen when attachment is expanded, conversation drawer is active, trio options are shown, or chat input is focused
   useEffect(() => {
+    // Much faster animation when attachment buttons are expanded (+ or fingerprint pressed)
+    const duration = isAttachmentExpanded ? 40 : 200;
+    
     Animated.timing(floatingButtonsAnim, {
       toValue: isAttachmentExpanded || showConversationDrawer || showTrioOptions || isChatInputFocused ? 100 : 0,
-      duration: 200, // Slightly longer for smoother animation
+      duration: duration,
       useNativeDriver: true,
     }).start();
   }, [isAttachmentExpanded, showConversationDrawer, showTrioOptions, isChatInputFocused, floatingButtonsAnim]);
@@ -708,7 +711,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
   return (
     <SwipeToMenu onSwipeToMenu={toggleHeaderMenu}>
       <PageBackground theme={theme} variant="chat">
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <StatusBar 
           barStyle={theme === 'light' ? 'dark-content' : 'light-content'}
           backgroundColor="transparent"
@@ -815,11 +818,39 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
           }}
         />
 
+        {/* Top fade overlay for dynamic island effect - dark mode only */}
+        {theme === 'dark' && (
+          <LinearGradient
+            colors={[
+              'rgba(0, 0, 0, 0.8)',
+              'rgba(0, 0, 0, 0.6)',
+              'rgba(0, 0, 0, 0.3)',
+              'transparent'
+            ]}
+            style={styles.topFadeOverlay}
+            pointerEvents="none"
+          />
+        )}
+
       </View>
 
-      {/* Scroll to bottom button - hidden when near bottom */}
+      {/* Bottom fade overlay above chat input - dark mode only */}
+      {theme === 'dark' && (
+        <LinearGradient
+          colors={[
+            'transparent',
+            'rgba(0, 0, 0, 0.3)',
+            'rgba(0, 0, 0, 0.6)',
+            'rgba(0, 0, 0, 0.8)'
+          ]}
+          style={styles.bottomFadeOverlay}
+          pointerEvents="none"
+        />
+      )}
+
+      {/* Scroll to bottom button - hidden when near bottom, attachment buttons expanded, or trio options shown */}
       <ScrollToBottomButton
-        visible={!isNearBottom}
+        visible={!isNearBottom && !isAttachmentExpanded && !showTrioOptions}
         onPress={() => scrollToBottom(false)}
         theme={theme}
       />
@@ -854,7 +885,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             borderRightColor: theme === 'dark' 
               ? 'rgba(255, 255, 255, 0.08)' 
               : 'rgba(0, 0, 0, 0.08)',
-            shadowOpacity: theme === 'dark' ? 0.4 : 0.15,
+            shadowOpacity: theme === 'dark' ? 0.2 : 0.15,
           }
         ]}>
           <EnhancedChatInput
@@ -878,6 +909,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
             onBlur={handleInputBlur}
             onSwipeUp={() => setShowTestTooltip(true)}
             onAttachmentToggle={setIsAttachmentExpanded}
+            onFingerprintPress={handleTrioPress}
           />
         </View>
       </Animated.View>
@@ -919,12 +951,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         onTierSelect={(tier) => {
           // Handle tier selection - could integrate with payment processing here
           console.log(`Selected tier: ${tier}`);
-        }}
-        currentTier="standard"
-        usage={{
-          gpt4o: 45,
-          gpt5: 120,
-          gpt5Limit: 150
         }}
       />
       
@@ -1040,7 +1066,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         slideAnimation={floatingButtonsAnim}
         visible={!showHeaderMenu}
         hamburgerOpen={hamburgerOpen}
-        onTrioPress={handleTrioPress}
         onConversationsPress={() => setShowConversationDrawer(true)}
         onMenuPress={() => {
           setHamburgerOpen(!hamburgerOpen);
@@ -1050,7 +1075,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ route }) => {
         }}
       />
 
-      </SafeAreaView>
+      </View>
     </PageBackground>
     </SwipeToMenu>
   );
@@ -1072,7 +1097,7 @@ const styles = StyleSheet.create({
   },
   
   messagesContainer: {
-    paddingTop: Platform.OS === 'ios' ? 90 : 70,
+    paddingTop: Platform.OS === 'ios' ? 20 : 70,
     // paddingBottom is now handled dynamically based on keyboard state
     gap: 0,
   },
@@ -1083,6 +1108,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: 'transparent',
+    zIndex: 100, // Give input container a z-index
   },
   
   chatInputWrapper: {
@@ -1139,8 +1165,25 @@ const styles = StyleSheet.create({
   },
 
   
-  // Removed unused search styles
-  
+  // Top fade overlay for dynamic island effect
+  topFadeOverlay: {
+    position: 'absolute',
+    top: -20,
+    left: 0,
+    right: 0,
+    height: Platform.OS === 'ios' ? 120 : 80,
+    zIndex: 1000,
+  },
+
+  // Bottom fade overlay above chat input
+  bottomFadeOverlay: {
+    position: 'absolute',
+    bottom: 0, // Start from very bottom of screen
+    left: 0, // Full width
+    right: 0, // Full width
+    height: 170, // Extend much taller to reach higher
+    zIndex: 50, // Behind input (100) but above messages (no z-index)
+  },
 
 
 });

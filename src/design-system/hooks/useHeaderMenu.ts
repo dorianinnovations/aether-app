@@ -52,12 +52,12 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
           }
         }
         break;
-      case 'buzz':
-        if (screenName !== 'buzz') {
+      case 'dive':
+        if (screenName !== 'dive') {
           try {
-            navigation.navigate('Buzz' as never);
+            navigation.navigate('Dive' as never);
           } catch (error) {
-            console.log('Buzz navigation failed:', error);
+            console.log('Dive navigation failed:', error);
           }
         }
         break;

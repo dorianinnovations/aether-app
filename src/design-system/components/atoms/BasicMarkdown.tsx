@@ -70,8 +70,9 @@ const BasicMarkdown: React.FC<BasicMarkdownProps> = ({ children, theme = 'light'
     let colorIndex = 0;
 
     lines.forEach((line, index) => {
-      // STRICT: Numbered lists ONLY - must start with digit, period, space, NON-digit
-      if (/^\d+\.\s[^0-9]/.test(line)) {
+      // STRICT: Numbered lists ONLY - must start with digit(s), period, space, and have descriptive content
+      // Exclude years (4 digits) and lone numbers
+      if (/^\d{1,3}\.\s[A-Za-z]/.test(line) && line.length > 6) {
         const match = line.match(/^(\d+)\.\s(.+)/);
         if (match) {
           const number = match[1];

@@ -467,7 +467,6 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
   const handleFetchProfile = useCallback(async (username: string) => {
     try {
       const response = await UserAPI.getPublicProfile(username);
-      console.log('Public profile API response structure:', JSON.stringify(response, null, 2));
     
     // Transform API response to match our component interface
     if (response && typeof response === 'object' && 'data' in response) {
@@ -476,16 +475,12 @@ const ConversationDrawer: React.FC<ConversationDrawerProps> = ({
       // Backend returns badges directly in data.badges
       const badges = data.badges || [];
       
-      console.log('Extracted badges from backend:', badges);
-      
       // Transform badges to ensure proper structure
       const transformedBadges = badges.map((badge: any) => ({
         id: badge.id || badge._id || Math.random().toString(),
         badgeType: badge.badgeType,
         isVisible: badge.isVisible !== false
       }));
-      
-      console.log('Final transformed badges:', transformedBadges);
       
       return {
         profile: {

@@ -15,7 +15,7 @@ import {
   Easing,
   Alert,
 } from 'react-native';
-import { FontAwesome5, Feather } from '@expo/vector-icons';
+import { FontAwesome5, Feather, Ionicons } from '@expo/vector-icons';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -61,6 +61,7 @@ interface ChatInputProps {
   onBlur?: () => void;
   onSwipeUp?: () => void;
   onAttachmentToggle?: (visible: boolean) => void;
+  onFingerprintPress?: () => void;
 }
 
 export const EnhancedChatInput: React.FC<ChatInputProps> = ({
@@ -85,6 +86,7 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
   onBlur,
   onSwipeUp,
   onAttachmentToggle,
+  onFingerprintPress,
 }) => {
   const themeColors = getThemeColors(theme);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
@@ -557,6 +559,11 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
     onBlur?.();
   }, [inputFocusAnim, onBlur]);
 
+  const handleFingerprintPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onFingerprintPress?.();
+  }, [onFingerprintPress]);
+
 
 
   return (
@@ -654,6 +661,19 @@ export const EnhancedChatInput: React.FC<ChatInputProps> = ({
 
           {/* Button Group Container */}
           <View style={styles.buttonGroup}>
+            {/* Fingerprint Button */}
+            <TouchableOpacity
+              style={styles.fingerprintButton}
+              onPress={handleFingerprintPress}
+              activeOpacity={0.7}
+            >
+              <Ionicons 
+                name="finger-print-outline" 
+                size={18} 
+                color={themeColors.textSecondary} 
+              />
+            </TouchableOpacity>
+
             {/* Attachment Button */}
             {enableFileUpload && (
               <Animated.View style={{ transform: [{ scale: attachmentButtonScale }] }}>
@@ -961,13 +981,20 @@ const styles = StyleSheet.create({
   buttonGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: -39,
+    gap: -8,
+  },
+  fingerprintButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   attachmentToggleButton: {
     width: 40,
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    marginLeft: -10,
   },
   voiceButton: {
     marginLeft: -15,

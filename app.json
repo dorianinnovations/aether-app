@@ -16,9 +16,13 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.isaiahpappas.aether",
-      "buildNumber": "23",
+      "buildNumber": "24",
       "config": {
         "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app needs access to camera to take profile and banner photos.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to photo library to select profile and banner images."
       }
     },
     "android": {

@@ -25,6 +25,7 @@ export { FileAPI } from './endpoints/files';
 export { ArtistAPI } from './endpoints/artists';
 export { AnalyticsAPI } from './endpoints/analytics';
 export { MemoryAPI } from './endpoints/memory';
+export { musicApi } from './endpoints/music';
 
 // Export utilities
 export { makeRequest, ApiUtils } from './utils/request';

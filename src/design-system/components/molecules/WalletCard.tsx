@@ -22,6 +22,24 @@ interface WalletCardProps {
   isLoadingRealData?: boolean;
   hasRealData?: boolean;
   dataError?: string | null;
+  activityMetrics?: {
+    conversations: {
+      total: number;
+      avgLength: number;
+    };
+    music: {
+      grailsCollected: number;
+      tracksDiscovered: number;
+    };
+    social: {
+      friends: number;
+      friendMessages: number;
+    };
+    totals: {
+      aiMessages: number;
+      gpt5Lifetime: number;
+    };
+  } | null;
 }
 
 export const WalletCard: React.FC<WalletCardProps> = ({
@@ -32,6 +50,7 @@ export const WalletCard: React.FC<WalletCardProps> = ({
   isLoadingRealData = false,
   hasRealData = false,
   dataError = null,
+  activityMetrics = null,
 }) => {
   const { theme, colors } = useTheme();
   const [activePage, setActivePage] = useState(0);
@@ -353,8 +372,10 @@ export const WalletCard: React.FC<WalletCardProps> = ({
             Activity Overview
           </Text>
 
-          {isStandardTier && (
+          {/* Core Activity Metrics - Always show for all tiers */}
+          {activityMetrics ? (
             <>
+              {/* AI Conversations */}
               <View style={[
                 styles.usageCard,
                 { 
@@ -374,7 +395,7 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                       letterSpacing: 0.2,
                     }
                   ]}>
-                    Stats Grabbed
+                    AI Conversations
                   </Text>
                   <Text style={[
                     styles.usageCount,
@@ -386,26 +407,21 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                       letterSpacing: 0.3,
                     }
                   ]}>
-                    2.4K
+                    {activityMetrics.conversations.total}
                   </Text>
-                </View>
-                <View style={styles.progressBar}>
-                  <View style={[
-                    styles.progressFill,
-                    {
-                      backgroundColor: '#10B981',
-                      width: '75%',
-                    }
-                  ]} />
                 </View>
                 <Text style={[
                   styles.metricSubtext,
                   { color: colors.textSecondary }
                 ]}>
-                  Data points collected this month
+                  {activityMetrics.conversations.avgLength > 0 ? 
+                    `Avg ${activityMetrics.conversations.avgLength} messages per chat` : 
+                    'Total conversations created'
+                  }
                 </Text>
               </View>
 
+              {/* Music & Social Combined Card */}
               <View style={[
                 styles.usageCard,
                 { 
@@ -425,7 +441,7 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                       letterSpacing: 0.2,
                     }
                   ]}>
-                    Usage Generated
+                    Music & Social
                   </Text>
                   <Text style={[
                     styles.usageCount,
@@ -437,97 +453,104 @@ export const WalletCard: React.FC<WalletCardProps> = ({
                       letterSpacing: 0.3,
                     }
                   ]}>
-                    87%
+                    {activityMetrics.music.grailsCollected + activityMetrics.social.friends}
                   </Text>
-                </View>
-                <View style={styles.progressBar}>
-                  <View style={[
-                    styles.progressFill,
-                    {
-                      backgroundColor: '#F59E0B',
-                      width: '87%',
-                    }
-                  ]} />
                 </View>
                 <Text style={[
                   styles.metricSubtext,
                   { color: colors.textSecondary }
                 ]}>
-                  Activity efficiency this period
+                  {activityMetrics.music.grailsCollected} grails, {activityMetrics.social.friends} friends
                 </Text>
               </View>
+
+              {/* Pro/Elite Tier: Advanced Metrics */}
+              {(isProTier || isEliteTier) && (
+                <View style={[
+                  styles.usageCard,
+                  { 
+                    borderLeftWidth: 2, 
+                    borderLeftColor: '#EC4899',
+                    backgroundColor: 'rgba(236, 72, 153, 0.1)'
+                  }
+                ]}>
+                  <View style={styles.usageHeader}>
+                    <Text style={[
+                      styles.usageTitle,
+                      { 
+                        color: colors.text,
+                        fontFamily: 'Inter-Medium',
+                        fontSize: 14,
+                        fontWeight: '600',
+                        letterSpacing: 0.2,
+                      }
+                    ]}>
+                      Advanced AI Usage
+                    </Text>
+                    <Text style={[
+                      styles.usageCount,
+                      { 
+                        color: '#EC4899',
+                        fontFamily: 'Inter-Bold',
+                        fontSize: 13,
+                        fontWeight: '700',
+                        letterSpacing: 0.3,
+                      }
+                    ]}>
+                      {activityMetrics.totals.gpt5Lifetime}
+                    </Text>
+                  </View>
+                  <Text style={[
+                    styles.metricSubtext,
+                    { color: colors.textSecondary }
+                  ]}>
+                    GPT-5 requests lifetime
+                  </Text>
+                </View>
+              )}
             </>
-          )}
-
-          {isProTier && (
-            <>
-              <View style={styles.usageCard}>
-                <View style={styles.usageHeader}>
-                  <Text style={[
-                    styles.usageTitle,
-                    typography.textStyles.bodyLarge,
-                    { color: colors.text }
-                  ]}>
-                    GPT-4o Requests
-                  </Text>
-                  <Text style={[
-                    styles.usageCount,
-                    typography.textStyles.techyNumberSmall,
-                    { color: '#10B981' } // Modern emerald
-                  ]}>
-                    Unlimited
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.usageCard}>
-                <View style={styles.usageHeader}>
-                  <Text style={[
-                    styles.usageTitle,
-                    typography.textStyles.bodyLarge,
-                    { color: colors.text }
-                  ]}>
-                    GPT-5/Opus 4.1 Special Requests
-                  </Text>
-                  <Text style={[
-                    styles.usageCount,
-                    typography.textStyles.techyNumberSmall,
-                    { color: tierColor }
-                  ]}>
-                    {usage.gpt5}/1000
-                  </Text>
-                </View>
-                <View style={styles.progressBar}>
-                  <View style={[
-                    styles.progressFill,
-                    {
-                      backgroundColor: '#EC4899', // Modern pink
-                      width: `${Math.min((usage.gpt5 / 1000) * 100, 100)}%`,
-                    }
-                  ]} />
-                </View>
-              </View>
-            </>
-          )}
-
-          {isEliteTier && (
-            <View style={styles.usageCard}>
+          ) : (
+            /* Fallback for no data */
+            <View style={[
+              styles.usageCard,
+              { 
+                borderLeftWidth: 2, 
+                borderLeftColor: colors.textSecondary,
+                backgroundColor: 'rgba(128, 128, 128, 0.1)'
+              }
+            ]}>
               <View style={styles.usageHeader}>
                 <Text style={[
                   styles.usageTitle,
-                  typography.textStyles.bodyLarge,
-                  { color: colors.text }
+                  { 
+                    color: colors.text,
+                    fontFamily: 'Inter-Medium',
+                    fontSize: 14,
+                    fontWeight: '600',
+                    letterSpacing: 0.2,
+                  }
                 ]}>
-                  All Models
+                  Loading Activity...
                 </Text>
                 <Text style={[
                   styles.usageCount,
-                  typography.textStyles.techyNumberSmall,
-                  { color: '#10B981' } // Modern emerald
+                  { 
+                    color: colors.textSecondary,
+                    fontFamily: 'Inter-Bold',
+                    fontSize: 13,
+                    fontWeight: '700',
+                    letterSpacing: 0.3,
+                  }
                 ]}>
-                  Unlimited
+                  --
                 </Text>
               </View>
+              <Text style={[
+                styles.metricSubtext,
+                { color: colors.textSecondary }
+              ]}>
+                Gathering your usage data
+              </Text>
             </View>
           )}
         </View>

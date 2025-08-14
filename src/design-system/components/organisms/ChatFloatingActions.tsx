@@ -10,7 +10,6 @@ interface ChatFloatingActionsProps {
   slideAnimation: Animated.Value;
   visible: boolean;
   hamburgerOpen: boolean;
-  onTrioPress: () => void;
   onConversationsPress: () => void;
   onMenuPress: () => void;
 }
@@ -20,7 +19,6 @@ export const ChatFloatingActions: React.FC<ChatFloatingActionsProps> = ({
   slideAnimation,
   visible,
   hamburgerOpen,
-  onTrioPress,
   onConversationsPress,
   onMenuPress,
 }) => {
@@ -30,15 +28,6 @@ export const ChatFloatingActions: React.FC<ChatFloatingActionsProps> = ({
       slideAnimation={slideAnimation}
       visible={visible}
     >
-      {/* Trio Options Button */}
-      <FloatingActionButton
-        iconName="finger-print-outline"
-        iconColor={theme === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)'}
-        onPress={onTrioPress}
-        theme={theme}
-      />
-
-      <FloatingButtonSeparator theme={theme} />
 
       {/* Conversations Button */}
       <FloatingActionButton

@@ -95,12 +95,35 @@ export const useProfileData = (): UseProfileDataReturn => {
         const userId = userData.id || userData._id;
         
         
-        // Fetch user badges
-        const userBadges = await userBadgesService.getUserBadges(
-          userId, 
-          userData.email, 
-          userData.name || usernameResponse.username
-        );
+        // Fetch user badges from API first (same as public profile), fallback to service
+        let userBadges = [];
+        try {
+          const username = usernameResponse.username || userData.username;
+          if (username) {
+            const badgeResponse = await UserAPI.getPublicProfile(username);
+            if (badgeResponse && typeof badgeResponse === 'object' && 'data' in badgeResponse) {
+              const data = (badgeResponse as any).data;
+              const badges = data.badges || [];
+              userBadges = badges.map((badge: any) => ({
+                id: badge.id || badge._id || Math.random().toString(),
+                badgeType: badge.badgeType,
+                isVisible: badge.isVisible !== false,
+                awardedAt: badge.awardedAt,
+              }));
+            }
+          }
+        } catch (error) {
+          logger.warn('Failed to fetch badges from public profile API, falling back to service:', error);
+        }
+        
+        // Fallback to service if API didn't return badges
+        if (userBadges.length === 0) {
+          userBadges = await userBadgesService.getUserBadges(
+            userId, 
+            userData.email, 
+            userData.name || usernameResponse.username
+          );
+        }
         
         // Get profile images from the images endpoint
         const profileImages = (profileImagesResponse as any).data || {};

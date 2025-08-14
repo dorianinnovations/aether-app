@@ -26,6 +26,7 @@ import { PageBackground } from '../../design-system/components/atoms/PageBackgro
 import { LottieLoader } from '../../design-system/components/atoms/LottieLoader';
 import { AnimatedHamburger } from '../../design-system/components/atoms';
 import { Header, HeaderMenu } from '../../design-system/components/organisms';
+import { FadedBorder } from '../../components/FadedBorder';
 import { PasswordStrengthIndicator } from '../../design-system/components/molecules/PasswordStrengthIndicator';
 import { UsernameStatusIndicator } from '../../design-system/components/molecules/UsernameStatusIndicator';
 import { AuthButton } from '../../design-system/components/molecules/AuthButton';
@@ -318,7 +319,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
           <KeyboardAvoidingView
             style={styles.keyboardAvoid}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? -80 : -60}
           >
             <Animated.View
               style={[
@@ -355,6 +356,10 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                         styles.title,
                         {
                           color: theme === 'dark' ? '#ffffff' : '#1a1a1abf',
+                          fontFamily: 'Mozilla Headline',
+                          textShadowColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(26, 26, 26, 0.2)',
+                          textShadowOffset: { width: 0, height: 0 },
+                          textShadowRadius: 8,
                           transform: [{ 
                             translateX: slideAnim.interpolate({
                               inputRange: [-30, 0],
@@ -375,6 +380,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                     ]}>
                       Create a free account
                     </Text>
+                    <FadedBorder theme={theme} style={{ marginTop: 16 }} />
                   </Animated.View>
 
                   {/* Form Content */}
@@ -910,10 +916,10 @@ const styles = StyleSheet.create({
   },
   keyboardAvoid: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: 24,
     paddingVertical: 32,
-    paddingTop: 100,
+    paddingTop: 140,
   },
   content: {
     width: '100%',

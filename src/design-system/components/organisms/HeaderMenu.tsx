@@ -14,6 +14,7 @@ import {
   Modal,
   Easing
 } from 'react-native';
+import { PanGestureHandler, State as GestureState } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { designTokens, getIconColor } from '../../tokens/colors';
@@ -33,54 +34,55 @@ interface MenuAction {
 
 const getAllMenuActions = (theme: 'light' | 'dark'): MenuAction[] => [
   { 
-    icon: <Feather name="arrow-left" size={16} color={getIconColor('profile', theme)} />, 
-    label: 'Back', 
-    key: 'back', 
-    requiresAuth: false 
-  },
-  { 
-    icon: <MaterialCommunityIcons name="chat-outline" size={16} color={getIconColor('chat', theme)} />, 
-    label: 'Chat', 
-    key: 'chat', 
-    requiresAuth: false 
-  },
-  { 
-    icon: <Feather name="rss" size={16} color={getIconColor('feed', theme)} />, 
-    label: 'Buzz', 
-    key: 'buzz', 
-    requiresAuth: false 
-  },
-  { 
-    icon: <Feather name="user" size={16} color={getIconColor('profile', theme)} />, 
-    label: 'Profile', 
-    key: 'profile', 
-    requiresAuth: false 
-  },
-  { 
-    icon: <Feather name="settings" size={16} color={getIconColor('settings', theme)} />, 
-    label: 'Settings', 
-    key: 'settings', 
-    requiresAuth: false 
-  },
-  { 
-    icon: <Feather name="credit-card" size={16} color={getIconColor('profile', theme)} />, 
-    label: 'Wallet', 
-    key: 'wallet', 
-    requiresAuth: true,
-    isAuthAction: false
-  },
-  { 
-    icon: <Feather name="user-plus" size={16} color={getIconColor('profile', theme)} />, 
+    icon: <Feather name="user-plus" size={16} color="#FF8A8A" />, 
     label: 'Add Friend', 
     key: 'add_friend', 
     requiresAuth: true,
     isAuthAction: false
   },
   { 
-    icon: theme === 'dark' ? <Feather name="sun" size={16} color="#ffffff" /> : <Feather name="moon" size={16} color="#ffffff" />, 
-    label: theme === 'dark' ? 'Light' : 'Dark', 
-    key: 'theme_toggle', 
+    icon: <Feather name="arrow-left" size={16} color="#FFB366" />, 
+    label: 'Back', 
+    key: 'back', 
     requiresAuth: false 
+  },
+  { 
+    icon: <MaterialCommunityIcons name="chat-outline" size={16} color="#FFFF66" />, 
+    label: 'Chat', 
+    key: 'chat', 
+    requiresAuth: true 
+  },
+  { 
+    icon: <Feather name="compass" size={16} color="#B3FF66" />, 
+    label: 'Discovery', 
+    key: 'dive', 
+    requiresAuth: true 
+  },
+  { 
+    icon: <Feather name="user" size={16} color="#66FFFF" />, 
+    label: 'Profile', 
+    key: 'profile', 
+    requiresAuth: true 
+  },
+  { 
+    icon: <Feather name="settings" size={16} color="#66B3FF" />, 
+    label: 'Settings', 
+    key: 'settings', 
+    requiresAuth: true 
+  },
+  { 
+    icon: <Feather name="log-out" size={16} color="#B366FF" />, 
+    label: 'Sign Out', 
+    key: 'sign_out', 
+    requiresAuth: true,
+    isAuthAction: false
+  },
+  { 
+    icon: <Feather name="credit-card" size={16} color="#FF66FF" />, 
+    label: 'Wallet', 
+    key: 'wallet', 
+    requiresAuth: true,
+    isAuthAction: false
   },
 ];
 
@@ -132,10 +134,21 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
   
   // State to prevent multiple rapid presses
   const [pressedIndex, setPressedIndex] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [menuLayout, setMenuLayout] = useState<{y: number, height: number} | null>(null);
+  const [itemLayouts, setItemLayouts] = useState<Array<{y: number, height: number}>>([]);
   
-  // Animation refs for each menu item
+  // Animation for pressed state
+  const pressedAnimation = useRef(new Animated.Value(0)).current;
+  
+  // Animation refs for each menu item (entrance)
   const itemAnimations = useRef(
     menuActions.map(() => new Animated.Value(0))
+  ).current;
+  
+  // Individual opacity animations for each menu item
+  const itemOpacityAnimations = useRef(
+    menuActions.map(() => new Animated.Value(1))
   ).current;
 
   // Sequential fade-in animation when menu becomes visible
@@ -143,6 +156,7 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
     if (visible) {
       // Reset all animations to 0
       itemAnimations.forEach(anim => anim.setValue(0));
+      itemOpacityAnimations.forEach(anim => anim.setValue(1));
       
       // Create staggered animations from bottom to top (reverse order)
       const animations = menuActions.map((_, index) => {
@@ -168,22 +182,164 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
     } else {
       // Reset animations when menu is hidden
       itemAnimations.forEach(anim => anim.setValue(0));
+      itemOpacityAnimations.forEach(anim => anim.setValue(1));
     }
   }, [visible, menuActions.length]);
 
-  // Simplified button press handler
-  const handleMenuButtonPress = useCallback((actionKey: string, index: number) => {
-    if (pressedIndex !== null) return;
+  // Animate pressed state in/out
+  const animatePressedState = useCallback((show: boolean) => {
+    Animated.timing(pressedAnimation, {
+      toValue: show ? 1 : 0,
+      duration: show ? 100 : 150,
+      useNativeDriver: false,
+      easing: show ? Easing.out(Easing.quad) : Easing.in(Easing.quad),
+    }).start(() => {
+      if (!show) setPressedIndex(null);
+    });
+  }, [pressedAnimation]);
+
+  // Touch handlers with immediate feedback
+  const handlePressIn = useCallback((index: number) => {
+    if (isDragging) return; // Don't interfere with drag gestures
     
     setPressedIndex(index);
+    animatePressedState(true);
+    animateItemOpacities(index); // 🎨 Mind-blowing effect on tap too!
     
     // Haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, [isDragging, animatePressedState, animateItemOpacities]);
+
+  const handlePressOut = useCallback(() => {
+    if (isDragging) return; // Don't interfere with drag gestures
+    
+    animatePressedState(false);
+    resetItemOpacities(); // Reset all items to full opacity
+  }, [isDragging, animatePressedState, resetItemOpacities]);
+
+  const handlePress = useCallback((actionKey: string, index: number) => {
+    if (isDragging) return; // Don't trigger on drag end
+    
+    // Medium haptic for actual press
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
-    // Call action immediately
-    setPressedIndex(null);
+    // Call action immediately for quick tap response
     onAction(actionKey);
-  }, [onAction]);
+  }, [onAction, isDragging]);
+
+  // Professional coordinate mapping - find which item is under the touch point
+  const getMenuItemAtY = useCallback((gestureY: number) => {
+    if (!menuLayout || itemLayouts.length === 0) return 0;
+    
+    // Convert gesture Y to menu-relative coordinates
+    const relativeY = gestureY - menuLayout.y;
+    
+    // Find the closest item center rather than exact boundaries
+    let closestIndex = 0;
+    let closestDistance = Infinity;
+    
+    for (let i = 0; i < itemLayouts.length; i++) {
+      const item = itemLayouts[i];
+      const itemCenter = item.y + (item.height / 2);
+      const distance = Math.abs(relativeY - itemCenter);
+      
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = i;
+      }
+    }
+    
+    return closestIndex;
+  }, [menuLayout, itemLayouts]);
+
+  // Measure menu container layout
+  const onMenuLayout = useCallback((event: any) => {
+    const { y, height } = event.nativeEvent.layout;
+    setMenuLayout({ y, height });
+  }, []);
+
+  // Measure individual item layouts
+  const onItemLayout = useCallback((index: number, event: any) => {
+    const { y, height } = event.nativeEvent.layout;
+    setItemLayouts(prev => {
+      const newLayouts = [...prev];
+      newLayouts[index] = { y, height };
+      return newLayouts;
+    });
+  }, []);
+
+  // Mind-blowing cascading fade effect
+  const animateItemOpacities = useCallback((selectedIndex: number) => {
+    menuActions.forEach((_, index) => {
+      const distance = Math.abs(index - selectedIndex);
+      const targetOpacity = distance === 0 ? 1 : 0.3 - (distance * 0.1); // Selected = 1, others fade based on distance
+      const delay = distance * 30; // Stagger the fade
+      
+      Animated.timing(itemOpacityAnimations[index], {
+        toValue: Math.max(0.1, targetOpacity), // Never fully invisible
+        duration: 200 + (distance * 50), // Longer duration for distant items
+        delay: delay,
+        useNativeDriver: true,
+        easing: Easing.bezier(0.25, 0.46, 0.45, 0.94), // Smooth bezier curve
+      }).start();
+    });
+  }, [menuActions, itemOpacityAnimations]);
+
+  // Reset all items to full opacity
+  const resetItemOpacities = useCallback(() => {
+    const animations = itemOpacityAnimations.map((anim, index) => 
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 300,
+        delay: index * 20, // Staggered fade back in
+        useNativeDriver: true,
+        easing: Easing.out(Easing.quad),
+      })
+    );
+    
+    Animated.parallel(animations).start();
+  }, [itemOpacityAnimations]);
+
+  // Pan gesture handler - swipe to preview, release to navigate
+  const onGestureEvent = useCallback((event: any) => {
+    const { absoluteY, state } = event.nativeEvent;
+    
+    if (state === GestureState.BEGAN || state === GestureState.ACTIVE) {
+      if (state === GestureState.BEGAN) {
+        setIsDragging(true);
+      }
+      
+      // Use absolute Y coordinate for accurate mapping
+      const newIndex = getMenuItemAtY(absoluteY);
+      
+      if (newIndex !== pressedIndex) {
+        setPressedIndex(newIndex);
+        animateItemOpacities(newIndex); // 🎨 Preview effect during swipe
+        if (pressedAnimation._value === 0) {
+          animatePressedState(true);
+        }
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    } else if (state === GestureState.END) {
+      // Only navigate on END (finger lift), not CANCELLED
+      setIsDragging(false);
+      if (pressedIndex !== null) {
+        const action = menuActions[pressedIndex];
+        if (action) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          onAction(action.key); // Navigate to selected option
+        }
+      }
+      // Reset visual state
+      resetItemOpacities();
+      animatePressedState(false);
+    } else if (state === GestureState.CANCELLED) {
+      // Just reset visuals on cancel, don't navigate
+      setIsDragging(false);
+      resetItemOpacities();
+      animatePressedState(false);
+    }
+  }, [pressedIndex, menuActions, onAction, animatePressedState, pressedAnimation, getMenuItemAtY, animateItemOpacities, resetItemOpacities]);
 
   // Always render, use visible prop to control Modal visibility
 
@@ -208,39 +364,81 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
             style={[
               StyleSheet.absoluteFillObject,
               {
-                backgroundColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.7)',
+                backgroundColor: theme === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(0, 0, 0, 0.85)',
               }
             ]}
           />
         </TouchableOpacity>
         
-        {/* Minimal vertical menu aligned to right */}
-        <View
-          style={[
-            styles.menuContainer,
-            {
-              position: 'absolute',
-              right: rightMargin,
-              bottom: 200,
-            }
-          ]}
+
+        {/* Swipe gesture zone - LEFT of menu items */}
+        <PanGestureHandler
+          onGestureEvent={onGestureEvent}
+          onHandlerStateChange={onGestureEvent}
+          shouldCancelWhenOutside={false}
         >
+          <View
+            style={[
+              styles.gestureOverlay,
+              {
+                position: 'absolute',
+                right: 120, // Left of the menu items
+                bottom: 100,
+                width: screenWidth * 0.5, // Wide swipe area
+                height: 300,
+                backgroundColor: 'transparent',
+              }
+            ]}
+          />
+        </PanGestureHandler>
+
+        {/* Minimal vertical menu aligned to right */}
+          <View
+            style={[
+              styles.menuContainer,
+              {
+                position: 'absolute',
+                right: rightMargin,
+                bottom: 120,
+              }
+            ]}
+            onLayout={onMenuLayout}
+          >
           {menuActions.map((action, index) => (
             <Animated.View
               key={action.key}
               style={[
                 styles.menuItem,
                 {
-                  opacity: itemAnimations[index],
+                  opacity: Animated.multiply(
+                    itemAnimations[index], 
+                    itemOpacityAnimations[index]
+                  ), // Combine entrance and selection opacity
                 }
               ]}
+              onLayout={(event) => onItemLayout(index, event)}
             >
               <TouchableOpacity
                 style={styles.menuItemTouchable}
-                onPress={() => handleMenuButtonPress(action.key, index)}
-                activeOpacity={0.7}
-                disabled={pressedIndex !== null}
+                onPressIn={() => handlePressIn(index)}
+                onPressOut={handlePressOut}
+                onPress={() => handlePress(action.key, index)}
+                activeOpacity={1}
               >
+                {/* Animated background overlay */}
+                <Animated.View
+                  style={[
+                    styles.menuItemPressed,
+                    {
+                      opacity: pressedIndex === index ? pressedAnimation : 0,
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                    }
+                  ]}
+                />
                 <Text style={[
                   styles.menuLabel,
                   { color: '#ffffff' }
@@ -260,7 +458,23 @@ export const HeaderMenu: React.FC<HeaderMenuProps> = ({
             </Animated.View>
           ))}
           
-        </View>
+          {/* Theme Toggle - Icon Only at Bottom */}
+          <View style={styles.menuItem}>
+            <TouchableOpacity
+              style={styles.menuItemTouchable}
+              onPress={() => handlePress('theme_toggle', menuActions.length)}
+              activeOpacity={0.7}
+              disabled={pressedIndex !== null}
+            >
+              <View style={styles.iconWrapper}>
+                {theme === 'dark' ? 
+                  <Feather name="sun" size={16} color="#ffffff" /> : 
+                  <Feather name="moon" size={16} color="#ffffff" />
+                }
+              </View>
+            </TouchableOpacity>
+          </View>
+          </View>
       </View>
     </Modal>
   );
@@ -287,7 +501,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing[2],
-    paddingLeft: spacing[3],
+    paddingRight: spacing[3],
+    width: screenWidth - 32, // Full screen width minus margins
+    justifyContent: 'flex-end',
+  },
+  menuItemPressed: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 8,
   },
   menuLabel: {
     fontSize: 14,
@@ -306,6 +526,10 @@ const styles = StyleSheet.create({
   themeSelectorWrapper: {
     paddingVertical: spacing[2],
     paddingLeft: spacing[3],
+  },
+  gestureOverlay: {
+    backgroundColor: 'transparent',
+    zIndex: 1,
   },
 });
 

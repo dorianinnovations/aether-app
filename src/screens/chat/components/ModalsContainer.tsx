@@ -142,12 +142,6 @@ export const ModalsContainer: React.FC<ModalsContainerProps> = ({
         onTierSelect={(tier) => {
           console.log(`Selected tier: ${tier}`);
         }}
-        currentTier="standard"
-        usage={{
-          gpt4o: 45,
-          gpt5: 120,
-          gpt5Limit: 150
-        }}
       />
       
       {/* Artist Listening Modal */}

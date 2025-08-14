@@ -45,7 +45,8 @@ export const WalletModal: React.FC<WalletModalProps> = ({
     refreshUsage,
     hasRealData,
     loading,
-    error
+    error,
+    activityMetrics
   } = useSubscription();
 
   // Use real data if available, otherwise fallback to props
@@ -126,6 +127,7 @@ export const WalletModal: React.FC<WalletModalProps> = ({
             isLoadingRealData={loading}
             hasRealData={hasRealData}
             dataError={error}
+            activityMetrics={activityMetrics}
           />
         </Animated.View>
       </View>

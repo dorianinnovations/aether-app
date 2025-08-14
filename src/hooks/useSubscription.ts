@@ -60,6 +60,7 @@ export const useSubscription = () => {
     refreshUsage,
     currentTier: getCurrentTier(),
     walletUsage: getUsageForWallet(),
+    activityMetrics: usage?.activityMetrics || null,
     hasRealData: !!usage // Flag to indicate if we have real data
   };
 };

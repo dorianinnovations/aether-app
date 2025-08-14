@@ -527,29 +527,6 @@ export const ProfileScreen: React.FC = () => {
               borderColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
             }
           ]}>
-            {/* Wallet Button */}
-            <TouchableOpacity
-              style={styles.floatingButtonItem}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setShowWalletModal(true);
-              }}
-              activeOpacity={0.8}
-            >
-              <Feather
-                name="credit-card"
-                size={22}
-                color={colors.text}
-              />
-            </TouchableOpacity>
-
-            {/* Separator */}
-            <View style={[
-              styles.floatingButtonSeparator,
-              {
-                backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-              }
-            ]} />
 
             {/* Edit Button */}
             <TouchableOpacity
@@ -594,29 +571,6 @@ export const ProfileScreen: React.FC = () => {
               />
             </TouchableOpacity>
 
-            {/* Separator */}
-            <View style={[
-              styles.floatingButtonSeparator,
-              {
-                backgroundColor: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-              }
-            ]} />
-
-            {/* Sign Out Button */}
-            <TouchableOpacity
-              style={styles.floatingButtonItem}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setShowSignOutModal(true);
-              }}
-              activeOpacity={0.8}
-            >
-              <Feather
-                name="log-out"
-                size={22}
-                color="#FF6B6B"
-              />
-            </TouchableOpacity>
           </View>
         )}
 

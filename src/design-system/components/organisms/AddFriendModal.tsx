@@ -20,7 +20,7 @@ interface FriendRequestState {
   shakeAnim: Animated.Value;
   friendUsername: string;
   validationError: string;
-  statusType: string;
+  statusType: 'success' | 'error' | 'warning' | 'loading' | null;
   statusMessage: string;
   isSubmittingFriendRequest: boolean;
   isInputFocused: boolean;
@@ -225,17 +225,15 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   addFriendOverlay: {
-    position: 'absolute',
     width: 320,
     borderRadius: 16,
     paddingVertical: spacing[4],
     paddingHorizontal: spacing[3],
-    top: '30%',
-    left: '50%',
-    marginLeft: -160, // Half of width to center
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,

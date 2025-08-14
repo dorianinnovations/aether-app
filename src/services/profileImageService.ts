@@ -3,7 +3,7 @@
  * Handles profile and banner image operations with proper error handling
  */
 
-import { Alert, Platform, AppState } from 'react-native';
+import { Alert, Platform, AppState, Linking } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { UserAPI } from './apiModules/endpoints/user';
 import { logger } from '../utils/logger';
@@ -22,7 +22,33 @@ export class ProfileImageService {
    */
   static async requestPermissions(): Promise<{ mediaLibrary: boolean; camera: boolean }> {
     try {
-      // On iOS, we need to be more explicit about permissions
+      // For iOS TestFlight builds, first check existing permissions
+      if (Platform.OS === 'ios') {
+        const [existingMediaLibrary, existingCamera] = await Promise.all([
+          ImagePicker.getMediaLibraryPermissionsAsync(),
+          ImagePicker.getCameraPermissionsAsync()
+        ]);
+
+        // If permissions are already granted, return immediately
+        if (existingMediaLibrary.status === 'granted' && existingCamera.status === 'granted') {
+          return { mediaLibrary: true, camera: true };
+        }
+
+        // If permissions were denied and can't ask again, inform user
+        if (existingMediaLibrary.status === 'denied' && !existingMediaLibrary.canAskAgain) {
+          Alert.alert(
+            'Photo Access Required',
+            'Please enable photo library access in Settings > Privacy & Security > Photos',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => Linking.openURL('app-settings:') }
+            ]
+          );
+          return { mediaLibrary: false, camera: existingCamera.status === 'granted' };
+        }
+      }
+
+      // Request permissions
       const [mediaLibraryResult, cameraResult] = await Promise.all([
         ImagePicker.requestMediaLibraryPermissionsAsync(),
         ImagePicker.requestCameraPermissionsAsync()
@@ -33,25 +59,33 @@ export class ProfileImageService {
         camera: cameraResult.status === 'granted'
       };
 
-      // Only log permission issues, not successful grants
-      if (Platform.OS === 'ios' && (mediaLibraryResult.status !== 'granted' || cameraResult.status !== 'granted')) {
-        logger.info('iOS Permissions Status:', {
-          mediaLibrary: mediaLibraryResult.status,
-          camera: cameraResult.status,
-          canAskAgain: mediaLibraryResult.canAskAgain,
-          cameraCanAskAgain: cameraResult.canAskAgain
+      // Enhanced logging for iOS TestFlight debugging
+      if (Platform.OS === 'ios') {
+        logger.info('iOS Permission Results:', {
+          mediaLibrary: {
+            status: mediaLibraryResult.status,
+            canAskAgain: mediaLibraryResult.canAskAgain
+          },
+          camera: {
+            status: cameraResult.status,
+            canAskAgain: cameraResult.canAskAgain
+          }
         });
       }
 
       return permissions;
     } catch (error) {
       logger.error('Error requesting permissions:', error);
-      // On iOS, permission errors can be more critical
+      
+      // Enhanced error handling for iOS TestFlight
       if (Platform.OS === 'ios') {
         Alert.alert(
           'Permission Error',
-          'Unable to request photo permissions. Please check your device settings.',
-          [{ text: 'OK' }]
+          'Unable to access photo permissions. This may be due to device restrictions. Please check Settings > Privacy & Security > Photos.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openURL('app-settings:') }
+          ]
         );
       }
       return { mediaLibrary: false, camera: false };
@@ -100,7 +134,7 @@ export class ProfileImageService {
       const platformOptions = ImageUtils.getImagePickerOptions(imageType);
       
       const options: ImagePicker.ImagePickerOptions = {
-        mediaTypes: ImagePicker.MediaType.Images,
+        mediaTypes: 'images',
         allowsEditing: true,
         aspect: aspectRatio,
         quality: platformOptions.quality,
@@ -280,7 +314,16 @@ export class ProfileImageService {
         'Please grant photo library permissions to upload images.',
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Open Settings', onPress: () => ImagePicker.requestMediaLibraryPermissionsAsync() }
+          { 
+            text: 'Open Settings', 
+            onPress: () => {
+              if (Platform.OS === 'ios') {
+                Linking.openURL('app-settings:');
+              } else {
+                ImagePicker.requestMediaLibraryPermissionsAsync();
+              }
+            }
+          }
         ]
       );
       return { success: false, error: 'Permission denied' };
@@ -320,7 +363,23 @@ export class ProfileImageService {
     const permissions = await this.requestPermissions();
     
     if (!permissions.mediaLibrary) {
-      Alert.alert('Permission needed', 'Please grant photo library permissions.');
+      Alert.alert(
+        'Permission needed', 
+        'Please grant photo library permissions to upload images.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Open Settings', 
+            onPress: () => {
+              if (Platform.OS === 'ios') {
+                Linking.openURL('app-settings:');
+              } else {
+                ImagePicker.requestMediaLibraryPermissionsAsync();
+              }
+            }
+          }
+        ]
+      );
       return { success: false, error: 'Permission denied' };
     }
 

@@ -52,7 +52,7 @@ export const GreenIndicator: React.FC<GreenIndicatorProps> = ({
 const styles = StyleSheet.create({
   greenIndicator: {
     position: 'absolute',
-    right: -16,
+    right: -12,
     top: 0,
     bottom: 0,
     justifyContent: 'center',

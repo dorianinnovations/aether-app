@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import type { ThemeMode } from '../../../contexts/ThemeContext';
 import { AlbumArt } from '../atoms/AlbumArt';
-import { GreenIndicator } from '../atoms/GreenIndicator';
 import { ScrollingTrackText } from './ScrollingTrackText';
 import { SpotifyPulseEffect } from '../atoms/SpotifyPulseEffect';
 import { Animated } from 'react-native';
@@ -27,8 +26,6 @@ interface SpotifyTrackDisplayProps {
   scaleAnimation: Animated.Value;
   albumArtFadeAnimation: Animated.Value;
   scrollAnimation: Animated.Value;
-  greenIndicatorAnimation: Animated.Value;
-  showGreenIndicator: boolean;
   // Layout callbacks
   onTextLayout?: (width: number) => void;
   onContainerLayout?: (width: number) => void;
@@ -44,8 +41,6 @@ export const SpotifyTrackDisplay: React.FC<SpotifyTrackDisplayProps> = ({
   scaleAnimation,
   albumArtFadeAnimation,
   scrollAnimation,
-  greenIndicatorAnimation,
-  showGreenIndicator,
   onTextLayout,
   onContainerLayout,
 }) => {
@@ -76,12 +71,6 @@ export const SpotifyTrackDisplay: React.FC<SpotifyTrackDisplayProps> = ({
               size={24}
               borderRadius={4}
               fadeAnimation={albumArtFadeAnimation}
-            />
-            
-            <GreenIndicator
-              visible={showGreenIndicator}
-              animation={greenIndicatorAnimation}
-              size={20}
             />
           </View>
         )}

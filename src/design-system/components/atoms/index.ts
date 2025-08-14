@@ -53,6 +53,8 @@ export { GreenIndicator } from './GreenIndicator';
 export { SpotifyPulseEffect } from './SpotifyPulseEffect';
 export { FloatingActionButton } from './FloatingActionButton';
 export { FloatingButtonSeparator } from './FloatingButtonSeparator';
+export { AnimatedGradientBorder } from './AnimatedGradientBorder';
+export { Slider } from './Slider';
 
 // Re-export types
 export type { IconName, IconSize } from './Icon';

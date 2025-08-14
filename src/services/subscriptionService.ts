@@ -24,6 +24,24 @@ export interface UsageInfo {
     cancelAtPeriodEnd: boolean;
   } | null;
   upgradeRecommended: boolean;
+  activityMetrics: {
+    conversations: {
+      total: number;
+      avgLength: number;
+    };
+    music: {
+      grailsCollected: number;
+      tracksDiscovered: number;
+    };
+    social: {
+      friends: number;
+      friendMessages: number;
+    };
+    totals: {
+      aiMessages: number;
+      gpt5Lifetime: number;
+    };
+  };
 }
 
 export interface TierInfo {
