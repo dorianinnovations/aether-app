@@ -12,7 +12,7 @@ import {
   Animated,
   ActivityIndicator,
 } from 'react-native';
-import * as AuthSession from 'expo-auth-session';
+// import * as AuthSession from 'expo-auth-session';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthAPI } from '../../../services/apiModules/endpoints/auth';
@@ -25,6 +25,7 @@ interface GoogleSignInButtonProps {
   onError?: (error: string) => void;
   disabled?: boolean;
   style?: any;
+  compact?: boolean;
 }
 
 export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
@@ -32,61 +33,17 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   onError,
   disabled = false,
   style,
+  compact = false,
 }) => {
   const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
-  // Set up Google OAuth with Expo AuthSession
-  const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
-  
-  // Create and manage the request
-  const [request, response, promptAsync] = AuthSession.useAuthRequest(
-    {
-      clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '', // Your Google OAuth client ID
-      scopes: ['openid', 'profile', 'email'],
-      responseType: AuthSession.ResponseType.IdToken,
-    },
-    discovery
-  );
-
-  React.useEffect(() => {
-    if (response?.type === 'success') {
-      handleAuthResponse(response);
-    } else if (response?.type === 'error') {
-      setLoading(false);
-      onError?.('Google authentication failed');
-    } else if (response?.type === 'cancel') {
-      setLoading(false);
-      onError?.('Sign-in was cancelled');
-    }
-  }, [response]);
-
-  const handleAuthResponse = async (response: AuthSession.AuthSessionResult) => {
-    try {
-      if (response.type === 'success' && response.params?.id_token) {
-        // Send token to backend
-        const authResponse = await AuthAPI.googleAuth(response.params.id_token);
-        
-        if (authResponse.success) {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          onSuccess?.(authResponse.data?.user);
-        } else {
-          throw new Error(authResponse.data?.error || 'Google authentication failed');
-        }
-      } else {
-        throw new Error('No ID token received from Google');
-      }
-    } catch (error: any) {
-      logger.error('Google Auth Response error:', error);
-      onError?.(error.message || 'Google authentication failed');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Temporary: Google OAuth will be implemented once auth session is fixed
+  // const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
 
   const handleGoogleSignIn = async () => {
-    if (disabled || loading || !request) return;
+    if (disabled || loading) return;
 
     try {
       setLoading(true);
@@ -106,8 +63,11 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         }),
       ]).start();
 
-      // Prompt for authentication
-      await promptAsync();
+      // Temporary: Show not implemented message
+      setTimeout(() => {
+        onError?.('Google Sign-In coming soon! Use email signup for now.');
+        setLoading(false);
+      }, 1000);
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       logger.error('Google Sign-In error:', error);
@@ -154,12 +114,13 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
           <Text
             style={[
               styles.buttonText,
+              compact && styles.buttonTextCompact,
               {
                 color: theme === 'dark' ? '#ffffff' : '#000000',
               },
             ]}
           >
-            {loading ? 'Signing in...' : 'Continue with Google'}
+            {loading ? 'Signing in...' : compact ? 'Google' : 'Continue with Google'}
           </Text>
         </View>
       </TouchableOpacity>
@@ -195,6 +156,10 @@ const styles = StyleSheet.create({
     ...typography.textStyles.bodyMedium,
     fontSize: 16,
     fontWeight: '500',
-    letterSpacing: -0.2,
+  },
+  buttonTextCompact: {
+    fontSize: 14,
   },
 });
+
+export default GoogleSignInButton;

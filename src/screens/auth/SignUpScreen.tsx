@@ -809,46 +809,41 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                       </Animated.View>
                     </View>
 
-                    {/* Sign Up Button with Animation */}
-                    <Animated.View style={{ opacity: buttonOpacity }}>
-                      <AuthButton
-                        onPress={handleSubmit}
-                        loading={loading}
-                        success={isSignUpSuccess}
-                        theme={theme}
-                        authStatus={authStatus}
-                        onAnimationComplete={() => {
-                          if (authStatus === 'error') {
-                            setAuthStatus('idle');
-                          }
-                        }}
-                        title="Create Account"
-                        loadingTitle="Creating Account"
-                        successTitle="Success!"
-                      />
-                    </Animated.View>
-
-                    {/* Divider */}
-                    <Animated.View style={[styles.dividerContainer, { opacity: buttonOpacity }]}>
-                      <View style={[styles.dividerLine, { backgroundColor: theme === 'dark' ? '#333333' : '#e5e5e5' }]} />
-                      <Text style={[styles.dividerText, { color: theme === 'dark' ? '#666666' : '#999999' }]}>or</Text>
-                      <View style={[styles.dividerLine, { backgroundColor: theme === 'dark' ? '#333333' : '#e5e5e5' }]} />
-                    </Animated.View>
-
-                    {/* Google Sign-Up Button */}
-                    <Animated.View style={{ opacity: buttonOpacity }}>
-                      <GoogleSignInButton
-                        onSuccess={() => {
-                          setIsSuccess(true);
-                          setAuthStatus('success');
-                        }}
-                        onError={(error) => {
-                          setError(error);
-                          setAuthStatus('error');
-                          setTimeout(() => setAuthStatus('idle'), 3000);
-                        }}
-                        disabled={loading || isSignUpSuccess}
-                      />
+                    {/* Buttons Row - Side by Side */}
+                    <Animated.View style={[styles.buttonsRow, { opacity: buttonOpacity }]}>
+                      <View style={styles.buttonContainer}>
+                        <AuthButton
+                          onPress={handleSubmit}
+                          loading={loading}
+                          success={isSignUpSuccess}
+                          theme={theme}
+                          authStatus={authStatus}
+                          onAnimationComplete={() => {
+                            if (authStatus === 'error') {
+                              setAuthStatus('idle');
+                            }
+                          }}
+                          title="Create Account"
+                          loadingTitle="Creating"
+                          successTitle="Success!"
+                        />
+                      </View>
+                      
+                      <View style={styles.buttonContainer}>
+                        <GoogleSignInButton
+                          onSuccess={() => {
+                            setIsSuccess(true);
+                            setAuthStatus('success');
+                          }}
+                          onError={(error) => {
+                            setError(error);
+                            setAuthStatus('error');
+                            setTimeout(() => setAuthStatus('idle'), 3000);
+                          }}
+                          disabled={loading || isSignUpSuccess}
+                          compact={true}
+                        />
+                      </View>
                     </Animated.View>
 
                     {/* Sign In Link */}
@@ -1061,6 +1056,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
     fontSize: 14,
+  },
+  // Button layout styles
+  buttonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  buttonContainer: {
+    flex: 1,
   },
   // Divider styles
   dividerContainer: {
