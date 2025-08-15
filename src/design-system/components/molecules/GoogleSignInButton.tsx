@@ -16,6 +16,7 @@ import {
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import * as Haptics from 'expo-haptics';
+import { TokenManager } from '../../../services/api';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthAPI } from '../../../services/apiModules/endpoints/auth';
 import { useTheme } from '../../../contexts/ThemeContext';
@@ -43,6 +44,69 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   const [loading, setLoading] = useState(false);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
+  React.useEffect(() => {
+    // Listen for the callback from the OAuth flow
+    const handleUrl = async (url: string) => {
+      console.log('Received deep link URL:', url);
+      
+      if (url.includes('google-auth')) {
+        try {
+          const parsedUrl = new URL(url);
+          const token = parsedUrl.searchParams.get('token');
+          const userStr = parsedUrl.searchParams.get('user');
+          const error = parsedUrl.searchParams.get('error');
+
+          console.log('OAuth callback params:', { token: !!token, user: !!userStr, error });
+
+          if (error) {
+            console.log('OAuth error:', error);
+            onError?.(decodeURIComponent(error));
+            setLoading(false);
+            return;
+          }
+
+          if (token && userStr) {
+            try {
+              const user = JSON.parse(decodeURIComponent(userStr));
+              console.log('Successfully parsed user data:', user);
+              
+              // Store the token
+              await TokenManager.setToken(token);
+              await TokenManager.setUserData(user);
+              
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              onSuccess?.(user);
+            } catch (err) {
+              console.error('Failed to process auth data:', err);
+              onError?.('Failed to process authentication');
+            }
+          } else {
+            console.log('Missing token or user data in callback');
+            onError?.('Authentication failed - missing data');
+          }
+        } catch (err) {
+          console.error('Error parsing callback URL:', err);
+          onError?.('Failed to process callback');
+        }
+        setLoading(false);
+      }
+    };
+
+    // Listen for URL changes
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      handleUrl(url);
+    });
+
+    // Also check if app was opened with a URL initially
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleUrl(url);
+      }
+    });
+
+    return () => subscription?.remove();
+  }, [onSuccess, onError]);
+
   // Custom Google OAuth implementation using WebBrowser
   const generateRandomString = (length: number) => {
     const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -54,32 +118,43 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   };
 
   const openGoogleOAuth = async () => {
-    const redirectUri = Linking.createURL('/');
+    const clientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+    
+    // Validate that we have a client ID
+    if (!clientId) {
+      throw new Error('Google Client ID not configured. Please check your .env file.');
+    }
+    
+    // Use HTTPS redirect URI (required by Google's new policy)
+    const redirectUri = process.env.EXPO_PUBLIC_GOOGLE_REDIRECT_URI || 'https://aether-server-j5kh.onrender.com/auth/google/callback';
     const state = generateRandomString(32);
     const nonce = generateRandomString(32);
     
+    // Debug: Log the redirect URI so you can add it to Google Console
+    console.log('Google OAuth Redirect URI:', redirectUri);
+    console.log('Google Client ID:', clientId);
+    
     const authUrl = 
       'https://accounts.google.com/o/oauth2/v2/auth?' +
-      `client_id=${process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID}&` +
+      `client_id=${encodeURIComponent(clientId)}&` +
       `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      'response_type=id_token&' +
+      'response_type=code&' +
       'scope=openid%20profile%20email&' +
       `state=${state}&` +
-      `nonce=${nonce}`;
+      'access_type=offline&' +
+      'prompt=select_account';
 
-    const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+    console.log('Full OAuth URL:', authUrl);
+
+    const result = await WebBrowser.openAuthSessionAsync(authUrl, 'aether://google-auth');
     
-    if (result.type === 'success' && result.url) {
-      const url = new URL(result.url);
-      const fragment = url.hash.substring(1);
-      const params = new URLSearchParams(fragment);
-      const idToken = params.get('id_token');
-      
-      if (idToken) {
-        return idToken;
-      }
+    // The callback will be handled by the URL listener in useEffect
+    if (result.type === 'cancel') {
+      throw new Error('OAuth failed or was cancelled');
     }
-    throw new Error('OAuth failed or was cancelled');
+    
+    // For successful auth, the callback URL listener will handle the response
+    return true;
   };
 
   const handleGoogleSignIn = async () => {
@@ -103,18 +178,10 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         }),
       ]).start();
 
-      // Get ID token from Google OAuth
-      const idToken = await openGoogleOAuth();
+      // Open Google OAuth (callback will be handled by URL listener)
+      await openGoogleOAuth();
       
-      // Send token to backend
-      const authResponse = await AuthAPI.googleAuth(idToken);
-      
-      if (authResponse.success) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        onSuccess?.(authResponse.data?.user);
-      } else {
-        throw new Error(authResponse.data?.error || 'Google authentication failed');
-      }
+      // Don't set loading to false here - the URL listener will handle that
     } catch (error: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       logger.error('Google Sign-In error:', error);
@@ -172,11 +239,13 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
           </View>
         ) : (
           <View style={styles.buttonContent}>
-            <Ionicons
-              name="logo-google"
-              size={16}
-              color="#4285f4"
-              style={styles.icon}
+            <Image
+              source={
+                theme === 'dark'
+                  ? require('../../../../assets/images/google/google-g-dark.png')
+                  : require('../../../../assets/images/google/google-g-light.png')
+              }
+              style={styles.googleIcon}
             />
             <Text
               style={[
