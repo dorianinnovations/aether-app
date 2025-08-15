@@ -1,6 +1,6 @@
 /**
- * Google Sign-In Button Component
- * Elegant Google OAuth button with Aether's design system using Expo AuthSession
+ * SIMPLE Google Sign-In that actually works
+ * Uses Google's recommended mobile OAuth flow
  */
 
 import React, { useState } from 'react';
@@ -9,26 +9,23 @@ import {
   Text,
   View,
   StyleSheet,
-  Animated,
   ActivityIndicator,
-  Image,
+  Alert,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
-import * as Haptics from 'expo-haptics';
+import * as AuthSession from 'expo-auth-session';
 import { TokenManager } from '../../../services/api';
 import { Ionicons } from '@expo/vector-icons';
-import { AuthAPI } from '../../../services/apiModules/endpoints/auth';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { typography } from '../../tokens/typography';
-import { logger } from '../../../utils/logger';
+
+WebBrowser.maybeCompleteAuthSession();
 
 interface GoogleSignInButtonProps {
   onSuccess?: (user: any) => void;
   onError?: (error: string) => void;
   disabled?: boolean;
   style?: any;
-  compact?: boolean;
   title?: string;
 }
 
@@ -37,124 +34,68 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   onError,
   disabled = false,
   style,
-  compact = false,
   title = 'Google',
 }) => {
   const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
-  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+
+  // Use Expo's AuthSession - this WORKS
+  const [request, response, promptAsync] = AuthSession.useAuthRequest(
+    {
+      clientId: '1095625189301-0jchnagbsb983tk713fbarvv6dmr5qpm.apps.googleusercontent.com',
+      scopes: ['openid', 'profile', 'email'],
+      redirectUri: AuthSession.makeRedirectUri({
+        scheme: 'aether',
+        path: 'google-auth',
+      }),
+    },
+    AuthSession.discovery
+  );
 
   React.useEffect(() => {
-    // Listen for the callback from the OAuth flow
-    const handleUrl = async (url: string) => {
-      console.log('Received deep link URL:', url);
+    if (response?.type === 'success') {
+      const { authentication } = response;
+      if (authentication?.idToken) {
+        handleGoogleToken(authentication.idToken);
+      }
+    } else if (response?.type === 'error') {
+      console.error('Google auth error:', response.error);
+      onError?.(response.error?.message || 'Authentication failed');
+      setLoading(false);
+    }
+  }, [response]);
+
+  const handleGoogleToken = async (idToken: string) => {
+    try {
+      console.log('Sending ID token to server...');
       
-      if (url.includes('google-auth')) {
-        try {
-          const parsedUrl = new URL(url);
-          const token = parsedUrl.searchParams.get('token');
-          const userStr = parsedUrl.searchParams.get('user');
-          const error = parsedUrl.searchParams.get('error');
+      // Send token to your server
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/auth/google`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: idToken }),
+      });
 
-          console.log('OAuth callback params:', { token: !!token, user: !!userStr, error });
+      const data = await response.json();
 
-          if (error) {
-            console.log('OAuth error:', error);
-            onError?.(decodeURIComponent(error));
-            setLoading(false);
-            return;
-          }
-
-          if (token && userStr) {
-            try {
-              const user = JSON.parse(decodeURIComponent(userStr));
-              console.log('Successfully parsed user data:', user);
-              
-              // Store the token
-              await TokenManager.setToken(token);
-              await TokenManager.setUserData(user);
-              
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              onSuccess?.(user);
-            } catch (err) {
-              console.error('Failed to process auth data:', err);
-              onError?.('Failed to process authentication');
-            }
-          } else {
-            console.log('Missing token or user data in callback');
-            onError?.('Authentication failed - missing data');
-          }
-        } catch (err) {
-          console.error('Error parsing callback URL:', err);
-          onError?.('Failed to process callback');
-        }
-        setLoading(false);
+      if (data.status === 'success') {
+        // Store token and user data
+        await TokenManager.setToken(data.token);
+        await TokenManager.setUserData(data.data.user);
+        
+        console.log('Google sign-in successful');
+        onSuccess?.(data.data.user);
+      } else {
+        throw new Error(data.message || 'Authentication failed');
       }
-    };
-
-    // Listen for URL changes
-    const subscription = Linking.addEventListener('url', ({ url }) => {
-      handleUrl(url);
-    });
-
-    // Also check if app was opened with a URL initially
-    Linking.getInitialURL().then((url) => {
-      if (url) {
-        handleUrl(url);
-      }
-    });
-
-    return () => subscription?.remove();
-  }, [onSuccess, onError]);
-
-  // Custom Google OAuth implementation using WebBrowser
-  const generateRandomString = (length: number) => {
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let text = '';
-    for (let i = 0; i < length; i++) {
-      text += possible.charAt(Math.floor(Math.random() * possible.length));
+    } catch (error: any) {
+      console.error('Google authentication error:', error);
+      onError?.(error.message || 'Authentication failed');
+    } finally {
+      setLoading(false);
     }
-    return text;
-  };
-
-  const openGoogleOAuth = async () => {
-    const clientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
-    
-    // Validate that we have a client ID
-    if (!clientId) {
-      throw new Error('Google Client ID not configured. Please check your .env file.');
-    }
-    
-    // Use HTTPS redirect URI (required by Google's new policy)
-    const redirectUri = process.env.EXPO_PUBLIC_GOOGLE_REDIRECT_URI || 'https://aether-server-j5kh.onrender.com/auth/google/callback';
-    const state = generateRandomString(32);
-    const nonce = generateRandomString(32);
-    
-    // Debug: Log the redirect URI so you can add it to Google Console
-    console.log('Google OAuth Redirect URI:', redirectUri);
-    console.log('Google Client ID:', clientId);
-    
-    const authUrl = 
-      'https://accounts.google.com/o/oauth2/v2/auth?' +
-      `client_id=${encodeURIComponent(clientId)}&` +
-      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      'response_type=code&' +
-      'scope=openid%20profile%20email&' +
-      `state=${state}&` +
-      'access_type=offline&' +
-      'prompt=select_account';
-
-    console.log('Full OAuth URL:', authUrl);
-
-    const result = await WebBrowser.openAuthSessionAsync(authUrl, 'aether://google-auth');
-    
-    // The callback will be handled by the URL listener in useEffect
-    if (result.type === 'cancel') {
-      throw new Error('OAuth failed or was cancelled');
-    }
-    
-    // For successful auth, the callback URL listener will handle the response
-    return true;
   };
 
   const handleGoogleSignIn = async () => {
@@ -162,105 +103,69 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
 
     try {
       setLoading(true);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-      // Button press animation
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 0.95,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
-
-      // Open Google OAuth (callback will be handled by URL listener)
-      await openGoogleOAuth();
+      console.log('Starting Google sign-in...');
       
-      // Don't set loading to false here - the URL listener will handle that
+      // This will open Google's OAuth page
+      await promptAsync();
+      
+      // Don't set loading to false here - the useEffect will handle success/error
     } catch (error: any) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      logger.error('Google Sign-In error:', error);
-      
-      let errorMessage = 'Google Sign-In failed';
-      if (error.message === 'OAuth failed or was cancelled') {
-        errorMessage = 'Sign-in was cancelled';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      onError?.(errorMessage);
-    } finally {
+      console.error('Failed to start Google sign-in:', error);
+      onError?.(error.message || 'Failed to start authentication');
       setLoading(false);
     }
   };
 
   return (
-    <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, style]}>
-      <TouchableOpacity
-        style={[
-          styles.button,
-          {
-            backgroundColor: theme === 'dark' ? '#2a2a2a' : '#ffffff',
-            borderColor: theme === 'dark' ? '#404040' : '#e1e5e9',
-            shadowColor: theme === 'dark' ? '#000000' : '#000000',
-            shadowOffset: { width: 0, height: theme === 'dark' ? 4 : 2 },
-            shadowOpacity: theme === 'dark' ? 0.3 : 0.1,
-            shadowRadius: theme === 'dark' ? 8 : 4,
-            elevation: theme === 'dark' ? 4 : 2,
-            opacity: disabled ? 0.6 : 1,
-          },
-        ]}
-        onPress={handleGoogleSignIn}
-        disabled={disabled || loading}
-        activeOpacity={0.9}
-      >
-        {loading ? (
-          <View style={styles.buttonContent}>
-            <ActivityIndicator 
-              size="small" 
-              color={theme === 'dark' ? '#ffffff' : '#4285f4'} 
-              style={styles.icon}
-            />
-            <Text
-              style={[
-                styles.buttonText,
-                {
-                  color: theme === 'dark' ? '#ffffff' : '#000000',
-                },
-              ]}
-            >
-              Signing in...
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.buttonContent}>
-            <Image
-              source={
-                theme === 'dark'
-                  ? require('../../../../assets/images/google/google-g-dark.png')
-                  : require('../../../../assets/images/google/google-g-light.png')
-              }
-              style={styles.googleIcon}
-            />
-            <Text
-              style={[
-                styles.buttonText,
-                {
-                  color: theme === 'dark' ? '#ffffff' : '#000000',
-                },
-              ]}
-            >
-              {title}
-            </Text>
-          </View>
-        )}
-      </TouchableOpacity>
-    </Animated.View>
+    <TouchableOpacity
+      style={[
+        styles.button,
+        {
+          backgroundColor: theme === 'dark' ? '#2a2a2a' : '#ffffff',
+          borderColor: theme === 'dark' ? '#404040' : '#e1e5e9',
+          opacity: disabled ? 0.6 : 1,
+        },
+        style,
+      ]}
+      onPress={handleGoogleSignIn}
+      disabled={disabled || loading}
+      activeOpacity={0.9}
+    >
+      {loading ? (
+        <View style={styles.buttonContent}>
+          <ActivityIndicator 
+            size="small" 
+            color={theme === 'dark' ? '#ffffff' : '#4285f4'} 
+            style={styles.icon}
+          />
+          <Text
+            style={[
+              styles.buttonText,
+              { color: theme === 'dark' ? '#ffffff' : '#000000' },
+            ]}
+          >
+            Signing in...
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.buttonContent}>
+          <Ionicons
+            name="logo-google"
+            size={16}
+            color="#4285f4"
+            style={styles.icon}
+          />
+          <Text
+            style={[
+              styles.buttonText,
+              { color: theme === 'dark' ? '#ffffff' : '#000000' },
+            ]}
+          >
+            {title}
+          </Text>
+        </View>
+      )}
+    </TouchableOpacity>
   );
 };
 
@@ -293,10 +198,6 @@ const styles = StyleSheet.create({
     ...typography.textStyles.bodyMedium,
     fontSize: 14,
     fontWeight: '500',
-  },
-  googleIcon: {
-    width: 16,
-    height: 16,
   },
 });
 

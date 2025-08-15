@@ -184,115 +184,85 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
           <View
             style={[
               styles.modal,
-              getGlassmorphicStyle('overlay', theme),
+              getNeumorphicStyle('elevated', theme),
+              {
+                backgroundColor: theme === 'dark' ? '#1c1c1e' : '#f0f0f3',
+                borderColor: theme === 'dark' ? '#3a3a3c' : '#e5e5e7',
+                borderWidth: 1,
+              }
             ]}
           >
-            {/* Icon or Lottie Animation */}
-            {isConfirming ? (
-              <View style={styles.lottieContainer}>
-                <LottieView
-                  source={require('../../../../assets/AetherSpinner.json')}
-                  autoPlay
-                  loop
-                  speed={2.5}
-                  style={styles.lottieAnimation}
-                />
-              </View>
-            ) : (
-              renderIcon()
-            )}
+            {/* Minimalistic Content */}
+            <View style={styles.contentContainer}>
+              {isConfirming ? (
+                <View style={styles.loadingContainer}>
+                  <View style={styles.spinner} />
+                  <Text style={[
+                    styles.minimalistText,
+                    { color: themeColors.textSecondary }
+                  ]}>
+                    Signing out...
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <Text style={[
+                    styles.minimalistTitle,
+                    { color: themeColors.text }
+                  ]}>
+                    Sign out
+                  </Text>
+                  <Text style={[
+                    styles.minimalistSubtext,
+                    { color: themeColors.textSecondary }
+                  ]}>
+                    Are you sure?
+                  </Text>
+                </>
+              )}
+            </View>
 
-            {/* Title */}
-            {(isConfirming ? loadingTitle : title) ? (
-              <Text style={[
-                styles.title,
-                typography.textStyles.headlineSmall,
-                { color: themeColors.text }
-              ]}>
-                {isConfirming ? loadingTitle : title}
-              </Text>
-            ) : null}
-
-            {/* Message */}
-            {(isConfirming ? loadingMessage : message) ? (
-              <Text style={[
-                styles.message,
-                typography.textStyles.bodyMedium,
-                { color: themeColors.textSecondary }
-              ]}>
-                {isConfirming ? loadingMessage : message}
-              </Text>
-            ) : null}
-
-            {/* Buttons */}
+            {/* Minimalistic Buttons */}
             {!isConfirming && (
-              <View style={styles.buttonContainer}>
-              {/* Cancel Button */}
-              <View style={[
-                styles.button,
-                getNeumorphicStyle('subtle', theme),
-                {
-                  backgroundColor: themeColors.surface,
-                  borderWidth: 2,
-                  borderColor: theme === 'dark' ? '#404040' : '#E5E5E5',
-                }
-              ]}>
+              <View style={styles.buttonRow}>
                 <TouchableOpacity
                   onPress={handleCancel}
-                  disabled={isConfirming}
-                  style={styles.buttonInner}
+                  style={[
+                    styles.minimalistButton,
+                    getNeumorphicStyle('subtle', theme),
+                    {
+                      backgroundColor: theme === 'dark' ? '#1c1c1e' : '#f0f0f3',
+                    }
+                  ]}
                 >
                   <Text style={[
-                    styles.buttonText,
-                    typography.textStyles.bodyMedium,
-                    { 
-                      color: themeColors.text,
-                      fontWeight: '600',
-                    }
-                  ]}>
-                    {cancelText}
-                  </Text>
+                    styles.minimalistButtonText,
+                    { color: theme === 'dark' ? '#ffffff' : '#666666' }
+                  ]}>Cancel</Text>
                 </TouchableOpacity>
-              </View>
-
-              {/* Confirm Button */}
-              <View style={[
-                styles.button,
-                styles.confirmButton,
-                getNeumorphicStyle('elevated', theme),
-                {
-                  backgroundColor: getVariantColor(),
-                  borderWidth: 2,
-                  borderColor: theme === 'dark' ? '#FF6B6B' : '#B91C1C',
-                  shadowColor: getVariantColor(),
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 8,
-                  elevation: 8,
-                }
-              ]}>
+                
                 <TouchableOpacity
                   onPress={handleConfirm}
-                  disabled={isConfirming}
-                  style={styles.buttonInner}
+                  style={[
+                    styles.minimalistButton,
+                    styles.signOutButton,
+                    {
+                      backgroundColor: '#ff3b30',
+                      shadowColor: '#ff3b30',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 4,
+                      elevation: 4,
+                    }
+                  ]}
                 >
                   <Text style={[
-                    styles.buttonText,
-                    styles.confirmButtonText,
-                    typography.textStyles.bodyMedium,
-                    { 
-                      color: '#ffffff',
-                      fontWeight: '700',
-                      textShadowColor: 'rgba(0,0,0,0.3)',
-                      textShadowOffset: { width: 0, height: 1 },
-                      textShadowRadius: 2,
-                    }
-                  ]}>
-                    {confirmText}
-                  </Text>
+                    styles.minimalistButtonText,
+                    styles.signOutButtonText,
+                    { color: '#ffffff' }
+                  ]}>Sign out</Text>
                 </TouchableOpacity>
               </View>
-            </View>
             )}
           </View>
         </View>
@@ -304,8 +274,9 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
+    paddingBottom: 50,
   },
   background: {
     position: 'absolute',
@@ -320,64 +291,91 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[6],
   },
   modal: {
-    width: Math.min(screenWidth - spacing[8], 280),
+    width: '90%',
+    maxWidth: 400,
     borderRadius: 16,
-    padding: spacing[4],
-    alignItems: 'center',
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing[3],
+    padding: 20,
     borderWidth: 1,
+    alignItems: 'stretch',
+    justifyContent: 'space-between',
   },
-  lottieContainer: {
-    width: 64,
-    height: 64,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing[3],
-  },
-  lottieAnimation: {
-    width: 64,
-    height: 64,
-  },
-  title: {
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: spacing[1],
-  },
-  message: {
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: spacing[4],
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    gap: spacing[3],
+  contentContainer: {
+    alignItems: 'flex-start',
     width: '100%',
+    marginBottom: 24,
   },
-  button: {
-    flex: 1,
-    borderRadius: 10,
-    paddingVertical: spacing[2],
-    paddingHorizontal: spacing[3],
+  minimalistTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+    fontFamily: 'Inter',
+    textAlign: 'left',
+    width: '100%',
+    letterSpacing: -0.1,
+  },
+  minimalistSubtext: {
+    fontSize: 12,
+    fontWeight: '400',
+    fontFamily: 'Inter',
+    textAlign: 'left',
+    width: '100%',
+    opacity: 0.6,
+    lineHeight: 16,
+  },
+  minimalistText: {
+    fontSize: 12,
+    fontWeight: '500',
+    fontFamily: 'Inter',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  spinner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#3b82f6',
+    borderTopColor: 'transparent',
+    // Note: For a real spinner animation, you'd need to add animation logic
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+    justifyContent: 'flex-end',
+  },
+  minimalistButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 0,
+    minWidth: 70,
+  },
+  cancelButton: {
+    borderColor: 'transparent',
   },
   confirmButton: {
-    // Additional styles for confirm button
+    borderColor: 'transparent',
   },
-  buttonInner: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
+  minimalistButtonText: {
+    fontSize: 12,
     fontWeight: '600',
+    fontFamily: 'Inter',
+    letterSpacing: -0.05,
   },
-  confirmButtonText: {
-    // Additional styles for confirm button text
+  signOutButton: {
+    transform: [{ scale: 1 }],
+  },
+  signOutButtonText: {
+    fontWeight: '700',
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
 });
 
