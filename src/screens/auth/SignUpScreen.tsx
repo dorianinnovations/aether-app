@@ -39,7 +39,6 @@ import { useSignUpForm } from '../../hooks/useSignUpForm';
 import { usePasswordStrength } from '../../hooks/usePasswordStrength';
 import { useUsernameValidation } from '../../hooks/useUsernameValidation';
 import { TokenManager } from '../../services/api';
-import { GoogleSignInButton } from '../../design-system/components/molecules/GoogleSignInButton';
 
 const { height } = Dimensions.get('window');
 
@@ -826,22 +825,6 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                           title="Create Account"
                           loadingTitle="Creating"
                           successTitle="Success!"
-                        />
-                      </View>
-                      
-                      <View style={styles.buttonContainer}>
-                        <GoogleSignInButton
-                          title="Sign up with Google"
-                          onSuccess={() => {
-                            setIsSuccess(true);
-                            setAuthStatus('success');
-                          }}
-                          onError={(error) => {
-                            setError(error);
-                            setAuthStatus('error');
-                            setTimeout(() => setAuthStatus('idle'), 3000);
-                          }}
-                          disabled={loading || isSignUpSuccess}
                         />
                       </View>
                     </Animated.View>

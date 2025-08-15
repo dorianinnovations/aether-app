@@ -43,7 +43,6 @@ export { default as ConversationActionBar } from './ConversationActionBar';
 export { PasswordStrengthIndicator } from './PasswordStrengthIndicator';
 export { UsernameStatusIndicator } from './UsernameStatusIndicator';
 export { AuthButton } from './AuthButton';
-export { GoogleSignInButton } from './GoogleSignInButton';
 
 // Profile components
 export { ProfileHeader } from './ProfileHeader';

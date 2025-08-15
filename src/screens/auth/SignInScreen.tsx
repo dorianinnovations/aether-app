@@ -32,7 +32,6 @@ import { typography } from '../../design-system/tokens/typography';
 import { spacing } from '../../design-system/tokens/spacing';
 import { AuthAPI, TokenManager } from '../../services/api';
 import { logger } from '../../utils/logger';
-import { GoogleSignInButton } from '../../design-system/components/molecules/GoogleSignInButton';
 import type { NavigationProp } from '@react-navigation/native';
 
 type RootStackParamList = {
@@ -660,29 +659,6 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
                       </Animated.View>
                     </Animated.View>
 
-                    {/* Divider */}
-                    <Animated.View style={[styles.dividerContainer, { opacity: buttonOpacity }]}>
-                      <View style={[styles.dividerLine, { backgroundColor: theme === 'dark' ? '#333333' : '#e5e5e5' }]} />
-                      <Text style={[styles.dividerText, { color: theme === 'dark' ? '#666666' : '#999999' }]}>or</Text>
-                      <View style={[styles.dividerLine, { backgroundColor: theme === 'dark' ? '#333333' : '#e5e5e5' }]} />
-                    </Animated.View>
-
-                    {/* Google Sign-In Button */}
-                    <Animated.View style={{ opacity: buttonOpacity }}>
-                      <GoogleSignInButton
-                        title="Sign in with Google"
-                        onSuccess={() => {
-                          setIsSignInSuccess(true);
-                          setAuthStatus('success');
-                        }}
-                        onError={(error) => {
-                          setError(error);
-                          setAuthStatus('error');
-                          setTimeout(() => setAuthStatus('idle'), 3000);
-                        }}
-                        disabled={loading || isSignInSuccess}
-                      />
-                    </Animated.View>
 
                     {/* Create Account Link */}
                     <Animated.View style={{ opacity: linkOpacity }}>
