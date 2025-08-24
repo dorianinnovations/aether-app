@@ -81,7 +81,7 @@ export const BadgeComparison: React.FC<{ theme: 'light' | 'dark' }> = ({ theme }
             theme={theme}
             enableHaptics={true}
             enableMagnetism={true}
-            onPress={() => {})
+            onPress={() => {}}
           />
         </View>
       </View>

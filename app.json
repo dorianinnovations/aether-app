@@ -22,7 +22,13 @@
       },
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs access to camera to take profile and banner photos.",
-        "NSPhotoLibraryUsageDescription": "This app needs access to photo library to select profile and banner images."
+        "NSPhotoLibraryUsageDescription": "This app needs access to photo library to select profile and banner images.",
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLName": "google-auth",
+            "CFBundleURLSchemes": ["com.googleusercontent.apps.1095625189301-0jchnagbsb983tk713fbarvv6dmr5qpm"]
+          }
+        ]
       },
       "associatedDomains": ["applinks:aether-server-j5kh.onrender.com"]
     },

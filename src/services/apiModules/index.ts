@@ -20,6 +20,7 @@ export { SpotifyAPI } from './endpoints/spotify';
 export { SystemAPI, HealthAPI } from './endpoints/system';
 export { NotificationsAPI } from './endpoints/notifications';
 export { FileAPI } from './endpoints/files';
+export { GitHubAPI } from './endpoints/github';
 
 // New artist-focused API modules
 export { ArtistAPI } from './endpoints/artists';

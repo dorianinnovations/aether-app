@@ -52,6 +52,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
 }) => {
   const { theme, toggleTheme } = useTheme();
   
+  
   // Form state
   const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -184,6 +185,7 @@ const SignInScreen: React.FC<SignInScreenProps> = ({
       setAuthStatus('idle');
     }
   };
+
 
   const handleSubmit = async () => {
     // Dismiss keyboard when form is submitted
@@ -752,7 +754,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     paddingHorizontal: 24,
     paddingVertical: 32,
-    paddingTop: 140,
+    paddingTop: 200,
   },
   content: {
     width: '100%',

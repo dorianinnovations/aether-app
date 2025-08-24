@@ -53,6 +53,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
 }) => {
   const { theme, toggleTheme } = useTheme();
   
+  
   // Custom hooks
   const {
     firstName,
@@ -187,6 +188,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
       // Cleanup on unmount
     };
   }, []);
+
 
 
 
@@ -829,6 +831,7 @@ const SignUpScreen: React.FC<SignUpScreenProps> = ({
                       </View>
                     </Animated.View>
 
+
                     {/* Sign In Link */}
                     <Animated.View style={{ opacity: linkOpacity }}>
                       <TouchableOpacity
@@ -1010,6 +1013,13 @@ const styles = StyleSheet.create({
   linkButton: {
     paddingVertical: 12,
     alignItems: 'center',
+  },
+  primaryButton: {
+    height: 42,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
   },
   linkText: {
     ...typography.textStyles.bodyMedium,

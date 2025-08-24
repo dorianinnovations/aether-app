@@ -57,10 +57,10 @@ export const useHeaderMenu = (options: UseHeaderMenuOptions = {}) => {
           }
         }
         break;
-      case 'dive':
-        if (screenName !== 'dive') {
+      case 'forge':
+        if (screenName !== 'forge') {
           try {
-            navigation.navigate('Dive' as never);
+            navigation.navigate('Dive' as never); // Still navigate to 'Dive' screen (we kept the file name)
           } catch (error) {
           }
         }

@@ -1,9 +1,9 @@
 /**
- * Dive Screen - Deep Music Discovery
- * A clean, minimal space for exploring music in new ways
+ * Forge Screen - Aether Forge Feed
+ * Discover and collaborate on creative sparks during live seasons
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -14,21 +14,22 @@ import {
   Dimensions,
   SafeAreaView,
   Animated,
-  PanResponder,
   Modal,
   ScrollView,
-  Switch,
 } from 'react-native';
-import LottieView from 'lottie-react-native';
+// LottieView removed - not used in current implementation
 // Navigation removed - not used in current implementation
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
-import { musicApi, TrackData } from '../../services/apiModules/endpoints/music';
+import { BlurView } from 'expo-blur';
+// Forge API and types
+import { Spark, Season } from '../../types/forge';
+import SparkCard from '../../design-system/components/molecules/SparkCard';
 
 // Design System
-import { PageBackground, Slider } from '../../design-system/components/atoms';
+import { PageBackground } from '../../design-system/components/atoms';
 import { HeaderMenu } from '../../design-system/components/organisms';
-import { AnimatedHamburger, FloatingActionButton, FloatingButtonSeparator } from '../../design-system/components/atoms';
+import { AnimatedHamburger, FloatingActionButton } from '../../design-system/components/atoms';
 import { FloatingButtonBar } from '../../design-system/components/molecules';
 
 // Design Tokens
@@ -42,7 +43,9 @@ import { useHeaderMenu } from '../../design-system/hooks';
 
 // Types (removed unused ThemeColors import)
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
+
+// OptimizedSlider removed - not used in Forge implementation
 
 // Minimal witty loading messages
 const loadingMessages = [
@@ -59,7 +62,7 @@ const loadingMessages = [
   'mood decoded',
 ];
 
-const DiveScreen: React.FC = () => {
+const ForgeScreen: React.FC = () => {
   const { colors: themeColors, theme } = useTheme();
   const isDarkMode = theme === 'dark';
   const headerMenu = useHeaderMenu();
@@ -88,309 +91,276 @@ const DiveScreen: React.FC = () => {
 
   // State
   const [hamburgerOpen, setHamburgerOpen] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
   
-  // Music discovery state
-  const [currentTrack, setCurrentTrack] = useState<TrackData | null>(null);
-  const [trackQueue, setTrackQueue] = useState<TrackData[]>([]);
+  // Forge discovery state
+  const [currentSeason, setCurrentSeason] = useState<Season | null>(null);
+  const [sparks, setSparks] = useState<Spark[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0]);
+  const [boostedSparks, setBoostedSparks] = useState<Set<string>>(new Set());
+  const [committedSparks, setCommittedSparks] = useState<Set<string>>(new Set());
   
-  // User preferences state
-  const [preferences, setPreferences] = useState({
-    danceability: 0.7,
-    energy: 0.8, 
-    valence: 0.6,
-    tempo: 0.5,
-    acousticness: 0.3,
-    instrumentalness: 0.2,
-    speechiness: 0.1,
-    loudness: 0.5
-  });
+  // Scroll and modal states
+  const [showBuilderModal, setShowBuilderModal] = useState(false);
+  const [selectedSpark, setSelectedSpark] = useState<Spark | null>(null);
+  const scrollY = useRef(new Animated.Value(0)).current;
   
-  // Music feature ranges
-  const [, setRanges] = useState({
-    danceability: { min: 0.0, max: 1.0 },
-    energy: { min: 0.0, max: 1.0 },
-    valence: { min: 0.0, max: 1.0 },
-    tempo: { min: 60, max: 200 },
-    acousticness: { min: 0.0, max: 1.0 },
-    instrumentalness: { min: 0.0, max: 1.0 },
-    speechiness: { min: 0.0, max: 1.0 },
-    loudness: { min: -30, max: 0 }
-  });
+  // Remote control button animations
+  const primaryButtonOpacity = useRef(new Animated.Value(1)).current;
+  const secondaryButtonOpacity = useRef(new Animated.Value(1)).current;
+  const primaryButtonScale = useRef(new Animated.Value(1)).current;
+  const secondaryButtonScale = useRef(new Animated.Value(1)).current;
   
-  const [settings, setSettings] = useState({
-    adaptiveLearning: true,
-    explorationFactor: 0.2,
-    diversityBoost: 0.1,
-    hapticFeedback: true,
-    animationSpeed: 1.0
-  });
   
-  // User music profile
-  const [, setUserProfile] = useState<any>(null);
+  // Removed music-specific preferences - not needed for Forge
   
-  // Simple animations
-  const pan = useRef(new Animated.ValueXY()).current;
-  const opacity = useRef(new Animated.Value(1)).current;
-  const rotation = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(1)).current;
+  // Removed PanResponder - not needed for Forge scroll-based UI
 
-  // Revolutionary PanResponder with emotional feedback
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (evt, gestureState) => {
-        return Math.abs(gestureState.dx) > 15 || Math.abs(gestureState.dy) > 15;
-      },
-      onPanResponderGrant: () => {
-        pan.setOffset({
-          x: (pan.x as any)._value,
-          y: (pan.y as any)._value,
-        });
-        
-        // Simple grab haptic
-        if (settings.hapticFeedback) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        }
-      },
-      onPanResponderMove: (evt, gestureState) => {
-        const { dx, dy } = gestureState;
-        
-        // Simple position tracking
-        pan.setValue({ 
-          x: dx, 
-          y: dy * 0.1  // Minimal vertical movement
-        });
-        
-        // Simple rotation based on direction
-        const rotationValue = (dx / screenWidth) * 15;
-        rotation.setValue(rotationValue);
-      },
-      onPanResponderRelease: (evt, gestureState) => {
-        pan.flattenOffset();
-        
-        const { dx, vx } = gestureState;
-        const threshold = screenWidth * 0.2;
-        const velocity = Math.abs(vx);
-        const isSignificantSwipe = Math.abs(dx) > threshold || velocity > 1.0;
-        
-        if (isSignificantSwipe) {
-          const direction = dx > 0 ? 1 : -1;
-          const isLove = direction > 0;
-          
-          // Submit feedback for current track
-          if (currentTrack?.id) {
-            const rating = isLove ? 0.8 : 0.2;
-            submitFeedback(rating, currentTrack.id);
-          }
-          
-          // Simple haptic feedback
-          if (settings.hapticFeedback) {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          }
-          
-          // Quick exit animation - just slide off screen
-          Animated.parallel([
-            Animated.timing(pan.x, {
-              toValue: screenWidth * 1.2 * direction,
-              duration: 200,
-              useNativeDriver: true,
-            }),
-            Animated.timing(opacity, {
-              toValue: 0,
-              duration: 200,
-              useNativeDriver: true,
-            }),
-          ]).start(() => {
-            // Load next track immediately
-            loadNextTrack();
-            
-            // Reset for next card
-            pan.setValue({ x: 0, y: 0 });
-            rotation.setValue(0);
-            opacity.setValue(1);
-            scale.setValue(1);
-          });
-        } else {
-          // Quick snap back
-          Animated.parallel([
-            Animated.spring(pan, {
-              toValue: { x: 0, y: 0 },
-              useNativeDriver: true,
-              tension: 300,
-              friction: 10,
-            }),
-            Animated.spring(rotation, {
-              toValue: 0,
-              useNativeDriver: true,
-              tension: 300,
-              friction: 10,
-            }),
-          ]).start();
-        }
-      },
-    })
-  ).current;
+  // Removed all music-related functions - not needed for Forge
 
-  // Music discovery functions
-  const discoverMusic = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      // Set a random loading message
-      const randomMessage = loadingMessages[Math.floor(Math.random() * loadingMessages.length)];
-      setLoadingMessage(randomMessage);
-      
-      const response = await musicApi.discoverMusic({
-        preferences,
-        count: 5
-      });
-      
-      if (response.songs && response.songs.length > 0) {
-        // Use discovered tracks directly (ranking disabled until endpoint is stable)
-        setTrackQueue(response.songs);
-        setCurrentTrack(response.songs[0]);
+  // Mock data for Season 0
+  const mockSeason: Season = {
+    id: 's0',
+    name: 'Season 0: Make a thing in 72 hours',
+    state: 'live',
+    vertical: 'micro-apps',
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
+    crystallizeDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    totalSparks: 42,
+    totalCommits: 18,
+    crystallizedCount: 0,
+    prizePool: 5000,
+    sponsors: ['Vercel', 'Replit']
+  };
+
+  const mockSparks: Spark[] = [
+    {
+      id: 'spark1',
+      title: 'Local Dog Walker Finder',
+      oneLiner: 'An app that connects dog owners with trusted walkers in their neighborhood',
+      tags: ['mobile', 'location', 'pets'],
+      artifactType: 'code',
+      content: 'Building a React Native app that uses location services to match dog owners with verified walkers nearby. Features include real-time tracking, payment integration, and rating system.',
+      creatorId: 'user1',
+      creatorUsername: 'petlover',
+      createdAt: new Date().toISOString(),
+      seasonId: 's0',
+      boosts: 23,
+      commits: 3,
+      views: 127,
+      status: 'active',
+      recentBoosters: ['coder123', 'designguru'],
+      commitCount: 3
+    },
+    {
+      id: 'spark2', 
+      title: 'AI-Powered Study Buddy',
+      oneLiner: 'Smart flashcard system that adapts to your learning patterns',
+      tags: ['ai', 'education', 'productivity'],
+      artifactType: 'code',
+      content: 'Creating an intelligent study companion that uses spaced repetition and AI to optimize learning. Tracks your progress and adjusts difficulty automatically.',
+      creatorId: 'user2',
+      creatorUsername: 'studymaster',
+      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      seasonId: 's0',
+      boosts: 31,
+      commits: 5,
+      views: 89,
+      status: 'active',
+      recentBoosters: ['aidev', 'learnfast'],
+      commitCount: 5
+    },
+    {
+      id: 'spark3',
+      title: 'Habit Stack Tracker',
+      oneLiner: 'Chain multiple small habits together for compound productivity gains',
+      tags: ['habits', 'productivity', 'gamification'],
+      artifactType: 'design',
+      content: 'Designing a habit tracking system where completing one habit unlocks the next in your daily stack. Visual progress chains with streak rewards.',
+      creatorId: 'user3',
+      creatorUsername: 'habitguru',
+      createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+      seasonId: 's0',
+      boosts: 18,
+      commits: 2,
+      views: 156,
+      status: 'active',
+      recentBoosters: ['productiv'],
+      commitCount: 2
+    }
+  ];
+
+  // Handlers
+  const handleBoost = useCallback((sparkId: string) => {
+    setBoostedSparks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sparkId)) {
+        newSet.delete(sparkId);
+        // Decrease boost count
+        setSparks(sparks => sparks.map(s => 
+          s.id === sparkId ? { ...s, boosts: s.boosts - 1 } : s
+        ));
+      } else {
+        newSet.add(sparkId);
+        // Increase boost count
+        setSparks(sparks => sparks.map(s => 
+          s.id === sparkId ? { ...s, boosts: s.boosts + 1 } : s
+        ));
       }
-    } catch (error) {
-      console.error('Failed to discover music:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [preferences]);
-  
-  const submitFeedback = useCallback(async (rating: number, trackId: string) => {
-    try {
-      await musicApi.submitFeedback({
-        trackId,
-        rating,
-        feedback: rating > 0.5 ? 'loved_it' : 'disliked_it'
-      });
-    } catch (error) {
-      console.error('Failed to submit feedback:', error);
-    }
-  }, []);
-  
-  const rankTracks = useCallback(async (tracks: TrackData[]) => {
-    try {
-      const response = await musicApi.rankTracks(tracks);
-      return response.rankedTracks || tracks;
-    } catch (error) {
-      // Ranking is optional - if it fails, just return original tracks
-      // Don't log error since this might be expected if endpoint doesn't exist
-      return tracks; 
-    }
-  }, []);
-
-  const loadNextTrack = useCallback(() => {
-    if (trackQueue.length > 1) {
-      const newQueue = trackQueue.slice(1);
-      setTrackQueue(newQueue);
-      setCurrentTrack(newQueue[0]);
-      
-      // Preload more tracks if running low
-      if (newQueue.length <= 2) {
-        discoverMusic();
-      }
-    } else {
-      // Load new tracks
-      discoverMusic();
-    }
-  }, [trackQueue, discoverMusic]);
-  
-  const updatePreferences = useCallback(async (newPreferences: any) => {
-    try {
-      await musicApi.updateWeights(newPreferences);
-      setPreferences(newPreferences);
-    } catch (error) {
-      console.error('Failed to update music weights:', error);
-      // Still update local state so UI remains responsive
-      setPreferences(newPreferences);
-    }
-  }, []);
-  
-  const updateSettings = useCallback(async (newSettings: any) => {
-    try {
-      // Extract only the relevant fields for the API
-      const apiSettings = {
-        adaptiveLearning: newSettings.adaptiveLearning,
-        explorationFactor: newSettings.explorationFactor,
-        diversityBoost: newSettings.diversityBoost,
-        feedbackSensitivity: newSettings.feedbackSensitivity || 0.5,
-      };
-      await musicApi.updatePreferences(apiSettings);
-      setSettings(newSettings);
-    } catch (error) {
-      console.error('Failed to update discovery settings:', error);
-      // Still update local state so UI remains responsive
-      setSettings(newSettings);
-    }
-  }, []);
-
-  // Range updates integrated with settings loading - function preserved for future use
-  const updateRanges = useCallback(async (newRanges: any) => {
-    try {
-      await musicApi.updateRanges(newRanges);
-      setRanges(newRanges);
-    } catch (error) {
-      console.error('Failed to update music ranges:', error);
-    }
-  }, [setRanges]);
-
-  const loadUserProfile = useCallback(async () => {
-    try {
-      const response = await musicApi.getProfile();
-      const profileData = response?.data || response;
-      setUserProfile(profileData);
-    } catch (error) {
-      console.error('Failed to load user profile:', error);
-      // Profile loading is optional - continue without it
-    }
-  }, []);
-
-  const loadUserSettings = useCallback(async () => {
-    try {
-      const response = await musicApi.getSettings();
-      // Handle different possible response structures
-      const profile = response?.data || response;
-      
-      if (profile) {
-        // Update preferences from user profile with safe access
-        if (profile.customWeights && typeof profile.customWeights === 'object') {
-          setPreferences(prevPrefs => ({
-            ...prevPrefs,
-            ...profile.customWeights,
-          }));
-        }
-        
-        // Update ranges from user profile with safe access
-        if (profile.featureRanges && typeof profile.featureRanges === 'object') {
-          setRanges(profile.featureRanges);
-        }
-        
-        // Update settings from user profile with safe access
-        setSettings(prevSettings => ({
-          ...prevSettings,
-          adaptiveLearning: profile.adaptiveLearning ?? prevSettings.adaptiveLearning,
-          explorationFactor: profile.explorationFactor ?? prevSettings.explorationFactor,
-          diversityBoost: profile.diversityBoost ?? prevSettings.diversityBoost,
-        }));
-      }
-    } catch (error) {
-      console.error('Failed to load user settings:', error);
-      // Continue with default settings - don't break the app
-    }
-  }, []);
-
-  // Load initial music and user settings on mount
-  useEffect(() => {
-    // Load settings first, then music discovery
-    loadUserSettings().finally(() => {
-      discoverMusic();
+      return newSet;
     });
-    
-    // Load profile separately (optional)
-    loadUserProfile();
-  }, [loadUserSettings, loadUserProfile, discoverMusic]);
+    // Premium haptic feedback for boost action
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  }, []);
+
+  const handleCommit = useCallback((sparkId: string) => {
+    setCommittedSparks(prev => {
+      const newSet = new Set(prev);
+      newSet.add(sparkId);
+      // Increase commit count
+      setSparks(sparks => sparks.map(s => 
+        s.id === sparkId ? { ...s, commits: s.commits + 1 } : s
+      ));
+      return newSet;
+    });
+    // Premium success haptic for commit action
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // TODO: Open build room creation modal
+  }, []);
+
+  const handleViewSparkDetails = useCallback((sparkId: string) => {
+    const spark = sparks.find(s => s.id === sparkId);
+    if (spark) {
+      setSelectedSpark(spark);
+      setShowBuilderModal(true);
+      // Premium haptic for modal presentation
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    }
+  }, [sparks]);
+
+  // Premium button animation functions
+  const animateButtonPress = useCallback((opacityValue: Animated.Value, scaleValue: Animated.Value) => {
+    Animated.parallel([
+      Animated.timing(opacityValue, {
+        toValue: 0.6,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleValue, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      Animated.parallel([
+        Animated.timing(opacityValue, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleValue, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+  }, []);
+
+  const handlePrimaryButtonPress = useCallback(() => {
+    animateButtonPress(primaryButtonOpacity, primaryButtonScale);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (selectedSpark) {
+      handleCommit(selectedSpark.id);
+    }
+    setShowBuilderModal(false);
+  }, [selectedSpark, handleCommit, animateButtonPress, primaryButtonOpacity, primaryButtonScale]);
+
+  const handleSecondaryButtonPress = useCallback(() => {
+    animateButtonPress(secondaryButtonOpacity, secondaryButtonScale);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (selectedSpark) {
+      handleBoost(selectedSpark.id);
+    }
+    setShowBuilderModal(false);
+  }, [selectedSpark, handleBoost, animateButtonPress, secondaryButtonOpacity, secondaryButtonScale]);
+
+  // Utility functions for modal
+  const getArtifactIcon = (artifactType: string) => {
+    switch (artifactType) {
+      case 'code': return 'code-slash';
+      case 'design': return 'color-palette';
+      case 'audio': return 'musical-notes';
+      case 'business': return 'briefcase';
+      case 'art': return 'brush';
+      default: return 'bulb';
+    }
+  };
+
+  const getArtifactColor = (artifactType: string) => {
+    switch (artifactType) {
+      case 'code': return '#00D2FF';
+      case 'design': return '#FF6B9D';
+      case 'audio': return '#1DB954';
+      case 'business': return '#FFD700';
+      case 'art': return '#FF4757';
+      default: return designTokens.brand.primary;
+    }
+  };
+
+  const getTailoredBenefits = (artifactType: string) => {
+    switch (artifactType) {
+      case 'code':
+        return [
+          { icon: 'terminal', title: 'Technical Recognition', description: 'Showcase engineering expertise to FAANG recruiters actively scouting builders' },
+          { icon: 'cash', title: 'Developer Bounties', description: 'Access $5K-$100K+ prizes from sponsors seeking technical solutions' },
+          { icon: 'rocket', title: 'Product Launch', description: 'Transform prototypes into funded startups with proven market validation' },
+          { icon: 'people', title: 'Tech Network', description: 'Connect with senior engineers, CTOs, and technical co-founders' },
+        ];
+      case 'design':
+        return [
+          { icon: 'brush', title: 'Design Portfolio', description: 'Build case studies that land roles at top design studios and unicorns' },
+          { icon: 'eye', title: 'Creative Exposure', description: 'Get featured in design communities and attract high-paying clients' },
+          { icon: 'trophy', title: 'UX Competitions', description: 'Win design challenges with $10K-$50K prizes from leading brands' },
+          { icon: 'trending-up', title: 'Freelance Pipeline', description: 'Generate consistent $100-$500/hour client opportunities' },
+        ];
+      case 'business':
+        return [
+          { icon: 'briefcase', title: 'Venture Capital', description: 'Pitch directly to VCs and angels actively funding Season winners' },
+          { icon: 'analytics', title: 'Market Validation', description: 'Prove business models with real user traction before major investment' },
+          { icon: 'handshake', title: 'Strategic Partnerships', description: 'Connect with Fortune 500 sponsors seeking innovation partnerships' },
+          { icon: 'cash', title: 'Revenue Generation', description: 'Launch profitable ventures with built-in customer acquisition' },
+        ];
+      case 'audio':
+        return [
+          { icon: 'musical-notes', title: 'Music Tech Innovation', description: 'Pioneer audio solutions for Spotify, Apple Music, and emerging platforms' },
+          { icon: 'radio', title: 'Creator Economy', description: 'Build tools that empower content creators and generate recurring revenue' },
+          { icon: 'headset', title: 'Audio Engineering', description: 'Showcase technical skills to gaming, podcast, and streaming companies' },
+          { icon: 'star', title: 'Artistic Recognition', description: 'Gain recognition from audio professionals and potential collaborators' },
+        ];
+      case 'art':
+        return [
+          { icon: 'palette', title: 'Digital Art Market', description: 'Create collectible works for the growing NFT and digital art economy' },
+          { icon: 'camera', title: 'Creative Commissions', description: 'Attract high-value commissioned work from collectors and brands' },
+          { icon: 'globe', title: 'Global Exhibitions', description: 'Get featured in digital galleries and international art showcases' },
+          { icon: 'heart', title: 'Cultural Impact', description: 'Use art to drive social change and inspire communities worldwide' },
+        ];
+      default:
+        return [
+          { icon: 'bulb', title: 'Innovation Recognition', description: 'Stand out as a visionary creator solving tomorrow\'s challenges today' },
+          { icon: 'cash', title: 'Multi-Domain Rewards', description: 'Access diverse prize pools from $1K-$50K+ across all creative verticals' },
+          { icon: 'rocket', title: 'Cross-Functional Skills', description: 'Develop versatile expertise valued by modern startups and enterprises' },
+          { icon: 'network', title: 'Interdisciplinary Network', description: 'Build relationships spanning tech, design, business, and creative industries' },
+        ];
+    }
+  };
+
+  // Load initial data on mount
+  useEffect(() => {
+    setCurrentSeason(mockSeason);
+    setSparks(mockSparks);
+  }, []);
 
   // Reset hamburger animation when header menu closes
   useEffect(() => {
@@ -399,8 +369,9 @@ const DiveScreen: React.FC = () => {
     }
   }, [headerMenu.showHeaderMenu]);
 
+
   return (
-    <PageBackground theme={theme} variant="dive">
+    <View style={[styles.screenContainer, { backgroundColor: isDarkMode ? '#000000' : '#F5F5F5' }]}>
       <SafeAreaView style={styles.container}>
         <StatusBar
           barStyle={isDarkMode ? 'light-content' : 'dark-content'}
@@ -408,118 +379,205 @@ const DiveScreen: React.FC = () => {
           translucent
         />
 
-        {/* Main Content */}
-        <View style={styles.content}>
-          {/* Main Dive Card */}
-          <View style={[styles.diveCard, { 
-            backgroundColor: isDarkMode ? 'rgba(51, 51, 51, 0.8)' : 'rgba(255, 255, 255, 0.9)',
-            borderColor: isDarkMode ? 'rgba(85, 85, 85, 0.6)' : 'rgba(221, 221, 221, 0.6)',
-            shadowColor: isDarkMode ? '#000000' : '#000000',
-          }]}>
-            <Text style={[styles.diveTitle, { 
-              color: isDarkMode ? '#FFFFFF' : '#1A1A1A',
-              fontFamily: typography.fonts.mozillaHeadline,
-            }]}>
-              Discover Engine
-            </Text>
-            <Text style={[styles.diveSubtitle, { 
-              color: isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(26, 26, 26, 0.8)',
-              fontFamily: typography.fonts.mozillaText,
-            }]}>
-Set your vibe, swipe for magic, tweak the formula, keep swiping—we're hunting for that one track you'll never get 
-  tired of.            </Text>
-          </View>
-
-          {/* Revolutionary Mini Player Card */}
+        {/* Animated Season Header - Fixed Position */}
+        {currentSeason && (
           <Animated.View 
             style={[
-              styles.bottomCard, 
+              styles.fixedSeasonCard,
               {
-                backgroundColor: isDarkMode ? 'rgba(51, 51, 51, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+                backgroundColor: isDarkMode ? 'rgba(51, 51, 51, 0.95)' : 'rgba(255, 255, 255, 0.95)',
                 borderColor: isDarkMode ? 'rgba(85, 85, 85, 0.6)' : 'rgba(221, 221, 221, 0.6)',
                 shadowColor: isDarkMode ? '#000000' : '#000000',
-                shadowOffset: { width: 0, height: -8 },
-                shadowOpacity: 0.15,
-                shadowRadius: 16,
-                elevation: 8,
                 transform: [
-                  { translateX: pan.x },
-                  { translateY: pan.y },
-                  { scale: scale },
-                  { 
-                    rotate: rotation.interpolate({
-                      inputRange: [-100, 100],
-                      outputRange: ['-15deg', '15deg'],
+                  {
+                    translateY: scrollY.interpolate({
+                      inputRange: [0, 100],
+                      outputRange: [0, -10], // Much less upward movement
                       extrapolate: 'clamp',
-                    })
-                  }
+                    }),
+                  },
                 ],
-                opacity: opacity,
-              }
+                opacity: scrollY.interpolate({
+                  inputRange: [0, 40],
+                  outputRange: [1, 0], // Faster fade out
+                  extrapolate: 'clamp',
+                }),
+                height: scrollY.interpolate({
+                  inputRange: [0, 50],
+                  outputRange: [90, 0], // Faster height collapse
+                  extrapolate: 'clamp',
+                }),
+              },
             ]}
-            {...panResponder.panHandlers}
           >
-            <View style={styles.miniPlayer}>
-              {isLoading ? (
-                <View style={styles.loadingContainer}>
-                  <LottieView
-                    source={require('../../../assets/AetherSpinner.json')}
-                    autoPlay
-                    loop
-                    style={styles.loadingSpinner}
-                  />
-                  <Text style={[styles.loadingText, {
-                    color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(26, 26, 26, 0.7)',
-                    fontFamily: typography.fonts.mozillaText,
-                  }]}>
-                    {loadingMessage}
+            {/* Full header content - fades out on scroll */}
+            <Animated.View 
+              style={{
+                opacity: scrollY.interpolate({
+                  inputRange: [0, 30],
+                  outputRange: [1, 0], // Fade out faster
+                  extrapolate: 'clamp',
+                }),
+              }}
+            >
+              <View style={styles.seasonHeader}>
+                <View style={[styles.liveIndicator, {
+                  backgroundColor: currentSeason.state === 'live' ? '#00D2FF' : '#FF6B9D'
+                }]}>
+                  <Text style={styles.liveText}>
+                    {currentSeason.state.toUpperCase()}
                   </Text>
                 </View>
-              ) : currentTrack ? (
-                <>
-                  <Text style={[styles.trackTitle, { 
-                    color: isDarkMode ? '#FFFFFF' : '#1A1A1A',
-                    fontFamily: typography.fonts.mozillaHeadline,
-                  }]}>
-                    {currentTrack.name}
-                  </Text>
-                  <Text style={[styles.trackArtist, { 
-                    color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(26, 26, 26, 0.6)',
-                    fontFamily: typography.fonts.mozillaText,
-                  }]}>
-                    {currentTrack.artist}
-                  </Text>
-                  <Text style={[styles.trackAlbum, { 
-                    color: isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(26, 26, 26, 0.4)',
-                    fontFamily: typography.fonts.mozillaText,
-                  }]}>
-                    {currentTrack.album}
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Text style={[styles.trackTitle, { 
-                    color: isDarkMode ? '#FFFFFF' : '#1A1A1A',
-                    fontFamily: typography.fonts.mozillaHeadline,
-                  }]}>
-                    Purple Rain
-                  </Text>
-                  <Text style={[styles.trackArtist, { 
-                    color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(26, 26, 26, 0.6)',
-                    fontFamily: typography.fonts.mozillaText,
-                  }]}>
-                    Prince
-                  </Text>
-                  <Text style={[styles.trackAlbum, { 
-                    color: isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(26, 26, 26, 0.4)',
-                    fontFamily: typography.fonts.mozillaText,
-                  }]}>
-                    Purple Rain
-                  </Text>
-                </>
-              )}
-            </View>
+                <Text style={[styles.seasonStats, {
+                  color: isDarkMode ? 'rgba(255, 255, 255, 0.6)' : 'rgba(26, 26, 26, 0.6)',
+                }]}>
+                  {currentSeason.totalSparks} sparks • {currentSeason.totalCommits} builders
+                </Text>
+              </View>
+              
+              <Text style={[styles.seasonTitle, { 
+                color: isDarkMode ? '#FFFFFF' : '#1A1A1A',
+                fontFamily: typography.fonts.mozillaHeadline,
+              }]}>
+                {currentSeason.name}
+              </Text>
+              <Text style={[styles.seasonSubtitle, { 
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(26, 26, 26, 0.8)',
+                fontFamily: typography.fonts.mozillaText,
+              }]}>
+                Discover sparks. Join builds. Ship together. The forge is live—what will you create?
+              </Text>
+              
+              {/* Timer */}
+              <View style={styles.timerContainer}>
+                <Ionicons name="timer-outline" size={16} color="#00D2FF" />
+                <Text style={[styles.timerText, { color: '#00D2FF' }]}>
+                  72 hours remaining
+                </Text>
+              </View>
+            </Animated.View>
+
           </Animated.View>
+        )}
+
+        {/* Full-screen blur background when scrolled */}
+        {currentSeason && (
+          <Animated.View 
+            style={[
+              styles.fullScreenBlur,
+              {
+                opacity: scrollY.interpolate({
+                  inputRange: [25, 45],
+                  outputRange: [0, 1], // Tighter, more responsive blur appearance
+                  extrapolate: 'clamp',
+                }),
+              }
+            ]}
+            pointerEvents="none" // Allow content to flow through
+          >
+            <BlurView 
+              intensity={isDarkMode ? 60 : 30} // Stronger blur for dark mode
+              tint={isDarkMode ? 'systemUltraThinMaterialDark' : 'light'}
+              style={styles.fullBlurContainer}
+            />
+          </Animated.View>
+        )}
+
+        {/* Floating Dynamic Island Notification */}
+        {currentSeason && (
+          <Animated.View 
+            style={[
+              styles.dynamicIsland,
+              {
+                borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.15)',
+                shadowColor: isDarkMode ? '#FFFFFF' : '#000000',
+                shadowOpacity: isDarkMode ? 0.15 : 0.25,
+                opacity: scrollY.interpolate({
+                  inputRange: [25, 45],
+                  outputRange: [0, 1], // Tighter timing for island appearance
+                  extrapolate: 'clamp',
+                }),
+                transform: [
+                  {
+                    translateY: scrollY.interpolate({
+                      inputRange: [25, 45],
+                      outputRange: [-8, 0], // Subtle slide down instead of scale
+                      extrapolate: 'clamp',
+                    }),
+                  },
+                ],
+              }
+            ]}
+          >
+            <BlurView 
+              intensity={isDarkMode ? 100 : 70} // Much stronger blur for dark island
+              tint={isDarkMode ? 'systemUltraThinMaterialDark' : 'light'}
+              style={styles.islandBlurContainer}
+            >
+              {/* Dynamic island overlay */}
+              <View style={[styles.islandOverlay, {
+                backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+              }]} />
+              
+              <View style={styles.islandContent}>
+                <View style={styles.islandLeft}>
+                  <View style={[styles.compactLiveIndicator, {
+                    backgroundColor: currentSeason.state === 'live' ? '#00D2FF' : '#FF6B9D',
+                  }]}>
+                    <Text style={styles.compactLiveText}>
+                      {currentSeason.state.toUpperCase()}
+                    </Text>
+                  </View>
+                  <Text style={[styles.islandTitle, { 
+                    color: isDarkMode ? '#FFFFFF' : '#1A1A1A',
+                    fontFamily: typography.fonts.mozillaHeadline,
+                  }]}>
+                    Season 0
+                  </Text>
+                </View>
+                <Text style={[styles.islandTimer, { color: '#00D2FF' }]}>
+                  72h left
+                </Text>
+              </View>
+            </BlurView>
+          </Animated.View>
+        )}
+
+        {/* Main Content */}
+        <View style={styles.content}>
+          {/* Sparks Feed */}
+          <Animated.ScrollView 
+            style={styles.sparksContainer}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ 
+              paddingTop: Platform.OS === 'android' 
+                ? (StatusBar.currentHeight || 0) + 75  // A bit less initial padding
+                : 95  // A bit less initial padding
+            }}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+              { 
+                useNativeDriver: false,
+                listener: (event) => {
+                  // Additional premium scroll behavior can be added here
+                }
+              }
+            )}
+            scrollEventThrottle={8} // Higher frequency for smoother premium feel
+          >
+            {sparks.map((spark) => (
+              <SparkCard
+                key={spark.id}
+                spark={spark}
+                theme={theme}
+                onBoost={handleBoost}
+                onCommit={handleCommit}
+                onViewDetails={handleViewSparkDetails}
+                hasUserBoosted={boostedSparks.has(spark.id)}
+                hasUserCommitted={committedSparks.has(spark.id)}
+              />
+            ))}
+          </Animated.ScrollView>
         </View>
 
         {/* Floating Action Buttons - Conjoined Style */}
@@ -528,16 +586,6 @@ Set your vibe, swipe for magic, tweak the formula, keep swiping—we're hunting 
           slideAnimation={new Animated.Value(0)}
           visible={!headerMenu.showHeaderMenu}
         >
-          {/* Settings Button */}
-          <FloatingActionButton
-            iconName="settings-outline"
-            iconColor={theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)'}
-            onPress={() => setShowSettingsModal(true)}
-            theme={theme}
-          />
-
-          <FloatingButtonSeparator theme={theme} />
-
           {/* Menu/Hamburger Button */}
           <FloatingActionButton
             iconName="menu"
@@ -564,189 +612,180 @@ Set your vibe, swipe for magic, tweak the formula, keep swiping—we're hunting 
           onAction={headerMenu.handleMenuAction}
         />
 
-        {/* Full-Screen Settings Modal */}
-        <Modal
-          visible={showSettingsModal}
-          animationType="slide"
-          presentationStyle="fullScreen"
-        >
-          <SafeAreaView style={[styles.modalContainer, {
-            backgroundColor: colors.pageBackground,
-          }]}>
-            <StatusBar
-              barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-              backgroundColor="transparent"
-              translucent
-            />
-            
-            {/* Modal Header */}
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, {
-                color: colors.textPrimary,
-                fontFamily: typography.fonts.mozillaHeadline,
-              }]}>
-                Settings
-              </Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setShowSettingsModal(false);
-                }}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name="close"
-                  size={24}
-                  color={colors.textPrimary}
-                />
-              </TouchableOpacity>
-            </View>
-
-            {/* Settings Content */}
-            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-              
-              {/* Audio Settings */}
-              <View style={[styles.settingsSection, {
-                backgroundColor: isDarkMode ? 'rgba(51, 51, 51, 0.6)' : 'rgba(255, 255, 255, 0.8)',
-                borderColor: isDarkMode ? 'rgba(85, 85, 85, 0.4)' : 'rgba(221, 221, 221, 0.4)',
-              }]}>
-                <Text style={[styles.sectionTitle, {
-                  color: colors.textPrimary,
-                  fontFamily: typography.fonts.mozillaText,
-                }]}>
-                  Music Taste
-                </Text>
-                <Slider
-                  label="Rhythm & Groove"
-                  description="How danceable and rhythmic you want your music"
-                  value={preferences.danceability}
-                  onValueChange={(value) => updatePreferences({ ...preferences, danceability: value })}
-                  theme={theme}
-                  colors={colors}
-                  unit="%"
-                />
-                <Slider
-                  label="Intensity & Power"
-                  description="From chill vibes to high-energy bangers"
-                  value={preferences.energy}
-                  onValueChange={(value) => updatePreferences({ ...preferences, energy: value })}
-                  theme={theme}
-                  colors={colors}
-                  unit="%"
-                />
-                <Slider
-                  label="Mood & Vibe"
-                  description="Happy uplifting tracks vs deep emotional songs"
-                  value={preferences.valence}
-                  onValueChange={(value) => updatePreferences({ ...preferences, valence: value })}
-                  theme={theme}
-                  colors={colors}
-                  unit="%"
-                />
-                <Slider
-                  label="Natural vs Electronic"
-                  description="Acoustic instruments vs synthesized sounds"
-                  value={preferences.acousticness}
-                  onValueChange={(value) => updatePreferences({ ...preferences, acousticness: value })}
-                  theme={theme}
-                  colors={colors}
-                  unit="%"
-                />
+        {/* Builder Modal */}
+        {selectedSpark && (
+          <Modal
+            visible={showBuilderModal}
+            animationType="slide"
+            presentationStyle="pageSheet"
+            onRequestClose={() => setShowBuilderModal(false)}
+          >
+            <SafeAreaView style={[styles.builderModalContainer, {
+              backgroundColor: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+            }]}>
+              {/* Modal Header */}
+              <View style={styles.builderModalHeader}>
+                <View>
+                  <Text style={[styles.builderModalTitle, {
+                    color: isDarkMode ? '#FFFFFF' : '#1A1A1A',
+                    fontFamily: typography.fonts.mozillaHeadline,
+                  }]}>
+                    Join the Build
+                  </Text>
+                  <Text style={[styles.builderModalSubtitle, {
+                    color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(26, 26, 26, 0.7)',
+                    fontFamily: typography.fonts.mozillaText,
+                  }]}>
+                    {selectedSpark.title}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.closeModalButton, {
+                    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                  }]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setShowBuilderModal(false);
+                  }}
+                >
+                  <Ionicons name="close" size={20} color={isDarkMode ? '#FFFFFF' : '#1A1A1A'} />
+                </TouchableOpacity>
               </View>
 
-              {/* Discovery Settings */}
-              <View style={[styles.settingsSection, {
-                backgroundColor: isDarkMode ? 'rgba(51, 51, 51, 0.6)' : 'rgba(255, 255, 255, 0.8)',
-                borderColor: isDarkMode ? 'rgba(85, 85, 85, 0.4)' : 'rgba(221, 221, 221, 0.4)',
-              }]}>
-                <Text style={[styles.sectionTitle, {
-                  color: colors.textPrimary,
-                  fontFamily: typography.fonts.mozillaText,
+              <View style={styles.builderModalMainContent}>
+                <ScrollView style={styles.builderModalContent} showsVerticalScrollIndicator={false}>
+                  {/* Spark Details */}
+                  <View style={[styles.sparkDetailsCard, {
+                    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                  }]}>
+                    <View style={[styles.artifactBadge, { backgroundColor: getArtifactColor(selectedSpark.artifactType) }]}>
+                      <Ionicons name={getArtifactIcon(selectedSpark.artifactType)} size={14} color="white" />
+                      <Text style={styles.artifactText}>{selectedSpark.artifactType.toUpperCase()}</Text>
+                    </View>
+                    <Text style={[styles.sparkDescription, {
+                      color: isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(26, 26, 26, 0.9)',
+                      fontFamily: typography.fonts.mozillaText,
+                    }]}>
+                      {selectedSpark.content}
+                    </Text>
+                  </View>
+
+                  {/* Builder Benefits */}
+                  <View style={styles.benefitsSection}>
+                    <Text style={[styles.modalSectionTitle, {
+                      color: isDarkMode ? '#FFFFFF' : '#1A1A1A',
+                      fontFamily: typography.fonts.mozillaHeadline,
+                    }]}>
+                      Why Join This {selectedSpark.artifactType.charAt(0).toUpperCase() + selectedSpark.artifactType.slice(1)} Build?
+                    </Text>
+
+                    {/* Benefit Cards - Tailored to Artifact Type */}
+                    {getTailoredBenefits(selectedSpark.artifactType).map((benefit, index) => (
+                      <View key={index} style={[styles.benefitCard, {
+                        backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                      }]}>
+                        <View style={[styles.benefitIcon, { backgroundColor: '#00D2FF' + '20' }]}>
+                          <Ionicons name={benefit.icon as any} size={20} color="#00D2FF" />
+                        </View>
+                        <View style={styles.benefitText}>
+                          <Text style={[styles.benefitTitle, {
+                            color: isDarkMode ? '#FFFFFF' : '#1A1A1A',
+                            fontFamily: typography.fonts.mozillaHeadline,
+                          }]}>
+                            {benefit.title}
+                          </Text>
+                          <Text style={[styles.benefitDescription, {
+                            color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(26, 26, 26, 0.7)',
+                            fontFamily: typography.fonts.mozillaText,
+                          }]}>
+                            {benefit.description}
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </ScrollView>
+
+                {/* Remote Control Action Buttons - Right Side */}
+                <View style={[styles.remoteControlPanel, {
+                  backgroundColor: isDarkMode 
+                    ? 'rgba(255, 255, 255, 0.03)' 
+                    : 'rgba(0, 0, 0, 0.02)',
+                  borderColor: isDarkMode 
+                    ? 'rgba(255, 255, 255, 0.08)' 
+                    : 'rgba(0, 0, 0, 0.06)',
+                  shadowColor: isDarkMode ? '#000000' : '#000000',
                 }]}>
-                  Discovery Settings
-                </Text>
-                <Slider
-                  label="Adventure Mode"
-                  description="How often to discover completely new styles"
-                  value={settings.explorationFactor}
-                  onValueChange={(value) => updateSettings({ ...settings, explorationFactor: value })}
-                  theme={theme}
-                  colors={colors}
-                  unit="%"
-                />
-                <Slider
-                  label="Genre Variety"
-                  description="Mix different genres vs stay within favorites"
-                  value={settings.diversityBoost}
-                  onValueChange={(value) => updateSettings({ ...settings, diversityBoost: value })}
-                  theme={theme}
-                  colors={colors}
-                  unit="%"
-                />
-                <View style={styles.settingRow}>
-                  <Text style={[styles.settingLabel, { color: colors.textSecondary }]}>
-                    Learn From My Taste
-                  </Text>
-                  <Switch
-                    value={settings.adaptiveLearning}
-                    onValueChange={(value) => updateSettings({ ...settings, adaptiveLearning: value })}
-                    trackColor={{ 
-                      false: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)', 
-                      true: colors.primary 
-                    }}
-                    thumbColor={settings.adaptiveLearning ? '#ffffff' : '#f4f3f4'}
-                  />
+                  <Animated.View style={[styles.remoteButton, {
+                    backgroundColor: isDarkMode 
+                      ? 'rgba(255, 255, 255, 0.05)' 
+                      : 'rgba(0, 0, 0, 0.03)',
+                    borderColor: isDarkMode 
+                      ? 'rgba(255, 255, 255, 0.1)' 
+                      : 'rgba(0, 0, 0, 0.08)',
+                    opacity: primaryButtonOpacity,
+                    transform: [{ scale: primaryButtonScale }],
+                  }]}>
+                    <TouchableOpacity
+                      style={styles.remoteButtonTouchable}
+                      onPress={handlePrimaryButtonPress}
+                      activeOpacity={1}
+                    >
+                      <Animated.View style={styles.remoteButtonContent}>
+                        <Ionicons 
+                          name="hammer" 
+                          size={24} 
+                          color={isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)'} 
+                        />
+                      </Animated.View>
+                    </TouchableOpacity>
+                  </Animated.View>
+                  
+                  <View style={[styles.remoteDivider, {
+                    backgroundColor: isDarkMode 
+                      ? 'rgba(255, 255, 255, 0.06)' 
+                      : 'rgba(0, 0, 0, 0.04)',
+                  }]} />
+                  
+                  <Animated.View style={[styles.remoteButton, {
+                    backgroundColor: isDarkMode 
+                      ? 'rgba(255, 255, 255, 0.05)' 
+                      : 'rgba(0, 0, 0, 0.03)',
+                    borderColor: isDarkMode 
+                      ? 'rgba(255, 255, 255, 0.1)' 
+                      : 'rgba(0, 0, 0, 0.08)',
+                    opacity: secondaryButtonOpacity,
+                    transform: [{ scale: secondaryButtonScale }],
+                  }]}>
+                    <TouchableOpacity
+                      style={styles.remoteButtonTouchable}
+                      onPress={handleSecondaryButtonPress}
+                      activeOpacity={1}
+                    >
+                      <Animated.View style={styles.remoteButtonContent}>
+                        <Ionicons 
+                          name="rocket" 
+                          size={24} 
+                          color={isDarkMode ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.5)'} 
+                        />
+                      </Animated.View>
+                    </TouchableOpacity>
+                  </Animated.View>
                 </View>
               </View>
+            </SafeAreaView>
+          </Modal>
+        )}
 
-              {/* Interface Settings */}
-              <View style={[styles.settingsSection, {
-                backgroundColor: isDarkMode ? 'rgba(51, 51, 51, 0.6)' : 'rgba(255, 255, 255, 0.8)',
-                borderColor: isDarkMode ? 'rgba(85, 85, 85, 0.4)' : 'rgba(221, 221, 221, 0.4)',
-              }]}>
-                <Text style={[styles.sectionTitle, {
-                  color: colors.textPrimary,
-                  fontFamily: typography.fonts.mozillaText,
-                }]}>
-                  Experience
-                </Text>
-                <View style={styles.settingRow}>
-                  <Text style={[styles.settingLabel, { color: colors.textSecondary }]}>
-                    Touch Feedback
-                  </Text>
-                  <Switch
-                    value={settings.hapticFeedback}
-                    onValueChange={(value) => setSettings({ ...settings, hapticFeedback: value })}
-                    trackColor={{ 
-                      false: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)', 
-                      true: colors.primary 
-                    }}
-                    thumbColor={settings.hapticFeedback ? '#ffffff' : '#f4f3f4'}
-                  />
-                </View>
-                <Slider
-                  label="Interface Speed"
-                  description="How fast animations and transitions feel"
-                  value={settings.animationSpeed}
-                  onValueChange={(value) => setSettings({ ...settings, animationSpeed: value })}
-                  minimumValue={0.5}
-                  maximumValue={2.0}
-                  theme={theme}
-                  colors={colors}
-                  unit="x"
-                />
-              </View>
-
-            </ScrollView>
-          </SafeAreaView>
-        </Modal>
       </SafeAreaView>
-    </PageBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },
@@ -755,51 +794,233 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' 
       ? (StatusBar.currentHeight || 0) + 10 
       : 20,
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.xs,
   },
-  diveCard: {
-    width: screenWidth * 0.92,
-    paddingVertical: spacing.xl * 2,
-    paddingHorizontal: spacing.lg,
-    marginTop: spacing.lg,
-    borderRadius: 16,
-    borderWidth: 0.5,
+  seasonCard: {
+    width: screenWidth * 0.98,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+    borderRadius: 12,
+    borderWidth: 0,
     alignSelf: 'center',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    // Neumorphic shadow - minimal height
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
-  diveTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-    letterSpacing: -0.5,
+  seasonHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
   },
-  diveSubtitle: {
+  liveIndicator: {
+    paddingHorizontal: spacing.sm,
+    borderRadius: 8,
+  },
+  liveText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: 'white',
+    letterSpacing: 0.5,
+  },
+  seasonStats: {
+    fontSize: 8,
+    fontWeight: '700',
+  },
+  seasonTitle: {
     fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+    letterSpacing: -0.2,
+  },
+  seasonSubtitle: {
+    fontSize: 10,
     fontWeight: '400',
-    textAlign: 'center',
-    letterSpacing: -0.3,
-    lineHeight: 20,
+    letterSpacing: -0.1,
+    lineHeight: 16,
+    marginBottom: spacing.xs,
+  },
+  timerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  timerText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  sparksContainer: {
+    flex: 1,
+  },
+  fixedSeasonCard: {
+    position: 'absolute',
+    top: Platform.OS === 'android' 
+      ? (StatusBar.currentHeight || 0) + 20 
+      : 50,
+    left: spacing.sm,
+    right: spacing.sm,
+    zIndex: 1000,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 12,
+    // Blur effect would be handled by native backdrop blur
+    overflow: 'hidden',
+  },
+  collapsedTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  collapsedTimer: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  // Standalone notification banner styles
+  standaloneBanner: {
+    position: 'absolute',
+    top: Platform.OS === 'android' 
+      ? (StatusBar.currentHeight || 0) + 48
+      : 64, // Much lower for comfortable viewing
+    left: spacing.sm,
+    right: spacing.sm,
+    height: 40, // Shorter/thinner banner
+    borderRadius: 20, // Adjusted radius for shorter height
+    borderWidth: 0.5,
+    zIndex: 2000, // Higher priority than everything
+    // Enhanced neumorphic shadow
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 12,
+    overflow: 'hidden',
+  },
+  bannerContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4, // Reduced padding for shorter banner
+  },
+  bannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  compactLiveIndicator: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginRight: spacing.xs,
+  },
+  compactLiveText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: 'white',
+    letterSpacing: 0.3,
+  },
+  bannerTitle: {
+    fontSize: 13, // Slightly larger for better visibility
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  bannerTimer: {
+    fontSize: 11, // Slightly larger for better visibility
+    fontWeight: '600',
+    letterSpacing: 0.1,
+  },
+  // Full-screen blur background
+  fullScreenBlur: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: Platform.OS === 'android' 
+      ? (StatusBar.currentHeight || 0) + 95
+      : 105, // Even less blur coverage height
+    zIndex: 1000,
+  },
+  fullBlurContainer: {
+    flex: 1,
+    borderBottomLeftRadius: 12, // Rounded bottom corners for card effect
+    borderBottomRightRadius: 12,
+    overflow: 'hidden',
+  },
+  
+  // Dynamic Island styles
+  dynamicIsland: {
+    position: 'absolute',
+    top: Platform.OS === 'android' 
+      ? (StatusBar.currentHeight || 0) + 48
+      : 64,
+    left: spacing.sm, // Wider - less margin from edges
+    right: spacing.sm, // Wider - less margin from edges
+    height: 28, // Shorter height
+    borderRadius: 6, // Adjusted radius for shorter height
+    borderWidth: 0.3,
+    zIndex: 2001, // Above everything
+    // Dynamic island shadow
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 16,
+  },
+  islandBlurContainer: {
+    flex: 1,
+    borderRadius: 6, // Match island border radius
+    overflow: 'hidden',
+  },
+  islandOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 6, // Match island border radius
+  },
+  islandContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  islandLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  islandTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  islandTimer: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.1,
   },
   bottomCard: {
     position: 'absolute',
     bottom: -50,
     left: 0,
     right: 0,
-    height: screenHeight * 0.35,
+    height: 200,
     paddingTop: spacing.xl,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl * 2,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
     borderWidth: 0.5,
     borderBottomWidth: 0,
     justifyContent: 'flex-start',
@@ -813,6 +1034,27 @@ const styles = StyleSheet.create({
   miniPlayer: {
     alignItems: 'flex-start',
     width: '100%',
+  },
+  trackContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    width: '100%',
+    gap: 16,
+  },
+  albumArt: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  trackInfo: {
+    flex: 1,
+    alignItems: 'flex-start',
   },
   trackTitle: {
     fontSize: 18,
@@ -880,13 +1122,104 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
+    paddingVertical: spacing.sm,
   },
   settingLabel: {
     fontSize: 16,
-    fontWeight: '400',
+    fontWeight: '500',
     flex: 1,
     letterSpacing: -0.2,
+  },
+  // New refactored slider styles
+  preferenceItem: {
+    marginBottom: spacing.xl,
+  },
+  preferenceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  preferenceLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: -0.3,
+  },
+  preferenceValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  preferenceDescription: {
+    fontSize: 13,
+    marginBottom: spacing.md,
+    lineHeight: 18,
+    letterSpacing: -0.1,
+  },
+  sliderContainer: {
+    width: 280,
+    height: 40,
+    justifyContent: 'center',
+    alignSelf: 'center',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+  },
+  sliderTrack: {
+    width: 280,
+    height: 6,
+    borderRadius: 3,
+    position: 'absolute',
+    alignSelf: 'center',
+  },
+  sliderFill: {
+    height: 6,
+    borderRadius: 3,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  sliderThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    position: 'absolute',
+    top: -7,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  toggleButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 8,
+    minWidth: 50,
+    alignItems: 'center',
+  },
+  toggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.1,
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -904,6 +1237,281 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: 0.5,
   },
+  
+  // Builder Modal Styles
+  builderModalContainer: {
+    flex: 1,
+  },
+  builderModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 0.8,
+    borderBottomColor: 'rgba(218, 218, 218, 0.1)',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  builderModalTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  builderModalSubtitle: {
+    fontSize: 12,
+    fontWeight: '400',
+    marginTop: 4,
+    letterSpacing: -0.2,
+  },
+  closeModalButton: {
+    width: 48,
+    height: 28,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  builderModalMainContent: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  builderModalContent: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingRight: spacing.sm, // Less padding on right to make room for remote
+  },
+  // Remote Control Panel Styles
+  remoteControlPanel: {
+    width: 80,
+    alignSelf: 'stretch',
+    marginVertical: spacing.lg,
+    marginRight: spacing.lg,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    justifyContent: 'center',
+    gap: spacing.sm,
+    // Neumorphic shadow
+    shadowOffset: { width: -2, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  remoteButton: {
+    height: 60,
+    borderRadius: 12,
+    borderWidth: 0.5,
+    // Neumorphic button styling
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    // Inner shadow simulation
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  remoteButtonTouchable: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+  },
+  remoteButtonContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  remoteDivider: {
+    height: 1,
+    marginHorizontal: spacing.xs,
+    borderRadius: 0.5,
+  },
+  sparkDetailsCard: {
+    padding: spacing.lg,
+    borderRadius: 12,
+    marginVertical: spacing.md,
+  },
+  artifactBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
+    marginBottom: spacing.md,
+  },
+  artifactText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: 'white',
+    letterSpacing: 0.5,
+  },
+  sparkDescription: {
+    fontSize: 12,
+    lineHeight: 18,
+    letterSpacing: -0.2,
+  },
+  benefitsSection: {
+    marginVertical: spacing.lg,
+  },
+  modalSectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: spacing.lg,
+    letterSpacing: -0.3,
+  },
+  benefitCard: {
+    flexDirection: 'row',
+    padding: spacing.md,
+    borderRadius: 12,
+    marginBottom: spacing.sm,
+    alignItems: 'center',
+  },
+  benefitIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  benefitText: {
+    flex: 1,
+  },
+  benefitTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 2,
+    letterSpacing: -0.2,
+  },
+  benefitDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: -0.1,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingVertical: spacing.xl,
+  },
+  primaryButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 8,
+    gap: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  primaryButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  secondaryButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 6,
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
 });
 
-export default DiveScreen;
+// Streamlined optimized styles
+const streamStyles = StyleSheet.create({
+  content: {
+    flex: 1,
+    padding: 20,
+    gap: 20,
+  },
+  section: {
+    borderRadius: 16,
+    padding: 20,
+    gap: 16,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  slider: {
+    gap: 8,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  label: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  value: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  track: {
+    width: 260,
+    height: 4,
+    borderRadius: 2,
+    position: 'relative',
+  },
+  fill: {
+    height: 4,
+    borderRadius: 2,
+    position: 'absolute',
+  },
+  thumb: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    position: 'absolute',
+    top: -6,
+  },
+  buttons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 8,
+  },
+  button: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  toggle: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    minWidth: 44,
+    alignItems: 'center',
+  },
+  toggleText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+});
+
+export default ForgeScreen;

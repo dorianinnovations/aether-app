@@ -52,9 +52,9 @@ const getAllMenuActions = (theme: 'light' | 'dark'): MenuAction[] => [
     requiresAuth: true 
   },
   { 
-    icon: <Feather name="compass" size={16} color="#B3FF66" />, 
-    label: 'Discovery', 
-    key: 'dive', 
+    icon: <Feather name="zap" size={16} color="#B3FF66" />, 
+    label: 'Forge', 
+    key: 'forge', 
     requiresAuth: true 
   },
   { 

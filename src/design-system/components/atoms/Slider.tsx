@@ -66,8 +66,13 @@ export const Slider: React.FC<SliderProps> = ({
 
   const panResponder = useRef(
     PanResponder.create({
+      onStartShouldSetPanResponder: () => {
+        console.log('🎚️ Slider touch detected, disabled:', disabled);
+        return !disabled;
+      },
       onMoveShouldSetPanResponder: () => !disabled,
       onPanResponderGrant: () => {
+        console.log('🎚️ Slider pan granted for:', label);
         setIsDragging(true);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         pan.setOffset(thumbPosition);
@@ -84,6 +89,7 @@ export const Slider: React.FC<SliderProps> = ({
         const steppedValue = Math.round(newValue / step) * step;
         const clampedValue = Math.max(minimumValue, Math.min(maximumValue, steppedValue));
         
+        console.log('🎚️ Slider value changing:', label, 'new value:', clampedValue);
         onValueChange(clampedValue);
       },
       onPanResponderRelease: () => {
@@ -164,24 +170,32 @@ export const Slider: React.FC<SliderProps> = ({
           }
         ]} />
 
-        {/* Thumb */}
+        {/* Thumb - larger touch area */}
         <Animated.View
           style={[
-            styles.thumb,
+            styles.thumbTouchArea,
             {
-              backgroundColor: colors.primary || '#3b82f6',
-              borderColor: isDarkMode ? '#1a1a1a' : '#ffffff',
-              transform: [
-                { translateX: pan },
-                { scale: isDragging ? 1.2 : 1 },
-              ],
-              left: thumbPosition - THUMB_SIZE / 2,
-              shadowColor: isDarkMode ? '#000000' : '#000000',
+              left: thumbPosition - 30, // Larger touch area
               opacity: disabled ? 0.5 : 1,
             }
           ]}
           {...panResponder.panHandlers}
-        />
+        >
+          <Animated.View
+            style={[
+              styles.thumb,
+              {
+                backgroundColor: colors.primary || '#3b82f6',
+                borderColor: isDarkMode ? '#1a1a1a' : '#ffffff',
+                transform: [
+                  { translateX: pan },
+                  { scale: isDragging ? 1.2 : 1 },
+                ],
+                shadowColor: isDarkMode ? '#000000' : '#000000',
+              }
+            ]}
+          />
+        </Animated.View>
       </View>
     </View>
   );
@@ -230,12 +244,19 @@ const styles = StyleSheet.create({
     borderRadius: TRACK_HEIGHT / 2,
     position: 'absolute',
   },
+  thumbTouchArea: {
+    width: 60, // Much larger touch area
+    height: 60,
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+    // backgroundColor: 'rgba(255, 0, 0, 0.1)', // Debug - remove this
+  },
   thumb: {
     width: THUMB_SIZE,
     height: THUMB_SIZE,
     borderRadius: THUMB_SIZE / 2,
     borderWidth: 2,
-    position: 'absolute',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,

@@ -12,7 +12,7 @@ import {
   ViewStyle,
   TextInput,
 } from 'react-native';
-import { ProfileHeader, ProfileFieldsGroup, SocialProfileSection, SpotifyIntegration, SocialStats, GrailsSection } from '../molecules';
+import { ProfileHeader, ProfileFieldsGroup, SocialProfileSection, SpotifyIntegration, SocialStats, GrailsSection, GitHubSection } from '../molecules';
 import { LottieLoader, UserBadgeType, InteractiveBadge, AdvancedBadge } from '../atoms';
 import { spacing } from '../../tokens/spacing';
 import { OnlineStatusType } from '../atoms/OnlineStatus';
@@ -37,6 +37,7 @@ export interface UserProfile {
   socialLinks?: SocialLinks;
   profilePicture?: string;
   bannerImage?: string;
+  githubUsername?: string;
   badges?: Array<{
     id: string;
     badgeType: UserBadgeType;
@@ -200,6 +201,17 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
         followersCount={socialProfile?.followersCount}
       />
 
+      {/* GitHub Section */}
+      <View style={styles.githubSection}>
+        <GitHubSection
+          initialUsername={profile.githubUsername}
+          editMode={editMode}
+          onUsernameChange={(username) => {
+            onFieldChange?.('githubUsername', username || '');
+          }}
+        />
+      </View>
+
       {/* Spotify Integration */}
       <View style={styles.spotifySection}>
         <SpotifyIntegration 
@@ -250,6 +262,10 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   socialSection: {
+    paddingHorizontal: spacing[5],
+    marginTop: spacing[4],
+  },
+  githubSection: {
     paddingHorizontal: spacing[5],
     marginTop: spacing[4],
   },

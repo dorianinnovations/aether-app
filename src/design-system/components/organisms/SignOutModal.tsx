@@ -139,7 +139,7 @@ export const SignOutModal: React.FC<SignOutModalProps> = ({
     
     return (
       <View style={[
-        styles.iconContainer,
+        styles.contentContainer,
         {
           backgroundColor: iconColor + '15',
           borderColor: iconColor + '30',

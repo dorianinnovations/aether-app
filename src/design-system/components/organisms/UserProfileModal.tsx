@@ -257,7 +257,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
             {/* Edit Tip at Bottom */}
             {profile && !loading && (
-              <View style={[styles.editTip, { backgroundColor: colors.cardBackground }]}>
+              <View style={[styles.editTip, { backgroundColor: colors.surface }]}>
                 <Feather name="info" size={14} color={colors.textSecondary} />
                 <Text style={[styles.editTipText, { color: colors.textSecondary }]}>
                   Tap "Edit Profile" or go to Profile section to make changes
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   editButtonText: {
     fontSize: 10,
     fontWeight: '500',
-    marginLeft: spacing[0.5],
+    marginLeft: spacing[1],
   },
   loadingContainer: {
     flex: 1,

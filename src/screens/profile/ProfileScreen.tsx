@@ -236,6 +236,7 @@ export const ProfileScreen: React.FC = () => {
         location: profile.location,
         website: profile.website,
         socialLinks: profile.socialLinks,
+        githubUsername: profile.githubUsername,
       };
       
       // Use direct API call instead of the hook to avoid background refresh issues

@@ -128,71 +128,6 @@ export const useSpotifyOAuth = () => {
     }
   }, [spotifyStatus]);
 
-  const handleWebViewNavigation = useCallback((navState: any) => {
-    const url = navState.url;
-    
-    // Handle WebView loading errors
-    if (navState.code && navState.code < 0) {
-      logger.warn('WebView navigation error:', navState);
-      
-      let title = 'Connection Error';
-      let message = 'Unable to load Spotify authentication page. Please check your internet connection and try again.';
-      
-      if (navState.code === -1004) {
-        title = 'Network Error';
-        message = 'Could not connect to Spotify servers. Please check your internet connection and try again.';
-      } else if (navState.code === -1009) {
-        title = 'No Internet';
-        message = 'No internet connection available. Please connect to the internet and try again.';
-      } else if (navState.code === -1001) {
-        title = 'Request Timeout';
-        message = 'The request timed out. Please try again with a better internet connection.';
-      }
-      
-      setShowWebView(false);
-      Alert.alert(title, message, [{ text: 'OK' }]);
-      return;
-    }
-    
-    // Check if this is the callback URL with authorization code
-    if (url.includes('callback') && url.includes('code=')) {
-      const urlParams = new URLSearchParams(url.split('?')[1]);
-      const code = urlParams.get('code');
-      
-      if (code) {
-        setShowWebView(false);
-        handleSpotifyCallback(code);
-      }
-    }
-    
-    // Handle OAuth errors
-    if (url.includes('error=')) {
-      const urlParams = new URLSearchParams(url.split('?')[1]);
-      const error = urlParams.get('error');
-      const errorDescription = urlParams.get('error_description');
-      
-      setShowWebView(false);
-      
-      let title = 'Authentication Error';
-      let message = 'Spotify authentication failed.';
-      
-      if (error === 'access_denied') {
-        title = 'Access Denied';
-        message = 'You denied access to your Spotify account. Please try again and approve the connection to use Spotify features.';
-      } else if (error === 'invalid_request') {
-        title = 'Invalid Request';
-        message = 'There was an issue with the authentication request. Please try connecting again.';
-      } else if (error === 'unauthorized_client') {
-        title = 'Unauthorized';
-        message = 'This app is not authorized to connect to Spotify. Please contact support.';
-      } else if (errorDescription) {
-        message = errorDescription;
-      }
-      
-      Alert.alert(title, message, [{ text: 'OK' }]);
-    }
-  }, [handleSpotifyCallback]);
-
   const handleSpotifyCallback = useCallback(async (code: string) => {
     setConnecting(true);
     
@@ -278,6 +213,72 @@ export const useSpotifyOAuth = () => {
       setConnecting(false);
     }
   }, []);
+
+  const handleWebViewNavigation = useCallback((navState: any) => {
+    const url = navState.url;
+    
+    // Handle WebView loading errors
+    if (navState.code && navState.code < 0) {
+      logger.warn('WebView navigation error:', navState);
+      
+      let title = 'Connection Error';
+      let message = 'Unable to load Spotify authentication page. Please check your internet connection and try again.';
+      
+      if (navState.code === -1004) {
+        title = 'Network Error';
+        message = 'Could not connect to Spotify servers. Please check your internet connection and try again.';
+      } else if (navState.code === -1009) {
+        title = 'No Internet';
+        message = 'No internet connection available. Please connect to the internet and try again.';
+      } else if (navState.code === -1001) {
+        title = 'Request Timeout';
+        message = 'The request timed out. Please try again with a better internet connection.';
+      }
+      
+      setShowWebView(false);
+      Alert.alert(title, message, [{ text: 'OK' }]);
+      return;
+    }
+    
+    // Check if this is the callback URL with authorization code
+    if (url.includes('callback') && url.includes('code=')) {
+      const urlParams = new URLSearchParams(url.split('?')[1]);
+      const code = urlParams.get('code');
+      
+      if (code) {
+        setShowWebView(false);
+        handleSpotifyCallback(code);
+      }
+    }
+    
+    // Handle OAuth errors
+    if (url.includes('error=')) {
+      const urlParams = new URLSearchParams(url.split('?')[1]);
+      const error = urlParams.get('error');
+      const errorDescription = urlParams.get('error_description');
+      
+      setShowWebView(false);
+      
+      let title = 'Authentication Error';
+      let message = 'Spotify authentication failed.';
+      
+      if (error === 'access_denied') {
+        title = 'Access Denied';
+        message = 'You denied access to your Spotify account. Please try again and approve the connection to use Spotify features.';
+      } else if (error === 'invalid_request') {
+        title = 'Invalid Request';
+        message = 'There was an issue with the authentication request. Please try connecting again.';
+      } else if (error === 'unauthorized_client') {
+        title = 'Unauthorized';
+        message = 'This app is not authorized to connect to Spotify. Please contact support.';
+      } else if (errorDescription) {
+        message = errorDescription;
+      }
+      
+      Alert.alert(title, message, [{ text: 'OK' }]);
+    }
+  }, [handleSpotifyCallback]);
+
 
   const openSpotifyApp = useCallback(async (trackUri?: string) => {
     try {

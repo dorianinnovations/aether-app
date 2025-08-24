@@ -28,6 +28,7 @@ export interface UserProfile {
   profilePicture?: string;
   bannerImage?: string;
   createdAt?: string;
+  githubUsername?: string;
   badges?: Array<{
     id: string;
     badgeType: UserBadgeType;
@@ -96,6 +97,7 @@ export class ProfileDataService {
           profilePicture: profileData.profilePicture?.url || user.profilePicture,
           bannerImage: profileData.bannerImage?.url || user.bannerImage,
           createdAt: user.createdAt,
+          githubUsername: user.githubUsername,
           badges: user.badges || []
         };
 
